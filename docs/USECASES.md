@@ -274,7 +274,7 @@ Dọn quầy → tổng kết: doanh thu, tiền boa, nguyên liệu đã dùng 
 
 ## H. Làm thuê & tuyển dụng
 
-### UC-H1 · Làm thuê cho NPC ✅
+### UC-H1 · Làm thuê cho NPC ✅ (nâng cấp thành thao tác thật: xem nhóm W)
 Quán cơm Cô Tư (phụ quán), Bưu cục Anh Tám (giao hàng). Lương theo giờ; việc vặt có thưởng; rời chỗ làm = nghỉ.
 **Cần nâng cấp (🚧):** việc vặt thành thao tác thật —
 - *Bưng cơm*: màn hình 4 bàn, khay có 2 dĩa → đưa đúng dĩa đúng bàn theo phiếu gọi món.
@@ -332,6 +332,79 @@ Chủ đánh giá nhân viên (đúng giờ, làm đúng món, thái độ); nh�
 - **NPC chủ tiệm**: bảng tin luôn có ít nhất 2 tin của NPC (quán cơm Cô Tư, bưu cục, tiệm sửa xe Chú Chín…) để người mới không bao giờ hết việc.
 - NPC nhân viên **tự làm món** ở quầy người chơi với tốc độ/độ chính xác theo tính cách → chủ có thể đi nhập hàng, mở quầy thứ hai.
 **Luật:** NPC không bao giờ chiếm chỗ của người chơi: khi có người chơi ứng tuyển cùng tin, người chơi được ưu tiên hiển thị; chủ vẫn quyết định.
+
+---
+
+## W. Vào làm — không gian riêng & thao tác như đời thật
+
+> Mỗi nơi làm việc là **một cảnh riêng** (camera ngang tầm mắt, sau quầy), không phải bản đồ nhìn từ trên.
+> Bước vào cửa → cảnh bản đồ tắt, cảnh bên trong bật; bước ra → quay lại phố.
+> Thu nhập làm thuê = **lương cứng theo giờ khi có làm** + **tiền theo từng việc** (+ thưởng/boa). Đứng không = không có tiền.
+
+### UC-W1 · Vào/ra một nơi làm việc 🚧
+**Luồng:** tới cửa quán → "🍚 Vào quán · Cô Tư" → màn hình chuyển vào trong (1 giây) → chọn **vai** (đứng quầy / thu ngân / bưng bê) → *Vào ca*.
+Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương cứng, tiền việc, thưởng, khấu trừ) → quay ra phố.
+**Đời thật & rẽ nhánh:**
+- Chưa ra ca mà bỏ đi (tắt app, đi ra ngoài) → coi như **bỏ ca**: vẫn nhận tiền đã làm, mất thưởng chuyên cần, chủ nhớ ("bữa trước bỏ ngang").
+- Mất mạng giữa ca → có 30 giây vào lại; quá thì hết ca.
+- Mỗi lúc chỉ làm một vai; đổi vai phải ra ca.
+**Luật:** chỉ vào ca khi quầy riêng đang đóng; mỗi giờ game có ≥ 1 việc hoàn thành thì mới tính lương cứng giờ đó.
+
+### UC-W2 · Quán cơm Cô Tư — đứng quầy múc cơm 🚧
+**Không gian:** quầy inox dài; các khay/nồi: cơm, sườn nướng, bì, chả trứng, trứng ốp la, dưa leo–cà chua, canh; chồng dĩa; khách xếp hàng phía trước quầy.
+**Luồng một dĩa:**
+1. Khách tới đọc món (khung thoại + phiếu gọi món): *"Cơm sườn bì chả, thêm trứng, không dưa nha con"*.
+2. **Lấy dĩa** (chạm chồng dĩa → dĩa xuất hiện trên quầy).
+3. **Múc/gắp** từng món: chạm khay → một vá/một miếng rơi lên dĩa (thấy trên dĩa 3D). "Thêm cơm" = múc cơm 2 lần.
+4. **Đưa dĩa** cho khách (chạm khách / nút "Đưa dĩa").
+**Đời thật & rẽ nhánh:**
+- Gắp nhầm → nút *Đổ bỏ làm lại* (tốn món, trừ vào tiền việc); đưa sai → khách trả lại, Cô Tư nhắc.
+- **Khay hết món** (sườn còn 0) → bấm *"Báo bếp"* → 20 giây sau bếp mang khay mới; khách đang chờ món đó có thể đổi món hoặc đợi.
+- Giờ cao điểm (11–13h, 17–19h) khách xếp hàng dài; khách chờ quá lâu thì bỏ đi → Cô Tư phàn nàn.
+- Khách quen gọi "như mọi khi" → phiếu hiện món khách quen (khách quen có tên).
+**Luật:** tiền việc mỗi dĩa đúng; dĩa sai trừ; 3 lỗi/giờ → Cô Tư nhắc; 6 lỗi hoặc 5 khách bỏ đi trong ca → *"Thôi hôm nay con về nghỉ đi"* (hết ca, vẫn nhận tiền đã làm).
+**Kiểm chứng:** e2e server (dĩa đúng/sai, hết khay, bỏ ca); Playwright múc đủ món theo phiếu.
+
+### UC-W3 · Quán cơm — thu ngân 🚧
+**Không gian:** quầy tính tiền có máy tính tiền, bảng giá, ngăn kéo tiền.
+**Luồng:** khách ăn xong tới quầy, đưa phiếu → **bấm từng món trên máy tính tiền** (cơm sườn 35k, thêm trứng 6k, trà đá 3k…) → máy hiện tổng → *Báo giá* cho khách → khách trả (chuyển khoản / tiền mặt) → **thối tiền** từ ngăn kéo (như UC-F7) → *Xong*.
+**Đời thật & rẽ nhánh:**
+- Bấm thiếu/dư món → báo giá sai: khách phát hiện tính dư (phàn nàn, sửa lại), tính thiếu thì quán mất tiền.
+- Khách xin *ghi sổ* (khách quen, Cô Tư cho phép tối đa 1 lần/ngày).
+- **Cuối ca kiểm két:** tiền trong ngăn kéo phải khớp doanh thu; lệch thì **trừ vào lương** (thiếu) hoặc nộp dư cho chủ.
+**Luật:** tiền việc mỗi lượt đúng; thối sai tiền → lệch két.
+
+### UC-W4 · Quán cơm — bưng bê 🚧
+**Không gian:** 6 bàn đánh số, cửa bếp ra món.
+**Luồng:** bếp đặt dĩa ra (dĩa có kẹp phiếu số bàn) → **chạm dĩa để bưng** (tối đa 2 dĩa) → **chạm đúng bàn** để đặt → bàn đã ăn xong → *Dọn bàn* (chạm chén dĩa bẩn → mang vào bếp).
+**Đời thật:** bưng nhầm bàn → khách bàn đó bảo "không phải của con", phải mang đúng; để dĩa nguội lâu → khách chê; bàn bẩn khách mới không ngồi.
+**Luật:** tiền việc mỗi dĩa đúng bàn + mỗi lần dọn bàn.
+
+### UC-W5 · Bưu cục Anh Tám — giao hàng tận nơi 🚧
+**Không gian:** bưu cục có **kệ hàng** (thùng/gói dán mã), quầy nhận, xe máy ở cửa.
+**Luồng một chuyến:**
+1. **Nhận đơn:** Anh Tám đưa *phiếu giao* (mã đơn XM-4821, người nhận, địa chỉ "Nhà số 7 đầu hẻm", ghi chú "dễ vỡ", COD 85.000đ).
+2. **Soạn hàng:** tìm trên kệ gói đúng mã (các gói nhìn giống nhau, phải đọc mã) → chạm để lấy → *Quét mã* xác nhận.
+3. **Ra xe, đi giao:** quay ra phố; bản đồ có **ghim địa chỉ** + mũi tên; nhân vật chạy xe (nhanh hơn đi bộ). Chọn *Chạy nhanh* / *Chạy chậm*: hàng *dễ vỡ* mà chạy nhanh → có thể móp (khách từ chối nhận).
+4. **Tới nơi:** chạm *"🔔 Gọi khách"* → người nhận ra cửa (khung thoại). 
+5. **Giao & ký nhận:** đưa hàng → khách kiểm hàng → *Đưa điện thoại ký nhận* → người nhận ký (thấy nét ký hiện dần) → người chơi **kiểm tên người ký** so với phiếu: đúng người / người nhà nhận hộ (chọn quan hệ: vợ, chồng, con, hàng xóm) / *không phải người nhận* (không được giao) → *Xác nhận đã giao*.
+6. **Thu COD:** khách trả tiền mặt/chuyển khoản → thối tiền nếu cần.
+7. **Về nộp tiền:** quay lại bưu cục, *Nộp tiền COD* → khớp thì nhận tiền chuyến + thưởng.
+**Đời thật & rẽ nhánh:**
+- **Khách vắng nhà** (15%): gọi không ai nghe → *Gửi hàng xóm* (người nhận đồng ý qua tin nhắn) / *Hẹn giao lại* (quay lại sau 1 giờ game) / *Hoàn về bưu cục* (không có tiền chuyến).
+- **Sai địa chỉ / giao nhầm nhà** → người ở nhà đó nói "không phải nhà tôi" → phải tìm đúng nhà.
+- **Khách không đủ tiền COD** → khách xin trả phần còn lại bằng chuyển khoản, hoặc hẹn lại.
+- **Khách từ chối nhận** (hàng móp, đặt nhầm) → mang hàng về hoàn.
+- Mất tiền COD (thối nhầm) → **trừ tiền chuyến**; thiếu nhiều → Anh Tám tạm ngưng giao.
+- Trời mưa (UC-B4): giao lâu hơn nhưng thưởng mưa +30%.
+**Luật:** mỗi chuyến tối đa 3 đơn (chọn thứ tự giao tối ưu); tiền chuyến theo khoảng cách; giao trễ hạn (phiếu có giờ hẹn) giảm thưởng.
+**Kiểm chứng:** e2e server (lấy đúng/sai gói, giao sai nhà, ký nhận, COD thiếu/đúng, nộp tiền lệch); Playwright một chuyến đủ bước.
+
+### UC-W6 · Quầy riêng của mình — không gian sau xe hàng ⏳
+Vào quầy (đứng sau xe bánh mì) → camera ngang tầm mắt từ sau tủ kính: thấy khay nguyên liệu, ổ bánh trên thớt, khách đứng trước quầy. Các bước làm món (UC-F4) diễn ra **trên mô hình 3D**: chạm ổ bánh → dao xẻ; chạm khay pa-tê → phết; thứ gì cho vào hiện trên ổ bánh; gói giấy → đưa qua quầy cho khách. Trà sữa: ly lên máy dán nắp, lắc bằng thao tác kéo lên-xuống.
+
+### UC-W7 · Phiếu lương & uy tín người làm ⏳
+Mỗi ca có phiếu lương chi tiết. Người làm có **uy tín làm thuê** (đúng giờ, ít lỗi, không bỏ ca): uy tín cao → được nhận vai khó hơn/lương cao hơn (thu ngân cần uy tín ≥ 60), chủ NPC gọi làm thêm; uy tín thấp → một số nơi không nhận.
 
 ---
 
@@ -400,7 +473,8 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 |---|---|
 | **Phase 1.5** ✅ | C1–C3, B2, H1 (cơ bản), phục vụ "Đưa hàng" |
 | **Phase 1.6 — Làm thật** ✅ | D1, D2, D3 · E1 · F1–F7, F9 · I1 · L1 |
-| **Phase 1.7 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · H1 nâng cấp (bưng cơm, giao hàng thật) |
-| **Phase 1.8 — Tuyển dụng (NPC trước)** | H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
+| **Phase 1.7 — Vào làm (không gian riêng)** 🚧 | W1–W5 (quán cơm 3 vai, giao hàng tận nơi) · W6 (quầy riêng) · W7 |
+| **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · H1 nâng cấp (bưng cơm, giao hàng thật) |
+| **Phase 1.9 — Tuyển dụng (NPC trước)** | H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
 | **Phase 2 — Nhiều người** | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
 | **Sau đó** | K1–K7 · I2 · I4 · I5 · F8 |

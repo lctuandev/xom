@@ -157,11 +157,84 @@ export const npcArchetypeSchema = z.object({
   likes: z.record(id, z.number().nonnegative()),
 });
 
+/** Một vai trong nơi làm (đứng quầy, thu ngân, bưng bê, giao hàng…). */
+export const jobRoleSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  description: z.string(),
+  /** Tiền cho mỗi việc làm đúng (một dĩa, một lượt tính tiền, một đơn giao…). */
+  piecePay: vnd,
+});
+
 export const jobSchema = z.object({
   id,
   name: z.string(),
+  /** Lương cứng mỗi giờ game — chỉ tính giờ nào có làm ít nhất một việc. */
   wagePerHour: vnd,
   description: z.string(),
+  roles: z.array(jobRoleSchema).min(1),
+  /** Lỗi + khách bỏ về trong một ca đến mức này thì chủ cho nghỉ. */
+  maxStrikes: z.number().int().positive(),
+});
+
+/** Quán cơm Cô Tư: món trong khay, dĩa khách gọi, đồ uống (docs/USECASES.md UC-W2…W4). */
+export const restaurantSchema = z.object({
+  foods: z.array(z.object({ id, name: z.string(), emoji: z.string(), model: z.string() })),
+  dishes: z.array(
+    z.object({
+      id,
+      name: z.string(),
+      items: z.array(id).min(1),
+      price: vnd,
+      popularity: z.number().positive(),
+    }),
+  ),
+  mods: z.array(
+    z.object({
+      id,
+      say: z.string(),
+      add: id.optional(),
+      remove: id.optional(),
+      price: z.number().int(),
+      chance: z.number(),
+    }),
+  ),
+  drinks: z.array(
+    z.object({ id, name: z.string(), emoji: z.string(), price: vnd, chance: z.number() }),
+  ),
+  /** Số phần mỗi khay trước khi phải báo bếp. */
+  trayPortions: z.number().int().positive(),
+  /** Bếp mang khay mới sau chừng này giây thật. */
+  refillSec: z.number().int().positive(),
+  tables: z.number().int().positive(),
+  /** Khách tới mỗi giờ game theo giờ (mỗi vai). */
+  customersPerHour: byHour,
+  patienceSec: z.number().int().positive(),
+});
+
+/** Bưu cục: địa chỉ giao, người nhận, hàng (UC-W5). */
+export const deliverySchema = z.object({
+  addresses: z.array(
+    z.object({
+      id,
+      label: z.string(),
+      position: z.object({ x: z.number(), z: z.number() }),
+      facing: z.number(),
+    }),
+  ),
+  recipients: z.array(z.string()).min(4),
+  relatives: z.array(z.string()).min(1),
+  items: z.array(z.object({ name: z.string(), fragile: z.boolean(), value: vnd })),
+  /** Tỉ lệ người nhận vắng nhà. */
+  absentRate: z.number().min(0).max(1),
+  /** Tỉ lệ đơn thu tiền hộ (COD). */
+  codRate: z.number().min(0).max(1),
+  /** Hàng dễ vỡ mà chạy nhanh thì xác suất bị móp. */
+  fragileDamageFast: z.number().min(0).max(1),
+  maxPerTrip: z.number().int().positive(),
+  /** Số gói trên kệ (1 đúng + gói khác để phải đọc mã). */
+  shelfSize: z.number().int().positive(),
 });
 
 const position = z.object({ x: z.number(), z: z.number() });
@@ -281,6 +354,8 @@ export const contentSchema = z.object({
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
+  restaurant: restaurantSchema,
+  delivery: deliverySchema,
   ingredients: z.array(ingredientSchema),
   places: z.array(placeSchema),
   speakers: z.array(npcSpeakerSchema),
@@ -299,6 +374,9 @@ export type TrafficProfile = z.infer<typeof trafficProfileSchema>;
 export type Lot = z.infer<typeof lotSchema>;
 export type NpcArchetype = z.infer<typeof npcArchetypeSchema>;
 export type Job = z.infer<typeof jobSchema>;
+export type JobRole = z.infer<typeof jobRoleSchema>;
+export type Restaurant = z.infer<typeof restaurantSchema>;
+export type Delivery = z.infer<typeof deliverySchema>;
 export type Economy = z.infer<typeof economySchema>;
 export type Place = z.infer<typeof placeSchema>;
 export type Ingredient = z.infer<typeof ingredientSchema>;
