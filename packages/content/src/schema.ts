@@ -179,6 +179,8 @@ export const jobSchema = z.object({
 });
 
 /** Quán cơm Cô Tư: món trong khay, dĩa khách gọi, đồ uống (docs/USECASES.md UC-W2…W4). */
+const point = z.object({ x: z.number(), z: z.number() });
+
 export const restaurantSchema = z.object({
   foods: z.array(z.object({ id, name: z.string(), emoji: z.string(), model: z.string() })),
   dishes: z.array(
@@ -211,6 +213,16 @@ export const restaurantSchema = z.object({
   /** Khách tới mỗi giờ game theo giờ (mỗi vai). */
   customersPerHour: byHour,
   patienceSec: z.number().int().positive(),
+  /** Sơ đồ trong quán (mét): cửa, hàng chờ, cửa bếp, quầy tính tiền, bàn (UC-W8). */
+  layout: z.object({
+    door: point,
+    queue: point,
+    queueStep: point,
+    pass: point,
+    cashier: point,
+    cashierStep: point,
+    tables: z.array(point).min(1),
+  }),
 });
 
 /** Bưu cục: địa chỉ giao, người nhận, hàng (UC-W5). */

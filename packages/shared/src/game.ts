@@ -219,6 +219,40 @@ export interface ServeTaskView extends TaskBase {
 
 export type TableState = "free" | "waiting" | "eating" | "dirty";
 
+/** Một khách trong quán (UC-W8): client diễn đi lại theo bước + thời điểm (giờ server). */
+export interface DinerView {
+  id: string;
+  name: string;
+  look: number;
+  stage:
+    | "entering"
+    | "queue"
+    | "to_table"
+    | "seated"
+    | "eating"
+    | "to_cashier"
+    | "paying"
+    | "leaving"
+    | "gone";
+  since: number;
+  table: number;
+  say: { text: string; tone: "ask" | "bad" | "good"; until: number } | null;
+  incident: "argue" | "dash" | null;
+  incidentAt: number;
+  /** Đang than chờ lâu (chưa được xin lỗi). */
+  complaining: boolean;
+  stars: number | null;
+}
+
+/** Dĩa ở cửa bếp chờ bưng (npc = đồng nghiệp đang bưng). */
+export interface PassView {
+  id: string;
+  table: number;
+  dish: string;
+  readyAt: number;
+  npc: boolean;
+}
+
 export type DeliveryStage =
   | "shelf"
   | "picked"
@@ -259,6 +293,11 @@ export interface ShiftStatsView {
   maxStrikes: number;
   /** Tiền đã nhận trong ca (lương cứng + tiền việc). */
   earned: number;
+  /** Đánh giá của khách trong ca (quán cơm). */
+  reviews: number;
+  stars: number;
+  /** Khách quỵt tiền trốn được. */
+  dashed: number;
 }
 
 export interface ShiftView {
@@ -279,6 +318,14 @@ export interface ShiftView {
   cashHeld: number;
   /** Đang chạy xe nhanh. */
   fast: boolean;
+  /** Quán sống động (UC-W8). */
+  diners: DinerView[];
+  pass: PassView[];
+  /** Dĩa mình đang cầm (id dĩa ở cửa bếp). */
+  holding: string[];
+  /** Giờ server lúc gửi (để client bù lệch đồng hồ) và hệ số thời gian của xóm (ms thật / phút game / 1000). */
+  now: number;
+  scale: number;
 }
 
 export interface PayslipView {
@@ -291,6 +338,10 @@ export interface PayslipView {
   piece: number;
   deductions: number;
   total: number;
+  /** Tiền khách boa trong ca. */
+  tips: number;
+  /** Trung bình sao khách đánh giá (null = chưa có). */
+  stars: number | null;
   reason: "stop" | "fired" | "day_end" | "left";
 }
 
@@ -372,6 +423,11 @@ const taskId = z.string().min(1).max(64);
 const cents = z.number().int().min(0).max(10_000_000);
 /** Mọi thao tác trong ca làm (một intent, phân biệt bằng kind). */
 export const workActSchema = z.discriminatedUnion("kind", [
+  // Quán sống động: cầm dĩa ở cửa bếp; xin lỗi khách than; can ngăn; gọi lại khách quỵt.
+  z.object({ kind: z.literal("grab"), taskId }),
+  z.object({ kind: z.literal("sorry"), taskId }),
+  z.object({ kind: z.literal("calm"), taskId }),
+  z.object({ kind: z.literal("callback"), taskId }),
   z.object({ kind: z.literal("plate"), taskId, items: z.array(contentId).max(20) }),
   z.object({ kind: z.literal("refill"), foodId: contentId }),
   z.object({

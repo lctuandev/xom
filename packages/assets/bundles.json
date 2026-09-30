@@ -72,7 +72,22 @@
             "wallWindow",
             "wallDoorway",
             "pottedPlant",
-            "rugRectangle"
+            "rugRectangle",
+            "ceilingFan",
+            "kitchenFridgeSmall",
+            "kitchenFridge",
+            "kitchenCabinetUpper",
+            "hoodLarge",
+            "kitchenSink",
+            "trashcan",
+            "lampSquareCeiling",
+            "doorwayFront",
+            "rugDoormat",
+            "plantSmall1",
+            "televisionVintage",
+            "radio",
+            "sideTable",
+            "kitchenMicrowave"
           ]
         },
         {

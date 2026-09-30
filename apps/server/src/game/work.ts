@@ -4,25 +4,39 @@ import { content } from "@xom/content";
 import type {
   CashierTaskView,
   DeliveryTaskView,
+  DinerView,
   PayslipView,
-  PlateTaskView,
-  ServeTaskView,
   ShiftView,
-  TableState,
   WorkAct,
 } from "@xom/shared";
 import {
+  annoy,
+  apologize,
+  callBack,
+  calm,
+  clean,
+  type Diner,
   decoyCodes,
   deliveryOrder,
   deliveryPay,
-  linesOf,
+  type Floor,
+  type FloorConfig,
+  type FloorEvent,
+  floorTick,
+  newFloor,
+  paid,
+  payingOf,
   pickPayment,
-  plateOrder,
-  restaurantArrivals,
+  plated,
+  queueOf,
+  type Role,
   ringTotal,
   sameItems,
   seededRandom,
+  served,
   settleCash,
+  tableStates,
+  waiterCanReach,
 } from "@xom/sim";
 import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -34,9 +48,8 @@ import { GameError, type RoomRuntime } from "./room.js";
 
 const R = () => content.data.restaurant;
 const D = () => content.data.delivery;
-const QUEUE_CAP = 5;
-/** Khách ăn xong sau chừng này phút game (thời gian trong thế giới, không phải phản xạ người chơi). */
-const EAT_MINUTES = 20;
+/** Hệ số thời gian của xóm: đồng hồ tăng tốc thì khách đi lại, ăn uống cũng nhanh theo. */
+const SCALE = Number(process.env.GAME_TICK_MS ?? 1000) / 1000;
 
 interface DeliveryState extends DeliveryTaskView {
   absent: boolean;
@@ -46,9 +59,15 @@ interface DeliveryState extends DeliveryTaskView {
   cash: number;
 }
 
-interface CashierState extends CashierTaskView {
-  lines: Record<string, number>;
-  total: number;
+/** Phiếu tính tiền của một khách (các dòng trên máy + tổng đúng). */
+function ticketOf(d: Diner) {
+  const r = R();
+  const dish = r.dishes.find((x) => x.id === d.order.dishId);
+  const mods = d.order.modIds.map((id) => r.mods.find((m) => m.id === id)?.say).filter(Boolean);
+  return [
+    [dish?.name, ...mods].join(", "),
+    ...d.order.drinkIds.map((id) => r.drinks.find((x) => x.id === id)?.name ?? id),
+  ];
 }
 
 export interface Shift {
@@ -59,16 +78,20 @@ export interface Shift {
   carry: number;
   lastDoneMinute: number;
   basePaidHour: number;
-  stats: { done: number; mistakes: number; walked: number; base: number; piece: number };
-  plates: PlateTaskView[];
+  stats: {
+    done: number;
+    mistakes: number;
+    walked: number;
+    base: number;
+    piece: number;
+    tips: number;
+  };
   trays: Record<string, number>;
   refilling: Record<string, number>;
-  cashier: CashierState[];
   /** Tiền trong ngăn kéo phải có (theo đúng giá) và tiền thực có (theo thao tác của thu ngân). */
   drawer: { expected: number; actual: number };
-  serve: ServeTaskView[];
-  tables: TableState[];
-  eatingUntil: number[];
+  /** Quán cơm: cả quán sống động (khách, dĩa, bàn, đồng nghiệp) — UC-W8. */
+  floor: Floor | null;
   deliveries: DeliveryState[];
   cashHeld: number;
   fast: boolean;
@@ -88,10 +111,34 @@ export interface WorkEmitter {
 }
 
 const strikesOf = (s: Shift) => s.stats.mistakes + Math.floor(s.stats.walked / 2);
-const customerName = (rand: () => number) => {
-  const npcs = content.data.npcs.filter((n) => n.id !== "reviewer");
-  return npcs[Math.floor(rand() * npcs.length)]?.name ?? "Khách";
-};
+const NAMES = () => content.data.npcs.filter((n) => n.id !== "reviewer").map((n) => n.name);
+
+function floorCfg(s: Shift): FloorConfig {
+  return {
+    r: R(),
+    scale: SCALE,
+    layout: R().layout,
+    role: s.role as Role,
+    names: NAMES(),
+    newId: randomUUID,
+  };
+}
+
+function dinerView(d: Diner): DinerView {
+  return {
+    id: d.id,
+    name: d.name,
+    look: d.look,
+    stage: d.stage,
+    since: d.since,
+    table: d.table,
+    say: d.say,
+    incident: d.incident,
+    incidentAt: d.incidentAt,
+    complaining: d.complained && !d.apologized,
+    stars: d.review?.stars ?? null,
+  };
+}
 
 @Injectable()
 export class WorkService {
@@ -110,6 +157,8 @@ export class WorkService {
     const s = room.shifts.get(playerId);
     if (!s) return null;
     const job = content.job(s.jobId);
+    const f = s.floor;
+    const now = Date.now();
     return {
       jobId: s.jobId,
       role: s.role,
@@ -120,17 +169,67 @@ export class WorkService {
         walked: s.stats.walked,
         strikes: strikesOf(s),
         maxStrikes: job.maxStrikes,
-        earned: s.stats.base + s.stats.piece,
+        earned: s.stats.base + s.stats.piece + s.stats.tips,
+        reviews: f?.stats.reviews ?? 0,
+        stars: f?.stats.stars ?? 0,
+        dashed: f?.stats.dashed ?? 0,
       },
-      plates: s.plates,
+      plates: f
+        ? queueOf(f).map((d) => ({
+            id: d.id,
+            customer: d.name,
+            text: d.order.text,
+            items: d.order.items,
+            createdAt: d.waitFrom,
+            expiresAt: d.waitFrom + d.patienceMs,
+          }))
+        : [],
       trays: s.trays,
       refilling: s.refilling,
-      cashier: s.cashier.map(({ lines: _l, total: _t, ...v }) => v),
-      serve: s.serve,
-      tables: s.tables,
+      cashier: f
+        ? payingOf(f).map(
+            (d): CashierTaskView => ({
+              id: d.id,
+              customer: d.name,
+              ticket: ticketOf(d),
+              pay: d.pay,
+              createdAt: d.waitFrom,
+              expiresAt: d.waitFrom + d.patienceMs,
+            }),
+          )
+        : [],
+      serve: f
+        ? f.pass
+            .filter((p) => p.npcTakenAt === null)
+            .map((p) => {
+              const d = f.diners.find((x) => x.id === p.dinerId);
+              return {
+                id: p.id,
+                customer: d?.name ?? "Khách",
+                table: p.table,
+                dish: p.dish,
+                createdAt: p.readyAt,
+                expiresAt: d && d.stage === "seated" ? d.waitFrom + d.patienceMs : now + 60_000,
+              };
+            })
+        : [],
+      tables: f ? tableStates(f, floorCfg(s)) : [],
       deliveries: s.deliveries.map(({ absent: _a, laterUntil: _l, cash: _c, ...v }) => v),
       cashHeld: s.cashHeld,
       fast: s.fast,
+      diners: f ? f.diners.map(dinerView) : [],
+      pass: f
+        ? f.pass.map((p) => ({
+            id: p.id,
+            table: p.table,
+            dish: p.dish,
+            readyAt: p.readyAt,
+            npc: p.npcTakenAt !== null,
+          }))
+        : [],
+      holding: f ? f.holding : [],
+      now,
+      scale: SCALE,
     };
   }
 
@@ -161,22 +260,18 @@ export class WorkService {
       carry: 0.6, // khách đầu tiên tới sớm
       lastDoneMinute: -1,
       basePaidHour: -1,
-      stats: { done: 0, mistakes: 0, walked: 0, base: 0, piece: 0 },
-      plates: [],
+      stats: { done: 0, mistakes: 0, walked: 0, base: 0, piece: 0, tips: 0 },
       trays,
       refilling: {},
-      cashier: [],
       drawer: { expected: 0, actual: 0 },
-      serve: [],
-      tables: Array.from({ length: R().tables }, () => "free" as TableState),
-      eatingUntil: Array.from({ length: R().tables }, () => 0),
+      floor: jobId === "phu_quan_com" ? newFloor(R().layout, Date.now()) : null,
       deliveries: [],
       cashHeld: 0,
       fast: false,
     };
     room.shifts.set(playerId, shift);
     await this.prisma.player.update({ where: { id: playerId }, data: { jobId } });
-    this.spawn(room, shift, 1);
+    await this.floorStep(room, shift);
     this.push(room, shift);
     this.emit?.say(room.id, place.id, place.keeper.greeting);
   }
@@ -224,7 +319,9 @@ export class WorkService {
       base: s.stats.base,
       piece: s.stats.piece,
       deductions,
-      total: s.stats.base + s.stats.piece - deductions,
+      total: s.stats.base + s.stats.piece + s.stats.tips - deductions,
+      tips: s.stats.tips,
+      stars: s.floor?.stats.reviews ? s.floor.stats.stars / s.floor.stats.reviews : null,
       reason,
     };
     this.emit?.shift(playerId, null);
@@ -237,17 +334,7 @@ export class WorkService {
   async tick(room: RoomRuntime) {
     const now = Date.now();
     for (const s of [...room.shifts.values()]) {
-      let changed = this.spawn(room, s, 1);
-      // Hết kiên nhẫn → khách bỏ về.
-      for (const list of [s.plates, s.cashier, s.serve] as { expiresAt: number; id: string }[][]) {
-        for (const t of [...list]) {
-          if (t.expiresAt > now) continue;
-          list.splice(list.indexOf(t), 1);
-          s.stats.walked++;
-          changed = true;
-          if ("table" in t) s.tables[(t as ServeTaskView).table - 1] = "free";
-        }
-      }
+      let changed = await this.floorStep(room, s);
       for (const [food, at] of Object.entries(s.refilling)) {
         if (at > now) continue;
         s.trays[food] = R().trayPortions;
@@ -259,12 +346,6 @@ export class WorkService {
           `Khay ${content.data.restaurant.foods.find((f) => f.id === food)?.name.toLowerCase()} mới ra nè!`,
         );
       }
-      s.tables.forEach((st, i) => {
-        if (st === "eating" && (s.eatingUntil[i] ?? 0) <= room.minute) {
-          s.tables[i] = "dirty";
-          changed = true;
-        }
-      });
       // Lương cứng: giờ nào có làm ít nhất một việc.
       const hour = Math.floor(room.minute / 60);
       if (
@@ -291,66 +372,30 @@ export class WorkService {
     }
   }
 
-  /** Sinh khách/việc theo giờ (quán cơm) cho `minutes` phút game; giao hàng thì nhận đơn chủ động. */
-  private spawn(room: RoomRuntime, s: Shift, minutes: number): boolean {
-    if (s.jobId !== "phu_quan_com") return false;
-    const { arrivals, carry } = restaurantArrivals(R(), room.minute, minutes, s.carry);
-    s.carry = carry;
-    const now = Date.now();
-    const patience = R().patienceSec * 1000;
-    let changed = false;
-    for (let k = 0; k < arrivals; k++) {
-      const rand = seededRandom("work", s.playerId, room.day, room.minute, k);
-      const order = plateOrder(R(), rand);
-      const base = {
-        id: randomUUID(),
-        customer: customerName(rand),
-        createdAt: now,
-        expiresAt: now + patience,
-      };
-      if (s.role === "dung_quay") {
-        if (s.plates.length >= QUEUE_CAP) {
-          s.stats.walked++;
-          continue;
-        }
-        s.plates.push({ ...base, text: order.text, items: order.items });
-      } else if (s.role === "thu_ngan") {
-        if (s.cashier.length >= QUEUE_CAP) {
-          s.stats.walked++;
-          continue;
-        }
-        const dish = R().dishes.find((d) => d.id === order.dishId);
-        const mods = order.modIds
-          .map((id) => R().mods.find((m) => m.id === id)?.say)
-          .filter(Boolean);
-        const ticket = [
-          [dish?.name, ...mods].join(", "),
-          ...order.drinkIds.map((id) => R().drinks.find((d) => d.id === id)?.name ?? id),
-        ];
-        s.cashier.push({
-          ...base,
-          ticket,
-          pay: pickPayment(order.total, 0.3, rand),
-          lines: linesOf(order),
-          total: order.total,
-        });
-      } else if (s.role === "bung_be") {
-        const free = s.tables.map((t, i) => (t === "free" ? i : -1)).filter((i) => i >= 0);
-        if (free.length === 0) {
-          s.stats.walked++; // hết bàn trống (bàn bẩn chưa dọn) → khách đi
-          continue;
-        }
-        const idx = free[Math.floor(rand() * free.length)] ?? 0;
-        s.tables[idx] = "waiting";
-        s.serve.push({
-          ...base,
-          table: idx + 1,
-          dish: R().dishes.find((d) => d.id === order.dishId)?.name ?? "Cơm",
-        });
+  /** Một nhịp của quán sống động: khách tới, đi lại, ăn, trả tiền, gây chuyện; đồng nghiệp làm phần của họ. */
+  private async floorStep(room: RoomRuntime, s: Shift): Promise<boolean> {
+    if (!s.floor) return false;
+    const rand = seededRandom("floor", s.playerId, room.day, room.minute, Date.now());
+    const events = floorTick(s.floor, floorCfg(s), { now: Date.now(), minute: room.minute, rand });
+    await this.floorEvents(room, s, events);
+    return true;
+  }
+
+  private async floorEvents(room: RoomRuntime, s: Shift, events: FloorEvent[]) {
+    for (const e of events) {
+      if (e.kind === "walked") s.stats.walked++;
+      else if (e.kind === "dashed") s.stats.walked++;
+      else if (e.kind === "review" && e.tip > 0) {
+        await this.pay(room, s, e.tip, "tip");
+        this.emit?.say(room.id, s.placeId, `Khách boa ${e.tip / 1000}k — chia cho con nè!`);
       }
-      changed = true;
     }
-    return changed;
+  }
+
+  private diner(s: Shift, id: string): Diner {
+    const d = s.floor?.diners.find((x) => x.id === id);
+    if (!d || d.stage === "gone") throw new GameError("invalid_state", "Khách này đi rồi");
+    return d;
   }
 
   // ───────────────────────── Thao tác ─────────────────────────
@@ -373,23 +418,25 @@ export class WorkService {
     switch (a.kind) {
       case "plate": {
         this.need(s, "dung_quay");
-        const t = s.plates.find((x) => x.id === a.taskId);
-        if (!t) throw new GameError("invalid_state", "Khách này đi rồi");
+        const f = this.floor(s);
+        const d = queueOf(f)[0];
+        if (!d || d.id !== a.taskId) throw new GameError("invalid_state", "Khách này đi rồi");
         // Mỗi lần múc lấy một phần trong khay (múc sai cũng tốn).
         const use = new Map<string, number>();
-        for (const f of a.items) use.set(f, (use.get(f) ?? 0) + 1);
-        for (const [f, n] of use) {
-          if ((s.trays[f] ?? 0) < n)
+        for (const x of a.items) use.set(x, (use.get(x) ?? 0) + 1);
+        for (const [x, n] of use) {
+          if ((s.trays[x] ?? 0) < n)
             throw new GameError("invalid_state", "Khay hết món — báo bếp đã");
         }
-        for (const [f, n] of use) s.trays[f] = (s.trays[f] ?? 0) - n;
-        if (!sameItems(a.items, t.items)) {
+        for (const [x, n] of use) s.trays[x] = (s.trays[x] ?? 0) - n;
+        if (!sameItems(a.items, d.order.items)) {
           s.stats.mistakes++;
+          annoy(d, 0.1, "múc sai");
           return { ok: false, line: "Ủa, con đâu có kêu vậy! Múc lại giùm con.", pay: 0 };
         }
-        s.plates.splice(s.plates.indexOf(t), 1);
+        plated(f, d, Date.now(), floorCfg(s));
         await this.pay(room, s, piece, "piece");
-        return { ok: true, line: "Cảm ơn con nha!", pay: piece };
+        return { ok: true, line: `Cảm ơn con! Con ngồi bàn ${d.table} nha.`, pay: piece };
       }
       case "refill": {
         this.need(s, "dung_quay");
@@ -400,63 +447,127 @@ export class WorkService {
       }
       case "ring": {
         this.need(s, "thu_ngan");
-        const t = s.cashier.find((x) => x.id === a.taskId);
-        if (!t) throw new GameError("invalid_state", "Khách này đi rồi");
+        const f = this.floor(s);
+        const d = payingOf(f).find((x) => x.id === a.taskId);
+        if (!d) throw new GameError("invalid_state", "Khách này đi rồi");
+        const total = d.order.total;
         let rung: number;
         try {
           rung = ringTotal(R(), a.lines);
         } catch {
           throw new GameError("invalid_payload", "Máy tính tiền không có món này");
         }
-        if (rung > t.total) {
+        if (rung > total) {
           // Khách thấy tính dư → phàn nàn, bấm lại.
           s.stats.mistakes++;
+          annoy(d, 0.1, "tính dư tiền");
           return { ok: false, line: "Tính dư rồi em ơi, coi lại giùm!", pay: 0 };
         }
         // Tính thiếu thì khách lặng lẽ trả theo giá báo — quán mất tiền (lộ ra khi kiểm két).
-        s.cashier.splice(s.cashier.indexOf(t), 1);
-        s.drawer.expected += t.total;
+        s.drawer.expected += total;
         let line = "Cảm ơn em!";
-        if (t.pay.kind === "transfer") {
+        if (d.pay.kind === "transfer") {
           s.drawer.actual += rung;
         } else {
           const { received, outcome } = settleCash(
             rung,
-            t.pay.bill,
+            d.pay.bill,
             a.change ?? 0,
-            seededRandom("ring", t.id),
+            seededRandom("ring", d.id),
           );
           s.drawer.actual += received;
           if (outcome === "short") {
             s.stats.mistakes++;
+            annoy(d, 0.2, "thối thiếu");
             line = "Thối thiếu rồi em, đưa đủ đây!";
           } else if (outcome === "over_returned") line = "Em thối dư nè, trả lại nè.";
         }
+        const review = paid(f, floorCfg(s), d, Date.now(), seededRandom("review", d.id));
+        await this.floorEvents(room, s, [review]);
         await this.pay(room, s, piece, "piece");
         return { ok: true, line, pay: piece };
       }
+      case "grab": {
+        this.need(s, "bung_be");
+        const f = this.floor(s);
+        const now = Date.now();
+        const p = f.pass.find((x) => x.id === a.taskId && x.npcTakenAt === null);
+        if (!p || p.readyAt > now)
+          throw new GameError("invalid_state", "Dĩa này chưa ra hoặc bưng rồi");
+        if (f.holding.includes(p.id)) return { ok: true, line: "Đang cầm rồi mà.", pay: 0 };
+        if (f.holding.length >= 2)
+          return { ok: false, line: "Hai tay cầm hai dĩa rồi, bưng đi đã!", pay: 0 };
+        if (!waiterCanReach(f, floorCfg(s), R().layout.pass, now))
+          throw new GameError("invalid_state", "Đi tới cửa bếp đã");
+        f.holding.push(p.id);
+        f.waiter = { at: R().layout.pass, t: now };
+        return { ok: true, line: `Dĩa bàn ${p.table} nè!`, pay: 0 };
+      }
       case "serve": {
         this.need(s, "bung_be");
-        const t = s.serve.find((x) => x.id === a.taskId);
-        if (!t) throw new GameError("invalid_state", "Dĩa này bưng rồi");
-        if (a.table !== t.table) {
+        const f = this.floor(s);
+        const now = Date.now();
+        const p = f.pass.find((x) => x.id === a.taskId);
+        if (!p || !f.holding.includes(p.id))
+          throw new GameError("invalid_state", "Chưa cầm dĩa này");
+        const at = R().layout.tables[a.table - 1];
+        if (!at) throw new GameError("invalid_payload", "Không có bàn này");
+        if (!waiterCanReach(f, floorCfg(s), at, now))
+          throw new GameError("invalid_state", "Chưa tới bàn");
+        f.waiter = { at, t: now };
+        if (a.table !== p.table) {
           s.stats.mistakes++;
+          const wrong = f.diners.find(
+            (d) => d.table === a.table && (d.stage === "seated" || d.stage === "eating"),
+          );
+          if (wrong) annoy(wrong, 0.05, "bưng nhầm bàn");
           return { ok: false, line: `Bàn ${a.table}: ủa đâu phải của tụi con!`, pay: 0 };
         }
-        s.serve.splice(s.serve.indexOf(t), 1);
-        s.tables[t.table - 1] = "eating";
-        s.eatingUntil[t.table - 1] = room.minute + EAT_MINUTES;
+        served(f, p, now, room.minute);
         await this.pay(room, s, piece, "piece");
         return { ok: true, line: "Cảm ơn nha!", pay: piece };
       }
       case "clean": {
         this.need(s, "bung_be");
-        if (s.tables[a.table - 1] !== "dirty")
-          return { ok: false, line: "Bàn này sạch rồi mà.", pay: 0 };
-        s.tables[a.table - 1] = "free";
+        const f = this.floor(s);
+        const now = Date.now();
+        const at = R().layout.tables[a.table - 1];
+        if (!at) throw new GameError("invalid_payload", "Không có bàn này");
+        if (!waiterCanReach(f, floorCfg(s), at, now))
+          throw new GameError("invalid_state", "Chưa tới bàn");
+        f.waiter = { at, t: now };
+        if (!clean(f, a.table)) return { ok: false, line: "Bàn này sạch rồi mà.", pay: 0 };
         const pay = Math.round(piece / 2);
         await this.pay(room, s, pay, "piece");
         return { ok: true, line: "Bàn sạch bong!", pay };
+      }
+      case "sorry": {
+        const d = this.diner(s, a.taskId);
+        if (!apologize(d, Date.now()))
+          return { ok: false, line: "Khách đâu có than gì đâu.", pay: 0 };
+        return { ok: true, line: "Dạ con xin lỗi, có liền!", pay: 0 };
+      }
+      case "calm": {
+        const f = this.floor(s);
+        const d = this.diner(s, a.taskId);
+        const now = Date.now();
+        // Bưng bê phải đi tới tận bàn; vai khác đứng tại chỗ nói vọng ra.
+        if (s.role === "bung_be") {
+          const at = R().layout.tables[d.table - 1];
+          if (at && !waiterCanReach(f, floorCfg(s), at, now))
+            throw new GameError("invalid_state", "Chưa tới bàn");
+          if (at) f.waiter = { at, t: now };
+        }
+        if (!calm(d, now)) return { ok: false, line: "Yên rồi mà.", pay: 0 };
+        s.lastDoneMinute = room.minute;
+        return { ok: true, line: "Dạ thôi mà anh chị, bỏ qua giùm quán nha!", pay: 0 };
+      }
+      case "callback": {
+        const d = this.diner(s, a.taskId);
+        if (!callBack(floorCfg(s), d, Date.now()))
+          return { ok: false, line: "Khách đi mất rồi…", pay: 0 };
+        s.lastDoneMinute = room.minute;
+        return { ok: true, line: "Anh ơi, chưa tính tiền nè!", pay: 0 };
       }
       case "take": {
         this.need(s, "giao_hang");
@@ -642,6 +753,11 @@ export class WorkService {
     }
   }
 
+  private floor(s: Shift): Floor {
+    if (!s.floor) throw new GameError("invalid_state", "Việc này chỉ có ở quán cơm");
+    return s.floor;
+  }
+
   private need(s: Shift, role: string) {
     if (s.role !== role)
       throw new GameError("invalid_state", "Việc này không phải của vai bạn đang làm");
@@ -656,7 +772,7 @@ export class WorkService {
   }
 
   /** Trả tiền cho người làm (lương cứng / tiền việc) qua sổ cái. */
-  private async pay(room: RoomRuntime, s: Shift, amount: number, reason: "wage" | "piece") {
+  private async pay(room: RoomRuntime, s: Shift, amount: number, reason: "wage" | "piece" | "tip") {
     if (amount <= 0) return;
     await this.prisma.$transaction(async (tx) => {
       await this.ledger.transfer(
@@ -667,8 +783,14 @@ export class WorkService {
         reason,
         s.jobId,
       );
-      await addToReport(tx, s.playerId, room.day, { wages: amount });
+      await addToReport(
+        tx,
+        s.playerId,
+        room.day,
+        reason === "tip" ? { tips: amount } : { wages: amount },
+      );
     });
     if (reason === "piece") s.stats.piece += amount;
+    if (reason === "tip") s.stats.tips += amount;
   }
 }

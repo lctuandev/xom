@@ -1024,6 +1024,23 @@ export const data: ContentInput = {
       "21": 2,
     },
     patienceSec: 45,
+    // Quầy cơm ở z = 0 (bếp phía sau, z > 0), phòng ăn phía trước (z < 0), cửa ra vào ở tường trái.
+    layout: {
+      door: { x: -6.6, z: -2.4 },
+      queue: { x: -0.2, z: -1.0 },
+      queueStep: { x: -0.75, z: -0.35 },
+      pass: { x: -2.4, z: -0.6 },
+      cashier: { x: 2.3, z: -1.0 },
+      cashierStep: { x: 0.7, z: -0.35 },
+      tables: [
+        { x: -2.9, z: -3.8 },
+        { x: 0, z: -3.8 },
+        { x: 2.9, z: -3.8 },
+        { x: -2.9, z: -6.4 },
+        { x: 0, z: -6.4 },
+        { x: 2.9, z: -6.4 },
+      ],
+    },
   },
 
   // Nhà trong xóm để giao hàng: trước mặt tiền, hai bên phố (Street.tsx).

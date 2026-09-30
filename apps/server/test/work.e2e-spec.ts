@@ -141,20 +141,52 @@ describe("Vào làm (e2e)", () => {
     s.disconnect();
   });
 
-  it("bưng bê: đặt nhầm bàn bị nhắc; đúng bàn có tiền; bàn ăn xong phải dọn", async () => {
+  it("bưng bê: cầm dĩa ở cửa bếp, đi tới bàn; nhầm bàn bị nhắc; ăn xong dọn bàn", async () => {
     const s = await join(url);
     await emit(s, "work:start", { jobId: "phu_quan_com", role: "bung_be" });
-    const v = await waitShift(s, (x) => x.serve.length > 0);
-    const t = v.serve[0];
+    // Cô Tư múc cho khách → dĩa ra cửa bếp.
+    const v = await waitShift(s, (x) => x.pass.some((p) => p.readyAt <= x.now));
+    const t = v.pass.find((p) => p.readyAt <= v.now);
     if (!t) throw new Error("không có dĩa");
+    // Chưa cầm mà đặt → không được.
+    expect((await act(s, { kind: "serve", taskId: t.id, table: t.table })).ok).toBe(false);
+    const grab = await act(s, { kind: "grab", taskId: t.id });
+    expect(grab.ok && grab.data.shift?.holding).toEqual([t.id]);
     const wrongTable = (t.table % R.tables) + 1;
-    expect((await act(s, { kind: "serve", taskId: t.id, table: wrongTable })).ok).toBe(true);
+    await new Promise((r) => setTimeout(r, 60)); // đi bộ (đồng hồ test nhanh gấp 100)
+    const wrong = await act(s, { kind: "serve", taskId: t.id, table: wrongTable });
+    expect(wrong.ok && wrong.data).toMatchObject({
+      ok: false,
+      line: expect.stringMatching(/đâu phải/),
+    });
+    await new Promise((r) => setTimeout(r, 60));
     const right = await act(s, { kind: "serve", taskId: t.id, table: t.table });
     expect(right.ok && right.data).toMatchObject({ ok: true, pay: 2_000 });
     expect(right.ok && right.data.shift?.tables[t.table - 1]).toBe("eating");
+    expect(right.ok && right.data.shift?.diners.find((d) => d.table === t.table)?.stage).toBe(
+      "eating",
+    );
     await waitShift(s, (x) => x.tables[t.table - 1] === "dirty");
+    await new Promise((r) => setTimeout(r, 60));
     const clean = await act(s, { kind: "clean", table: t.table });
     expect(clean.ok && clean.data).toMatchObject({ ok: true, pay: 1_000 });
+    await emit(s, "work:stop", {});
+    s.disconnect();
+  });
+
+  it("quán sống động: khách ăn xong tới quầy trả tiền, ra về có đánh giá; xin lỗi khách than", async () => {
+    const s = await join(url);
+    await emit(s, "work:start", { jobId: "phu_quan_com", role: "thu_ngan" });
+    const v = await waitShift(s, (x) => x.cashier.length > 0);
+    const t = v.cashier[0];
+    if (!t) throw new Error("không có khách");
+    // Khách đó đã đi hết vòng: vào → xếp hàng → Cô Tư múc → ngồi → bé Út bưng → ăn → tới quầy.
+    expect(v.diners.find((d) => d.id === t.id)?.stage).toBe("paying");
+    expect((await act(s, { kind: "sorry", taskId: t.id })).ok && true).toBe(true);
+    const done = await waitShift(s, (x) => x.stats.reviews > 0 || x.stats.walked > 0);
+    expect(done.stats.reviews + done.stats.walked).toBeGreaterThan(0);
+    const reviewed = done.diners.find((d) => d.stars !== null);
+    if (reviewed) expect(reviewed.stage === "leaving" || reviewed.stage === "gone").toBe(true);
     await emit(s, "work:stop", {});
     s.disconnect();
   });

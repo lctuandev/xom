@@ -88,6 +88,38 @@
 ### UC-B5 · Sự kiện trong xóm ⏳
 Hội chợ đêm cuối tuần · đám cưới trong hẻm (đặt 50 phần bánh mì) · tan trường sớm · mất điện (trà sữa không có đá) · kiểm tra vệ sinh an toàn thực phẩm. Chi tiết ở nhóm K.
 
+### UC-B6 · Xóm rộng, đường xá ra đường xá ⏳ (Phase 1.10)
+> Người chơi yêu cầu: map chuẩn chỉnh hơn, đường xá phân chia hợp lý, map rộng hơn, nhiều cảnh vật hơn.
+
+**Bố cục (khoảng 3×2 dãy phố):** một **đường lớn** hai chiều có vạch, ngã tư có **đèn giao thông + vạch sang đường**, hai **đường nhánh**
+và **hẻm** nhỏ (chỉ đi bộ/xe máy) dẫn vào khu nhà ở; **chợ** có mái, **công viên** nhỏ (cây, ghế đá), **trường học** (cổng trường),
+**toà văn phòng**, **bãi giữ xe**, dãy **nhà phố** (tầng trệt buôn bán, trên ở), quán cà phê vỉa hè.
+Vỉa hè rộng để bày sạp; cột điện dây chằng chịt, biển hiệu, mái hiên, dù che, ghế nhựa đỏ/xanh.
+**Luật:** bản đồ khai báo trong `packages/content` (đường, lô, khu) — thêm khu mới bằng dữ liệu; mỗi lô bán có hướng mặt tiền;
+người đi bộ trên vỉa hè/hẻm, sang đường ở vạch; xe chạy trên làn đường.
+**Hiệu năng:** gộp mesh theo khu (instancing), vật ở xa bỏ bớt chi tiết; giữ ngân sách draw call mobile (PLAN §1).
+
+### UC-B7 · Góc nhìn tự do ⏳
+Chụm 2 ngón: zoom; **xoay 2 ngón**: xoay quanh nhân vật (0–360°); **kéo 2 ngón lên/xuống**: nghiêng (nhìn cao từ trên ↔ gần ngang tầm người);
+nút 🧭 đưa về hướng bắc; nút 🎥 đổi nhanh 3 kiểu nhìn (trên cao / sau lưng / cận cảnh). Tường/nhà che nhân vật thì làm mờ.
+
+### UC-B8 · Ngày và đêm ⏳
+Trời sáng dần từ 05:30, trưa nắng gắt, chiều vàng, **tối từ 18:00**: trời xanh thẫm, **đèn đường bật** (vầng sáng dưới cột),
+cửa sổ nhà sáng đèn, bảng hiệu quán sáng, sạp đêm treo bóng đèn. Ngày chơi kéo tới 23:00 để có chợ đêm.
+**Luật:** ánh sáng theo phút game của xóm (server); thiết bị yếu thì giảm số đèn thật (dùng vầng sáng giả).
+
+### UC-B9 · Sạp đồ ăn theo giờ ⏳
+**Sáng (06–10h):** xôi, bánh mì, phở, cà phê cóc. **Trưa (10–14h):** cơm tấm, bún, nước mía. **Chiều (14–18h):** bánh tráng trộn, trà sữa, chè.
+**Tối (18–23h):** ốc, lẩu, nướng, hột vịt lộn — bàn ghế nhựa bày ra vỉa hè.
+Sạp NPC tự dọn ra/dọn vào đúng giờ (thấy người bày hàng, dọn hàng); người chơi mở quầy cùng giờ thì cạnh tranh khách.
+
+### UC-B10 · Cảnh sinh hoạt ⏳
+NPC có việc để làm: đi làm buổi sáng, học sinh tan trường, người mua đồ ăn sáng đứng chờ, ngồi ghế nhựa ăn, uống cà phê, vào nhà hàng
+rồi đi ra, chạy xe máy trên đường, dừng đèn đỏ, người bán dạo đẩy xe. Người chơi **làm khách**: mua đồ ăn ở sạp NPC (tốn tiền, ngồi ăn),
+**vào quán cơm Cô Tư ngồi ăn** (thấy quán sống động từ phía khách), trò chuyện với người ngồi cùng bàn.
+
+**Thứ tự làm (mỗi bước deploy):** B8 ngày/đêm + đèn → B7 góc nhìn → B6 map rộng + đường xá → B9 sạp theo giờ → B10 cảnh sinh hoạt & làm khách.
+
 ---
 
 ## C. Kịch bản người mới (Chú Bảy)
@@ -408,7 +440,7 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 **Đã làm:** nhận tối đa 3 đơn, soạn đúng mã trên kệ (gói giống nhau), ra phố có biển số nhà + ghim, chạy nhanh/chậm (hàng dễ vỡ móp → từ chối), gọi khách, người mở cửa (chính chủ / người nhà / người lạ), đưa điện thoại ký nhận có nét ký, từ chối người lạ → hẹn lại, thu hộ + thối tiền, vắng nhà (gửi hàng xóm / hẹn lại / hoàn), về nộp tiền (thiếu thì trừ tiền chuyến), tiền chuyến theo khoảng cách. **Chưa:** khách thiếu tiền COD, mưa, giờ hẹn giao, model xe máy.
 **Kiểm chứng:** e2e server `work.e2e-spec.ts` (cả chuyến); Playwright `giao-hang.spec.ts` một chuyến đủ bước (iPhone 16 Pro + Pixel 7).
 
-### UC-W8 · Quán sống động — khách thật sự đi, ngồi, ăn, trả tiền, đánh giá, gây chuyện 🚧
+### UC-W8 · Quán sống động — khách thật sự đi, ngồi, ăn, trả tiền, đánh giá, gây chuyện ✅ (bản đầu)
 > Người chơi yêu cầu: bấm là **thấy hành động diễn ra** (bê dĩa đi tới bàn), khách ra vào quán, quán chi tiết như thật,
 > góc nhìn rộng quan sát được khách; **mỗi vị trí có góc nhìn, cách di chuyển, thao tác riêng**.
 
@@ -436,6 +468,15 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 
 **Quán chi tiết hơn:** gạch lát, tường ốp gạch men nửa dưới, bảng thực đơn có giá, quạt trần quay, đèn tuýp, bàn thờ Thần Tài,
 tủ nước ngọt có đèn, nồi cơm điện, ống đũa – hũ ớt – hộp khăn giấy trên bàn, cửa kính có biển "ĐANG MỞ CỬA", cửa sổ nhìn ra phố.
+
+**Đã làm:** máy trạng thái khách `packages/sim/src/floor.ts` (thời gian co giãn theo đồng hồ xóm); đồng nghiệp NPC (Cô Tư múc, chị thu ngân,
+bé Út bưng + dọn bàn); khách than → xin lỗi; gây lộn → can ngăn (bưng bê phải đi tới bàn); quỵt → gọi lại; đánh giá ⭐ + boa 5⭐;
+server kiểm thời gian đi bộ của bưng bê (cửa bếp ↔ bàn); camera riêng từng vai (đứng quầy/thu ngân nhìn qua quầy, bưng bê camera đi theo),
+chạm sàn để đi, chạm dĩa/bàn để tự đi tới làm; quán có gạch bông, ốp gạch men, cửa ra phố, cửa sổ, bảng giá, quạt trần quay,
+bàn thờ Thần Tài, TV, tủ nước ngọt, bếp có máy hút mùi, bồn rửa, tủ lạnh, nồi cơm.
+**Chưa:** hoạt ảnh múc/ăn (tay), dĩa vơi dần, khách say, nhiều người chơi cùng làm một quán (Phase 2), bưu cục sống động tương tự.
+**Kiểm chứng:** unit `floor.test.ts` (vòng đời, than/xin lỗi, quỵt, gây lộn, bàn/đi bộ); e2e server `work.e2e-spec.ts`
+(bưng bê cầm dĩa → đi tới bàn, khách trả tiền ra về có đánh giá); Playwright `nguoi-moi-lam-thue.spec.ts` (3 vai, iPhone 16 Pro + Pixel 7).
 
 ### UC-W6 · Quầy riêng của mình — không gian sau xe hàng ⏳
 Vào quầy (đứng sau xe bánh mì) → camera ngang tầm mắt từ sau tủ kính: thấy khay nguyên liệu, ổ bánh trên thớt, khách đứng trước quầy. Các bước làm món (UC-F4) diễn ra **trên mô hình 3D**: chạm ổ bánh → dao xẻ; chạm khay pa-tê → phết; thứ gì cho vào hiện trên ổ bánh; gói giấy → đưa qua quầy cho khách. Trà sữa: ly lên máy dán nắp, lắc bằng thao tác kéo lên-xuống.
@@ -535,8 +576,8 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 |---|---|
 | **Phase 1.5** ✅ | C1–C3, B2, H1 (cơ bản), phục vụ "Đưa hàng" |
 | **Phase 1.6 — Làm thật** ✅ | D1, D2, D3 · E1 · F1–F7, F9 · I1 · L1 |
-| **Phase 1.7 — Vào làm (không gian riêng)** ✅ | W1–W5 (quán cơm 3 vai, giao hàng tận nơi) · phiếu lương ca (một phần W7) |
-| **Tiếp theo (khuyến nghị): Phase 2 — Nhiều người** | xem dòng Phase 2 bên dưới |
+| **Phase 1.7 — Vào làm (không gian riêng)** ✅ | W1–W5 (quán cơm 3 vai, giao hàng tận nơi) · phiếu lương ca (một phần W7) · W8 quán sống động |
+| **Phase 1.10 — Xóm lớn sống động** ⏳ | B6 map rộng, đường xá · B7 góc nhìn tự do · B8 ngày/đêm, đèn · B9 sạp theo giờ · B10 cảnh sinh hoạt, làm khách |
 | **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · W6 (quầy riêng 3D) |
 | **Phase 1.9 — Tuyển dụng (NPC trước)** | W7 (uy tín người làm) · H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
 | **Phase 2 — Nhiều người** 🚧 (J1–J3 ✅) | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |

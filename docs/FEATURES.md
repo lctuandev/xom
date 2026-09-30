@@ -57,7 +57,11 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Địa điểm có người đứng quầy (vựa xe, chợ, quán cơm, bưu cục) | ✅ | 1.5 | Phải đi tới tận nơi |
 | Nhà có số (địa chỉ giao hàng) | ✅ | 1.7 | UC-W5 · biển số nhà, ghim đơn kế tiếp |
 | Không gian riêng khi vào làm (nội thất, camera ngang tầm mắt) | ✅ | 1.7 | UC-W1 · quán cơm Cô Tư, bưu cục Anh Tám |
-| Hẻm, công viên, trường học, văn phòng, bãi xe | ⏳ | 3 | Sinh xóm procedural (PLAN Phase 5) |
+| Xóm rộng: đường lớn, ngã tư đèn giao thông, đường nhánh, hẻm, chợ, công viên, trường, văn phòng, bãi xe | ⏳ | 1.10 | UC-B6 · bản đồ khai báo trong content |
+| Góc nhìn tự do: zoom, xoay, nghiêng, đổi kiểu nhìn | ⏳ | 1.10 | UC-B7 |
+| Ngày/đêm: trời theo giờ, đèn đường, cửa sổ sáng, bảng hiệu sáng | ⏳ | 1.10 | UC-B8 |
+| Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ⏳ | 1.10 | UC-B9 |
+| Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | ⏳ | 1.10 | UC-B10 |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
 | Thời tiết (mưa, nắng) | ⏳ | 1.9 | UC-B4 |
 | Tương tác vật thể: ngồi, nhặt, đặt, mở cửa | ⏳ | 2–3 | |
@@ -89,6 +93,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Quầy riêng có không gian 3D khi đứng bán | ⏳ | 1.8 | UC-W6 |
 | Dịch vụ: sửa xe (SERVICE) | ⏳ | 1.8 | UC-G |
 | Làm thuê quán cơm: đứng quầy múc cơm, thu ngân, bưng bê | ✅ | 1.7 | UC-W2…W4 |
+| Quán sống động: khách vào/ra, ngồi ăn, trả tiền, đánh giá ⭐, than/gây lộn/quỵt; đồng nghiệp NPC; camera + di chuyển riêng từng vai | ✅ | 1.7 | UC-W8 |
 | Giao hàng (DELIVERY) — làm thuê: soạn gói, chạy xe, ký nhận, thu hộ | ✅ | 1.7 | UC-W5 |
 | Nhân viên cho quầy của mình | ⏳ | 1.9 | UC-H |
 | Nhiều quầy, chuỗi cửa hàng | 💤 | 3 | |
@@ -146,6 +151,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | NPC khách: kiểu người, kiên nhẫn, trả tiền mặt/chuyển khoản, nói theo giá | ✅ | 1.6 | |
+| NPC khách trong quán: đi lại, ngồi ăn, than chờ lâu, cãi nhau, quỵt tiền, đánh giá | ✅ | 1.7 | UC-W8 |
+| NPC đồng nghiệp làm các vị trí người chơi không làm | ✅ | 1.7 | UC-W8 |
 | NPC chủ địa điểm có lời thoại, thân thiết | ✅ | 1.6 | |
 | NPC dẫn đường (Chú Bảy) + kịch bản | ✅ | 1.5 | |
 | NPC có ngân sách, lịch sinh hoạt, quầy yêu thích, nhớ quầy | ⏳ | 1.9 | Khách quen (UC-F3) |

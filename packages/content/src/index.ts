@@ -113,6 +113,8 @@ export function loadContent(raw: unknown): Content {
     for (const f of [m.add, m.remove])
       if (f && !foods.has(f)) errors.push(`quán cơm: yêu cầu ${m.id} dùng ${f} không có`);
   }
+  if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
+    errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
   for (const j of parsed.jobs) {
     if (!parsed.places.some((pl) => pl.jobs.includes(j.id)))
       errors.push(`việc ${j.id}: không có địa điểm nhận việc`);

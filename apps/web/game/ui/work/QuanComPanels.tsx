@@ -271,45 +271,40 @@ function Register({ task, queue }: { task: CashierTaskView; queue: number }) {
   );
 }
 
-/** Bưng bê (UC-W4): chọn dĩa ở cửa bếp → đặt đúng bàn; dọn bàn khách ăn xong. */
+/**
+ * Bưng bê (UC-W4, W8): chạm dĩa ở cửa bếp → nhân vật đi tới cầm (tối đa 2 dĩa) → chạm bàn → đi tới đặt.
+ * Bàn bẩn thì chạm để đi tới dọn. Làm được cả bằng chạm trong cảnh 3D lẫn các nút dưới đây.
+ */
 export function WaiterPanel({
   shift,
-  holding,
-  setHolding,
+  onPass,
+  onTable,
 }: {
   shift: ShiftView;
-  holding: string | null;
-  setHolding: (id: string | null) => void;
+  onPass: (id: string) => void;
+  onTable: (table: number) => void;
 }) {
-  const task = shift.serve.find((t) => t.id === holding);
-  const [busy, setBusy] = useState(false);
-  const onTable = async (n: number) => {
-    const state = shift.tables[n - 1];
-    setBusy(true);
-    if (task) {
-      const ok = await sendWork({ kind: "serve", taskId: task.id, table: n }, "quan_com");
-      if (ok) setHolding(null);
-    } else if (state === "dirty") {
-      await sendWork({ kind: "clean", table: n }, "quan_com");
-    }
-    setBusy(false);
-  };
+  const now = Date.now();
+  const waiting = shift.serve.filter((t) => !shift.holding.includes(t.id));
+  const held = shift.pass.filter((p) => shift.holding.includes(p.id));
   const ICON = { free: "🪑", waiting: "🧍", eating: "🍽️", dirty: "🧽" } as const;
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs font-semibold text-ink/60">Cửa bếp — dĩa đã ra (kẹp phiếu số bàn)</p>
-      {shift.serve.length === 0 ? (
+      <p className="text-xs font-semibold text-ink/60">
+        Cửa bếp — chạm dĩa để đi tới lấy (kẹp phiếu số bàn)
+      </p>
+      {waiting.length === 0 ? (
         <Waiting text="Chưa có dĩa nào ra — dọn bàn bẩn trong lúc chờ." />
       ) : (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {shift.serve.map((t) => (
+          {waiting.map((t) => (
             <button
               key={t.id}
               type="button"
-              aria-pressed={holding === t.id}
-              onClick={() => setHolding(holding === t.id ? null : t.id)}
-              className="shrink-0 rounded-xl bg-white px-3 py-2 text-left text-xs font-semibold shadow-sm aria-pressed:ring-2 aria-pressed:ring-red"
+              disabled={t.createdAt > now + 500 || held.length >= 2}
+              onClick={() => onPass(t.id)}
+              className="shrink-0 rounded-xl bg-white px-3 py-2 text-left text-xs font-semibold shadow-sm disabled:opacity-50"
             >
               <span className="block text-sm font-extrabold">Bàn {t.table}</span>
               {t.dish}
@@ -318,19 +313,19 @@ export function WaiterPanel({
         </div>
       )}
       <p className="text-xs font-semibold text-ink/60">
-        {task
-          ? `Đang bưng dĩa bàn ${task.table} — chạm đúng bàn để đặt`
-          : "Chạm bàn bẩn (🧽) để dọn"}
+        {held.length > 0
+          ? `Đang cầm: ${held.map((p) => `dĩa bàn ${p.table}`).join(", ")} — chạm đúng bàn để đi tới đặt`
+          : "Chạm bàn bẩn (🧽) để đi tới dọn"}
       </p>
-      <fieldset className="grid grid-cols-3 gap-1.5 m-0 min-w-0 border-0 p-0" aria-label="Bàn">
+      <fieldset className="m-0 grid min-w-0 grid-cols-3 gap-1.5 border-0 p-0" aria-label="Bàn">
         {shift.tables.map((st, i) => (
           <button
             // biome-ignore lint/suspicious/noArrayIndexKey: bàn cố định theo số
             key={i}
             type="button"
-            disabled={busy || (!task && st !== "dirty")}
+            disabled={held.length === 0 && st !== "dirty"}
             onClick={() => onTable(i + 1)}
-            className="h-12 rounded-xl bg-white text-sm font-semibold shadow-sm disabled:opacity-50"
+            className="h-11 rounded-xl bg-white text-sm font-semibold shadow-sm disabled:opacity-50"
           >
             {ICON[st]} Bàn {i + 1}
           </button>

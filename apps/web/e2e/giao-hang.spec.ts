@@ -10,8 +10,9 @@ async function enterPostOffice(page: Page) {
 }
 
 /** Trước cửa: xử lý đúng như người giao hàng cẩn thận. Trả về false nếu khách hẹn chưa tới giờ. */
-async function handleDoor(page: Page) {
-  const call = page.getByRole("button", { name: /🔔 Gọi khách/ });
+async function handleDoor(page: Page, code: string) {
+  // Đợi đúng nhà của đơn đang tới (đi ngang nhà khác trong chuyến thì nút gọi của nhà đó cũng hiện).
+  const call = page.getByRole("button", { name: new RegExp(`🔔 Gọi khách .*\\(${code}\\)`) });
   const sheet = page.getByRole("dialog", { name: "Giao hàng" });
   await expect(call).toBeVisible({ timeout: 30_000 });
   await call.tap();
@@ -25,6 +26,7 @@ async function handleDoor(page: Page) {
   }
   if (await absent.isVisible()) {
     await absent.tap();
+    await expect(sheet).toBeHidden();
     return true;
   }
   if (await refused.isVisible()) return true;
@@ -82,10 +84,19 @@ test("giao hàng: soạn gói, chạy tới nhà, ký nhận, thu hộ rồi v�
   await page.getByRole("button", { name: /Chạy chậm/ }).tap();
 
   for (let guard = 0; guard < 12; guard++) {
+    // Đợi bảng giao hàng cập nhật xong (đang xử lý trước cửa thì chưa có nút).
     const go = page.getByRole("button", { name: "🛵 Đi tới" });
+    const back = page.getByRole("button", { name: "📮 Về bưu cục" });
+    await expect(go.or(back)).toBeVisible({ timeout: 15_000 });
     if (!(await go.isVisible())) break;
+    const code =
+      (await page
+        .getByText(/→ Nhà số/)
+        .locator("span")
+        .first()
+        .textContent()) ?? "";
     await go.tap();
-    if (!(await handleDoor(page))) await page.waitForTimeout(3_000);
+    if (!(await handleDoor(page, code))) await page.waitForTimeout(3_000);
   }
 
   await page.getByRole("button", { name: "📮 Về bưu cục" }).tap();

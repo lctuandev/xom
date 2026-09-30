@@ -96,18 +96,24 @@ test("thu ngân bấm máy tính tiền theo phiếu, thu và thối tiền", as
   await expect(page.getByText(/xong 1 việc/)).toBeVisible();
 });
 
-test("bưng bê: cầm dĩa ở cửa bếp đặt đúng số bàn", async ({ page }) => {
+test("bưng bê: đi tới cửa bếp cầm dĩa, đi tới đúng bàn đặt; khách ngồi ăn", async ({ page }) => {
   await enterQuanCom(page, "Minh");
   await page.getByRole("button", { name: /Bưng bê/ }).tap();
+  // Cô Tư múc cho khách → dĩa ra cửa bếp; khách tự đi tới bàn ngồi chờ.
   const pass = page.getByRole("button", { name: /^Bàn \d/ }).first();
-  await expect(pass).toBeVisible({ timeout: 60_000 });
+  await expect(pass).toBeEnabled({ timeout: 60_000 });
   const table = ((await pass.textContent()) ?? "").match(/Bàn (\d)/)?.[1];
   await pass.tap();
-  await expect(page.getByText(`Đang bưng dĩa bàn ${table}`)).toBeVisible();
+  // Nhân vật đi tới cửa bếp rồi mới cầm được dĩa.
+  await expect(page.getByText(`Đang cầm: dĩa bàn ${table}`)).toBeVisible();
   await shot(page, "10-bung-be");
   await page
     .getByRole("group", { name: "Bàn" })
     .getByRole("button", { name: new RegExp(`Bàn ${table}$`) })
     .tap();
   await expect(page.getByText(/xong 1 việc/)).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "Bàn" }).getByRole("button", { name: `🍽️ Bàn ${table}` }),
+  ).toBeVisible();
+  await shot(page, "11-khach-an");
 });
