@@ -5,7 +5,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Document, NodeIO, TextureInfo } from "@gltf-transform/core";
+import { Document, getBounds, NodeIO, TextureInfo } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import {
   dedup,
@@ -27,15 +27,25 @@ const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ "meshopt.encoder": MeshoptEncoder });
 
-async function loadModel(src, name, scale) {
+async function loadModel(src, name, scale, center = false) {
   const doc = await io.read(join(root, src.dir, `${name}.glb`));
   const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
+  // Bộ nội thất Kenney có gốc toạ độ ở góc: đưa về giữa đáy để đặt vào cảnh cho dễ.
+  const offset = [0, 0, 0];
+  if (center) {
+    const { min, max } = getBounds(scene);
+    offset[0] = -(min[0] + max[0]) / 2;
+    offset[1] = -min[1];
+    offset[2] = -(min[2] + max[2]) / 2;
+  }
   const roots = scene.listChildren();
   // Bọc toàn bộ model trong 1 node gốc mang tên file để runtime tra theo tên.
   const wrapper = doc.createNode(name).setScale([scale, scale, scale]);
+  const inner = doc.createNode(`${name}-offset`).setTranslation(offset);
+  wrapper.addChild(inner);
   for (const child of roots) {
     scene.removeChild(child);
-    wrapper.addChild(child);
+    inner.addChild(child);
   }
   scene.addChild(wrapper);
   return doc;
@@ -88,7 +98,7 @@ for (const [bundleName, bundle] of Object.entries(config.bundles)) {
   const names = [];
   for (const src of bundle.sources) {
     for (const name of src.models) {
-      const doc = await loadModel(src, name, src.scale);
+      const doc = await loadModel(src, name, src.scale, src.center);
       const map = mergeDocuments(target, doc);
       for (const scene of doc.getRoot().listScenes()) {
         const merged = map.get(scene);

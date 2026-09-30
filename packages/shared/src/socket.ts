@@ -2,16 +2,19 @@ import { z } from "zod";
 import type {
   ClockView,
   DayReportView,
-  JobTaskEvent,
   MakeResult,
   MeView,
   NotifyEvent,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
+  PayslipView,
   SayEvent,
+  ShiftView,
   Snapshot,
   TalkResult,
+  WorkAct,
+  WorkResult,
   WorldView,
 } from "./game.js";
 
@@ -49,8 +52,9 @@ export interface ClientToServerEvents {
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;
-  "job:start": Intent<{ jobId: string }>;
-  "job:stop": Intent<Record<string, never>>;
+  "work:start": Intent<{ jobId: string; role: string }, WorkResult>;
+  "work:act": Intent<WorkAct, WorkResult>;
+  "work:stop": Intent<Record<string, never>, WorkResult>;
   "biz:attend": Intent<{ on: boolean }>;
   "order:make": Intent<
     { orderId: string; build: Record<string, string | string[] | true> },
@@ -60,7 +64,6 @@ export interface ClientToServerEvents {
   "order:decline": Intent<{ orderId: string }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
-  "job:task": Intent<{ taskId: string }>;
   "tutorial:set": Intent<{ step: string }>;
 }
 
@@ -75,5 +78,6 @@ export interface ServerToClientEvents {
   dayEnd: (report: DayReportView) => void;
   notify: (n: NotifyEvent) => void;
   orderResult: (r: OrderResultEvent) => void;
-  jobTask: (t: JobTaskEvent) => void;
+  shift: (s: ShiftView | null) => void;
+  payslip: (p: PayslipView) => void;
 }

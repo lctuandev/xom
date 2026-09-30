@@ -1273,14 +1273,14 @@ export const data: ContentInput = {
     },
     {
       id: "den_quan_com",
-      objective: "Tới quán cơm Cô Tư xin việc",
+      objective: "Tới quán cơm Cô Tư, bước vào và chọn một việc",
       target: "quan_com",
       until: "has_job",
       next: "lam_viec",
     },
     {
       id: "lam_viec",
-      objective: "Khách gọi món thì bấm Bưng ra (2 lần)",
+      objective: "Làm đúng 2 việc trong quán (múc dĩa, tính tiền hay bưng bàn)",
       target: "quan_com",
       until: "job_tasks_2",
       next: "xong_lam_thue",
@@ -1289,7 +1289,7 @@ export const data: ContentInput = {
       id: "xong_lam_thue",
       speaker: "chu_bay",
       lines: [
-        "Siêng dữ ha! Làm thuê thì chắc ăn, lương trả theo giờ.",
+        "Siêng dữ ha! Làm thuê thì chắc ăn: có lương giờ, làm đúng việc nào ăn tiền việc đó.",
         "Khi nào có vốn thì ghé vựa xe Ông Sáu, tự làm chủ cái quầy. Chú đi đây!",
       ],
       next: "hoan_thanh",
@@ -1316,19 +1316,6 @@ export const data: ContentInput = {
     impatient: ["Lâu quá, thôi đi…", "Đợi hoài…", "Thôi để bữa khác"],
   },
 
-  jobTasks: {
-    phu_quan_com: [
-      "Bàn 3 gọi 2 dĩa cơm tấm!",
-      "Khách bàn ngoài xin thêm trà đá!",
-      "Dọn bàn 5 giùm cô!",
-    ],
-    giao_hang: [
-      "Đơn mới: giao bánh bao cho nhà số 7!",
-      "Có người gửi gói hàng ra đầu hẻm!",
-      "Giao gấp ly cà phê cho văn phòng!",
-    ],
-  },
-
   economy: {
     startingMoney: 500_000,
     dayStartMinute: 6 * 60,
@@ -1338,7 +1325,6 @@ export const data: ContentInput = {
     outsideOption: 1,
     reputationRate: 0.08,
     startingReputation: 0.5,
-    serveWindowMs: 12_000,
     afternoonMarkup: 0.2,
     shoutBoost: 1.25,
     shoutMinutes: 60,
@@ -1349,8 +1335,6 @@ export const data: ContentInput = {
     friendDiscount: 0.05,
     tipRate: 0.08,
     serveReputationBonus: 0.01,
-    jobTaskEveryMinutes: 20,
-    jobTaskBonus: 3_000,
     interactRadius: 2.5,
   },
 };

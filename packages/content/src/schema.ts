@@ -321,17 +321,12 @@ export const economySchema = z.object({
   /** Tốc độ reputation bám theo độ hài lòng. */
   reputationRate: z.number().positive().max(1),
   startingReputation: z.number().min(0).max(1),
-  /** Thời gian chờ cho việc vặt khi làm thuê (ms thật). */
-  serveWindowMs: z.number().int().positive(),
   /** Buổi chiều (từ 12:00) hàng tươi ở chợ đắt hơn tỉ lệ này. */
   afternoonMarkup: z.number().min(0).max(1),
   /** Tiền boa ≈ tỉ lệ giá trị đơn khi phục vụ kịp. */
   tipRate: z.number().min(0).max(1),
   /** Uy tín cộng thêm mỗi đơn phục vụ kịp. */
   serveReputationBonus: z.number().min(0).max(0.1),
-  /** Làm thuê: cứ bao nhiêu phút game có một việc vặt, và tiền thưởng khi làm kịp. */
-  jobTaskEveryMinutes: z.number().int().positive(),
-  jobTaskBonus: z.number().int().nonnegative(),
   /** Bán kính (mét) coi như "đang ở" một địa điểm / quầy. */
   interactRadius: z.number().positive(),
   /** Rao hàng: hệ số khách, thời gian hiệu lực và hồi chiêu (phút game). */
@@ -363,7 +358,6 @@ export const contentSchema = z.object({
   /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
-  jobTasks: z.record(id, z.array(z.string()).min(1)),
   economy: economySchema,
 });
 

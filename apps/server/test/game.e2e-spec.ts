@@ -4,7 +4,6 @@ import type {
   ClientToServerEvents,
   DayReportView,
   DishView,
-  JobTaskEvent,
   MeView,
   OrderEvent,
   OrderResultEvent,
@@ -243,17 +242,6 @@ describe("Vòng chơi làm thật (e2e)", () => {
     expect(next.me.business?.open).toBe(false);
     expect(next.me.inventory.some((i) => i.itemId === "banh_mi_phoi")).toBe(false);
     expect(next.me.inventory.some((i) => i.itemId === "sot")).toBe(true); // không hỏng
-    socket.disconnect();
-  });
-
-  it("đi làm thuê: lương theo giờ, việc vặt có thưởng", async () => {
-    const { body } = await register(url);
-    const { socket } = await connect(url, body.accessToken);
-    const started = await emit(socket, "job:start", { jobId: "phu_quan_com" });
-    expect(started.ok && started.data.jobId).toBe("phu_quan_com");
-    const task = await new Promise<JobTaskEvent>((resolve) => socket.once("jobTask", resolve));
-    const done = await emit(socket, "job:task", { taskId: task.id });
-    expect(done.ok && done.data.today.wages).toBeGreaterThanOrEqual(3_000);
     socket.disconnect();
   });
 

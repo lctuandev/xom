@@ -28,6 +28,14 @@ export function speakerSpot(speakerId: string): Spot {
   return { x: sp.position.x - 1.3, z: sp.position.z + 0.3, yaw: Math.PI / 2 };
 }
 
+/** Chỗ đứng trước cửa một nhà giao hàng (phía vỉa hè), mặt nhìn vào nhà. */
+export function addressSpot(addressId: string): Spot | null {
+  const a = content.data.delivery.addresses.find((x) => x.id === addressId);
+  if (!a) return null;
+  const out = a.facing === 0 ? 1 : -1;
+  return { x: a.position.x, z: a.position.z + out * 1.3, yaw: a.facing + Math.PI };
+}
+
 /** Vị trí của một mục tiêu kịch bản / goal; null nếu chưa xác định (ví dụ chưa chọn chỗ bán). */
 export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
   const kind = typeof target === "string" ? (target === "stall" ? "stall" : "place") : target.kind;
@@ -35,6 +43,7 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
     const lotId = me?.business?.lotId;
     return lotId ? standBehind(lotId) : null;
   }
+  if (typeof target !== "string" && target.kind === "address") return addressSpot(target.id);
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";
   return content.placeById.has(id) ? placeSpot(id) : null;
 }

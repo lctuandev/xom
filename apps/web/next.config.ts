@@ -1,9 +1,9 @@
 import path from "node:path";
 import type { NextConfig } from "next";
 
-// Game server (NestJS). Web proxy /api và /socket.io (kể cả WebSocket) sang server, nên cả dev (:3000)
+// Game server (NestJS). Web proxy /api và /socket.io (kể cả WebSocket) sang server, nên cả dev (:5000)
 // lẫn production (:5555, deploy/docker-compose.prod.yml) chỉ cần mở một origin. Rewrites được tính lúc build.
-const apiOrigin = process.env.API_ORIGIN ?? "http://localhost:4000";
+const apiOrigin = process.env.API_ORIGIN ?? "http://localhost:5001";
 
 const nextConfig: NextConfig = {
   // Bản build tự chứa cho Docker; trace từ gốc monorepo để kèm @xom/shared.

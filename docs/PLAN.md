@@ -82,7 +82,7 @@
 
 **PWA**
 - `manifest.webmanifest` (standalone, portrait, icon maskable), service worker (Serwist) cache asset 3D + font.
-- ⚠️ Service worker, Web Share, cài PWA **cần HTTPS** → khi test trên điện thoại dùng **Cloudflare Quick Tunnel** (`cloudflared tunnel --url http://localhost:3000`, miễn phí, không cần tài khoản/tên miền) thay vì truy cập bằng IP LAN.
+- ⚠️ Service worker, Web Share, cài PWA **cần HTTPS** → khi test trên điện thoại dùng **Cloudflare Quick Tunnel** (`cloudflared tunnel --url http://localhost:5000`, miễn phí, không cần tài khoản/tên miền) thay vì truy cập bằng IP LAN.
 
 **Quy trình kiểm tra**: mọi thay đổi UI phải được kiểm tra bằng MCP `playwright-mobile` (Pixel 7) + thử trên máy thật. Tính năng nặng về render phải trace bằng `chrome-devtools` (CPU throttling 4×).
 
@@ -113,7 +113,7 @@
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Web và API **cùng một origin**: Next.js `rewrites` proxy `/api/*` và `/socket.io` (kể cả WebSocket) sang server, ở cả dev (:3000) lẫn production (:5555). Cookie refresh token hoạt động đơn giản, không cần CORS; Cloudflare Tunnel chỉ cần trỏ vào một cổng.
+Web và API **cùng một origin**: Next.js `rewrites` proxy `/api/*` và `/socket.io` (kể cả WebSocket) sang server, ở cả dev (:5000) lẫn production (:5555). Cookie refresh token hoạt động đơn giản, không cần CORS; Cloudflare Tunnel chỉ cần trỏ vào một cổng.
 
 ### Cấu trúc thư mục
 
@@ -363,11 +363,13 @@ Gặp Chú Bảy ──► "Con muốn buôn bán"  ─► Tới vựa xe Ông S
 - [ ] Client: đi tới nơi → nút hành động, hội thoại NPC, dòng nhiệm vụ + mũi tên, bong bóng khách, nút "Đưa hàng"
 - [ ] Kiểm thử kịch bản bằng Playwright (Pixel 7 + iPhone 16 Pro)
 
-### Phase 1.6 → 1.8 — "Làm thật" (chi tiết từng thao tác: `docs/USECASES.md`)
+### Phase 1.6 → 1.9 — "Làm thật" (chi tiết từng thao tác: `docs/USECASES.md`)
 - **1.6 Làm thật ✅:** thoại trên đầu nhân vật, nói chuyện NPC + thân thiết, câu rao hàng; chợ bán **nguyên liệu**;
   khách gọi món cụ thể → **tự tay làm** bánh mì / trà sữa / chọn phụ kiện → **tính tiền, thối tiền**; tiền chỉ vào khi giao món.
-- **1.7 Sửa xe & chợ phụ tùng:** nghề dịch vụ (chẩn đoán → báo giá → sửa → bảo hành); việc làm thuê thành thao tác thật.
-- **1.8 Tuyển dụng (NPC trước):** đăng tin, bảng tin xóm, ứng tuyển, ca làm, ký quỹ lương, đánh giá hai chiều; NPC nhân viên / NPC chủ tiệm lấp chỗ trống.
+- **1.7 Vào làm ✅:** mỗi nơi làm có **không gian 3D riêng** (quán cơm Cô Tư: đứng quầy múc cơm / thu ngân / bưng bê;
+  bưu cục Anh Tám: soạn gói → chạy xe → gọi khách → ký nhận → thu hộ → nộp tiền); lương giờ khi có làm + tiền từng việc; phiếu lương ca.
+- **1.8 Sửa xe & chợ phụ tùng:** nghề dịch vụ (chẩn đoán → báo giá → sửa → bảo hành); quầy riêng có không gian 3D (UC-W6).
+- **1.9 Tuyển dụng (NPC trước):** đăng tin, bảng tin xóm, ứng tuyển, ca làm, ký quỹ lương, đánh giá hai chiều; NPC nhân viên / NPC chủ tiệm lấp chỗ trống.
 
 ### Phase 2 — Multiplayer xóm 4 người (Tuần 10–14)
 - [ ] Tạo/vào xóm bằng mã phòng + link mời (Web Share API → Zalo/Messenger)

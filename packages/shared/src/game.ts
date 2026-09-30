@@ -80,6 +80,8 @@ export interface Snapshot {
   world: WorldView;
   /** Khách đang chờ ở quầy của mình (vào lại game không mất khách). */
   orders: OrderEvent[];
+  /** Ca làm thuê đang diễn ra (vào lại game vẫn tiếp tục ca). */
+  shift: ShiftView | null;
 }
 
 /** Món: stepId → lựa chọn (single: id, multi: danh sách id, action/hold: true). */
@@ -151,12 +153,122 @@ export interface TalkResult {
   friendship: number;
 }
 
-/** Việc vặt khi làm thuê: bấm kịp để được thưởng. */
-export interface JobTaskEvent {
+// ───────────── Vào làm (docs/USECASES.md nhóm W) ─────────────
+
+interface TaskBase {
   id: string;
-  jobId: string;
-  text: string;
+  /** Tên kiểu khách (Học sinh, Dân văn phòng…). */
+  customer: string;
+  createdAt: number;
   expiresAt: number;
+}
+
+/** Đứng quầy: khách gọi dĩa cơm. */
+export interface PlateTaskView extends TaskBase {
+  text: string;
+  /** Những thứ phải có trên dĩa (để đối chiếu; có thể lặp). */
+  items: string[];
+}
+
+/** Thu ngân: khách đưa phiếu, trả tiền. */
+export interface CashierTaskView extends TaskBase {
+  /** Các dòng trên phiếu: "Cơm sườn, thêm trứng", "Trà đá". */
+  ticket: string[];
+  pay: PaymentView;
+}
+
+/** Bưng bê: dĩa ra từ bếp, kẹp phiếu số bàn. */
+export interface ServeTaskView extends TaskBase {
+  table: number;
+  dish: string;
+}
+
+export type TableState = "free" | "waiting" | "eating" | "dirty";
+
+export type DeliveryStage =
+  | "shelf"
+  | "picked"
+  | "at_door"
+  | "absent"
+  | "later"
+  | "refused"
+  | "delivered"
+  | "returning";
+
+/** Giao hàng: một đơn trong chuyến. */
+export interface DeliveryTaskView {
+  id: string;
+  code: string;
+  recipient: string;
+  addressId: string;
+  item: string;
+  fragile: boolean;
+  /** Tiền thu hộ; 0 = đã trả trước. */
+  cod: number;
+  stage: DeliveryStage;
+  /** Các gói trên kệ để chọn (khi stage = shelf). */
+  shelf: string[];
+  /** Người ra mở cửa (khi stage = at_door). */
+  door: {
+    name: string;
+    relation: "self" | "relative" | "stranger";
+    pay: PaymentView | null;
+  } | null;
+}
+
+export interface ShiftStatsView {
+  done: number;
+  mistakes: number;
+  /** Khách bỏ về vì chờ lâu. */
+  walked: number;
+  strikes: number;
+  maxStrikes: number;
+  /** Tiền đã nhận trong ca (lương cứng + tiền việc). */
+  earned: number;
+}
+
+export interface ShiftView {
+  jobId: string;
+  role: string;
+  placeId: string;
+  stats: ShiftStatsView;
+  plates: PlateTaskView[];
+  /** Số phần còn trong mỗi khay. */
+  trays: Record<string, number>;
+  /** Khay đang chờ bếp mang ra: foodId → thời điểm có (ms). */
+  refilling: Record<string, number>;
+  cashier: CashierTaskView[];
+  serve: ServeTaskView[];
+  tables: TableState[];
+  deliveries: DeliveryTaskView[];
+  /** Tiền COD đang cầm (phải nộp lại). */
+  cashHeld: number;
+  /** Đang chạy xe nhanh. */
+  fast: boolean;
+}
+
+export interface PayslipView {
+  jobId: string;
+  role: string;
+  done: number;
+  mistakes: number;
+  walked: number;
+  base: number;
+  piece: number;
+  deductions: number;
+  total: number;
+  reason: "stop" | "fired" | "day_end" | "left";
+}
+
+export interface WorkResult {
+  me: MeView;
+  ok: boolean;
+  /** Lời chủ/khách nói (hiện trên đầu). */
+  line: string;
+  /** Tiền nhận được từ việc này. */
+  pay: number;
+  shift: ShiftView | null;
+  payslip?: PayslipView;
 }
 
 export interface DayReportView {
@@ -221,8 +333,30 @@ export const talkSchema = z.object({
   topic: z.enum(["greet", "price", "gossip"]),
 });
 export const saySchema = z.object({ phraseId: contentId });
-export const startJobSchema = z.object({ jobId: contentId });
+export const workStartSchema = z.object({ jobId: contentId, role: contentId });
+const taskId = z.string().min(1).max(64);
+const cents = z.number().int().min(0).max(10_000_000);
+/** Mọi thao tác trong ca làm (một intent, phân biệt bằng kind). */
+export const workActSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("plate"), taskId, items: z.array(contentId).max(20) }),
+  z.object({ kind: z.literal("refill"), foodId: contentId }),
+  z.object({
+    kind: z.literal("ring"),
+    taskId,
+    lines: z.record(contentId, z.number().int().min(1).max(20)),
+    change: cents.nullable(),
+  }),
+  z.object({ kind: z.literal("serve"), taskId, table: z.number().int().min(1).max(20) }),
+  z.object({ kind: z.literal("clean"), table: z.number().int().min(1).max(20) }),
+  z.object({ kind: z.literal("take") }),
+  z.object({ kind: z.literal("pick"), taskId, code: z.string().max(12) }),
+  z.object({ kind: z.literal("ride"), fast: z.boolean() }),
+  z.object({ kind: z.literal("call"), taskId, addressId: contentId }),
+  z.object({ kind: z.literal("handover"), taskId, accept: z.boolean(), change: cents.nullable() }),
+  z.object({ kind: z.literal("absent"), taskId, choice: z.enum(["neighbor", "later", "return"]) }),
+  z.object({ kind: z.literal("settle") }),
+]);
+export type WorkAct = z.infer<typeof workActSchema>;
 export const attendSchema = z.object({ on: z.boolean() });
-export const jobTaskSchema = z.object({ taskId: z.string().min(1).max(64) });
 export const tutorialSchema = z.object({ step: contentId });
 export const emptySchema = z.object({}).optional();

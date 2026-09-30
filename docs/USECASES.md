@@ -341,7 +341,7 @@ Chủ đánh giá nhân viên (đúng giờ, làm đúng món, thái độ); nh�
 > Bước vào cửa → cảnh bản đồ tắt, cảnh bên trong bật; bước ra → quay lại phố.
 > Thu nhập làm thuê = **lương cứng theo giờ khi có làm** + **tiền theo từng việc** (+ thưởng/boa). Đứng không = không có tiền.
 
-### UC-W1 · Vào/ra một nơi làm việc 🚧
+### UC-W1 · Vào/ra một nơi làm việc ✅
 **Luồng:** tới cửa quán → "🍚 Vào quán · Cô Tư" → màn hình chuyển vào trong (1 giây) → chọn **vai** (đứng quầy / thu ngân / bưng bê) → *Vào ca*.
 Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương cứng, tiền việc, thưởng, khấu trừ) → quay ra phố.
 **Đời thật & rẽ nhánh:**
@@ -349,8 +349,10 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 - Mất mạng giữa ca → có 30 giây vào lại; quá thì hết ca.
 - Mỗi lúc chỉ làm một vai; đổi vai phải ra ca.
 **Luật:** chỉ vào ca khi quầy riêng đang đóng; mỗi giờ game có ≥ 1 việc hoàn thành thì mới tính lương cứng giờ đó.
+**Đã làm:** vào/ra, chọn vai, ra ca → phiếu lương, hết ngày tự ra ca, rời xóm = bỏ ca. **Chưa:** 30 giây vào lại khi mất mạng, chủ nhớ "bỏ ngang".
+**Kiểm chứng:** Playwright `nguoi-moi-lam-thue.spec.ts` (vào quán, chọn vai, ra ca có phiếu lương).
 
-### UC-W2 · Quán cơm Cô Tư — đứng quầy múc cơm 🚧
+### UC-W2 · Quán cơm Cô Tư — đứng quầy múc cơm ✅
 **Không gian:** quầy inox dài; các khay/nồi: cơm, sườn nướng, bì, chả trứng, trứng ốp la, dưa leo–cà chua, canh; chồng dĩa; khách xếp hàng phía trước quầy.
 **Luồng một dĩa:**
 1. Khách tới đọc món (khung thoại + phiếu gọi món): *"Cơm sườn bì chả, thêm trứng, không dưa nha con"*.
@@ -363,9 +365,10 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 - Giờ cao điểm (11–13h, 17–19h) khách xếp hàng dài; khách chờ quá lâu thì bỏ đi → Cô Tư phàn nàn.
 - Khách quen gọi "như mọi khi" → phiếu hiện món khách quen (khách quen có tên).
 **Luật:** tiền việc mỗi dĩa đúng; dĩa sai trừ; 3 lỗi/giờ → Cô Tư nhắc; 6 lỗi hoặc 5 khách bỏ đi trong ca → *"Thôi hôm nay con về nghỉ đi"* (hết ca, vẫn nhận tiền đã làm).
-**Kiểm chứng:** e2e server (dĩa đúng/sai, hết khay, bỏ ca); Playwright múc đủ món theo phiếu.
+**Đã làm:** lấy dĩa, múc từng khay (thấy trên dĩa 3D), đổ bỏ, báo bếp khi hết khay, khách xếp hàng có khung thoại, khách bỏ về, bị cho nghỉ khi quá lỗi. **Chưa:** khách quen "như mọi khi".
+**Kiểm chứng:** e2e server `work.e2e-spec.ts` (đứng quầy, bị cho nghỉ); Playwright múc đủ món theo phiếu (iPhone 16 Pro + Pixel 7).
 
-### UC-W3 · Quán cơm — thu ngân 🚧
+### UC-W3 · Quán cơm — thu ngân ✅
 **Không gian:** quầy tính tiền có máy tính tiền, bảng giá, ngăn kéo tiền.
 **Luồng:** khách ăn xong tới quầy, đưa phiếu → **bấm từng món trên máy tính tiền** (cơm sườn 35k, thêm trứng 6k, trà đá 3k…) → máy hiện tổng → *Báo giá* cho khách → khách trả (chuyển khoản / tiền mặt) → **thối tiền** từ ngăn kéo (như UC-F7) → *Xong*.
 **Đời thật & rẽ nhánh:**
@@ -373,14 +376,18 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 - Khách xin *ghi sổ* (khách quen, Cô Tư cho phép tối đa 1 lần/ngày).
 - **Cuối ca kiểm két:** tiền trong ngăn kéo phải khớp doanh thu; lệch thì **trừ vào lương** (thiếu) hoặc nộp dư cho chủ.
 **Luật:** tiền việc mỗi lượt đúng; thối sai tiền → lệch két.
+**Đã làm:** máy tính tiền bấm từng món, báo giá, tính dư → khách bắt sửa, tính thiếu/thối thiếu → lệch két trừ lương cuối ca. **Chưa:** ghi sổ.
+**Kiểm chứng:** e2e server (thiếu két bị trừ); Playwright bấm máy theo phiếu → thu/thối tiền.
 
-### UC-W4 · Quán cơm — bưng bê 🚧
+### UC-W4 · Quán cơm — bưng bê ✅
 **Không gian:** 6 bàn đánh số, cửa bếp ra món.
 **Luồng:** bếp đặt dĩa ra (dĩa có kẹp phiếu số bàn) → **chạm dĩa để bưng** (tối đa 2 dĩa) → **chạm đúng bàn** để đặt → bàn đã ăn xong → *Dọn bàn* (chạm chén dĩa bẩn → mang vào bếp).
 **Đời thật:** bưng nhầm bàn → khách bàn đó bảo "không phải của con", phải mang đúng; để dĩa nguội lâu → khách chê; bàn bẩn khách mới không ngồi.
 **Luật:** tiền việc mỗi dĩa đúng bàn + mỗi lần dọn bàn.
+**Đã làm:** cửa bếp ra dĩa kẹp số bàn, đặt đúng/nhầm bàn, khách ngồi ăn rồi bàn bẩn, dọn bàn (nửa tiền việc). Hiện cầm 1 dĩa mỗi lần.
+**Kiểm chứng:** e2e server (bưng bê); Playwright đặt đúng bàn.
 
-### UC-W5 · Bưu cục Anh Tám — giao hàng tận nơi 🚧
+### UC-W5 · Bưu cục Anh Tám — giao hàng tận nơi ✅
 **Không gian:** bưu cục có **kệ hàng** (thùng/gói dán mã), quầy nhận, xe máy ở cửa.
 **Luồng một chuyến:**
 1. **Nhận đơn:** Anh Tám đưa *phiếu giao* (mã đơn XM-4821, người nhận, địa chỉ "Nhà số 7 đầu hẻm", ghi chú "dễ vỡ", COD 85.000đ).
@@ -398,7 +405,8 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 - Mất tiền COD (thối nhầm) → **trừ tiền chuyến**; thiếu nhiều → Anh Tám tạm ngưng giao.
 - Trời mưa (UC-B4): giao lâu hơn nhưng thưởng mưa +30%.
 **Luật:** mỗi chuyến tối đa 3 đơn (chọn thứ tự giao tối ưu); tiền chuyến theo khoảng cách; giao trễ hạn (phiếu có giờ hẹn) giảm thưởng.
-**Kiểm chứng:** e2e server (lấy đúng/sai gói, giao sai nhà, ký nhận, COD thiếu/đúng, nộp tiền lệch); Playwright một chuyến đủ bước.
+**Đã làm:** nhận tối đa 3 đơn, soạn đúng mã trên kệ (gói giống nhau), ra phố có biển số nhà + ghim, chạy nhanh/chậm (hàng dễ vỡ móp → từ chối), gọi khách, người mở cửa (chính chủ / người nhà / người lạ), đưa điện thoại ký nhận có nét ký, từ chối người lạ → hẹn lại, thu hộ + thối tiền, vắng nhà (gửi hàng xóm / hẹn lại / hoàn), về nộp tiền (thiếu thì trừ tiền chuyến), tiền chuyến theo khoảng cách. **Chưa:** khách thiếu tiền COD, mưa, giờ hẹn giao, model xe máy.
+**Kiểm chứng:** e2e server `work.e2e-spec.ts` (cả chuyến); Playwright `giao-hang.spec.ts` một chuyến đủ bước (iPhone 16 Pro + Pixel 7).
 
 ### UC-W6 · Quầy riêng của mình — không gian sau xe hàng ⏳
 Vào quầy (đứng sau xe bánh mì) → camera ngang tầm mắt từ sau tủ kính: thấy khay nguyên liệu, ổ bánh trên thớt, khách đứng trước quầy. Các bước làm món (UC-F4) diễn ra **trên mô hình 3D**: chạm ổ bánh → dao xẻ; chạm khay pa-tê → phết; thứ gì cho vào hiện trên ổ bánh; gói giấy → đưa qua quầy cho khách. Trà sữa: ly lên máy dán nắp, lắc bằng thao tác kéo lên-xuống.
@@ -473,8 +481,9 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 |---|---|
 | **Phase 1.5** ✅ | C1–C3, B2, H1 (cơ bản), phục vụ "Đưa hàng" |
 | **Phase 1.6 — Làm thật** ✅ | D1, D2, D3 · E1 · F1–F7, F9 · I1 · L1 |
-| **Phase 1.7 — Vào làm (không gian riêng)** 🚧 | W1–W5 (quán cơm 3 vai, giao hàng tận nơi) · W6 (quầy riêng) · W7 |
-| **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · H1 nâng cấp (bưng cơm, giao hàng thật) |
-| **Phase 1.9 — Tuyển dụng (NPC trước)** | H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
+| **Phase 1.7 — Vào làm (không gian riêng)** ✅ | W1–W5 (quán cơm 3 vai, giao hàng tận nơi) · phiếu lương ca (một phần W7) |
+| **Tiếp theo (khuyến nghị): Phase 2 — Nhiều người** | xem dòng Phase 2 bên dưới |
+| **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · W6 (quầy riêng 3D) |
+| **Phase 1.9 — Tuyển dụng (NPC trước)** | W7 (uy tín người làm) · H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
 | **Phase 2 — Nhiều người** | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
 | **Sau đó** | K1–K7 · I2 · I4 · I5 · F8 |

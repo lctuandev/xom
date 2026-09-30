@@ -44,6 +44,16 @@
   },
   "overrides": [
     {
+      "includes": ["apps/web/game/scene/**", "apps/web/game/interior/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noStaticElementInteractions": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["apps/web/**"],
       "linter": {
         "domains": {

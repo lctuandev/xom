@@ -13,6 +13,7 @@ export function Objective() {
   const nearPlace = useGame((s) => s.nearPlace);
   const atStall = useGame((s) => s.atStall);
   const setGoal = useGame((s) => s.setGoal);
+  const delivering = useGame((s) => s.shift?.role === "giao_hang");
   const openSheet = useGame((s) => s.openSheet);
   const [dist, setDist] = useState<number | null>(null);
 
@@ -31,7 +32,8 @@ export function Objective() {
     return () => clearInterval(id);
   }, [spot]);
 
-  if (!step?.objective || dialogue) return null;
+  // Đang chạy đơn thì bảng giao hàng thay chỗ dòng nhiệm vụ (đỡ chồng hai bảng trên màn hình nhỏ).
+  if (!step?.objective || dialogue || delivering) return null;
   const arrived = target === "stall" ? atStall : !!target && nearPlace === target;
 
   return (

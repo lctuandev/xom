@@ -26,7 +26,7 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 - Không chạy `pnpm deploy --prod` ở máy local — nó làm hỏng `node_modules` của workspace (chỉ dùng trong Dockerfile).
 
 ## Local dev
-- `pnpm dev` → web :3000 + server :4000 (Next rewrites `/api` và `/socket.io` sang :4000, nên chỉ cần mở :3000).
+- `pnpm dev` → web :5000 + server :5001 (Next rewrites `/api` và `/socket.io` sang :5001, nên chỉ cần mở :5000). Dev dùng dải cổng 50xx để không đụng app khác trên máy.
 - `pnpm lint` / `pnpm format` (Biome), `pnpm typecheck`, `pnpm test`; e2e server: `pnpm --filter @xom/server test:e2e`.
 - `GAME_TICK_MS=150 pnpm dev` → tăng tốc đồng hồ game khi test tay (mặc định 1000ms = 1 phút game).
 - `pnpm balance` → mô phỏng kinh tế 30 ngày mọi chiến lược; chạy lại mỗi khi đổi số liệu trong `packages/content`.
@@ -35,5 +35,5 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 - `docker compose up -d` → Postgres (5432, xom/xom/xom) + Redis (6379).
 - MCP `playwright-mobile` dùng Chrome hệ thống (`--browser chrome`) để không lệch version Chromium của Playwright.
 - MCP `postgres` chạy ở chế độ restricted (chỉ đọc), dùng `DATABASE_URL` hoặc URL mặc định trên.
-- Test HTTPS trên điện thoại (service worker, PWA, Web Share): `cloudflared tunnel --url http://localhost:3000`.
+- Test HTTPS trên điện thoại (service worker, PWA, Web Share): `cloudflared tunnel --url http://localhost:5000`.
 - Blender 5.2.2: lệnh `blender` (cài ở `~/Applications`), export glTF headless bằng `blender -b file.blend -P script.py`.

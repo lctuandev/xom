@@ -12,7 +12,7 @@ export default defineConfig({
   reporter: [["list"]],
   outputDir: "./e2e/.results",
   use: {
-    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
+    baseURL: process.env.BASE_URL ?? "http://localhost:5000",
     channel: "chrome",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",

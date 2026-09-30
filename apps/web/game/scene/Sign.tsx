@@ -15,11 +15,17 @@ export function Sign({
   position,
   rotationY = 0,
   bg,
+  dark = false,
+  size = [2.6, 0.65],
 }: {
   text: string;
   position: [number, number, number];
   rotationY?: number;
   bg: string;
+  /** Chữ tối trên nền sáng (nhãn hàng, số bàn). */
+  dark?: boolean;
+  /** Kích thước tấm biển (mét). */
+  size?: [number, number];
 }) {
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
@@ -48,10 +54,10 @@ export function Sign({
       if (cancelled) return;
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = "#fff6e5";
+      ctx.strokeStyle = dark ? "#2b2118" : "#fff6e5";
       ctx.lineWidth = 8;
       ctx.strokeRect(6, 6, W - 12, H - 12);
-      ctx.fillStyle = "#fff6e5";
+      ctx.fillStyle = dark ? "#2b2118" : "#fff6e5";
       ctx.font = font;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -63,13 +69,13 @@ export function Sign({
     return () => {
       cancelled = true;
     };
-  }, [texture, text, bg]);
+  }, [texture, text, bg, dark]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 
   return (
     <mesh position={position} rotation-y={rotationY}>
-      <planeGeometry args={[2.6, 0.65]} />
+      <planeGeometry args={size} />
       <meshBasicMaterial map={texture} toneMapped={false} side={DoubleSide} />
     </mesh>
   );

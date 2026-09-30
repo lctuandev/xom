@@ -1,6 +1,5 @@
 "use client";
 
-import { content } from "@xom/content";
 import { useEffect } from "react";
 import { send } from "./net/socket";
 import { getPlayer } from "./scene/player";
@@ -10,7 +9,6 @@ import { spotFor } from "./world";
 /**
  * Nối trạng thái "đang ở đâu" với luật chơi:
  * - đứng ở quầy ↔ báo server (quầy chỉ bán khi có chủ),
- * - rời chỗ làm thuê = nghỉ việc,
  * - có goal mới thì tự đi tới đó (tới nơi mở sheet: xem ProximityWatcher trong scene).
  */
 export function useWorldEffects() {
@@ -25,14 +23,9 @@ export function useWorldEffects() {
         void send("biz:attend", { on: attending });
       }
 
-      // Rời chỗ làm → nghỉ việc.
-      if (s.me?.jobId && prev.nearPlace !== s.nearPlace) {
-        const workplace = content.placeForJob(s.me.jobId);
-        if (workplace && prev.nearPlace === workplace.id && s.nearPlace !== workplace.id) {
-          void send("job:stop", {});
-          s.toast({ kind: "info", text: `Bạn đã rời ${workplace.name}, nghỉ làm.` });
-        }
-      }
+      // Chạy xe giao hàng nhanh hơn đi bộ; chạy nhanh thì nhanh nữa.
+      const speed = s.shift?.role === "giao_hang" ? (s.shift.fast ? 7 : 4.5) : 4;
+      if (getPlayer().speed !== speed) getPlayer().speed = speed;
 
       // Goal mới → đi tới đó.
       if (s.goal && s.goal !== prev.goal) {

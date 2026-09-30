@@ -13,7 +13,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "db:up": "docker compose up -d",
-    "tunnel": "cloudflared tunnel --url http://localhost:3000",
+    "tunnel": "cloudflared tunnel --url http://localhost:5000",
     "assets": "pnpm --filter @xom/assets build:assets",
     "prepare": "simple-git-hooks",
     "deploy:local": "bash deploy/deploy.sh",

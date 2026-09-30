@@ -36,6 +36,40 @@
       "sap-phu-kien"
     ]
   },
+  "interior": {
+    "type": "bundle",
+    "url": "/assets/models/interior.glb",
+    "models": [
+      "kitchenBar",
+      "kitchenBarEnd",
+      "kitchenCabinet",
+      "kitchenStove",
+      "table",
+      "chair",
+      "stoolBar",
+      "bookcaseOpen",
+      "cardboardBoxClosed",
+      "cardboardBoxOpen",
+      "computerScreen",
+      "floorFull",
+      "wall",
+      "wallWindow",
+      "wallDoorway",
+      "pottedPlant",
+      "rugRectangle",
+      "plate",
+      "bowl",
+      "rice-ball",
+      "meat-ribs",
+      "egg-cooked",
+      "tomato-slice",
+      "pudding",
+      "mincemeat-pie",
+      "bowl-soup",
+      "cup-tea",
+      "soda-can"
+    ]
+  },
   "characters": {
     "type": "single",
     "files": {

@@ -1,4 +1,5 @@
 import type { DishView, OrderEvent } from "@xom/shared";
+import type { Shift } from "./work.js";
 
 /** Lỗi nghiệp vụ trả về client qua Ack; message tiếng Việt hiển thị thẳng. */
 export class GameError extends Error {
@@ -27,12 +28,6 @@ export interface PendingOrder {
   dish: { build: DishView; score: number; mistakes: string[] } | null;
 }
 
-export interface PendingJobTask {
-  id: string;
-  playerId: string;
-  expiresAt: number;
-}
-
 /** Trạng thái chạy của một xóm trong bộ nhớ; nguồn sự thật vẫn là DB. */
 export class RoomRuntime {
   readonly members = new Map<string, Member>();
@@ -43,7 +38,8 @@ export class RoomRuntime {
   readonly boostUntil = new Map<string, number>();
   /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */
   readonly shoutReadyAt = new Map<string, number>();
-  readonly jobTasks = new Map<string, PendingJobTask>();
+  /** Ca làm thuê đang diễn ra: playerId → ca (docs/USECASES.md nhóm W). */
+  readonly shifts = new Map<string, Shift>();
   timer?: NodeJS.Timeout;
   private queue: Promise<unknown> = Promise.resolve();
   private tickPending = false;

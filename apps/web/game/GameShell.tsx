@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { refreshAccessToken, useAuth } from "./auth/store";
+import Interior from "./interior/Interior";
 import { connectGame } from "./net/socket";
 import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
@@ -19,6 +20,8 @@ import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
 import { QuickChat } from "./ui/QuickChat";
 import { TalkSheet } from "./ui/TalkSheet";
+import { DoorSheet } from "./ui/work/DoorSheet";
+import { Payslip } from "./ui/work/Payslip";
 import { useWorldEffects } from "./useWorldEffects";
 
 const LOGIN = "/dang-nhap?next=/play";
@@ -28,6 +31,7 @@ export default function GameShell() {
   const contextLost = useGame((s) => s.contextLost);
   const me = useGame((s) => s.me);
   const sheet = useGame((s) => s.sheet);
+  const inside = useGame((s) => s.inside);
   const [authed, setAuthed] = useState(false);
   useWorldEffects();
   useTutorial();
@@ -72,6 +76,18 @@ export default function GameShell() {
     );
   }
 
+  // Vào nơi làm: cảnh nội thất riêng thay cho bản đồ (bản đồ tắt hẳn để tiết kiệm GPU).
+  if (inside) {
+    return (
+      <div className="relative h-full w-full overflow-hidden select-none">
+        <Interior placeId={inside} />
+        <Dialogue />
+        <Payslip />
+        <DaySummary />
+      </div>
+    );
+  }
+
   return (
     <div className="relative h-full w-full overflow-hidden select-none">
       <Scene />
@@ -85,6 +101,8 @@ export default function GameShell() {
       <ActionBar />
       <QuickChat />
       <Kitchen />
+      <DoorSheet />
+      <Payslip />
       <Dialogue />
       <DaySummary />
     </div>

@@ -7,6 +7,7 @@ import { logout } from "../auth/store";
 import { vnd } from "../format";
 import { type SheetId, useGame } from "../store";
 import { Objective } from "./Objective";
+import { DeliveryHud } from "./work/DeliveryHud";
 
 const NAV: { id: SheetId | null; label: string; icon: string }[] = [
   { id: null, label: "Bản đồ", icon: "🗺️" },
@@ -75,6 +76,7 @@ export function Hud() {
       <Toasts />
       <div className="flex flex-1 flex-col">
         <Objective />
+        <DeliveryHud />
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
           {showPerf && <PerfPanel />}
           <JobBadge />
@@ -130,7 +132,8 @@ function Connection() {
 
 function JobBadge() {
   const me = useGame((s) => s.me);
-  if (!me?.jobId) return null;
+  const shift = useGame((s) => s.shift);
+  if (!me?.jobId || shift?.role === "giao_hang") return null;
   return (
     <div className="rounded-full bg-leaf px-3 py-1.5 text-xs font-semibold text-cream shadow-sm">
       💼 Đang đi làm · hôm nay +{vnd(me.today.wages)}
@@ -138,7 +141,7 @@ function JobBadge() {
   );
 }
 
-function Toasts() {
+export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   const dismiss = useGame((s) => s.dismissToast);
   return (

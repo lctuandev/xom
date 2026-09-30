@@ -104,8 +104,19 @@ export function loadContent(raw: unknown): Content {
         errors.push(`kịch bản ${st.id}: lựa chọn tới ${c.next} không tồn tại`);
     if (st.until && !st.next) errors.push(`kịch bản ${st.id}: có điều kiện nhưng thiếu bước tiếp`);
   }
-  for (const j of Object.keys(parsed.jobTasks))
-    if (!jobs.has(j)) errors.push(`jobTasks: việc ${j} không tồn tại`);
+  const foods = ids(parsed.restaurant.foods);
+  for (const d of parsed.restaurant.dishes) {
+    for (const f of d.items)
+      if (!foods.has(f)) errors.push(`quán cơm: món ${d.id} dùng ${f} không có trong khay`);
+  }
+  for (const m of parsed.restaurant.mods) {
+    for (const f of [m.add, m.remove])
+      if (f && !foods.has(f)) errors.push(`quán cơm: yêu cầu ${m.id} dùng ${f} không có`);
+  }
+  for (const j of parsed.jobs) {
+    if (!parsed.places.some((pl) => pl.jobs.includes(j.id)))
+      errors.push(`việc ${j.id}: không có địa điểm nhận việc`);
+  }
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");

@@ -15,7 +15,7 @@
 
 Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplayer realtime, (2) nhân vật + di chuyển, (3) một khu phố nhỏ,
 (4) kinh doanh + kho + tiền, (5) tương tác giữa người chơi — hiện đã xong (2)(3)(4) ở chế độ một người.
-**Sau khi xong Phase 1.7 (vào làm), nên làm ngay Phase 2 — nhiều người chơi** (mục 1, 8, 9, 10), trước khi mở rộng thêm nghề.
+**Phase 1.7 (vào làm) đã xong — nên làm ngay Phase 2 — nhiều người chơi** (mục 1, 8, 9, 10), trước khi mở rộng thêm nghề.
 
 ---
 
@@ -55,8 +55,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 |---|---|---|---|
 | Một con phố: đường, vỉa hè, nhà, cột điện, xe | ✅ | 0 | |
 | Địa điểm có người đứng quầy (vựa xe, chợ, quán cơm, bưu cục) | ✅ | 1.5 | Phải đi tới tận nơi |
-| Nhà có số (địa chỉ giao hàng) | 🚧 | 1.7 | UC-W5 |
-| Không gian riêng khi vào làm (nội thất, camera ngang tầm mắt) | 🚧 | 1.7 | UC-W1 |
+| Nhà có số (địa chỉ giao hàng) | ✅ | 1.7 | UC-W5 · biển số nhà, ghim đơn kế tiếp |
+| Không gian riêng khi vào làm (nội thất, camera ngang tầm mắt) | ✅ | 1.7 | UC-W1 · quán cơm Cô Tư, bưu cục Anh Tám |
 | Hẻm, công viên, trường học, văn phòng, bãi xe | ⏳ | 3 | Sinh xóm procedural (PLAN Phase 5) |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
 | Thời tiết (mưa, nắng) | ⏳ | 1.9 | UC-B4 |
@@ -86,9 +86,10 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Thêm nghề bằng dữ liệu (công thức từng bước) | ✅ | 1.6 | `packages/content` |
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
-| Quầy riêng có không gian 3D khi đứng bán | ⏳ | 1.7 | UC-W6 |
+| Quầy riêng có không gian 3D khi đứng bán | ⏳ | 1.8 | UC-W6 |
 | Dịch vụ: sửa xe (SERVICE) | ⏳ | 1.8 | UC-G |
-| Giao hàng (DELIVERY) — làm thuê | 🚧 | 1.7 | UC-W5 |
+| Làm thuê quán cơm: đứng quầy múc cơm, thu ngân, bưng bê | ✅ | 1.7 | UC-W2…W4 |
+| Giao hàng (DELIVERY) — làm thuê: soạn gói, chạy xe, ký nhận, thu hộ | ✅ | 1.7 | UC-W5 |
 | Nhân viên cho quầy của mình | ⏳ | 1.9 | UC-H |
 | Nhiều quầy, chuỗi cửa hàng | 💤 | 3 | |
 | Creator (quay video, YouTuber) | 💤 | 4 | Mục 18 |
@@ -100,7 +101,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 |---|---|---|---|
 | Kho nguyên liệu của quầy, theo lô, hạn dùng, xuất FIFO | ✅ | 1.6 | |
 | Túi đồ người chơi (balo) | ⏳ | 2 | Cần khi mua/tặng đồ cho nhau |
-| Kho xe (thùng giao hàng) | 🚧 | 1.7 | Tối đa 3 đơn/chuyến |
+| Kho xe (thùng giao hàng) | ✅ | 1.7 | Tối đa 3 đơn/chuyến |
 | Thuộc tính item: nặng, hiếm, có thể trao đổi | 💤 | 3 | |
 
 ## 7. 🚚 Chuỗi cung ứng
@@ -157,7 +158,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Uy tín quầy (sao) theo món đúng, nhanh, giá, thối tiền | ✅ | 1.6 | |
 | Review có lời ("ngon nhưng chờ lâu") | ⏳ | 2 | |
 | Reviewer ghé, viral | ⏳ | sau | UC-I2 |
-| Uy tín người làm thuê | ⏳ | 1.7 | UC-W7 |
+| Phiếu lương ca ✅ · uy tín người làm thuê ⏳ | 🚧 | 1.7–1.9 | UC-W7 |
 
 ## 13. 📈 Tiến trình
 
@@ -175,7 +176,7 @@ Mua/thuê nhà, trang trí, nội thất, mời bạn. (Nội thất Kenney đã
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
-| Xe máy khi giao hàng (nhanh / chậm, hàng dễ vỡ) | 🚧 | 1.7 | Chưa có model xe máy |
+| Xe máy khi giao hàng (nhanh / chậm, hàng dễ vỡ) | ✅ cơ bản | 1.7 | Tốc độ chạy + móp hàng; chưa có model xe máy |
 | Sở hữu xe, xăng, bảo dưỡng, độ xe | 💤 | 3 | Nối với nghề sửa xe (UC-G) |
 
 ## 16. 🎯 Nhiệm vụ & sự kiện

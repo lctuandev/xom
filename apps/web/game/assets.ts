@@ -6,3 +6,6 @@ export type CityModel = (typeof manifest.city.models)[number];
 
 export const CHARACTER_URLS = manifest.characters.files;
 export type CharacterModel = keyof typeof CHARACTER_URLS;
+
+export const INTERIOR_URL = manifest.interior.url;
+export type InteriorModel = (typeof manifest.interior.models)[number];

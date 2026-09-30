@@ -2,7 +2,7 @@
 
 import { content } from "@xom/content";
 import { useEffect, useState } from "react";
-import { send } from "../net/socket";
+import { send, sendWork } from "../net/socket";
 import { useGame } from "../store";
 import { sheetForPlace } from "../world";
 
@@ -17,7 +17,7 @@ export function ActionBar() {
   if (sheet || dialogue || kitchen) return null;
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
-      <JobTaskButton />
+      <DoorButton />
       <KitchenButton />
       <AwayChip />
       <OpenStallButton />
@@ -66,34 +66,6 @@ function KitchenButton() {
   );
 }
 
-function JobTaskButton() {
-  const task = useGame((s) => s.jobTask);
-  const left = useCountdown(task?.expiresAt, content.economy.serveWindowMs);
-  if (!task || left <= 0) return null;
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        const g = useGame.getState();
-        g.setJobTask(null);
-        const res = await send("job:task", { taskId: task.id });
-        if (res.ok) {
-          g.countJobTask();
-          g.toast({
-            kind: "good",
-            text: `Làm tốt! +${content.economy.jobTaskBonus.toLocaleString("vi-VN")}đ`,
-          });
-        }
-      }}
-      className="pointer-events-auto relative w-full max-w-xs rounded-2xl bg-sun px-4 py-2.5 text-left shadow-lg active:scale-[0.97]"
-    >
-      <span className="block text-xs font-semibold opacity-70">🍚 Bưng ra ngay</span>
-      <span className="block text-sm font-extrabold">{task.text}</span>
-      <Countdown left={left} />
-    </button>
-  );
-}
-
 function AwayChip() {
   const open = useGame((s) => s.me?.business?.open ?? false);
   const atStall = useGame((s) => s.atStall);
@@ -116,13 +88,18 @@ function AwayChip() {
 function PlaceButton() {
   const nearPlace = useGame((s) => s.nearPlace);
   const openSheet = useGame((s) => s.openSheet);
+  const setInside = useGame((s) => s.setInside);
   if (!nearPlace) return null;
   const place = content.place(nearPlace);
   return (
     <div className="pointer-events-auto flex w-full max-w-xs gap-2">
       <button
         type="button"
-        onClick={() => openSheet(sheetForPlace(nearPlace))}
+        onClick={() => {
+          // Nơi làm thuê: bước vào không gian riêng; nơi mua bán: mở bảng.
+          if (place.kind === "job") setInside(place.id);
+          else openSheet(sheetForPlace(nearPlace));
+        }}
         className="h-11 flex-1 rounded-2xl bg-red px-3 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
       >
         {place.action} · {place.keeper.name}
@@ -157,6 +134,38 @@ function OpenStallButton() {
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
       🔓 Mở quầy{rent ? ` · thuê chỗ ${Math.round(rent / 1000)}k` : ""}
+    </button>
+  );
+}
+
+/** Giao hàng: đứng trước cửa nhà có đơn → gọi khách ra nhận (UC-W5). */
+function DoorButton() {
+  const nearAddress = useGame((s) => s.nearAddress);
+  const shift = useGame((s) => s.shift);
+  const [busy, setBusy] = useState(false);
+  if (!nearAddress || !shift) return null;
+  const here = shift.deliveries.filter(
+    (d) => (d.stage === "picked" || d.stage === "later") && d.addressId === nearAddress,
+  );
+  const target =
+    here[0] ?? shift.deliveries.find((d) => d.stage === "picked" || d.stage === "later");
+  if (!target) return null;
+  const addr = content.data.delivery.addresses.find((a) => a.id === nearAddress);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        await sendWork(
+          { kind: "call", taskId: target.id, addressId: nearAddress },
+          `door:${nearAddress}`,
+        );
+        setBusy(false);
+      }}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-sun px-4 text-sm font-semibold shadow-lg active:scale-[0.97]"
+    >
+      🔔 Gọi khách · {addr?.label} ({target.code})
     </button>
   );
 }

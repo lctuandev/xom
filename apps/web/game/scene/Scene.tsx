@@ -2,11 +2,12 @@
 
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
 import { useGame } from "../store";
 import { standBehind } from "../world";
+import { AddressSigns, DeliveryPins, DoorPeople } from "./Addresses";
 import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
@@ -33,6 +34,14 @@ const SIDEWALK_ZONES: [number, number][] = [
 export function Scene() {
   const [dpr, setDpr] = useState(1.5);
   const setContextLost = useGame((s) => s.setContextLost);
+  // Vào quán thì canvas phố bị gỡ và R3F chủ động bỏ context — không phải lỗi đồ họa.
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   return (
     <Canvas
@@ -45,7 +54,7 @@ export function Scene() {
       onCreated={({ gl }) => {
         gl.domElement.addEventListener("webglcontextlost", (e) => {
           e.preventDefault();
-          setContextLost(true);
+          if (alive.current) setContextLost(true);
         });
       }}
     >
@@ -109,6 +118,9 @@ function World() {
         <planeGeometry args={[200, 200]} />
       </mesh>
       <Places />
+      <AddressSigns />
+      <DoorPeople />
+      <DeliveryPins />
       <Stalls />
       <Customers />
       <ProximityWatcher />

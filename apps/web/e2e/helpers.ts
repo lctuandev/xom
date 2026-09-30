@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { content } from "@xom/content";
 
 export async function register(page: Page, name = "Tuấn") {
@@ -11,6 +11,20 @@ export async function register(page: Page, name = "Tuấn") {
   await page.getByLabel("Mật khẩu").fill("matkhau123");
   await page.getByRole("button", { name: /Tạo tài khoản & vào xóm/ }).tap();
   await page.waitForURL("**/play");
+}
+
+/**
+ * Đồng hồ xóm chạy chung cho mọi test (GAME_TICK_MS=150 → một ngày ≈ 2,4 phút).
+ * Kịch bản dài cần bắt đầu từ sáng: quá trưa thì chờ sang ngày mới.
+ */
+export async function waitForMorning(page: Page, latestHour = 11) {
+  const clock = page.getByText(/^N\d+ · \d\d:\d\d$/);
+  await expect(clock).toBeVisible();
+  const hour = Number(((await clock.textContent()) ?? "").match(/(\d\d):/)?.[1] ?? 0);
+  if (hour < latestHour) return;
+  const next = page.getByRole("button", { name: /Sang ngày mới/ });
+  await expect(next).toBeVisible({ timeout: 170_000 });
+  await next.tap();
 }
 
 /** Đọc hết lời thoại của NPC (bấm Tiếp) rồi trả về hộp điều khiển hội thoại. */
@@ -119,6 +133,20 @@ export async function payOrder(page: Page, short = 0) {
   }
   await kitchen.getByRole("button", { name: /^Thối .*✓$/ }).tap();
   return "cash";
+}
+
+/** Thối tiền bằng bàn tiền lẻ (CashChange) trong `scope`; `short` = cố tình thối thiếu. */
+export async function giveChange(_page: Page, scope: Locator, short = 0) {
+  await scope.getByRole("button", { name: "💡 Tính giúp" }).tap();
+  const text = (await scope.getByText(/Cần thối/).textContent()) ?? "";
+  let change = Number(text.replace(/\D/g, "")) - short;
+  for (const d of [50_000, 20_000, 10_000, 5_000, 2_000, 1_000]) {
+    while (change >= d) {
+      await scope.getByRole("button", { name: `${(d / 1000).toString()}.000đ`, exact: true }).tap();
+      change -= d;
+    }
+  }
+  await scope.getByRole("button", { name: /✓$/ }).last().tap();
 }
 
 export async function shot(page: Page, name: string) {

@@ -15,7 +15,6 @@ import {
   buyEquipmentSchema,
   type ClientToServerEvents,
   emptySchema,
-  jobTaskSchema,
   type MakeResult,
   type MeView,
   makeOrderSchema,
@@ -28,11 +27,13 @@ import {
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
-  startJobSchema,
   type TalkResult,
   talkSchema,
   tutorialSchema,
   updateBusinessSchema,
+  type WorkResult,
+  workActSchema,
+  workStartSchema,
 } from "@xom/shared";
 import type { Server, Socket } from "socket.io";
 import type { ZodType } from "zod";
@@ -62,6 +63,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   ) {}
 
   afterInit() {
+    this.game.work.setEmitter({
+      shift: (playerId, v) => this.server.to(playerChannel(playerId)).emit("shift", v),
+      payslip: (playerId, p) => this.server.to(playerChannel(playerId)).emit("payslip", p),
+      say: (roomId, who, text) => this.server.to(`room:${roomId}`).emit("say", { who, text }),
+    });
     this.game.orders.setEmitter({
       order: (roomId, e) => this.server.to(`room:${roomId}`).emit("order", e),
       update: (roomId, e) => this.server.to(`room:${roomId}`).emit("orderUpdate", e),
@@ -141,14 +147,48 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handle(c, emptySchema, body, (ctx) => this.game.closeBusiness(ctx));
   }
 
-  @SubscribeMessage("job:start")
-  startJob(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, startJobSchema, body, (ctx, p) => this.game.startJob(ctx, p.jobId));
+  @SubscribeMessage("work:start")
+  workStart(
+    @ConnectedSocket() c: GameSocket,
+    @MessageBody() body: unknown,
+  ): Promise<Ack<WorkResult>> {
+    return this.handleWith(c, workStartSchema, body, async (ctx, p) => {
+      await this.game.work.start(ctx.room, ctx.playerId, p.jobId, p.role);
+      return this.workResult(ctx, { ok: true, line: "Vào ca!", pay: 0 });
+    });
   }
 
-  @SubscribeMessage("job:stop")
-  stopJob(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, emptySchema, body, (ctx) => this.game.stopJob(ctx));
+  @SubscribeMessage("work:act")
+  workAct(
+    @ConnectedSocket() c: GameSocket,
+    @MessageBody() body: unknown,
+  ): Promise<Ack<WorkResult>> {
+    return this.handleWith(c, workActSchema, body, async (ctx, p) =>
+      this.workResult(ctx, await this.game.work.act(ctx.room, ctx.playerId, p)),
+    );
+  }
+
+  @SubscribeMessage("work:stop")
+  workStop(
+    @ConnectedSocket() c: GameSocket,
+    @MessageBody() body: unknown,
+  ): Promise<Ack<WorkResult>> {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const payslip = await this.game.work.end(ctx.room, ctx.playerId, "stop");
+      if (!payslip) throw new GameError("invalid_state", "Chưa vào ca");
+      return this.workResult(ctx, { ok: true, line: "Ra ca!", pay: 0, payslip });
+    });
+  }
+
+  private async workResult(
+    ctx: IntentContext,
+    o: { ok: boolean; line: string; pay: number; payslip?: WorkResult["payslip"] },
+  ): Promise<WorkResult> {
+    return {
+      ...o,
+      me: await this.game.me(ctx.room, ctx.playerId),
+      shift: this.game.work.view(ctx.room, ctx.playerId),
+    };
   }
 
   @SubscribeMessage("biz:attend")
@@ -193,13 +233,6 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("chat:say")
   say(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, saySchema, body, (ctx, p) => this.game.say(ctx, p.phraseId));
-  }
-
-  @SubscribeMessage("job:task")
-  jobTask(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, jobTaskSchema, body, (ctx, p) =>
-      this.game.completeJobTask(ctx, p.taskId),
-    );
   }
 
   @SubscribeMessage("tutorial:set")

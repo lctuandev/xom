@@ -1,10 +1,8 @@
-import { randomUUID } from "node:crypto";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { content } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
-  JobTaskEvent,
   MeView,
   NotifyEvent,
   SayEvent,
@@ -33,6 +31,7 @@ import { menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { addToReport, emptyReport } from "./report.js";
 import { GameError, RoomRuntime } from "./room.js";
+import { WorkService } from "./work.js";
 
 /** 1 giây thật = 1 phút game (docs/PLAN.md §3.2). */
 const TICK_MS = Number(process.env.GAME_TICK_MS ?? 1000);
@@ -52,7 +51,6 @@ export interface GameEmitter {
   toPlayer(playerId: string, event: "dayEnd", data: DayReportView): void;
   toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
   toPlayer(playerId: string, event: "notify", data: NotifyEvent): void;
-  toPlayer(playerId: string, event: "jobTask", data: JobTaskEvent): void;
 }
 
 const pick = <T>(list: readonly T[], rand: () => number): T =>
@@ -75,6 +73,7 @@ export class GameService implements OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     readonly orders: OrderService,
+    readonly work: WorkService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -112,6 +111,7 @@ export class GameService implements OnModuleDestroy {
       void room.run(async () => {
         if (member.sockets.size > 0) return;
         await this.closeAllFor(room, playerId);
+        await this.work.end(room, playerId, "left");
         await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
         room.members.delete(playerId);
         this.roomOfPlayer.delete(playerId);
@@ -289,7 +289,7 @@ export class GameService implements OnModuleDestroy {
     if (!room.attending.has(playerId))
       throw new GameError("invalid_state", "Tới tận quầy rồi mới mở hàng được");
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
-    if (player.jobId)
+    if (player.jobId || room.shifts.has(playerId))
       throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở quầy");
     const lot = content.lot(biz.lotId);
     await this.prisma.$transaction(async (tx) => {
@@ -320,45 +320,10 @@ export class GameService implements OnModuleDestroy {
     this.emitWorld(room);
   }
 
-  async startJob({ playerId }: IntentContext, jobId: string) {
-    if (!content.jobById.has(jobId)) throw new GameError("invalid_payload", "Không có việc này");
-    const biz = await this.businessOf(playerId);
-    if (biz?.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy rồi mới đi làm thuê được");
-    await this.prisma.player.update({ where: { id: playerId }, data: { jobId } });
-  }
-
-  async stopJob({ room, playerId }: IntentContext) {
-    await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
-    for (const [id, t] of room.jobTasks) if (t.playerId === playerId) room.jobTasks.delete(id);
-  }
-
   /** Client báo nhân vật đang đứng ở quầy hay đã đi chỗ khác. */
   async attend({ room, playerId }: IntentContext, on: boolean) {
     if (on) room.attending.add(playerId);
     else room.attending.delete(playerId);
-  }
-
-  /** Làm kịp việc vặt khi đang làm thuê: thưởng thêm. */
-  async completeJobTask({ room, playerId }: IntentContext, taskId: string) {
-    const task = room.jobTasks.get(taskId);
-    if (!task || task.playerId !== playerId)
-      throw new GameError("invalid_state", "Việc này xong rồi");
-    room.jobTasks.delete(taskId);
-    if (task.expiresAt < Date.now())
-      throw new GameError("invalid_state", "Chậm mất rồi, người khác làm thay");
-    const bonus = content.economy.jobTaskBonus;
-    await this.prisma.$transaction(async (tx) => {
-      await this.ledger.transfer(
-        tx,
-        SYSTEM.employer,
-        playerWallet(playerId),
-        bonus,
-        "job_bonus",
-        taskId,
-      );
-      await addToReport(tx, playerId, room.day, { wages: bonus });
-    });
   }
 
   /** Lưu tiến độ kịch bản người mới. */
@@ -439,11 +404,8 @@ export class GameService implements OnModuleDestroy {
         await this.endDay(room);
       } else {
         if (room.minute % eco.economyTickMinutes === 0) await this.customerTick(room);
-        if (room.minute % 60 === 0) await this.payWages(room);
-        if (room.minute % eco.jobTaskEveryMinutes === eco.jobTaskEveryMinutes / 2)
-          await this.spawnJobTasks(room);
+        await this.work.tick(room);
         await this.orders.expire(room);
-        this.expireJobTasks(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }
       this.emitter?.toRoom(room.id, "clock", { day: room.day, minute: room.minute });
@@ -491,61 +453,10 @@ export class GameService implements OnModuleDestroy {
     }
   }
 
-  /** Làm thuê: định kỳ có việc vặt, làm kịp được thưởng. */
-  private async spawnJobTasks(room: RoomRuntime) {
-    const workers = await this.prisma.player.findMany({
-      where: { id: { in: [...room.members.keys()] }, jobId: { not: null } },
-    });
-    for (const w of workers) {
-      const jobId = w.jobId ?? "";
-      const texts = content.data.jobTasks[jobId];
-      if (!texts) continue;
-      const task = {
-        id: randomUUID(),
-        playerId: w.id,
-        expiresAt: Date.now() + content.economy.serveWindowMs,
-      };
-      room.jobTasks.set(task.id, task);
-      const text = pick(texts, seededRandom("job", w.id, room.day, room.minute));
-      this.emitter?.toPlayer(w.id, "jobTask", {
-        id: task.id,
-        jobId,
-        text,
-        expiresAt: task.expiresAt,
-      });
-    }
-  }
-
-  private expireJobTasks(room: RoomRuntime) {
-    const now = Date.now();
-    for (const [id, task] of room.jobTasks) if (task.expiresAt <= now) room.jobTasks.delete(id);
-  }
-
-  private async payWages(room: RoomRuntime) {
-    const workers = await this.prisma.player.findMany({
-      where: { id: { in: [...room.members.keys()] }, jobId: { not: null } },
-    });
-    for (const w of workers) {
-      const job = content.job(w.jobId ?? "");
-      await this.prisma.$transaction(async (tx) => {
-        await this.ledger.transfer(
-          tx,
-          SYSTEM.employer,
-          playerWallet(w.id),
-          job.wagePerHour,
-          "wage",
-          job.id,
-        );
-        await addToReport(tx, w.id, room.day, { wages: job.wagePerHour });
-      });
-      this.emitter?.toPlayer(w.id, "me", await this.me(room, w.id));
-    }
-  }
-
   /** Cuối ngày: đóng quầy, bỏ nguyên liệu hết hạn, chốt báo cáo, sang ngày mới lúc 6:00. */
   private async endDay(room: RoomRuntime) {
     const day = room.day;
-    room.jobTasks.clear();
+    for (const playerId of [...room.shifts.keys()]) await this.work.end(room, playerId, "day_end");
     room.boostUntil.clear();
     room.shoutReadyAt.clear();
     for (const playerId of room.members.keys()) {
@@ -618,6 +529,7 @@ export class GameService implements OnModuleDestroy {
       me: await this.me(room, playerId),
       clock: { day: room.day, minute: room.minute },
       world: { lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)) },
+      shift: this.work.view(room, playerId),
       orders: [...room.orders.values()]
         .filter((o) => o.event.ownerId === playerId)
         .map((o) => o.event),

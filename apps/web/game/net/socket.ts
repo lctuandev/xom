@@ -56,7 +56,8 @@ export function connectGame(onSignedOut: () => void): () => void {
     game.removeOrder(r.orderId);
   });
   s.on("say", (e) => game.say(e));
-  s.on("jobTask", (t) => game.setJobTask(t));
+  s.on("shift", (v) => game.setShift(v));
+  s.on("payslip", (p) => game.setPayslip(p));
   s.on("dayEnd", (report) => game.setReport(report));
   s.on("notify", (n) => game.toast(n));
 
@@ -112,4 +113,24 @@ export function send<E extends IntentEvent>(
       resolve(result as AckOf<E>);
     });
   });
+}
+
+/**
+ * Thao tác trong ca làm: cập nhật ca, lời chủ/khách hiện trên đầu người nói, tiền nhận được hiện toast.
+ * `speaker`: ai nói câu trả lời (id người đứng quầy hoặc key khung thoại của khách).
+ */
+export async function sendWork(
+  act: Parameters<ClientToServerEvents["work:act"]>[0],
+  speaker?: string,
+): Promise<boolean> {
+  const res = await send("work:act", act);
+  if (!res.ok) return false;
+  const game = useGame.getState();
+  game.setShift(res.data.shift);
+  if (speaker && res.data.line) game.say({ who: speaker, text: res.data.line }, 3500);
+  if (res.data.pay > 0) {
+    game.toast({ kind: "good", text: `+${res.data.pay.toLocaleString("vi-VN")}đ` });
+    game.countJobTask();
+  } else if (!res.data.ok && !speaker) game.toast({ kind: "warn", text: res.data.line });
+  return res.data.ok;
 }

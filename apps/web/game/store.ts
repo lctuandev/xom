@@ -1,13 +1,14 @@
 import type {
   ClockView,
   DayReportView,
-  JobTaskEvent,
   MeView,
   NotifyEvent,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
+  PayslipView,
   SayEvent,
+  ShiftView,
   Snapshot,
   WorldView,
 } from "@xom/shared";
@@ -40,7 +41,8 @@ export interface OrderState extends OrderEvent {
 /** Nơi nhân vật đang tự đi tới; tới nơi thì mở sheet tương ứng (nếu có). */
 export type Goal =
   | { kind: "place"; id: string; open?: SheetId }
-  | { kind: "stall"; open?: SheetId };
+  | { kind: "stall"; open?: SheetId }
+  | { kind: "address"; id: string };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -64,7 +66,12 @@ interface GameState {
   /** Đơn đang mở màn hình làm món. */
   kitchen: string | null;
   bubbles: Record<string, Bubble>;
-  jobTask: JobTaskEvent | null;
+  /** Đang ở bên trong nơi làm (id địa điểm) — cảnh nội thất thay cho bản đồ. */
+  inside: string | null;
+  shift: ShiftView | null;
+  payslip: PayslipView | null;
+  /** Địa chỉ giao hàng đang đứng trước cửa. */
+  nearAddress: string | null;
   /** Đếm trong phiên, dùng cho điều kiện kịch bản. */
   servedCount: number;
   jobTasksDone: number;
@@ -95,7 +102,10 @@ interface GameState {
   openKitchen: (orderId: string | null) => void;
   say: (s: SayEvent, ms?: number) => void;
   setBubble: (key: string, b: Bubble | null) => void;
-  setJobTask: (t: JobTaskEvent | null) => void;
+  setInside: (placeId: string | null) => void;
+  setShift: (s: ShiftView | null) => void;
+  setPayslip: (p: PayslipView | null) => void;
+  setNearAddress: (id: string | null) => void;
   countServed: () => void;
   countJobTask: () => void;
   showDialogue: (step: string | null) => void;
@@ -121,7 +131,10 @@ export const useGame = create<GameState>((set) => ({
   orders: [],
   kitchen: null,
   bubbles: {},
-  jobTask: null,
+  inside: null,
+  shift: null,
+  payslip: null,
+  nearAddress: null,
   servedCount: 0,
   jobTasksDone: 0,
   dialogue: null,
@@ -133,6 +146,7 @@ export const useGame = create<GameState>((set) => ({
   applySnapshot: (s) =>
     set({
       me: s.me,
+      shift: s.shift,
       clock: s.clock,
       world: s.world,
       orders: s.orders.map((o) => ({ ...o, made: "none", mistakes: [] })),
@@ -183,7 +197,10 @@ export const useGame = create<GameState>((set) => ({
       else delete bubbles[key];
       return { bubbles };
     }),
-  setJobTask: (jobTask) => set({ jobTask }),
+  setInside: (inside) => set({ inside, sheet: null }),
+  setShift: (shift) => set({ shift }),
+  setPayslip: (payslip) => set({ payslip }),
+  setNearAddress: (nearAddress) => set({ nearAddress }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),
   countJobTask: () => set((s) => ({ jobTasksDone: s.jobTasksDone + 1 })),
   setDialoguePage: (dialoguePage) => set({ dialoguePage }),

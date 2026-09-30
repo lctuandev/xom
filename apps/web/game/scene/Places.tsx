@@ -5,7 +5,7 @@ import { content, type Place } from "@xom/content";
 import { useMemo, useRef } from "react";
 import type { CharacterModel, CityModel } from "../assets";
 import { useGame } from "../store";
-import { placeSpot, standBehind } from "../world";
+import { addressSpot, placeSpot, standBehind } from "../world";
 import { Character, Walker } from "./Character";
 import { Instances, type Placement } from "./CityKit";
 import { speakerWalker } from "./guide";
@@ -101,11 +101,20 @@ export function ProximityWatcher() {
     const behind = lotId ? standBehind(lotId) : null;
     const atStall = behind ? distanceTo(behind.x, behind.z) <= radius : false;
     if (near !== s.nearPlace || atStall !== s.atStall) s.setProximity(near, atStall);
+    // Trước cửa nhà nào (giao hàng).
+    let door: string | null = null;
+    for (const a of content.data.delivery.addresses) {
+      const spot = addressSpot(a.id);
+      if (spot && distanceTo(spot.x, spot.z) <= radius) door = a.id;
+    }
+    if (door !== s.nearAddress) s.setNearAddress(door);
 
     const g = s.goal;
-    if (g && !getPlayer().target && (g.kind === "place" ? near === g.id : atStall)) {
+    const arrived =
+      g?.kind === "place" ? near === g.id : g?.kind === "address" ? door === g.id : atStall;
+    if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
-      if (g.open) s.openSheet(g.open);
+      if ("open" in g && g.open) s.openSheet(g.open);
     }
   });
   return null;

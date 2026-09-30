@@ -16,9 +16,11 @@ export function registerAnchor(key: string, pos: () => Pos): () => void {
   };
 }
 
-export function anchorOf(key: string, myId: string | undefined): Pos | null {
+/** `localOnly`: cảnh trong nhà — chỉ nhân vật có mặt trong cảnh, bỏ vị trí ngoài phố. */
+export function anchorOf(key: string, myId: string | undefined, localOnly = false): Pos | null {
   const d = dynamic.get(key);
   if (d) return d();
+  if (localOnly) return null;
   if (key === myId) return getPlayer().position;
   const place = content.placeById.get(key);
   if (place) return place.position;

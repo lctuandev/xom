@@ -17,7 +17,7 @@ export class Walker {
   constructor(
     x: number,
     z: number,
-    readonly speed = 3,
+    public speed = 3,
   ) {
     this.position = new Vector3(x, 0, z);
   }
@@ -51,7 +51,16 @@ export class Walker {
 
 const FADE = 0.2;
 
-export function Character({ model, walker }: { model: CharacterModel; walker: Walker }) {
+export function Character({
+  model,
+  walker,
+  pose = "auto",
+}: {
+  model: CharacterModel;
+  walker: Walker;
+  /** "sit" = ngồi (khách trong quán); mặc định đi/đứng theo chuyển động. */
+  pose?: "auto" | "sit";
+}) {
   const group = useRef<Group>(null);
   const { scene, animations } = useGLTF(CHARACTER_URLS[model]);
   // Nhân vật có skeleton nên phải clone bằng SkeletonUtils để mỗi bản sao có xương riêng.
@@ -63,7 +72,7 @@ export function Character({ model, walker }: { model: CharacterModel; walker: Wa
   const { actions } = useAnimations(animations, group);
   const current = useRef<string>("");
 
-  const play = (name: "idle" | "walk") => {
+  const play = (name: "idle" | "walk" | "sit") => {
     if (current.current === name) return;
     actions[current.current]?.fadeOut(FADE);
     actions[name]?.reset().fadeIn(FADE).play();
@@ -86,7 +95,7 @@ export function Character({ model, walker }: { model: CharacterModel; walker: Wa
       Math.cos(walker.yaw - g.rotation.y),
     );
     g.rotation.y += diff * Math.min(1, dt * 12);
-    play(moving ? "walk" : "idle");
+    play(moving ? "walk" : pose === "sit" ? "sit" : "idle");
   });
 
   return (

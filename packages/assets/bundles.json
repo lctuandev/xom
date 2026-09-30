@@ -48,6 +48,52 @@
           "models": ["ghe-nhua-do", "xe-banh-mi", "xe-tra-sua", "sap-phu-kien"]
         }
       ]
+    },
+    "interior": {
+      "sources": [
+        {
+          "dir": "art/vendor/kenney/kenney_furniture-kit/Models/GLTF format",
+          "scale": 2.3,
+          "center": true,
+          "models": [
+            "kitchenBar",
+            "kitchenBarEnd",
+            "kitchenCabinet",
+            "kitchenStove",
+            "table",
+            "chair",
+            "stoolBar",
+            "bookcaseOpen",
+            "cardboardBoxClosed",
+            "cardboardBoxOpen",
+            "computerScreen",
+            "floorFull",
+            "wall",
+            "wallWindow",
+            "wallDoorway",
+            "pottedPlant",
+            "rugRectangle"
+          ]
+        },
+        {
+          "dir": "art/vendor/kenney/kenney_food-kit/Models/GLB format",
+          "scale": 0.35,
+          "center": true,
+          "models": [
+            "plate",
+            "bowl",
+            "rice-ball",
+            "meat-ribs",
+            "egg-cooked",
+            "tomato-slice",
+            "pudding",
+            "mincemeat-pie",
+            "bowl-soup",
+            "cup-tea",
+            "soda-can"
+          ]
+        }
+      ]
     }
   },
   "singles": {
