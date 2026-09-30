@@ -64,7 +64,12 @@ export interface MeView {
 export interface LotOccupant {
   lotId: string;
   businessId: string;
+  ownerId: string;
   ownerName: string;
+  /** Thực đơn đang bày (hàng xóm xem để gọi món, UC-J3). */
+  menu: MenuItemView[];
+  /** Món làm được ngay (đang bật và đủ nguyên liệu lúc cập nhật gần nhất). */
+  available: string[];
   equipmentId: string;
   productId: string;
   open: boolean;
@@ -136,6 +141,9 @@ export interface OrderEvent {
   createdAt: number;
   /** Hết kiên nhẫn lúc này (ms epoch, giờ server). */
   expiresAt: number;
+  /** Khách là người chơi thật (UC-J3): trả bằng chuyển khoản từ ví của họ. */
+  buyerId?: string;
+  buyerName?: string;
 }
 
 /** Món vừa làm xong: đúng hay sai (khách phàn nàn). */
@@ -394,6 +402,12 @@ export const moveSchema = z.object({
   inside: contentId.nullable(),
 });
 export type MovePayload = z.infer<typeof moveSchema>;
+export const shopOrderSchema = z.object({
+  businessId: z.string().uuid(),
+  variantId: contentId,
+  picks: z.record(contentId, contentId).default({}),
+  mods: z.array(contentId).max(8).default([]),
+});
 export const joinRoomSchema = z.object({
   code: z
     .string()

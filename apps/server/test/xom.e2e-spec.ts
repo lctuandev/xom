@@ -1,8 +1,12 @@
 import type { INestApplication } from "@nestjs/common";
+import { content } from "@xom/content";
 import type {
   Ack,
   ClientToServerEvents,
   MeView,
+  OrderEvent,
+  OrderResultEvent,
+  OrderUpdateEvent,
   PeerPos,
   RosterView,
   SayEvent,
@@ -150,6 +154,83 @@ describe("Xóm chung (e2e)", () => {
     expect(40 - after.batchDay).toBeGreaterThanOrEqual(0);
     expect(40 - after.batchDay).toBeLessThanOrEqual(1);
     expect(snap.me.inventory.find((i) => i.itemId === "banh_mi_phoi")?.qty).toBeGreaterThan(0);
+    b.socket.disconnect();
+  });
+
+  it("mua của nhau: gọi món ở quầy hàng xóm, chủ làm tay, tiền chuyển từ ví khách sang ví chủ", async () => {
+    // An mở xe bánh mì ở Đầu hẻm.
+    const a = await join(url);
+    await emit(a.socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
+    for (const itemId of [
+      "banh_mi_phoi",
+      "pate",
+      "thit_nguoi",
+      "dua_leo",
+      "do_chua",
+      "hanh",
+      "ngo",
+      "ot",
+      "sot",
+      "giay_goi",
+    ])
+      expect((await emit(a.socket, "market:buy", { itemId, packs: 1 })).ok).toBe(true);
+    await emit(a.socket, "biz:update", { lotId: "dau_hem" });
+    await emit(a.socket, "biz:attend", { on: true });
+    expect((await emit(a.socket, "biz:open", {})).ok).toBe(true);
+
+    // Bình vào xóm An, thấy quầy An kèm thực đơn.
+    const b = await join(url);
+    const moved = next(b.socket, "snapshot", (s: Snapshot) => s.roster.code === a.snap.roster.code);
+    await emit(b.socket, "xom:join", { code: a.snap.roster.code });
+    const stall = (await moved).world.lots.find((l) => l.ownerId === a.snap.me.playerId);
+    expect(stall?.menu.some((m) => m.variantId === "banh_mi_thit" && m.on)).toBe(true);
+    if (!stall) throw new Error("không thấy quầy");
+    // Chỉ đủ nguyên liệu bánh mì thịt → hàng xóm thấy các món khác "hết".
+    expect(stall.available).toEqual(["banh_mi_thit"]);
+    const order = { businessId: stall.businessId, variantId: "banh_mi_thit", mods: ["khong_hanh"] };
+
+    // Đứng xa thì không gọi được.
+    b.socket.emit("move", { x: 30, z: 5, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 120));
+    expect(await emit(b.socket, "shop:order", order)).toMatchObject({
+      ok: false,
+      message: "Lại gần quầy mới gọi món được",
+    });
+    const lot = content.lot("dau_hem").position;
+    b.socket.emit("move", { x: lot.x + 1, z: lot.z + 1.2, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 120));
+
+    const got = next(a.socket, "order", (o: OrderEvent) => o.buyerId === b.snap.me.playerId);
+    const placed = await emit(b.socket, "shop:order", order);
+    expect(placed.ok).toBe(true);
+    const o = await got;
+    expect(o).toMatchObject({ buyerName: "Tuấn Test", dish: "bánh mì thịt, không hành" });
+    expect(o.spec.rau).not.toContain("hanh");
+    // Gọi thêm khi đang chờ → từ chối.
+    expect((await emit(b.socket, "shop:order", order)).ok).toBe(false);
+
+    // An làm sai (quên bỏ hành) → Bình thấy báo sai; làm lại đúng.
+    const wrongSeen = next(
+      b.socket,
+      "orderUpdate",
+      (u: OrderUpdateEvent) => u.orderId === o.orderId,
+    );
+    await emit(a.socket, "order:make", {
+      orderId: o.orderId,
+      build: { ...o.spec, rau: ["dua_leo", "do_chua", "hanh", "ngo"] },
+    });
+    expect((await wrongSeen).line).toMatch(/^❌ Sai phần/);
+    await emit(a.socket, "order:make", { orderId: o.orderId, build: o.spec });
+
+    // Tính tiền: chuyển khoản từ ví Bình sang ví An, không boa tự động.
+    const bMoney = next(b.socket, "me", (m: MeView) => m.money === b.snap.me.money - o.price);
+    const done = next(b.socket, "orderResult", (r: OrderResultEvent) => r.orderId === o.orderId);
+    const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: null });
+    expect(paid.ok && paid.data.today.revenue).toBe(o.price);
+    expect(paid.ok && paid.data.today.tips).toBe(0);
+    await bMoney;
+    expect(await done).toMatchObject({ served: true, received: o.price });
+    a.socket.disconnect();
     b.socket.disconnect();
   });
 });

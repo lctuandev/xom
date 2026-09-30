@@ -19,6 +19,8 @@ export function XomSheet() {
   const setInvite = useGame((s) => s.setInvite);
   const close = useGame((s) => s.openSheet);
   const toast = useGame((s) => s.toast);
+  const lots = useGame((s) => s.world.lots);
+  const setGoal = useGame((s) => s.setGoal);
   const [code, setCode] = useState(invite ?? "");
   const [busy, setBusy] = useState(false);
   if (!roster || !me) return null;
@@ -94,6 +96,27 @@ export function XomSheet() {
                 ở {content.placeById.get(p.inside)?.name ?? "trong nhà"}
               </span>
             )}
+            {(() => {
+              const stall = lots.find((l) => l.ownerId === p.id && l.open);
+              if (!stall || p.id === me.playerId) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    close(null);
+                    setGoal({
+                      kind: "shop",
+                      id: stall.businessId,
+                      lotId: stall.lotId,
+                      open: "shop",
+                    });
+                  }}
+                  className="h-8 shrink-0 rounded-lg bg-red px-2.5 text-xs font-semibold text-cream"
+                >
+                  🛒 Tới quầy
+                </button>
+              );
+            })()}
           </li>
         ))}
       </ul>

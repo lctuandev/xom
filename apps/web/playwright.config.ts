@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 // Kịch bản chơi trên điện thoại (docs/PLAN.md Phase 1.5). Cần server đang chạy với đồng hồ tăng tốc:
-//   GAME_TICK_MS=150 pnpm dev      rồi      pnpm --filter @xom/web test:e2e
+//   GAME_TICK_MS=250 pnpm dev      rồi      pnpm --filter @xom/web test:e2e
 // Dùng Chrome cài sẵn trên máy (channel "chrome") để không phải tải browser riêng.
 export default defineConfig({
   testDir: "./e2e",

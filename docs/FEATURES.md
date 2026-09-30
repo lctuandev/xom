@@ -70,7 +70,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tiền mặt, sổ cái kép, ví không âm | ✅ | 1 | |
 | Ngân hàng (tiền mặt vs tài khoản), chuyển khoản | ⏳ | 2 | Khách đã có trả chuyển khoản |
 | Mua bán với NPC | ✅ | 1.6 | Chợ, vựa xe, khách |
-| Mua bán / chuyển tiền giữa người chơi | ⏳ | 2 | UC-J3, server validate |
+| Mua bán / chuyển tiền giữa người chơi | 🚧 | 2 | Mua món ở quầy nhau ✅ (UC-J3); tặng/chuyển tiền tự do ⏳ |
 | Thuê chỗ bán theo ngày | ✅ | 1 | |
 | Trả lương (làm thuê NPC) | ✅ | 1 | |
 | Trả lương người chơi / NPC làm cho mình | ⏳ | 1.9 | UC-H2…H9 (ký quỹ) |
@@ -136,7 +136,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
-| Làm khách ở quầy người khác (gọi món, người thật làm) | ⏳ | 2 | UC-E4, J3 |
+| Làm khách ở quầy người khác (gọi món, người thật làm) | ✅ | 2 | UC-J3 · chuyển khoản giữa hai ví |
 | Tặng đồ, trao đổi, mời, đi theo | ⏳ | 2 | |
 | Làm chung một quầy (co-op) | ⏳ | 2–3 | |
 | Chụp ảnh | 💤 | 4 | Mục 18 |

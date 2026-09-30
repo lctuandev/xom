@@ -19,6 +19,7 @@ import { JobsSheet } from "./ui/JobsSheet";
 import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
 import { QuickChat } from "./ui/QuickChat";
+import { ShopSheet } from "./ui/ShopSheet";
 import { TalkSheet } from "./ui/TalkSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
 import { Payslip } from "./ui/work/Payslip";
@@ -101,6 +102,7 @@ export default function GameShell() {
       {sheet === "market" && <MarketSheet />}
       {sheet === "jobs" && <JobsSheet />}
       {sheet === "xom" && <XomSheet />}
+      {sheet === "shop" && <ShopSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />

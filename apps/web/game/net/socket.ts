@@ -7,7 +7,7 @@ import {
 } from "@xom/shared";
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
-import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
+import { orderBus, orderResultBus, orderUpdateBus, purchaseOf, useGame } from "../store";
 import { applyPeers, seedPeers, startPresence } from "./presence";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -52,17 +52,37 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
+  // Đơn của khách là người chơi (UC-J3): lời gọi món và kết quả hiện trên đầu chính người đó.
+  const buyers = new Map<string, string>();
   s.on("order", (o) => {
     orderBus.emit(o);
-    if (o.ownerId === useGame.getState().me?.playerId) game.addOrder(o);
+    const st = useGame.getState();
+    if (o.ownerId === st.me?.playerId) game.addOrder(o);
+    if (!o.buyerId) return;
+    buyers.set(o.orderId, o.buyerId);
+    game.say({ who: o.buyerId, text: o.dish }, 6000);
+    if (o.buyerId === st.me?.playerId) game.setPurchase(purchaseOf(o, st.world));
   });
   s.on("orderUpdate", (u) => {
     orderUpdateBus.emit(u);
     game.updateOrder(u);
+    const buyer = buyers.get(u.orderId);
+    if (!buyer) return;
+    game.say({ who: buyer, text: u.line }, 4000);
+    const p = useGame.getState().purchase;
+    if (p?.orderId === u.orderId) game.setPurchase({ ...p, stage: u.stage });
   });
   s.on("orderResult", (r) => {
     orderResultBus.emit(r);
     game.removeOrder(r.orderId);
+    const buyer = buyers.get(r.orderId);
+    if (!buyer) return;
+    buyers.delete(r.orderId);
+    game.say({ who: buyer, text: r.line }, 4000);
+    if (useGame.getState().purchase?.orderId === r.orderId) {
+      game.setPurchase(null);
+      game.toast({ kind: r.served ? "good" : "warn", text: r.line });
+    }
   });
   s.on("say", (e) => game.say(e));
   s.on("shift", (v) => game.setShift(v));

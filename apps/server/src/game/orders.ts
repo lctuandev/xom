@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { content } from "@xom/content";
 import type { DishView, OrderEvent, OrderResultEvent, OrderUpdateEvent } from "@xom/shared";
 import {
+  customOrder,
   generateOrder,
   hasIngredients,
   ingredientsFor,
@@ -16,7 +17,12 @@ import {
   settleCash,
   validateBuild,
 } from "@xom/sim";
-import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
+import {
+  InsufficientFundsError,
+  LedgerService,
+  playerWallet,
+  SYSTEM,
+} from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { consume, stockMap } from "./inventory.js";
@@ -26,6 +32,9 @@ import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
 const PAY_WAIT_MS = 20_000;
+/** Người chơi thật chờ món lâu hơn khách NPC (họ còn đứng nhìn chủ quầy làm). */
+const PLAYER_PATIENCE_MS = 180_000;
+const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
 const pick = <T>(list: readonly T[], rand: () => number): T =>
   list[Math.floor(rand() * list.length)] ?? (list[0] as T);
@@ -35,6 +44,8 @@ export interface OrderEmitter {
   order(roomId: string, e: OrderEvent): void;
   update(roomId: string, e: OrderUpdateEvent): void;
   result(roomId: string, e: OrderResultEvent): void;
+  /** Ví của một người chơi vừa đổi (khách là người chơi bị trừ tiền). */
+  charged(playerId: string): void;
 }
 
 /**
@@ -111,6 +122,56 @@ export class OrderService {
     return { created, lost };
   }
 
+  /**
+   * Người chơi gọi món ở quầy hàng xóm (UC-J3): chủ quầy phải đang đứng quầy; món phải đang bán và đủ
+   * nguyên liệu; khách phải đủ tiền. Đơn vào hàng chờ như khách thường, trả bằng chuyển khoản khi tính tiền.
+   */
+  async playerOrder(
+    room: RoomRuntime,
+    buyer: { id: string; name: string },
+    biz: Business,
+    choice: { variantId: string; picks: Record<string, string>; mods: string[] },
+  ) {
+    if (biz.ownerId === buyer.id) throw new GameError("invalid_state", "Quầy của mình mà");
+    if (biz.status !== "OPEN" || !biz.lotId)
+      throw new GameError("invalid_state", "Quầy chưa mở hàng");
+    if (!room.attending.has(biz.ownerId))
+      throw new GameError("invalid_state", "Chủ quầy đang vắng, đợi chút nha");
+    for (const o of room.orders.values())
+      if (o.event.buyerId === buyer.id)
+        throw new GameError("invalid_state", "Bạn đang chờ một món rồi");
+    const product = content.product(biz.productId);
+    if (this.waitingAt(room, biz.id) >= content.equipment(biz.equipmentId).queueSize)
+      throw new GameError("invalid_state", "Quầy đang đông, đợi bớt khách nha");
+    const stock = await stockMap(this.prisma, biz.ownerId);
+    const menu = availableMenu(biz.productId, menuOf(biz), stock);
+    const order = customOrder(product.recipe, menu, choice.variantId, choice.picks, choice.mods);
+    if (typeof order === "string") throw new GameError("invalid_state", order);
+    const money = await this.ledger.balance(this.prisma, playerWallet(buyer.id));
+    if (money < order.price) throw new GameError("insufficient_funds", "Không đủ tiền");
+    const now = Date.now();
+    const event: OrderEvent = {
+      orderId: randomUUID(),
+      businessId: biz.id,
+      ownerId: biz.ownerId,
+      lotId: biz.lotId,
+      productId: biz.productId,
+      variantId: order.variantId,
+      archetype: "nguoi_choi",
+      ask: order.ask,
+      dish: order.dish,
+      spec: order.spec,
+      price: order.price,
+      pay: { kind: "transfer" },
+      createdAt: now,
+      expiresAt: now + PLAYER_PATIENCE_MS,
+      buyerId: buyer.id,
+      buyerName: buyer.name,
+    };
+    room.orders.set(event.orderId, { event, patienceMs: PLAYER_PATIENCE_MS, dish: null });
+    this.emit?.order(room.id, event);
+  }
+
   /** Người chơi làm xong một món: kiểm tra, trừ nguyên liệu, chấm điểm; sai thì khách phàn nàn. */
   async make(room: RoomRuntime, playerId: string, orderId: string, build: DishView) {
     const order = this.requireOrder(room, playerId, orderId);
@@ -133,12 +194,18 @@ export class OrderService {
     const correct = mistakes.length === 0;
     const rand = seededRandom("dish", orderId, score);
     let line: string;
+    const step = recipe.steps.find((s) => s.id === mistakes[0]);
+    const part = step?.label.toLowerCase() ?? "này";
     if (correct) {
       order.event.expiresAt = Math.max(order.event.expiresAt, Date.now() + PAY_WAIT_MS);
-      line = pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
+      // Khách là người thật: không nói thay họ, chỉ báo kết quả.
+      line = order.event.buyerId
+        ? "✅ Đúng món mình gọi"
+        : pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
     } else {
-      const step = recipe.steps.find((s) => s.id === mistakes[0]);
-      line = `Ơ, phần ${step?.label.toLowerCase() ?? "này"} sai rồi, con dặn rồi mà!`;
+      line = order.event.buyerId
+        ? `❌ Sai phần ${part} rồi`
+        : `Ơ, phần ${part} sai rồi, con dặn rồi mà!`;
     }
     this.emit?.update(room.id, {
       orderId,
@@ -183,52 +250,67 @@ export class OrderService {
     const variant = content.variant(e.productId, e.variantId);
     const ratio = e.price / variant.refPrice;
     const fast = Date.now() - e.createdAt <= order.patienceMs * 0.6;
-    const tip = correct && !discount && fast ? Math.max(1_000, round500(price * eco.tipRate)) : 0;
+    // Khách là người chơi: không có tiền boa tự động (boa là chuyện của họ).
+    const tip =
+      correct && !discount && fast && !e.buyerId
+        ? Math.max(1_000, round500(price * eco.tipRate))
+        : 0;
     const short = outcome === "short";
     const satisfaction = Math.max(
       0,
       (correct ? 1 : 0.4) * (fast ? 1 : 0.8) * (0.6 + 0.4 * priceScore(ratio)) - (short ? 0.3 : 0),
     );
 
-    await this.prisma.$transaction(async (tx) => {
-      if (received > 0) {
-        await this.ledger.transfer(
-          tx,
-          SYSTEM.customers,
-          playerWallet(playerId),
-          received,
-          "sale",
-          e.businessId,
-        );
-      }
-      if (tip > 0)
-        await this.ledger.transfer(
-          tx,
-          SYSTEM.customers,
-          playerWallet(playerId),
-          tip,
-          "tip",
-          e.businessId,
-        );
-      const biz = await tx.business.findUnique({ where: { id: e.businessId } });
-      if (biz) {
-        let rep = nextReputation(biz.reputation, satisfaction, 1, eco.reputationRate);
-        if (correct && fast) rep += eco.serveReputationBonus;
-        if (short) rep -= 0.02;
-        await tx.business.update({
-          where: { id: biz.id },
-          data: { reputation: Math.min(1, Math.max(0, rep)) },
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        if (received > 0) {
+          await this.ledger.transfer(
+            tx,
+            e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
+            playerWallet(playerId),
+            received,
+            "sale",
+            e.businessId,
+          );
+        }
+        if (tip > 0)
+          await this.ledger.transfer(
+            tx,
+            SYSTEM.customers,
+            playerWallet(playerId),
+            tip,
+            "tip",
+            e.businessId,
+          );
+        const biz = await tx.business.findUnique({ where: { id: e.businessId } });
+        if (biz) {
+          let rep = nextReputation(biz.reputation, satisfaction, 1, eco.reputationRate);
+          if (correct && fast) rep += eco.serveReputationBonus;
+          if (short) rep -= 0.02;
+          await tx.business.update({
+            where: { id: biz.id },
+            data: { reputation: Math.min(1, Math.max(0, rep)) },
+          });
+        }
+        await addToReport(tx, playerId, room.day, {
+          revenue: received,
+          tips: tip,
+          served: 1,
+          wrong: discount ? 1 : 0,
+          satisfaction: { value: satisfaction, weight: 1 },
         });
-      }
-      await addToReport(tx, playerId, room.day, {
-        revenue: received,
-        tips: tip,
-        served: 1,
-        wrong: discount ? 1 : 0,
-        satisfaction: { value: satisfaction, weight: 1 },
       });
-    });
+    } catch (err) {
+      if (!(err instanceof InsufficientFundsError)) throw err;
+      throw new GameError("invalid_state", "Khách không đủ tiền chuyển khoản — xin lỗi khách thôi");
+    }
     room.orders.delete(orderId);
+    if (e.buyerId) {
+      this.emit?.charged(e.buyerId);
+      const line = `📱 Chuyển ${vnd(received)} cho quầy — nhận ${e.dish}`;
+      this.emit?.result(room.id, { orderId, served: true, tip: 0, line, outcome, received });
+      return;
+    }
 
     const lines = content.data.customerLines;
     const line = short
@@ -250,7 +332,10 @@ export class OrderService {
     const order = this.requireOrder(room, playerId, orderId);
     room.orders.delete(orderId);
     await this.recordLost(room, playerId, order.event.businessId, 1);
-    this.emit?.result(room.id, { orderId, served: false, tip: 0, line: "Vậy thôi, để bữa khác." });
+    const line = order.event.buyerId
+      ? "🙏 Quầy xin lỗi, không bán được món này"
+      : "Vậy thôi, để bữa khác.";
+    this.emit?.result(room.id, { orderId, served: false, tip: 0, line });
   }
 
   /** Khách hết kiên nhẫn: có món đúng thì trả đúng tiền rồi đi; chưa có thì bỏ đi. */
@@ -261,26 +346,40 @@ export class OrderService {
       const e = order.event;
       if (order.dish && order.dish.mistakes.length === 0) {
         room.orders.delete(id);
-        await this.prisma.$transaction(async (tx) => {
-          await this.ledger.transfer(
-            tx,
-            SYSTEM.customers,
-            playerWallet(e.ownerId),
-            e.price,
-            "sale",
-            e.businessId,
-          );
-          await addToReport(tx, e.ownerId, room.day, {
-            revenue: e.price,
-            served: 1,
-            satisfaction: { value: 0.6, weight: 1 },
+        try {
+          await this.prisma.$transaction(async (tx) => {
+            await this.ledger.transfer(
+              tx,
+              e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
+              playerWallet(e.ownerId),
+              e.price,
+              "sale",
+              e.businessId,
+            );
+            await addToReport(tx, e.ownerId, room.day, {
+              revenue: e.price,
+              served: 1,
+              satisfaction: { value: 0.6, weight: 1 },
+            });
           });
-        });
+        } catch (err) {
+          if (!(err instanceof InsufficientFundsError)) throw err;
+          this.emit?.result(room.id, {
+            orderId: id,
+            served: false,
+            tip: 0,
+            line: "💸 Không đủ tiền trả, đành thôi",
+          });
+          continue;
+        }
+        if (e.buyerId) this.emit?.charged(e.buyerId);
         this.emit?.result(room.id, {
           orderId: id,
           served: true,
           tip: 0,
-          line: "Trả đúng tiền nè, lâu quá à.",
+          line: e.buyerId
+            ? `📱 Tự chuyển ${vnd(e.price)} rồi lấy món`
+            : "Trả đúng tiền nè, lâu quá à.",
           outcome: "exact",
           received: e.price,
         });
@@ -292,7 +391,9 @@ export class OrderService {
         orderId: id,
         served: false,
         tip: 0,
-        line: pick(content.data.customerLines.impatient, seededRandom("late", id)),
+        line: e.buyerId
+          ? "⌛ Chờ lâu quá, thôi để bữa khác"
+          : pick(content.data.customerLines.impatient, seededRandom("late", id)),
       });
     }
   }

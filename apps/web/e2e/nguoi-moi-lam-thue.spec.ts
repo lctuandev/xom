@@ -15,7 +15,7 @@ import {
 const R = content.data.restaurant;
 
 async function enterQuanCom(page: Page, name: string) {
-  test.setTimeout(360_000);
+  test.setTimeout(420_000);
   await register(page, name);
   const box = await readDialogue(page);
   await box.getByRole("button", { name: "Con đi làm thuê trước" }).tap();

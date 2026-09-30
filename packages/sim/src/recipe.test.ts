@@ -2,6 +2,7 @@ import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import {
   baseSpec,
+  customOrder,
   type Dish,
   dishCost,
   extrasPrice,
@@ -147,5 +148,44 @@ describe("tính tiền, thối tiền", () => {
       received: 18_000,
       outcome: "over_returned",
     });
+  });
+});
+
+describe("người chơi tự gọi món (UC-J3)", () => {
+  it("chọn món + yêu cầu riêng → đơn đúng như lời gọi, giá theo thực đơn của quầy", () => {
+    const o = customOrder(
+      banhMi,
+      [{ variantId: "banh_mi_thit", price: 18_000 }],
+      "banh_mi_thit",
+      {},
+      ["khong_hanh", "ot_nhieu"],
+    );
+    if (typeof o === "string") throw new Error(o);
+    expect(o.spec.rau).not.toContain("hanh");
+    expect(o.spec.ot).toBe("ot_nhieu");
+    expect(o.dish).toBe("bánh mì thịt, không hành, nhiều ớt");
+    expect(o.price).toBe(18_000);
+  });
+  it("yêu cầu trái nhau trên cùng bước: chỉ lấy cái đầu", () => {
+    const o = customOrder(banhMi, menu, "banh_mi_thit", {}, ["ot_nhieu", "ot_khong"]);
+    if (typeof o === "string") throw new Error(o);
+    expect(o.spec.ot).toBe("ot_nhieu");
+    expect(o.dish).not.toContain("không ớt");
+  });
+  it("trà sữa: tự chọn size L tính thêm tiền", () => {
+    const tsMenu = traSua.variants.map((v) => ({ variantId: v.id, price: v.refPrice }));
+    const first = traSua.variants[0];
+    const size = traSua.steps.find((st) => st.pick && Object.keys(st.pick).length > 1);
+    if (!first || !size?.pick) throw new Error("thiếu dữ liệu");
+    const big = size.options.find((op) => (op.extraPrice ?? 0) > 0 && op.id in (size.pick ?? {}));
+    if (!big) throw new Error("không có lựa chọn tính thêm tiền");
+    const o = customOrder(traSua, tsMenu, first.id, { [size.id]: big.id }, []);
+    if (typeof o === "string") throw new Error(o);
+    expect(o.price).toBe(first.refPrice + (big.extraPrice ?? 0));
+  });
+  it("món không có trên thực đơn, lựa chọn bịa → báo lỗi", () => {
+    expect(customOrder(banhMi, [], "banh_mi_thit", {}, [])).toBeTypeOf("string");
+    expect(customOrder(banhMi, menu, "banh_mi_thit", { nhan: "bo" }, [])).toBeTypeOf("string");
+    expect(customOrder(banhMi, menu, "banh_mi_thit", {}, ["bay_ba"])).toBeTypeOf("string");
   });
 });

@@ -19,11 +19,17 @@ const LINGER_SECONDS = 1.8;
  * cảm ơn/than phiền khi tính tiền xong rồi đi tiếp.
  */
 export function Customers() {
-  const [list, setList] = useState<OrderEvent[]>(() => useGame.getState().orders);
+  const [list, setList] = useState<OrderEvent[]>(() =>
+    useGame.getState().orders.filter((o) => !o.buyerId),
+  );
 
   useEffect(
     () =>
-      orderBus.on((o) => setList((prev) => (prev.length >= MAX_CUSTOMERS ? prev : [...prev, o]))),
+      orderBus.on((o) => {
+        // Khách là người chơi thật thì chính nhân vật của họ đứng ở quầy — không sinh NPC.
+        if (o.buyerId) return;
+        setList((prev) => (prev.length >= MAX_CUSTOMERS ? prev : [...prev, o]));
+      }),
     [],
   );
   const remove = (orderId: string) => setList((prev) => prev.filter((c) => c.orderId !== orderId));

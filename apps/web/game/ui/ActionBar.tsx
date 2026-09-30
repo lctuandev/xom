@@ -18,11 +18,48 @@ export function ActionBar() {
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
       <DoorButton />
+      <PurchaseChip />
+      <ShopButton />
       <KitchenButton />
       <AwayChip />
       <OpenStallButton />
       <PlaceButton />
     </div>
+  );
+}
+
+/** Đứng trước quầy hàng xóm đang mở: gọi món (UC-J3). */
+function ShopButton() {
+  const nearShop = useGame((s) => s.nearShop);
+  const purchase = useGame((s) => s.purchase);
+  const lot = useGame((s) => s.world.lots.find((l) => l.businessId === s.nearShop));
+  const openSheet = useGame((s) => s.openSheet);
+  if (!nearShop || purchase || !lot) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("shop")}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-red px-4 font-semibold text-cream shadow-lg active:scale-[0.97]"
+    >
+      🛒 Gọi món · quầy {lot.ownerName}
+    </button>
+  );
+}
+
+/** Món mình đã gọi ở quầy hàng xóm: đang chờ / làm sai / xong chờ tính tiền. */
+function PurchaseChip() {
+  const p = useGame((s) => s.purchase);
+  if (!p) return null;
+  const text =
+    p.stage === "wrong"
+      ? `❌ ${p.ownerName} làm sai — đang làm lại`
+      : p.stage === "correct"
+        ? `✅ Món xong — chờ ${p.ownerName} tính tiền`
+        : `⏳ Chờ ${p.ownerName} làm: ${p.dish}`;
+  return (
+    <output className="pointer-events-auto block w-full max-w-xs rounded-2xl bg-ink/85 px-3 py-2 text-center text-xs font-semibold text-cream shadow-lg">
+      {text} · {p.price.toLocaleString("vi-VN")}đ
+    </output>
   );
 }
 

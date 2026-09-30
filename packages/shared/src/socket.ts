@@ -71,6 +71,13 @@ export interface ClientToServerEvents {
   /** Vị trí của mình (không cần Ack, 10 lần/giây khi có thay đổi). */
   move: (payload: MovePayload) => void;
   "xom:join": Intent<{ code: string }>;
+  /** Gọi món ở quầy hàng xóm (UC-J3). */
+  "shop:order": Intent<{
+    businessId: string;
+    variantId: string;
+    picks?: Record<string, string>;
+    mods?: string[];
+  }>;
 }
 
 export interface ServerToClientEvents {

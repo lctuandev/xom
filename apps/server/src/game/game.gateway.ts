@@ -29,6 +29,7 @@ import {
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
+  shopOrderSchema,
   type TalkResult,
   talkSchema,
   tutorialSchema,
@@ -76,6 +77,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       order: (roomId, e) => this.server.to(`room:${roomId}`).emit("order", e),
       update: (roomId, e) => this.server.to(`room:${roomId}`).emit("orderUpdate", e),
       result: (roomId, e) => this.server.to(`room:${roomId}`).emit("orderResult", e),
+      charged: (playerId) => void this.game.emitMe(playerId),
     });
     this.game.setEmitter({
       toRoom: (roomId: string, event: string, data: unknown) =>
@@ -211,6 +213,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   make(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<MakeResult>> {
     return this.handleWith(c, makeOrderSchema, body, async (ctx, p) => {
       const r = await this.game.orders.make(ctx.room, ctx.playerId, p.orderId, p.build);
+      this.game.stockChanged(ctx.room);
       return { ...r, me: await this.game.me(ctx.room, ctx.playerId) };
     });
   }
@@ -220,6 +223,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handle(c, payOrderSchema, body, (ctx, p) =>
       this.game.orders.pay(ctx.room, ctx.playerId, p.orderId, p.change, p.discount),
     );
+  }
+
+  @SubscribeMessage("shop:order")
+  shopOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, shopOrderSchema, body, (ctx, p) => this.game.shopOrder(ctx, p));
   }
 
   @SubscribeMessage("order:decline")

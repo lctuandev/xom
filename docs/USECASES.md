@@ -408,6 +408,35 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 **Đã làm:** nhận tối đa 3 đơn, soạn đúng mã trên kệ (gói giống nhau), ra phố có biển số nhà + ghim, chạy nhanh/chậm (hàng dễ vỡ móp → từ chối), gọi khách, người mở cửa (chính chủ / người nhà / người lạ), đưa điện thoại ký nhận có nét ký, từ chối người lạ → hẹn lại, thu hộ + thối tiền, vắng nhà (gửi hàng xóm / hẹn lại / hoàn), về nộp tiền (thiếu thì trừ tiền chuyến), tiền chuyến theo khoảng cách. **Chưa:** khách thiếu tiền COD, mưa, giờ hẹn giao, model xe máy.
 **Kiểm chứng:** e2e server `work.e2e-spec.ts` (cả chuyến); Playwright `giao-hang.spec.ts` một chuyến đủ bước (iPhone 16 Pro + Pixel 7).
 
+### UC-W8 · Quán sống động — khách thật sự đi, ngồi, ăn, trả tiền, đánh giá, gây chuyện 🚧
+> Người chơi yêu cầu: bấm là **thấy hành động diễn ra** (bê dĩa đi tới bàn), khách ra vào quán, quán chi tiết như thật,
+> góc nhìn rộng quan sát được khách; **mỗi vị trí có góc nhìn, cách di chuyển, thao tác riêng**.
+
+**Một vòng đời khách (server mô phỏng, client diễn):**
+1. **Vào quán** qua cửa (thấy đi từ ngoài vỉa hè vào) → **xếp hàng** ở quầy cơm, khung thoại gọi món.
+2. **Quầy múc** (người chơi đứng quầy, hoặc Cô Tư nếu người chơi làm vai khác) → dĩa ra **cửa bếp** kèm số bàn; khách **đi tới bàn trống, ngồi chờ**.
+3. **Bưng dĩa** (người chơi bưng bê, hoặc bé Út) → nhân vật **cầm dĩa trên tay đi tới bàn** → đặt dĩa.
+4. **Ăn** (ngồi ăn, dĩa vơi dần, uống trà đá) → ăn xong **đứng dậy tới quầy thu ngân**, bàn để lại chén dĩa bẩn.
+5. **Trả tiền** (người chơi thu ngân, hoặc Cô Tư) → khách **đi ra cửa**, để lại **đánh giá ⭐ + một câu** trên đầu (và vào thống kê ca).
+
+**Mỗi vị trí một góc nhìn — một cách di chuyển — một kiểu thao tác:**
+| Vai | Góc nhìn | Di chuyển | Thao tác |
+|---|---|---|---|
+| Đứng quầy | Sau quầy nhìn ra cửa: thấy khay món, hàng khách, cửa ra vào, một phần phòng ăn | Đứng tại quầy (xoay người theo khay) | Lấy dĩa → chạm khay múc → đưa dĩa; báo bếp khi hết khay |
+| Thu ngân | Sau máy tính tiền nhìn ra quầy + cửa: thấy khách ăn xong đi tới | Đứng tại máy | Bấm máy theo phiếu → báo giá → thu/thối; **la lên khi khách bỏ đi chưa trả** |
+| Bưng bê | Nhìn chéo từ trên cao toàn phòng ăn, camera đi theo mình | **Tự đi**: chạm sàn để đi tới đó; chạm dĩa ở cửa bếp để cầm (tối đa 2 dĩa); chạm bàn để tự đi tới và đặt | Bưng đúng bàn; dọn bàn bẩn (đứng dọn vài giây); **can ngăn** khách cãi nhau |
+| Giao hàng | Rộng cả bưu cục: kệ, quầy Anh Tám, cửa ra xe | Đi tới kệ để soạn | Chạm gói đúng mã |
+
+**Đời thật & rẽ nhánh:**
+- **Chờ lâu** → khách than (khung thoại đỏ "Sao lâu vậy!"); bấm *🙏 Xin lỗi* → khách chờ thêm một chút; bỏ mặc → khách bỏ về, đánh giá 1⭐.
+- **Gây lộn** (hiếm): hai bàn cãi nhau / khách say lớn tiếng → mọi vai thấy cảnh báo; bưng bê đi tới bàn *✋ Can ngăn*; không ai can → khách xung quanh bỏ về, đánh giá thấp.
+- **Quỵt tiền** (hiếm): khách ăn xong đi thẳng ra cửa → *📢 Gọi lại* kịp thì khách quay lại trả; không kịp → quán mất tiền.
+- **Đánh giá** ⭐1–5 theo: chờ bao lâu, múc đúng không, bưng đúng bàn không, có được xin lỗi/can ngăn không. 5⭐ có khi **boa** cho người làm.
+- Server kiểm **thời gian đi bộ**: bưng dĩa tới bàn phải mất đủ thời gian đi từ cửa bếp tới bàn (không "dịch chuyển").
+
+**Quán chi tiết hơn:** gạch lát, tường ốp gạch men nửa dưới, bảng thực đơn có giá, quạt trần quay, đèn tuýp, bàn thờ Thần Tài,
+tủ nước ngọt có đèn, nồi cơm điện, ống đũa – hũ ớt – hộp khăn giấy trên bàn, cửa kính có biển "ĐANG MỞ CỬA", cửa sổ nhìn ra phố.
+
 ### UC-W6 · Quầy riêng của mình — không gian sau xe hàng ⏳
 Vào quầy (đứng sau xe bánh mì) → camera ngang tầm mắt từ sau tủ kính: thấy khay nguyên liệu, ổ bánh trên thớt, khách đứng trước quầy. Các bước làm món (UC-F4) diễn ra **trên mô hình 3D**: chạm ổ bánh → dao xẻ; chạm khay pa-tê → phết; thứ gì cho vào hiện trên ổ bánh; gói giấy → đưa qua quầy cho khách. Trà sữa: ly lên máy dán nắp, lắc bằng thao tác kéo lên-xuống.
 
@@ -455,8 +484,18 @@ Hàng xóm đi lại trên phố (vị trí gửi 10 lần/giây khi có thay đ
 Vào quán/bưu cục thì biến khỏi phố (bảng Xóm ghi "ở Quán cơm…"); trong quán chỉ nghe người cùng quán. Tắt app → biến mất khỏi xóm.
 Quầy của hàng xóm hiện ở chỗ bán kèm tên chủ.
 **Chưa:** dáng nhân vật riêng cho từng người (Phase 3), chat gõ chữ (UC-D4).
-### UC-J3 · Mua của nhau ⏳
-- **UC-J3 Mua của nhau** — người chơi làm khách ở quầy người chơi (UC-E4): chủ quầy làm món theo yêu cầu *của người thật*.
+### UC-J3 · Mua của nhau ✅
+**Luồng:** tới quầy hàng xóm đang mở (bảng Xóm → *🛒 Tới quầy*, hoặc tự đi tới) → *🛒 Gọi món · quầy An* → chọn món trên thực đơn của họ,
+tự chọn size/mức đường…, *dặn thêm* (không hành, thêm bơ…) → thấy câu mình sẽ nói + giá → *Gọi món*.
+Lời gọi món hiện trên đầu chính mình; chủ quầy thấy đơn "👤 Bình (hàng xóm)" trong hàng chờ như khách thường và **làm tay** từng bước.
+Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại hoặc giảm giá; tính tiền → **chuyển khoản từ ví người mua sang ví chủ** (sổ cái), không boa tự động.
+**Đời thật & rẽ nhánh:**
+- Món chủ quầy không đủ nguyên liệu → hiện "hết", không gọi được. Quầy đông (đủ hàng chờ) → đợi. Chủ vắng quầy → đợi chủ về.
+- Đứng xa quầy (> 6 m, server kiểm) hoặc đang ở trong quán → không gọi được. Mỗi lúc chờ một món.
+- Không đủ tiền → không gọi được; tới lúc tính tiền mà ví hụt → chủ xin lỗi khách.
+- Chủ không làm kịp (chờ 3 phút) → người mua bỏ đi, quầy mất uy tín như khách thường.
+**Kiểm chứng:** e2e server `xom.e2e-spec.ts` (xa quầy, gọi trùng, làm sai → đúng, tiền đi giữa hai ví); Playwright `mua-cua-nhau.spec.ts`.
+**Chưa:** người mua chấm sao/nhận xét, boa tay, ăn món (hiện chỉ nhận món), trả tiền mặt giữa hai người.
 - **UC-J4 Tuyển nhau làm** — UC-H2…H8 giữa người chơi.
 - **UC-J5 Tranh chỗ** — chỗ bán đã có người thuê trong ngày thì người khác không thuê được; đấu giá chỗ đẹp theo tuần (⏳).
 - **UC-J6 Chống quấy rối** — chặn, báo cáo, lọc từ ngữ; không cho đứng chắn trước quầy người khác quá 1 phút (bị đẩy nhẹ ra).
@@ -500,5 +539,5 @@ Quầy của hàng xóm hiện ở chỗ bán kèm tên chủ.
 | **Tiếp theo (khuyến nghị): Phase 2 — Nhiều người** | xem dòng Phase 2 bên dưới |
 | **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · W6 (quầy riêng 3D) |
 | **Phase 1.9 — Tuyển dụng (NPC trước)** | W7 (uy tín người làm) · H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
-| **Phase 2 — Nhiều người** 🚧 (J1, J2 ✅) | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
+| **Phase 2 — Nhiều người** 🚧 (J1–J3 ✅) | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
 | **Sau đó** | K1–K7 · I2 · I4 · I5 · F8 |

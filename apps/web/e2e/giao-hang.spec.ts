@@ -51,7 +51,7 @@ async function handleDoor(page: Page) {
 }
 
 test("giao hàng: soạn gói, chạy tới nhà, ký nhận, thu hộ rồi về nộp tiền", async ({ page }) => {
-  test.setTimeout(360_000);
+  test.setTimeout(540_000);
   await register(page, "Tâm");
   const box = await readDialogue(page);
   await box.getByRole("button", { name: "Con đi làm thuê trước" }).tap();

@@ -36,6 +36,13 @@ export function addressSpot(addressId: string): Spot | null {
   return { x: a.position.x, z: a.position.z + out * 1.3, yaw: a.facing + Math.PI };
 }
 
+/** Chỗ khách đứng gọi món trước một quầy (lệch sang bên để khỏi chắn hàng khách NPC). */
+export function shopSpot(lotId: string): Spot {
+  const lot = content.lot(lotId);
+  const front = lot.facing === 0 ? 1 : -1;
+  return { x: lot.position.x - 0.8, z: lot.position.z + front * 1.3, yaw: lot.facing + Math.PI };
+}
+
 /** Vị trí của một mục tiêu kịch bản / goal; null nếu chưa xác định (ví dụ chưa chọn chỗ bán). */
 export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
   const kind = typeof target === "string" ? (target === "stall" ? "stall" : "place") : target.kind;
@@ -44,6 +51,7 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
     return lotId ? standBehind(lotId) : null;
   }
   if (typeof target !== "string" && target.kind === "address") return addressSpot(target.id);
+  if (typeof target !== "string" && target.kind === "shop") return shopSpot(target.lotId);
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";
   return content.placeById.has(id) ? placeSpot(id) : null;
 }

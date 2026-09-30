@@ -108,10 +108,24 @@ export function ProximityWatcher() {
       if (spot && distanceTo(spot.x, spot.z) <= radius) door = a.id;
     }
     if (door !== s.nearAddress) s.setNearAddress(door);
+    // Quầy hàng xóm đang mở ở gần (gọi món, UC-J3).
+    let shop: string | null = null;
+    for (const l of s.world.lots) {
+      if (!l.open || l.ownerId === s.me?.playerId) continue;
+      const p = content.lot(l.lotId).position;
+      if (distanceTo(p.x, p.z) <= radius + 1.5) shop = l.businessId;
+    }
+    if (shop !== s.nearShop) s.setNearShop(shop);
 
     const g = s.goal;
     const arrived =
-      g?.kind === "place" ? near === g.id : g?.kind === "address" ? door === g.id : atStall;
+      g?.kind === "place"
+        ? near === g.id
+        : g?.kind === "address"
+          ? door === g.id
+          : g?.kind === "shop"
+            ? shop === g.id
+            : atStall;
     if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
       if ("open" in g && g.open) s.openSheet(g.open);

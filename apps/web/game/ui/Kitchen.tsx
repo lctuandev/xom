@@ -67,7 +67,9 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
           🧑
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-ink/60">{npc?.name ?? "Khách"} nói:</p>
+          <p className="text-xs font-semibold text-ink/60">
+            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")} nói:
+          </p>
           <p className="text-[15px] leading-snug font-semibold">“{order.ask}”</p>
         </div>
         <button

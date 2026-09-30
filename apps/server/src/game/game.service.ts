@@ -29,8 +29,8 @@ import {
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { addItems, inventoryView } from "./inventory.js";
-import { menuOf, patchMenu } from "./menu.js";
+import { addItems, inventoryView, stockMap } from "./inventory.js";
+import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { addToReport, emptyReport } from "./report.js";
 import { GameError, RoomRuntime } from "./room.js";
@@ -47,6 +47,8 @@ const MARKET_KEEPER = "cho_dau_moi";
 export const MAX_MEMBERS = 8;
 /** Nhịp phát vị trí người chơi cho cả xóm. */
 const PEER_FLUSH_MS = 100;
+/** Khoảng cách tối đa (m) tới quầy để gọi món. */
+const ORDER_REACH = 6;
 
 /** Cổng phát sự kiện ra socket; gateway cung cấp để service không phụ thuộc Socket.IO. */
 export interface GameEmitter {
@@ -381,6 +383,12 @@ export class GameService implements OnModuleDestroy {
       await addToReport(tx, playerId, room.day, { stockCost: total });
       await this.addFriendship(tx, playerId, MARKET_KEEPER, 1);
     });
+    this.stockChanged(room);
+  }
+
+  /** Kho của ai đó đổi: hàng xóm cần biết món nào còn làm được (chỉ khi xóm có người khác). */
+  stockChanged(room: RoomRuntime) {
+    if (room.members.size > 1) this.emitWorld(room);
   }
 
   async updateLot({ room, playerId }: IntentContext, lotId: string) {
@@ -396,7 +404,7 @@ export class GameService implements OnModuleDestroy {
 
   /** Bật/tắt món, đổi giá trong thực đơn (UC-F2). */
   async setMenu(
-    { playerId }: IntentContext,
+    { room, playerId }: IntentContext,
     variantId: string,
     patch: { on?: boolean; price?: number },
   ) {
@@ -409,6 +417,38 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_state", "Phải bán ít nhất một món");
     }
     await this.prisma.business.update({ where: { id: biz.id }, data: { menu: next } });
+    // Hàng xóm thấy thực đơn/giá mới.
+    this.emitWorld(room);
+  }
+
+  /** Gọi món ở quầy hàng xóm (UC-J3): phải đứng gần quầy đó. */
+  async shopOrder(
+    { room, playerId }: IntentContext,
+    p: { businessId: string; variantId: string; picks: Record<string, string>; mods: string[] },
+  ) {
+    const biz = await this.prisma.business.findUnique({ where: { id: p.businessId } });
+    if (!biz || this.roomOfPlayer.get(biz.ownerId) !== room.id)
+      throw new GameError("invalid_state", "Quầy này không ở xóm mình");
+    const member = room.members.get(playerId);
+    const pos = member?.pos;
+    if (biz.lotId && pos) {
+      const lot = content.lot(biz.lotId).position;
+      if (pos.inside || Math.hypot(pos.x - lot.x, pos.z - lot.z) > ORDER_REACH)
+        throw new GameError("invalid_state", "Lại gần quầy mới gọi món được");
+    }
+    await this.orders.playerOrder(
+      room,
+      { id: playerId, name: member?.displayName ?? "Hàng xóm" },
+      biz,
+      p,
+    );
+  }
+
+  /** Ví người chơi đổi ngoài intent của chính họ (mua của hàng xóm): gửi lại số dư. */
+  async emitMe(playerId: string) {
+    const room = this.roomFor(playerId);
+    if (!room) return;
+    this.emitter?.toPlayer(playerId, "me", await this.me(room, playerId));
   }
 
   async openBusiness({ room, playerId }: IntentContext) {
@@ -661,7 +701,7 @@ export class GameService implements OnModuleDestroy {
       shift: this.work.view(room, playerId),
       roster: this.roster(room),
       orders: [...room.orders.values()]
-        .filter((o) => o.event.ownerId === playerId)
+        .filter((o) => o.event.ownerId === playerId || o.event.buyerId === playerId)
         .map((o) => o.event),
     };
   }
@@ -714,10 +754,16 @@ export class GameService implements OnModuleDestroy {
       where: { ownerId: { in: [...room.members.keys()] }, lotId: { not: null } },
       include: { owner: true },
     });
-    const lots = businesses.map((b) => ({
+    const stocks = await Promise.all(businesses.map((b) => stockMap(this.prisma, b.ownerId)));
+    const lots = businesses.map((b, i) => ({
       lotId: b.lotId ?? "",
       businessId: b.id,
+      ownerId: b.ownerId,
       ownerName: b.owner.displayName,
+      menu: menuOf(b),
+      available: availableMenu(b.productId, menuOf(b), stocks[i] ?? new Map()).map(
+        (m) => m.variantId,
+      ),
       equipmentId: b.equipmentId,
       productId: b.productId,
       open: b.status === "OPEN",

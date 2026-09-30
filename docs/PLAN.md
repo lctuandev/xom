@@ -375,7 +375,7 @@ Gặp Chú Bảy ──► "Con muốn buôn bán"  ─► Tới vựa xe Ông S
 - [x] Tạo/vào xóm bằng mã phòng + link mời (Web Share API → Zalo/Messenger)
 - [x] Đồng bộ vị trí 10 Hz + nội suy phía client; tên trên đầu nhân vật
 - [ ] Cạnh tranh thật: shop cùng danh mục chia khách
-- [ ] Người chơi làm khách: đi tới shop người khác và mua (ledger giữa 2 ví)
+- [x] Người chơi làm khách: đi tới shop người khác và mua (ledger giữa 2 ví)
 - [x] Câu nói nhanh + emote (nghe được giữa người chơi)
 - [ ] Reconnect + resync bằng `seq` (đặc biệt khi app xuống nền trên iOS)
 - [ ] Trạng thái phòng trong Redis, flush định kỳ về Postgres

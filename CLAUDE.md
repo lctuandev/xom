@@ -19,7 +19,7 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 
 ## Quy trình khi xong mỗi việc (bắt buộc)
 1. `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @xom/server test:e2e`
-   + kịch bản Playwright: `GAME_TICK_MS=150 pnpm dev` rồi `pnpm --filter @xom/web test:e2e`
+   + kịch bản Playwright: `GAME_TICK_MS=250 pnpm dev` rồi `pnpm --filter @xom/web test:e2e`
 2. **`pnpm deploy:local`** — build lại Docker và deploy bản production lên **http://localhost:5555** (script chờ health check; fail thì chưa được coi là xong).
 - Stack production: `deploy/docker-compose.prod.yml` (project `xom-prod`, DB riêng, mật khẩu trong `deploy/.env` tự sinh, không commit). Chỉ mở cổng 5555; Next proxy `/api` + `/socket.io` sang server nội bộ.
 - Không chạy `pnpm build` khi `pnpm dev` đang chạy (nest build xóa `dist` của dev server).
@@ -28,7 +28,7 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 ## Local dev
 - `pnpm dev` → web :5000 + server :5001 (Next rewrites `/api` và `/socket.io` sang :5001, nên chỉ cần mở :5000). Dev dùng dải cổng 50xx để không đụng app khác trên máy.
 - `pnpm lint` / `pnpm format` (Biome), `pnpm typecheck`, `pnpm test`; e2e server: `pnpm --filter @xom/server test:e2e`.
-- `GAME_TICK_MS=150 pnpm dev` → tăng tốc đồng hồ game khi test tay (mặc định 1000ms = 1 phút game).
+- `GAME_TICK_MS=250 pnpm dev` → tăng tốc đồng hồ game khi test tay (mặc định 1000ms = 1 phút game).
 - `pnpm balance` → mô phỏng kinh tế 30 ngày mọi chiến lược; chạy lại mỗi khi đổi số liệu trong `packages/content`.
 - `pnpm assets` → build lại model từ `art/vendor` + `art/export` theo `packages/assets/bundles.json`.
 - Prisma 7: config ở `apps/server/prisma7.config.ts`, client sinh vào `apps/server/src/generated/prisma`; migrate: `pnpm --filter @xom/server exec prisma migrate dev`.

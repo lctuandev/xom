@@ -31,7 +31,7 @@ export interface Bubble {
   until?: number;
 }
 
-export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk" | "xom";
+export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk" | "xom" | "shop";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -43,7 +43,9 @@ export interface OrderState extends OrderEvent {
 export type Goal =
   | { kind: "place"; id: string; open?: SheetId }
   | { kind: "stall"; open?: SheetId }
-  | { kind: "address"; id: string };
+  | { kind: "address"; id: string }
+  /** Tới quầy hàng xóm (businessId) để gọi món. */
+  | { kind: "shop"; id: string; lotId: string; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -88,6 +90,12 @@ interface GameState {
   roster: RosterView | null;
   /** Mã xóm từ link mời (?xom=…) đang chờ người chơi đồng ý vào. */
   invite: string | null;
+  /** Quầy hàng xóm đang đứng gần (businessId) — gọi món được (UC-J3). */
+  nearShop: string | null;
+  /** Món mình đã gọi ở quầy hàng xóm, đang chờ. */
+  purchase: Purchase | null;
+  setNearShop: (id: string | null) => void;
+  setPurchase: (p: Purchase | null) => void;
   setRoster: (r: RosterView) => void;
   setInvite: (code: string | null) => void;
   applySnapshot: (s: Snapshot) => void;
@@ -122,6 +130,27 @@ interface GameState {
   setContextLost: (lost: boolean) => void;
 }
 
+export interface Purchase {
+  orderId: string;
+  businessId: string;
+  ownerName: string;
+  dish: string;
+  price: number;
+  stage: "waiting" | "wrong" | "correct";
+}
+
+export function purchaseOf(o: OrderEvent | undefined, world: WorldView): Purchase | null {
+  if (!o) return null;
+  return {
+    orderId: o.orderId,
+    businessId: o.businessId,
+    ownerName: world.lots.find((l) => l.businessId === o.businessId)?.ownerName ?? "hàng xóm",
+    dish: o.dish,
+    price: o.price,
+    stage: "waiting",
+  };
+}
+
 let toastId = 0;
 
 export const useGame = create<GameState>((set) => ({
@@ -152,6 +181,10 @@ export const useGame = create<GameState>((set) => ({
   contextLost: false,
   roster: null,
   invite: null,
+  nearShop: null,
+  purchase: null,
+  setNearShop: (nearShop) => set({ nearShop }),
+  setPurchase: (purchase) => set({ purchase }),
   setRoster: (roster) => set({ roster }),
   setInvite: (invite) => set({ invite }),
   applySnapshot: (s) =>
@@ -161,7 +194,13 @@ export const useGame = create<GameState>((set) => ({
       shift: s.shift,
       clock: s.clock,
       world: s.world,
-      orders: s.orders.map((o) => ({ ...o, made: "none", mistakes: [] })),
+      orders: s.orders
+        .filter((o) => o.ownerId === s.me.playerId)
+        .map((o) => ({ ...o, made: "none", mistakes: [] })),
+      purchase: purchaseOf(
+        s.orders.find((o) => o.buyerId === s.me.playerId),
+        s.world,
+      ),
     }),
   setMe: (me) => set({ me }),
   setClock: (clock) => set({ clock }),

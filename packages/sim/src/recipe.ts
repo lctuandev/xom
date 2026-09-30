@@ -113,24 +113,83 @@ export function generateOrder(
   const touched = new Set<string>();
   for (const mod of recipe.mods) {
     if (rand() >= mod.chance) continue;
-    const step = recipe.steps.find((s) => s.id === mod.step);
-    if (!step) continue;
-    const cur = spec[step.id];
-    if (step.kind === "single") {
-      if (touched.has(step.id) || !mod.set || cur === mod.set || !available(step, mod.set))
-        continue;
-      spec[step.id] = mod.set;
-      touched.add(step.id);
-    } else if (step.kind === "multi" && Array.isArray(cur)) {
-      if (mod.add && !cur.includes(mod.add) && available(step, mod.add))
-        spec[step.id] = [...cur, mod.add];
-      else if (mod.remove && cur.includes(mod.remove))
-        spec[step.id] = cur.filter((x) => x !== mod.remove);
-      else continue;
-    } else continue;
-    says.push(mod.say);
+    if (applyMod(recipe, spec, mod, touched, available)) says.push(mod.say);
   }
 
+  const dish = [variant.name, ...says].join(", ");
+  return {
+    variantId: variant.id,
+    spec,
+    dish,
+    ask: recipe.ask.replace("{dish}", dish),
+    price: item.price + extrasPrice(recipe, spec, variant.id),
+  };
+}
+
+type Mod = Recipe["mods"][number];
+
+/** Áp một yêu cầu riêng vào đơn; false nếu không có tác dụng (đã có sẵn, bước đã đổi, hết nguyên liệu). */
+function applyMod(
+  recipe: Recipe,
+  spec: Dish,
+  mod: Mod,
+  touched: Set<string>,
+  available: (step: RecipeStep, optionId: string) => boolean,
+): boolean {
+  const step = recipe.steps.find((s) => s.id === mod.step);
+  if (!step) return false;
+  const cur = spec[step.id];
+  if (step.kind === "single") {
+    if (touched.has(step.id) || !mod.set || cur === mod.set || !available(step, mod.set))
+      return false;
+    spec[step.id] = mod.set;
+    touched.add(step.id);
+    return true;
+  }
+  if (step.kind === "multi" && Array.isArray(cur)) {
+    if (mod.add && !cur.includes(mod.add) && available(step, mod.add)) {
+      spec[step.id] = [...cur, mod.add];
+      return true;
+    }
+    if (mod.remove && cur.includes(mod.remove)) {
+      spec[step.id] = cur.filter((x) => x !== mod.remove);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Người chơi tự gọi món ở quầy người khác (docs/USECASES.md UC-J3): chọn món trong thực đơn, tự chọn ở
+ * các bước có "pick" (size, đường, gói quà…) và thêm yêu cầu riêng. Trả về đơn, hoặc câu báo lỗi.
+ */
+export function customOrder(
+  recipe: Recipe,
+  menu: MenuItem[],
+  variantId: string,
+  picks: Record<string, string>,
+  modIds: string[],
+): GeneratedOrder | string {
+  const item = menu.find((m) => m.variantId === variantId);
+  const variant = recipe.variants.find((v) => v.id === variantId);
+  if (!item || !variant) return "Quầy không bán món này (hoặc đã hết)";
+  const spec = baseSpec(recipe, variant.id);
+  const says: string[] = [];
+  for (const [stepId, optionId] of Object.entries(picks)) {
+    const step = recipe.steps.find((s) => s.id === stepId);
+    if (!step?.pick || stepId in variant.fixed || !(optionId in step.pick))
+      return "Lựa chọn không hợp lệ";
+    const def = spec[stepId];
+    spec[stepId] = optionId;
+    const say = step.options.find((o) => o.id === optionId)?.say;
+    if (optionId !== def && say) says.push(say);
+  }
+  const touched = new Set<string>();
+  for (const id of new Set(modIds)) {
+    const mod = recipe.mods.find((m) => m.id === id);
+    if (!mod) return "Yêu cầu không hợp lệ";
+    if (applyMod(recipe, spec, mod, touched, () => true)) says.push(mod.say);
+  }
   const dish = [variant.name, ...says].join(", ");
   return {
     variantId: variant.id,

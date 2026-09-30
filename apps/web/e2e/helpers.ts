@@ -14,7 +14,7 @@ export async function register(page: Page, name = "Tuấn", start = "/play") {
 }
 
 /**
- * Đồng hồ xóm chạy chung cho mọi test (GAME_TICK_MS=150 → một ngày ≈ 2,4 phút).
+ * Đồng hồ xóm chạy chung cho mọi test (GAME_TICK_MS=250 → một ngày 16 giờ game ≈ 4 phút).
  * Kịch bản dài cần bắt đầu từ sáng: quá trưa thì chờ sang ngày mới.
  */
 export async function waitForMorning(page: Page, latestHour = 11) {
@@ -23,7 +23,7 @@ export async function waitForMorning(page: Page, latestHour = 11) {
   const hour = Number(((await clock.textContent()) ?? "").match(/(\d\d):/)?.[1] ?? 0);
   if (hour < latestHour) return;
   const next = page.getByRole("button", { name: /Sang ngày mới/ });
-  await expect(next).toBeVisible({ timeout: 170_000 });
+  await expect(next).toBeVisible({ timeout: 260_000 });
   await next.tap();
 }
 
@@ -167,3 +167,29 @@ export const BANH_MI_THIT = [
   "sot",
   "giay_goi",
 ];
+
+/** Người mới đi theo kịch bản tới lúc mở quầy bánh mì ở Đầu hẻm 12 (xe, nguyên liệu, chỗ bán). */
+export async function openBanhMiStall(page: Page) {
+  let box = await readDialogue(page);
+  await box.getByRole("button", { name: "Con muốn buôn bán" }).tap();
+  await walkToObjective(page, /Xem xe đẩy · Ông Sáu/);
+  await page.getByRole("button", { name: /Xem xe đẩy · Ông Sáu/ }).tap();
+  await page
+    .locator("li", { hasText: "Xe bánh mì kính" })
+    .getByRole("button", { name: /Mua ·/ })
+    .tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await walkToObjective(page, /Vào chợ · Bà Năm/);
+  await page.getByRole("button", { name: /Vào chợ · Bà Năm/ }).tap();
+  await buyIngredients(page, BANH_MI_THIT);
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await page.getByRole("button", { name: "Mở", exact: true }).tap();
+  await page.getByRole("button", { name: /Đầu hẻm 12/ }).tap();
+  await page.getByRole("button", { name: "Bản đồ" }).tap();
+  await walkToObjective(page, /Mở quầy · thuê chỗ/);
+  await page.getByRole("button", { name: /Mở quầy · thuê chỗ/ }).tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+}
