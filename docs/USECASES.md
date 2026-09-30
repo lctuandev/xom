@@ -99,14 +99,19 @@ Vỉa hè rộng để bày sạp; cột điện dây chằng chịt, biển hi�
 người đi bộ trên vỉa hè/hẻm, sang đường ở vạch; xe chạy trên làn đường.
 **Hiệu năng:** gộp mesh theo khu (instancing), vật ở xa bỏ bớt chi tiết; giữ ngân sách draw call mobile (PLAN §1).
 
-### UC-B7 · Góc nhìn tự do ⏳
+### UC-B7 · Góc nhìn tự do ✅ (bản đầu)
 Chụm 2 ngón: zoom; **xoay 2 ngón**: xoay quanh nhân vật (0–360°); **kéo 2 ngón lên/xuống**: nghiêng (nhìn cao từ trên ↔ gần ngang tầm người);
 nút 🧭 đưa về hướng bắc; nút 🎥 đổi nhanh 3 kiểu nhìn (trên cao / sau lưng / cận cảnh). Tường/nhà che nhân vật thì làm mờ.
+**Đã làm:** vặn 2 ngón xoay 360°, kéo 2 ngón nghiêng, chụm zoom; nút ↺ ↻ (45°), ⤵ nghiêng, 🧭 về hướng mặc định (kim quay theo camera);
+biển hiệu hai mặt chữ xuôi. **Chưa:** làm mờ nhà che nhân vật, nút đổi kiểu nhìn. **Kiểm chứng:** Playwright `goc-nhin.spec.ts`.
 
-### UC-B8 · Ngày và đêm ⏳
+### UC-B8 · Ngày và đêm ✅ (bản đầu)
 Trời sáng dần từ 05:30, trưa nắng gắt, chiều vàng, **tối từ 18:00**: trời xanh thẫm, **đèn đường bật** (vầng sáng dưới cột),
 cửa sổ nhà sáng đèn, bảng hiệu quán sáng, sạp đêm treo bóng đèn. Ngày chơi kéo tới 23:00 để có chợ đêm.
 **Luật:** ánh sáng theo phút game của xóm (server); thiết bị yếu thì giảm số đèn thật (dùng vầng sáng giả).
+**Đã làm:** màu trời/nắng/ánh sáng theo giờ (bình minh 5:30, trưa, chiều vàng, hoàng hôn, đêm), mặt trời đi đông → tây; tối từ 17:40:
+bóng đèn đường sáng + vầng sáng dưới đất, cửa sổ nhà sáng đèn, bóng đèn ở quầy đang mở và các địa điểm — không dùng đèn thật (vài draw call).
+**Chưa:** kéo ngày tới 23:00 cho chợ đêm, bảng hiệu hộp đèn.
 
 ### UC-B9 · Sạp đồ ăn theo giờ ⏳
 **Sáng (06–10h):** xôi, bánh mì, phở, cà phê cóc. **Trưa (10–14h):** cơm tấm, bún, nước mía. **Chiều (14–18h):** bánh tráng trộn, trà sữa, chè.

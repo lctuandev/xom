@@ -3,6 +3,7 @@
 import { useGLTF } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
+  Box3,
   type BufferGeometry,
   type InstancedMesh,
   type Material,
@@ -58,6 +59,31 @@ function useCityParts(): Record<string, Part[]> {
 }
 
 const up = new Vector3(0, 1, 0);
+
+function boxOf(parts: Part[] | undefined): Box3 {
+  const box = new Box3();
+  for (const p of parts ?? []) {
+    p.geometry.computeBoundingBox();
+    const b = p.geometry.boundingBox;
+    if (b) box.union(b.clone().applyMatrix4(p.local));
+  }
+  return box;
+}
+
+/** Hộp bao của một model (mét, gốc của model) — để đặt đồ kèm theo (bóng đèn trên đầu cột…). */
+export function useModelBox(model: CityModel): Box3 {
+  const parts = useCityParts()[model];
+  return useMemo(() => boxOf(parts), [parts]);
+}
+
+/** Hộp bao của nhiều model một lúc. */
+export function useModelBoxes<M extends CityModel>(models: readonly M[]): Record<M, Box3> {
+  const all = useCityParts();
+  return useMemo(
+    () => Object.fromEntries(models.map((m) => [m, boxOf(all[m])])) as Record<M, Box3>,
+    [all, models],
+  );
+}
 
 /**
  * Vẽ nhiều bản sao của một model bằng InstancedMesh: mỗi mesh con = 1 draw call bất kể số bản sao.

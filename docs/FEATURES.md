@@ -58,8 +58,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Nhà có số (địa chỉ giao hàng) | ✅ | 1.7 | UC-W5 · biển số nhà, ghim đơn kế tiếp |
 | Không gian riêng khi vào làm (nội thất, camera ngang tầm mắt) | ✅ | 1.7 | UC-W1 · quán cơm Cô Tư, bưu cục Anh Tám |
 | Xóm rộng: đường lớn, ngã tư đèn giao thông, đường nhánh, hẻm, chợ, công viên, trường, văn phòng, bãi xe | ⏳ | 1.10 | UC-B6 · bản đồ khai báo trong content |
-| Góc nhìn tự do: zoom, xoay, nghiêng, đổi kiểu nhìn | ⏳ | 1.10 | UC-B7 |
-| Ngày/đêm: trời theo giờ, đèn đường, cửa sổ sáng, bảng hiệu sáng | ⏳ | 1.10 | UC-B8 |
+| Góc nhìn tự do: zoom, xoay, nghiêng, đổi kiểu nhìn | ✅ | 1.10 | UC-B7 · chưa làm mờ nhà che |
+| Ngày/đêm: trời theo giờ, đèn đường, cửa sổ sáng, bảng hiệu sáng | ✅ | 1.10 | UC-B8 · đèn giả, không tốn GPU |
 | Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ⏳ | 1.10 | UC-B9 |
 | Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | ⏳ | 1.10 | UC-B10 |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |

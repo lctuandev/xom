@@ -11,6 +11,7 @@ import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
+import { CameraButtons } from "./ui/CameraButtons";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
 import { EquipmentSheet } from "./ui/EquipmentSheet";
@@ -107,6 +108,7 @@ export default function GameShell() {
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />
       <QuickChat />
+      <CameraButtons />
       <Kitchen />
       <DoorSheet />
       <Payslip />

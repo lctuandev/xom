@@ -42,17 +42,20 @@ const buildingModels = [
 ] as const;
 
 // Dãy nhà phía bắc quay mặt về +Z (ra đường), phía nam xoay 180°.
-const buildings = new Map<(typeof buildingModels)[number], Placement[]>();
+export const buildingPlacements = new Map<(typeof buildingModels)[number], Placement[]>();
 xs.forEach((x, i) => {
   if (x === 0) return; // chừa ngã tư
   const north = buildingModels[i % buildingModels.length];
   const south = buildingModels[(i + 3) % buildingModels.length];
   if (!north || !south) return;
-  buildings.set(north, [...(buildings.get(north) ?? []), { x, z: NORTH }]);
-  buildings.set(south, [...(buildings.get(south) ?? []), { x, z: SOUTH, rot: Math.PI }]);
+  buildingPlacements.set(north, [...(buildingPlacements.get(north) ?? []), { x, z: NORTH }]);
+  buildingPlacements.set(south, [
+    ...(buildingPlacements.get(south) ?? []),
+    { x, z: SOUTH, rot: Math.PI },
+  ]);
 });
 
-const lamps: Placement[] = xs
+export const lampPlacements: Placement[] = xs
   .filter((_, i) => i % 2 === 1)
   .flatMap((x) => [
     { x: x + 1.5, z: -TILE + 1.6, rot: 0 },
@@ -75,10 +78,10 @@ export function Street() {
       <Instances model="road-crossroad" at={[{ x: 0, z: 0 }]} />
       <Instances model="tile-low" at={sidewalks} />
       <Instances model="tile-low" at={backLots} />
-      {[...buildings].map(([model, at]) => (
+      {[...buildingPlacements].map(([model, at]) => (
         <Instances key={model} model={model} at={at} />
       ))}
-      <Instances model="light-square" at={lamps} />
+      <Instances model="light-square" at={lampPlacements} />
       <Instances model="electricity-pole" at={poles} />
       <Instances model="dumpster" at={[{ x: 21, z: TILE + 1.2, rot: Math.PI }]} />
       {Object.entries(cars).map(([model, at]) => (

@@ -12,6 +12,8 @@ import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
 import { Customers } from "./Customers";
+import { DayNight } from "./DayNight";
+import { NightLights } from "./NightLights";
 import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
@@ -59,9 +61,7 @@ export function Scene() {
         });
       }}
     >
-      <color attach="background" args={["#bfe3f2"]} />
-      <hemisphereLight args={["#fff6e5", "#8a7f70", 1.6]} />
-      <directionalLight position={[12, 20, 6]} intensity={1.4} />
+      <DayNight />
       {/* Tự hạ độ phân giải khi FPS tụt (docs/PLAN.md §1). */}
       <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
       <PerfProbe />
@@ -123,6 +123,7 @@ function World() {
       <DoorPeople />
       <DeliveryPins />
       <Peers />
+      <NightLights />
       <Stalls />
       <Customers />
       <ProximityWatcher />

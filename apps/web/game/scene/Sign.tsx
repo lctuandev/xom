@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { CanvasTexture, DoubleSide, SRGBColorSpace } from "three";
+import { CanvasTexture, FrontSide, SRGBColorSpace } from "three";
 
 const W = 512;
 const H = 128;
@@ -74,9 +74,16 @@ export function Sign({
   useEffect(() => () => texture.dispose(), [texture]);
 
   return (
-    <mesh position={position} rotation-y={rotationY}>
-      <planeGeometry args={size} />
-      <meshBasicMaterial map={texture} toneMapped={false} side={DoubleSide} />
-    </mesh>
+    // Hai mặt, mỗi mặt chữ xuôi (xoay camera ra phía sau biển vẫn đọc được, không bị ngược chữ).
+    <group position={position} rotation-y={rotationY}>
+      <mesh>
+        <planeGeometry args={size} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={FrontSide} />
+      </mesh>
+      <mesh rotation-y={Math.PI}>
+        <planeGeometry args={size} />
+        <meshBasicMaterial map={texture} toneMapped={false} side={FrontSide} />
+      </mesh>
+    </group>
   );
 }
