@@ -47,6 +47,7 @@ export function Hud() {
         <div className="rounded-full bg-cream/95 px-3 py-1.5 text-sm font-semibold tabular-nums shadow-sm">
           {clock ? `N${clock.day} · ${formatClock(clock.minute)}` : "…"}
         </div>
+        <RosterChip />
         <div className="flex-1" />
         <button
           type="button"
@@ -100,6 +101,22 @@ export function Hud() {
         ))}
       </nav>
     </div>
+  );
+}
+
+/** Số người đang online trong xóm; chạm để mời bạn / vào xóm bạn. */
+function RosterChip() {
+  const n = useGame((s) => s.roster?.peers.length ?? 0);
+  const openSheet = useGame((s) => s.openSheet);
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("xom")}
+      aria-label={`Xóm: ${n} người online`}
+      className="h-9 rounded-full bg-cream/95 px-3 text-sm font-semibold tabular-nums shadow-sm"
+    >
+      👥 {n}
+    </button>
   );
 }
 

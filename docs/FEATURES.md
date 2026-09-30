@@ -28,14 +28,14 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Guest account → gắn tài khoản sau | 💤 | — | Đã chốt không cần (đăng ký thường) |
 | Đăng nhập Google/Zalo | 💤 | sau | |
 | Hồ sơ người chơi, ID, nickname | ⏳ | 2 | Đang có tên hiển thị |
-| Xóm (room) có đồng hồ riêng, tải/lưu | ✅ | 1 | Mỗi người một xóm |
-| Tạo / vào xóm của bạn (mã, link mời) | ⏳ | 2 | UC-J1 |
-| Matchmaking, sức chứa, kick | ⏳ | 2 | |
+| Xóm (room) có đồng hồ riêng, tải/lưu | ✅ | 1 | Mỗi người có xóm riêng khi đăng ký, sau đó vào xóm bạn |
+| Tạo / vào xóm của bạn (mã, link mời) | ✅ | 2 | UC-J1 · tối đa 8 người online/xóm |
+| Sức chứa xóm ✅ · matchmaking, kick ⏳ | 🚧 | 2 | |
 | Kết nối lại khi mất mạng / app xuống nền | ✅ | 1 | 30 giây ân hạn, UC-A3 |
 | Trạng thái kết nối + ping | ✅ | 0 | HUD |
 | Phát hiện AFK | ⏳ | 2 | Quầy vắng chủ đã có (UC-F3) |
 | Server là nguồn sự thật (tiền, kho, món, giao dịch) | ✅ | 1 | Client chỉ gửi ý định |
-| Đồng bộ vị trí người chơi | ⏳ | 2 | Hiện vị trí chỉ ở client |
+| Đồng bộ vị trí người chơi | ✅ | 2 | 10 Hz khi có thay đổi, nội suy phía client; server chưa kiểm vị trí |
 | Hai tab/hai máy cùng lúc | ⏳ | 2 | UC-A4 |
 
 ## 2. 🧍 Nhân vật
@@ -116,7 +116,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
-| Bạn bè (thêm, danh sách, online, vào xóm bạn) | ⏳ | 2 | |
+| Bạn bè (thêm, danh sách, online, vào xóm bạn) | 🚧 | 2 | Danh sách online trong xóm + vào xóm bạn ✅; kết bạn ⏳ |
 | Nhóm (party): mời, rời, trưởng nhóm | ⏳ | 2 | |
 | Công ty / hội / hợp tác kinh doanh | 💤 | 3–4 | Co-op business PLAN Phase 5 |
 | Thân thiết với NPC | ✅ | 1.6 | UC-D2 |

@@ -4,11 +4,14 @@ import type {
   DayReportView,
   MakeResult,
   MeView,
+  MovePayload,
   NotifyEvent,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
   PayslipView,
+  PeerPos,
+  RosterView,
   SayEvent,
   ShiftView,
   Snapshot,
@@ -65,6 +68,9 @@ export interface ClientToServerEvents {
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   "tutorial:set": Intent<{ step: string }>;
+  /** Vị trí của mình (không cần Ack, 10 lần/giây khi có thay đổi). */
+  move: (payload: MovePayload) => void;
+  "xom:join": Intent<{ code: string }>;
 }
 
 export interface ServerToClientEvents {
@@ -80,4 +86,6 @@ export interface ServerToClientEvents {
   orderResult: (r: OrderResultEvent) => void;
   shift: (s: ShiftView | null) => void;
   payslip: (p: PayslipView) => void;
+  roster: (r: RosterView) => void;
+  peers: (p: PeerPos[]) => void;
 }

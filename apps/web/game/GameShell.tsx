@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
 import { connectGame } from "./net/socket";
@@ -22,9 +22,12 @@ import { QuickChat } from "./ui/QuickChat";
 import { TalkSheet } from "./ui/TalkSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
 import { Payslip } from "./ui/work/Payslip";
+import { XomSheet } from "./ui/XomSheet";
 import { useWorldEffects } from "./useWorldEffects";
 
-const LOGIN = "/dang-nhap?next=/play";
+/** Đăng nhập xong quay lại đúng link (giữ ?xom=… của link mời). */
+const loginUrl = () =>
+  `/dang-nhap?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
 
 export default function GameShell() {
   const router = useRouter();
@@ -35,6 +38,7 @@ export default function GameShell() {
   const [authed, setAuthed] = useState(false);
   useWorldEffects();
   useTutorial();
+  useInvite();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
   useEffect(() => {
@@ -44,11 +48,11 @@ export default function GameShell() {
       const token = useAuth.getState().accessToken ?? (await refreshAccessToken());
       if (cancelled) return;
       if (!token) {
-        router.replace(LOGIN);
+        router.replace(loginUrl());
         return;
       }
       setAuthed(true);
-      disconnect = connectGame(() => router.replace(LOGIN));
+      disconnect = connectGame(() => router.replace(loginUrl()));
     })();
     return () => {
       cancelled = true;
@@ -96,6 +100,7 @@ export default function GameShell() {
       {sheet === "business" && <BusinessSheet />}
       {sheet === "market" && <MarketSheet />}
       {sheet === "jobs" && <JobsSheet />}
+      {sheet === "xom" && <XomSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />
@@ -107,4 +112,31 @@ export default function GameShell() {
       <DaySummary />
     </div>
   );
+}
+
+/**
+ * Link mời /play?xom=… (UC-J1): nhớ mã, đợi vào game xong (và không đang hội thoại) thì mở bảng Xóm
+ * để người chơi tự bấm vào — không tự chuyển xóm khi chưa hỏi.
+ */
+function useInvite() {
+  const roster = useGame((s) => s.roster);
+  const invite = useGame((s) => s.invite);
+  const dialogue = useGame((s) => s.dialogue);
+  const sheet = useGame((s) => s.sheet);
+  const shown = useRef(false);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("xom");
+    if (code && /^[0-9a-f]{8}$/i.test(code)) useGame.getState().setInvite(code.toLowerCase());
+  }, []);
+  useEffect(() => {
+    if (!invite || !roster || shown.current) return;
+    if (invite === roster.code) {
+      useGame.getState().setInvite(null);
+      window.history.replaceState(null, "", "/play");
+      return;
+    }
+    if (dialogue || sheet) return;
+    shown.current = true;
+    useGame.getState().openSheet("xom");
+  }, [invite, roster, dialogue, sheet]);
 }

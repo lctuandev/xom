@@ -1,8 +1,8 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 import { content } from "@xom/content";
 
-export async function register(page: Page, name = "Tuấn") {
-  await page.goto("/play");
+export async function register(page: Page, name = "Tuấn", start = "/play") {
+  await page.goto(start);
   await page.waitForURL("**/dang-nhap**");
   await page
     .getByLabel("Tên đăng nhập")
@@ -10,7 +10,7 @@ export async function register(page: Page, name = "Tuấn") {
   await page.getByLabel("Tên hiển thị trong xóm").fill(name);
   await page.getByLabel("Mật khẩu").fill("matkhau123");
   await page.getByRole("button", { name: /Tạo tài khoản & vào xóm/ }).tap();
-  await page.waitForURL("**/play");
+  await page.waitForURL(`**${start}`);
 }
 
 /**

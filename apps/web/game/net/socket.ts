@@ -8,6 +8,7 @@ import {
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
 import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
+import { applyPeers, seedPeers, startPresence } from "./presence";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -39,7 +40,15 @@ export function connectGame(onSignedOut: () => void): () => void {
     else onSignedOut();
   });
 
-  s.on("snapshot", (snap) => game.applySnapshot(snap));
+  s.on("snapshot", (snap) => {
+    seedPeers(snap.roster);
+    game.applySnapshot(snap);
+  });
+  s.on("roster", (r) => {
+    seedPeers(r);
+    game.setRoster(r);
+  });
+  s.on("peers", applyPeers);
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
@@ -74,8 +83,10 @@ export function connectGame(onSignedOut: () => void): () => void {
     if (document.visibilityState === "visible" && !s.connected) s.connect();
   };
   document.addEventListener("visibilitychange", onVisible);
+  const stopPresence = startPresence(s);
 
   return () => {
+    stopPresence();
     clearInterval(timer);
     document.removeEventListener("visibilitychange", onVisible);
     s.disconnect();
@@ -83,7 +94,7 @@ export function connectGame(onSignedOut: () => void): () => void {
   };
 }
 
-type IntentEvent = Exclude<keyof ClientToServerEvents, "ping">;
+type IntentEvent = Exclude<keyof ClientToServerEvents, "ping" | "move">;
 
 type AckOf<E extends IntentEvent> = Parameters<Parameters<ClientToServerEvents[E]>[1]>[0];
 

@@ -82,6 +82,32 @@ export interface Snapshot {
   orders: OrderEvent[];
   /** Ca làm thuê đang diễn ra (vào lại game vẫn tiếp tục ca). */
   shift: ShiftView | null;
+  /** Ai đang ở trong xóm (Phase 2). */
+  roster: RosterView;
+}
+
+// ───────── Xóm chung (Phase 2, docs/USECASES.md nhóm J) ─────────
+
+/** Vị trí một người chơi khác, gửi 10 lần/giây khi có thay đổi. */
+export interface PeerPos {
+  id: string;
+  x: number;
+  z: number;
+  yaw: number;
+  moving: boolean;
+}
+
+/** Người đang online trong xóm; `inside`: đang ở trong quán/bưu cục nào (ẩn khỏi phố). */
+export interface PeerView extends PeerPos {
+  name: string;
+  inside: string | null;
+}
+
+export interface RosterView {
+  /** Mã xóm để mời bạn. */
+  code: string;
+  max: number;
+  peers: PeerView[];
 }
 
 /** Món: stepId → lựa chọn (single: id, multi: danh sách id, action/hold: true). */
@@ -359,4 +385,20 @@ export const workActSchema = z.discriminatedUnion("kind", [
 export type WorkAct = z.infer<typeof workActSchema>;
 export const attendSchema = z.object({ on: z.boolean() });
 export const tutorialSchema = z.object({ step: contentId });
+const coord = z.number().min(-200).max(200);
+export const moveSchema = z.object({
+  x: coord,
+  z: coord,
+  yaw: z.number().min(-10).max(10),
+  moving: z.boolean(),
+  inside: contentId.nullable(),
+});
+export type MovePayload = z.infer<typeof moveSchema>;
+export const joinRoomSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[0-9a-f]{8}$/, "Mã xóm gồm 8 ký tự"),
+});
 export const emptySchema = z.object({}).optional();

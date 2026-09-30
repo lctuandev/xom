@@ -4,7 +4,10 @@ import type {
   ClockView,
   DayReportView,
   MeView,
+  MovePayload,
   NotifyEvent,
+  PeerPos,
+  RosterView,
   SayEvent,
   Snapshot,
   TalkResult,
@@ -40,6 +43,10 @@ const LEAVE_GRACE_MS = 30_000;
 const EQUIPMENT_RESALE = 0.5;
 /** Người bán ở chợ (thân thiết tăng khi mua hàng). */
 const MARKET_KEEPER = "cho_dau_moi";
+/** Tối đa người online trong một xóm (docs/PLAN.md Phase 2). */
+export const MAX_MEMBERS = 8;
+/** Nhịp phát vị trí người chơi cho cả xóm. */
+const PEER_FLUSH_MS = 100;
 
 /** Cổng phát sự kiện ra socket; gateway cung cấp để service không phụ thuộc Socket.IO. */
 export interface GameEmitter {
@@ -47,10 +54,24 @@ export interface GameEmitter {
   toRoom(roomId: string, event: "world", data: WorldView): void;
   toRoom(roomId: string, event: "notify", data: NotifyEvent): void;
   toRoom(roomId: string, event: "say", data: SayEvent): void;
+  toRoom(roomId: string, event: "roster", data: RosterView): void;
+  toRoom(roomId: string, event: "peers", data: PeerPos[]): void;
   toPlayer(playerId: string, event: "me", data: MeView): void;
   toPlayer(playerId: string, event: "dayEnd", data: DayReportView): void;
   toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
   toPlayer(playerId: string, event: "notify", data: NotifyEvent): void;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/** Dời mọi mốc "ngày" của người chơi theo độ lệch ngày giữa hai xóm (khóa unique → dời qua số âm). */
+async function rebaseDays(tx: Tx, playerId: string, offset: number) {
+  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -("batchDay" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -"batchDay" WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -("day" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -"day" WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "Business" SET "rentPaidDay" = "rentPaidDay" + ${offset} WHERE "ownerId" = ${playerId}::uuid AND "rentPaidDay" IS NOT NULL`;
+  await tx.$executeRaw`UPDATE "NpcRelation" SET "lastGreetDay" = "lastGreetDay" + ${offset} WHERE "playerId" = ${playerId}::uuid`;
 }
 
 const pick = <T>(list: readonly T[], rand: () => number): T =>
@@ -88,14 +109,22 @@ export class GameService implements OnModuleDestroy {
     if (!player.roomId) throw new GameError("invalid_state", "Người chơi chưa có xóm");
     const room = await this.loadRoom(player.roomId);
     let member = room.members.get(playerId);
+    const isNew = !member;
     if (!member) {
       member = { playerId, displayName: player.displayName, sockets: new Set() };
       room.members.set(playerId, member);
     }
     clearTimeout(member.leaveTimer);
+    const wasOffline = member.sockets.size === 0;
     member.sockets.add(socketId);
     this.roomOfPlayer.set(playerId, room.id);
-    const snapshot = await room.run(() => this.snapshot(room, playerId));
+    const snapshot = await room.run(async () => {
+      // Hàng xóm thấy người mới (và quầy của họ) ngay.
+      if (isNew) await this.refreshOccupants(room);
+      return this.snapshot(room, playerId);
+    });
+    if (isNew) this.emitWorld(room);
+    if (wasOffline) this.emitRoster(room);
     return { roomId: room.id, snapshot };
   }
 
@@ -107,6 +136,7 @@ export class GameService implements OnModuleDestroy {
     if (member.sockets.size > 0) return;
     // Mất kết nối = không còn đứng ở quầy: ngừng có khách ngay, đóng quầy sau thời gian ân hạn.
     room.attending.delete(playerId);
+    this.emitRoster(room);
     member.leaveTimer = setTimeout(() => {
       void room.run(async () => {
         if (member.sockets.size > 0) return;
@@ -124,6 +154,7 @@ export class GameService implements OnModuleDestroy {
   async onModuleDestroy() {
     for (const room of this.rooms.values()) {
       clearInterval(room.timer);
+      clearInterval(room.peerTimer);
       await this.persistClock(room);
     }
   }
@@ -132,15 +163,17 @@ export class GameService implements OnModuleDestroy {
     const existing = this.rooms.get(roomId);
     if (existing) return existing;
     const row = await this.prisma.room.findUniqueOrThrow({ where: { id: roomId } });
-    const room = new RoomRuntime(row.id, row.day, row.minute);
+    const room = new RoomRuntime(row.id, row.code, row.day, row.minute);
     this.rooms.set(room.id, room);
     room.timer = setInterval(() => room.runTick(() => this.tick(room)), TICK_MS);
+    room.peerTimer = setInterval(() => this.flushPeers(room), PEER_FLUSH_MS);
     this.logger.log(`xóm ${room.id} chạy (ngày ${room.day})`);
     return room;
   }
 
   private async unloadRoom(room: RoomRuntime) {
     clearInterval(room.timer);
+    clearInterval(room.peerTimer);
     await this.persistClock(room);
     this.rooms.delete(room.id);
     this.logger.log(`xóm ${room.id} nghỉ`);
@@ -156,6 +189,102 @@ export class GameService implements OnModuleDestroy {
   private roomFor(playerId: string): RoomRuntime | undefined {
     const id = this.roomOfPlayer.get(playerId);
     return id ? this.rooms.get(id) : undefined;
+  }
+
+  // ───────────────────────── Xóm chung ─────────────────────────
+
+  /** Client báo vị trí; chỉ lưu để phát cho người khác (không đi qua hàng đợi, không đụng DB). */
+  move(playerId: string, p: MovePayload) {
+    const room = this.roomFor(playerId);
+    const m = room?.members.get(playerId);
+    if (!room || !m) return;
+    const insideChanged = (m.pos?.inside ?? null) !== p.inside;
+    m.pos = p;
+    room.dirtyPeers.add(playerId);
+    if (insideChanged) this.emitRoster(room);
+  }
+
+  private flushPeers(room: RoomRuntime) {
+    if (room.dirtyPeers.size === 0) return;
+    const list: PeerPos[] = [];
+    for (const id of room.dirtyPeers) {
+      const p = room.members.get(id)?.pos;
+      if (p)
+        list.push({ id, x: round2(p.x), z: round2(p.z), yaw: round2(p.yaw), moving: p.moving });
+    }
+    room.dirtyPeers.clear();
+    if (list.length) this.emitter?.toRoom(room.id, "peers", list);
+  }
+
+  roster(room: RoomRuntime): RosterView {
+    const peers = [...room.members.values()]
+      .filter((m) => m.sockets.size > 0)
+      .map((m) => ({
+        id: m.playerId,
+        name: m.displayName,
+        x: m.pos?.x ?? 0,
+        z: m.pos?.z ?? 0,
+        yaw: m.pos?.yaw ?? 0,
+        moving: false,
+        inside: m.pos?.inside ?? null,
+      }));
+    return { code: room.code, max: MAX_MEMBERS, peers };
+  }
+
+  private emitRoster(room: RoomRuntime) {
+    this.emitter?.toRoom(room.id, "roster", this.roster(room));
+  }
+
+  /**
+   * Chuyển sang xóm của bạn bằng mã (UC-J1). Phải đóng quầy, ra ca trước. Ngày của mỗi xóm khác nhau
+   * nên mọi dữ liệu tính theo ngày của người chơi được dời theo độ lệch (hàng tồn không tự nhiên hỏng/tươi lại).
+   */
+  async switchRoom(playerId: string, code: string): Promise<{ from: string; to: string }> {
+    const from = this.roomFor(playerId);
+    if (!from) throw new GameError("invalid_state", "Chưa vào xóm");
+    const target = await this.prisma.room.findUnique({ where: { code } });
+    if (!target) throw new GameError("invalid_payload", "Không có xóm nào mã này");
+    if (target.id === from.id) throw new GameError("invalid_state", "Bạn đang ở xóm này rồi");
+    const loaded = this.rooms.get(target.id);
+    const online = loaded ? this.roster(loaded).peers.length : 0;
+    if (online >= MAX_MEMBERS)
+      throw new GameError("invalid_state", `Xóm đã đủ ${MAX_MEMBERS} người, đợi chút nha`);
+    const to = loaded ?? (await this.loadRoom(target.id));
+    // Ngày của xóm đích lấy từ bộ nhớ nếu đang chạy (DB có thể chưa kịp lưu).
+    const offset = to.day - from.day;
+
+    await from.run(async () => {
+      const biz = await this.businessOf(playerId);
+      if (biz?.status === "OPEN")
+        throw new GameError("invalid_state", "Dọn quầy (đóng quầy) trước khi chuyển xóm");
+      if (from.shifts.has(playerId))
+        throw new GameError("invalid_state", "Ra ca trước khi chuyển xóm");
+      const m = from.members.get(playerId);
+      clearTimeout(m?.leaveTimer);
+      from.attending.delete(playerId);
+      from.members.delete(playerId);
+      from.dirtyPeers.delete(playerId);
+      this.roomOfPlayer.delete(playerId);
+      await this.prisma.$transaction(async (tx) => {
+        await tx.player.update({ where: { id: playerId }, data: { roomId: to.id, jobId: null } });
+        if (offset !== 0) await rebaseDays(tx, playerId, offset);
+      });
+      this.emitWorld(from);
+      this.emitRoster(from);
+    });
+    if (from.members.size === 0) await this.unloadRoom(from);
+
+    await to.run(async () => {
+      // Chỗ bán đã có hàng xóm dùng → phải chọn chỗ khác.
+      const biz = await this.businessOf(playerId);
+      if (!biz?.lotId) return;
+      const lots = await this.refreshOccupants(to);
+      if (lots.some((o) => o.lotId === biz.lotId && o.businessId !== biz.id)) {
+        await this.prisma.business.update({ where: { id: biz.id }, data: { lotId: null } });
+      }
+    });
+    this.logger.log(`người chơi ${playerId} chuyển xóm ${from.id} → ${to.id}`);
+    return { from: from.id, to: to.id };
   }
 
   // ───────────────────────── Intent ─────────────────────────
@@ -530,6 +659,7 @@ export class GameService implements OnModuleDestroy {
       clock: { day: room.day, minute: room.minute },
       world: { lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)) },
       shift: this.work.view(room, playerId),
+      roster: this.roster(room),
       orders: [...room.orders.values()]
         .filter((o) => o.event.ownerId === playerId)
         .map((o) => o.event),

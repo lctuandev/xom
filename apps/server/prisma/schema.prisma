@@ -54,7 +54,7 @@ model Player {
   reports    DailyReport[]
 }
 
-/// Một "xóm": có đồng hồ riêng. Phase 1 mỗi người chơi một xóm riêng.
+/// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
 model Room {
   id        String   @id @default(uuid(7)) @db.Uuid
   code      String   @unique

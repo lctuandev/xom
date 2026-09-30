@@ -12,6 +12,7 @@ import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
 import { Customers } from "./Customers";
+import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
 import { Stalls } from "./Stalls";
@@ -121,6 +122,7 @@ function World() {
       <AddressSigns />
       <DoorPeople />
       <DeliveryPins />
+      <Peers />
       <Stalls />
       <Customers />
       <ProximityWatcher />

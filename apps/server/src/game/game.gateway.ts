@@ -15,11 +15,13 @@ import {
   buyEquipmentSchema,
   type ClientToServerEvents,
   emptySchema,
+  joinRoomSchema,
   type MakeResult,
   type MeView,
   makeOrderSchema,
   marketBuySchema,
   menuSchema,
+  moveSchema,
   orderIdSchema,
   type PongPayload,
   payOrderSchema,
@@ -45,6 +47,8 @@ interface SocketData {
   playerId: string;
   /** Mốc thời gian các intent gần đây, để chặn spam. */
   recent: number[];
+  /** Lần báo vị trí gần nhất (ms) — tối đa ~15 lần/giây. */
+  lastMove: number;
 }
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, never, SocketData>;
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, never, SocketData>;
@@ -84,7 +88,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       const token = (socket.handshake.auth as { token?: string } | undefined)?.token;
       this.auth.verifyAccess(token).then(
         ({ playerId }) => {
-          socket.data = { playerId, recent: [] };
+          socket.data = { playerId, recent: [], lastMove: 0 };
           next();
         },
         () => next(new Error("unauthorized")),
@@ -233,6 +237,53 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("chat:say")
   say(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, saySchema, body, (ctx, p) => this.game.say(ctx, p.phraseId));
+  }
+
+  /** Vị trí người chơi (không Ack): sai định dạng hay gửi quá dày thì bỏ qua lặng lẽ. */
+  @SubscribeMessage("move")
+  move(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    const data = c.data;
+    if (!data?.playerId) return;
+    const now = Date.now();
+    if (now - data.lastMove < 60) return;
+    const parsed = moveSchema.safeParse(body);
+    if (!parsed.success) return;
+    data.lastMove = now;
+    this.game.move(data.playerId, parsed.data);
+  }
+
+  /**
+   * Vào xóm của bạn bằng mã (UC-J1). Không chạy trong hàng đợi của một xóm vì đụng tới hai xóm:
+   * service tự tuần tự hóa; xong thì chuyển mọi socket của người chơi sang kênh xóm mới và gửi snapshot.
+   */
+  @SubscribeMessage("xom:join")
+  async joinRoom(
+    @ConnectedSocket() c: GameSocket,
+    @MessageBody() body: unknown,
+  ): Promise<Ack<MeView>> {
+    const playerId = c.data?.playerId;
+    if (!playerId) return { ok: false, error: "unauthorized" };
+    const parsed = joinRoomSchema.safeParse(body ?? {});
+    if (!parsed.success)
+      return { ok: false, error: "invalid_payload", message: parsed.error.issues[0]?.message };
+    try {
+      const { from } = await this.game.switchRoom(playerId, parsed.data.code);
+      const sockets = await this.server.in(playerChannel(playerId)).fetchSockets();
+      let me: MeView | null = null;
+      for (const s of sockets) {
+        s.leave(`room:${from}`);
+        const { roomId, snapshot } = await this.game.join(playerId, s.id);
+        s.join(`room:${roomId}`);
+        s.emit("snapshot", snapshot);
+        me = snapshot.me;
+      }
+      if (!me) return { ok: false, error: "internal", message: "Mất kết nối" };
+      return { ok: true, data: me };
+    } catch (err) {
+      if (err instanceof GameError) return { ok: false, error: err.code, message: err.message };
+      this.logger.error("chuyển xóm lỗi", err as Error);
+      return { ok: false, error: "internal", message: "Có lỗi, thử lại sau" };
+    }
   }
 
   @SubscribeMessage("tutorial:set")

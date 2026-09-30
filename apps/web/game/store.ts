@@ -7,6 +7,7 @@ import type {
   OrderResultEvent,
   OrderUpdateEvent,
   PayslipView,
+  RosterView,
   SayEvent,
   ShiftView,
   Snapshot,
@@ -24,13 +25,13 @@ export interface PerfStats {
 /** Khung thoại trên đầu nhân vật; key = playerId / id NPC / "order:<id>". */
 export interface Bubble {
   text: string;
-  tone: "say" | "ask" | "good" | "bad";
+  tone: "say" | "ask" | "good" | "bad" | "tag";
   big?: boolean;
   /** Tự ẩn lúc này (ms epoch); bỏ trống = hiện tới khi bị xoá. */
   until?: number;
 }
 
-export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk";
+export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk" | "xom";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -83,6 +84,12 @@ interface GameState {
   perf: PerfStats;
   pingMs: number | null;
   contextLost: boolean;
+  /** Ai đang online trong xóm (vị trí từng khung hình nằm ở net/peers.ts, không qua store). */
+  roster: RosterView | null;
+  /** Mã xóm từ link mời (?xom=…) đang chờ người chơi đồng ý vào. */
+  invite: string | null;
+  setRoster: (r: RosterView) => void;
+  setInvite: (code: string | null) => void;
   applySnapshot: (s: Snapshot) => void;
   setMe: (me: MeView) => void;
   setClock: (c: ClockView) => void;
@@ -143,8 +150,13 @@ export const useGame = create<GameState>((set) => ({
   perf: { fps: 0, calls: 0, triangles: 0, dpr: 1 },
   pingMs: null,
   contextLost: false,
+  roster: null,
+  invite: null,
+  setRoster: (roster) => set({ roster }),
+  setInvite: (invite) => set({ invite }),
   applySnapshot: (s) =>
     set({
+      roster: s.roster,
       me: s.me,
       shift: s.shift,
       clock: s.clock,

@@ -1,4 +1,4 @@
-import type { DishView, OrderEvent } from "@xom/shared";
+import type { DishView, MovePayload, OrderEvent } from "@xom/shared";
 import type { Shift } from "./work.js";
 
 /** Lỗi nghiệp vụ trả về client qua Ack; message tiếng Việt hiển thị thẳng. */
@@ -17,6 +17,8 @@ export interface Member {
   sockets: Set<string>;
   /** Hẹn giờ dọn dẹp khi người chơi rời đi (cho phép vào lại trong thời gian ân hạn). */
   leaveTimer?: NodeJS.Timeout;
+  /** Vị trí gần nhất client báo lên (chỉ để người khác thấy; server không dùng cho luật chơi). */
+  pos?: MovePayload;
 }
 
 /** Đơn khách đang ở quầy (chỉ sống trong bộ nhớ): chờ làm món → chờ tính tiền → đi. */
@@ -40,12 +42,16 @@ export class RoomRuntime {
   readonly shoutReadyAt = new Map<string, number>();
   /** Ca làm thuê đang diễn ra: playerId → ca (docs/USECASES.md nhóm W). */
   readonly shifts = new Map<string, Shift>();
+  /** Người chơi vừa đổi vị trí, chờ phát cho cả xóm ở nhịp 10 Hz. */
+  readonly dirtyPeers = new Set<string>();
   timer?: NodeJS.Timeout;
+  peerTimer?: NodeJS.Timeout;
   private queue: Promise<unknown> = Promise.resolve();
   private tickPending = false;
 
   constructor(
     readonly id: string,
+    readonly code: string,
     public day: number,
     public minute: number,
   ) {}

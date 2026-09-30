@@ -372,11 +372,11 @@ Gặp Chú Bảy ──► "Con muốn buôn bán"  ─► Tới vựa xe Ông S
 - **1.9 Tuyển dụng (NPC trước):** đăng tin, bảng tin xóm, ứng tuyển, ca làm, ký quỹ lương, đánh giá hai chiều; NPC nhân viên / NPC chủ tiệm lấp chỗ trống.
 
 ### Phase 2 — Multiplayer xóm 4 người (Tuần 10–14)
-- [ ] Tạo/vào xóm bằng mã phòng + link mời (Web Share API → Zalo/Messenger)
-- [ ] Đồng bộ vị trí 10 Hz + nội suy phía client; tên trên đầu nhân vật
+- [x] Tạo/vào xóm bằng mã phòng + link mời (Web Share API → Zalo/Messenger)
+- [x] Đồng bộ vị trí 10 Hz + nội suy phía client; tên trên đầu nhân vật
 - [ ] Cạnh tranh thật: shop cùng danh mục chia khách
 - [ ] Người chơi làm khách: đi tới shop người khác và mua (ledger giữa 2 ví)
-- [ ] Câu nói nhanh + emote
+- [x] Câu nói nhanh + emote (nghe được giữa người chơi)
 - [ ] Reconnect + resync bằng `seq` (đặc biệt khi app xuống nền trên iOS)
 - [ ] Trạng thái phòng trong Redis, flush định kỳ về Postgres
 - [ ] Bot test: script 20 bot socket vào 5 phòng chạy 30 phút, đo CPU/RAM máy nhà

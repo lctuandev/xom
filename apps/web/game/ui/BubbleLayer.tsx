@@ -10,6 +10,7 @@ const TONE = {
   ask: "bg-cream text-ink ring-1 ring-ink/10",
   good: "bg-leaf text-cream",
   bad: "bg-red text-cream",
+  tag: "bg-ink/70 text-cream",
 } as const;
 
 /**
@@ -21,6 +22,8 @@ export function BubbleLayer() {
   const dialogue = useGame((s) => s.dialogue);
   const page = useGame((s) => s.dialoguePage);
   const myId = useGame((s) => s.me?.playerId);
+  const roster = useGame((s) => s.roster);
+  const inside = useGame((s) => s.inside);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -31,6 +34,18 @@ export function BubbleLayer() {
   const list: [string, Bubble][] = Object.entries(bubbles).filter(
     ([, b]) => !b.until || b.until > now,
   );
+  // Hàng xóm (người chơi thật): ngoài phố luôn có bảng tên trên đầu; trong quán chỉ nghe người cùng quán.
+  const peers = new Map((roster?.peers ?? []).filter((p) => p.id !== myId).map((p) => [p.id, p]));
+  for (let i = list.length - 1; i >= 0; i--) {
+    const peer = peers.get(list[i]?.[0] ?? "");
+    if (peer && peer.inside !== inside) list.splice(i, 1);
+  }
+  if (!inside) {
+    for (const p of peers.values()) {
+      if (!p.inside && !list.some(([k]) => k === p.id))
+        list.push([p.id, { text: p.name, tone: "tag" }]);
+    }
+  }
   if (dialogue) {
     const step = content.stepById.get(dialogue);
     const line = step?.lines[page];
@@ -47,7 +62,11 @@ export function BubbleLayer() {
         const name =
           key === myId
             ? null
-            : (content.placeById.get(key)?.keeper.name ?? content.speakerById.get(key)?.name);
+            : b.tone === "tag"
+              ? null
+              : (peers.get(key)?.name ??
+                content.placeById.get(key)?.keeper.name ??
+                content.speakerById.get(key)?.name);
         return (
           <div
             key={key}
@@ -60,16 +79,20 @@ export function BubbleLayer() {
             style={{ visibility: "hidden" }}
           >
             <div
-              className={`rounded-2xl px-3 py-1.5 text-center leading-snug font-semibold shadow-lg ${TONE[b.tone]} ${
-                b.big ? "w-56 text-[13px]" : "w-max max-w-48 text-xs"
+              className={`text-center leading-snug font-semibold ${TONE[b.tone]} ${
+                b.tone === "tag"
+                  ? "w-max max-w-32 truncate rounded-full px-2 py-0.5 text-[10px]"
+                  : `rounded-2xl px-3 py-1.5 shadow-lg ${b.big ? "w-56 text-[13px]" : "w-max max-w-48 text-xs"}`
               }`}
             >
               {name && <span className="block text-[10px] font-extrabold text-red">{name}</span>}
               {b.text}
             </div>
-            <span
-              className={`-mt-1.5 size-3 rotate-45 ${b.tone === "good" ? "bg-leaf" : b.tone === "bad" ? "bg-red" : "bg-cream"}`}
-            />
+            {b.tone !== "tag" && (
+              <span
+                className={`-mt-1.5 size-3 rotate-45 ${b.tone === "good" ? "bg-leaf" : b.tone === "bad" ? "bg-red" : "bg-cream"}`}
+              />
+            )}
           </div>
         );
       })}

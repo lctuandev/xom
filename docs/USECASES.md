@@ -439,8 +439,23 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 
 ## J. Nhiều người chơi (Phase 2)
 
-- **UC-J1 Mời bạn vào xóm** — link/QR chia sẻ qua Zalo; tối đa 4 người/xóm (sau mở rộng).
-- **UC-J2 Thấy nhau** — di chuyển, lời thoại trên đầu, biển hiệu tên chủ.
+### UC-J1 · Mời bạn vào xóm ✅
+**Luồng:** chạm 👥 trên thanh trên → bảng *Xóm*: mã xóm 8 ký tự + nút *📨 Mời bạn* (Web Share → Zalo/Messenger; máy không có thì chép link).
+Bạn mở link `/play?xom=<mã>` → chưa có tài khoản thì đăng ký (giữ nguyên link) → vào game xong (hết lời Chú Bảy) bảng Xóm **tự mở** với lời mời → bấm *Vào xóm*.
+Hoặc nhập mã tay trong bảng Xóm.
+**Đời thật & rẽ nhánh:**
+- Đang mở quầy / đang trong ca → phải dọn quầy, ra ca trước (không bỏ khách giữa chừng).
+- Mang theo tiền, hàng tồn, xe hàng. Chỗ bán cũ đã có hàng xóm dùng → phải chọn chỗ khác.
+- Mỗi xóm có đồng hồ riêng: vào xóm lệch ngày thì hàng tồn, sổ sách, tiền thuê dời theo ngày xóm mới (hàng không tự hỏng hay tươi lại).
+- Mã sai → "Không có xóm nào mã này"; xóm đủ 8 người online → đợi.
+**Kiểm chứng:** e2e server `xom.e2e-spec.ts`; Playwright `xom-chung.spec.ts` (2 người, iPhone 16 Pro + Pixel 7).
+
+### UC-J2 · Thấy nhau ✅ (cơ bản)
+Hàng xóm đi lại trên phố (vị trí gửi 10 lần/giây khi có thay đổi, nội suy mượt), **bảng tên trên đầu**, câu nói nhanh hiện trong khung thoại kèm tên người nói.
+Vào quán/bưu cục thì biến khỏi phố (bảng Xóm ghi "ở Quán cơm…"); trong quán chỉ nghe người cùng quán. Tắt app → biến mất khỏi xóm.
+Quầy của hàng xóm hiện ở chỗ bán kèm tên chủ.
+**Chưa:** dáng nhân vật riêng cho từng người (Phase 3), chat gõ chữ (UC-D4).
+### UC-J3 · Mua của nhau ⏳
 - **UC-J3 Mua của nhau** — người chơi làm khách ở quầy người chơi (UC-E4): chủ quầy làm món theo yêu cầu *của người thật*.
 - **UC-J4 Tuyển nhau làm** — UC-H2…H8 giữa người chơi.
 - **UC-J5 Tranh chỗ** — chỗ bán đã có người thuê trong ngày thì người khác không thuê được; đấu giá chỗ đẹp theo tuần (⏳).
@@ -485,5 +500,5 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 | **Tiếp theo (khuyến nghị): Phase 2 — Nhiều người** | xem dòng Phase 2 bên dưới |
 | **Phase 1.8 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · W6 (quầy riêng 3D) |
 | **Phase 1.9 — Tuyển dụng (NPC trước)** | W7 (uy tín người làm) · H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
-| **Phase 2 — Nhiều người** | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
+| **Phase 2 — Nhiều người** 🚧 (J1, J2 ✅) | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |
 | **Sau đó** | K1–K7 · I2 · I4 · I5 · F8 |
