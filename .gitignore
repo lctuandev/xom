@@ -1,0 +1,12 @@
+node_modules/
+.env
+.next/
+dist/
+.turbo/
+.turbo/
+*.tsbuildinfo
+coverage/
+generated/
+art/vendor/
+deploy/.env
+tools/balance/out/

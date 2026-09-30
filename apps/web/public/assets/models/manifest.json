@@ -1,0 +1,48 @@
+{
+  "city": {
+    "type": "bundle",
+    "url": "/assets/models/city.glb",
+    "models": [
+      "road-straight",
+      "road-crossroad",
+      "road-intersection",
+      "tile-low",
+      "light-square",
+      "electricity-pole",
+      "electricity-wires",
+      "dumpster",
+      "construction-cone",
+      "building-a",
+      "building-b",
+      "building-c",
+      "building-d",
+      "building-e",
+      "building-f",
+      "building-g",
+      "building-h",
+      "detail-awning",
+      "detail-awning-wide",
+      "detail-parasol-a",
+      "detail-parasol-b",
+      "low-detail-building-a",
+      "low-detail-building-b",
+      "sedan",
+      "van",
+      "taxi",
+      "delivery",
+      "ghe-nhua-do",
+      "xe-banh-mi",
+      "xe-tra-sua",
+      "sap-phu-kien"
+    ]
+  },
+  "characters": {
+    "type": "single",
+    "files": {
+      "character-male-a": "/assets/models/characters/character-male-a.glb",
+      "character-male-c": "/assets/models/characters/character-male-c.glb",
+      "character-female-a": "/assets/models/characters/character-female-a.glb",
+      "character-female-d": "/assets/models/characters/character-female-d.glb"
+    }
+  }
+}

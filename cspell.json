@@ -1,0 +1,16 @@
+{
+  "version": "0.2",
+  "ignorePaths": ["docs/**", "art/**", "CLAUDE.md", "**/*.vi.json"],
+  "words": [
+    "xom",
+    "nestjs",
+    "argon",
+    "cloudflared",
+    "meshopt",
+    "gltf",
+    "Kenney",
+    "Quaternius",
+    "Serwist",
+    "zustand"
+  ]
+}

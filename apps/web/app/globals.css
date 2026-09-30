@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+:root {
+  --xom-cream: #fff6e5;
+  --xom-ink: #2b2118;
+  --xom-red: #e4432d;
+  --xom-sun: #f6b93b;
+  --xom-leaf: #2f7d4f;
+  --xom-sky: #bfe3f2;
+  /* Chiều cao thanh điều hướng dưới (h-14 + pt-2 + pb-safe); sheet nằm ngay trên nó. */
+  --nav-h: calc(4rem + max(env(safe-area-inset-bottom), 0.75rem));
+}
+
+@theme inline {
+  --color-cream: var(--xom-cream);
+  --color-ink: var(--xom-ink);
+  --color-red: var(--xom-red);
+  --color-sun: var(--xom-sun);
+  --color-leaf: var(--xom-leaf);
+  --color-sky: var(--xom-sky);
+  --font-sans: var(--font-be-vietnam), system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--xom-cream);
+  color: var(--xom-ink);
+  /* Chặn pull-to-refresh và kéo nảy trang trên mobile. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@utility pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+@utility pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}

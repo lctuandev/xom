@@ -1,0 +1,13 @@
+{
+  "name": "@xom/balance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "balance": "node run.mjs"
+  },
+  "dependencies": {
+    "@xom/content": "workspace:*",
+    "@xom/sim": "workspace:*"
+  }
+}

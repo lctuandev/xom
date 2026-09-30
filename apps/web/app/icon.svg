@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#e4432d"/>
+  <path d="M96 236 256 116l160 120v36H96z" fill="#f6b93b"/>
+  <rect x="136" y="272" width="240" height="140" rx="16" fill="#fff6e5"/>
+  <rect x="224" y="320" width="64" height="92" rx="8" fill="#2f7d4f"/>
+  <text x="256" y="470" font-family="system-ui, sans-serif" font-size="64" font-weight="800" fill="#fff6e5" text-anchor="middle">XÓM</text>
+</svg>

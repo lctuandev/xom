@@ -1,0 +1,60 @@
+{
+  "bundles": {
+    "city": {
+      "sources": [
+        {
+          "dir": "art/vendor/kenney/kenney_city-kit-roads/Models/GLB format",
+          "scale": 4,
+          "models": [
+            "road-straight",
+            "road-crossroad",
+            "road-intersection",
+            "tile-low",
+            "light-square",
+            "electricity-pole",
+            "electricity-wires",
+            "dumpster",
+            "construction-cone"
+          ]
+        },
+        {
+          "dir": "art/vendor/kenney/kenney_city-kit-commercial_2.1/Models/GLB format",
+          "scale": 4,
+          "models": [
+            "building-a",
+            "building-b",
+            "building-c",
+            "building-d",
+            "building-e",
+            "building-f",
+            "building-g",
+            "building-h",
+            "detail-awning",
+            "detail-awning-wide",
+            "detail-parasol-a",
+            "detail-parasol-b",
+            "low-detail-building-a",
+            "low-detail-building-b"
+          ]
+        },
+        {
+          "dir": "art/vendor/kenney/kenney_car-kit/Models/GLB format",
+          "scale": 1.6,
+          "models": ["sedan", "van", "taxi", "delivery"]
+        },
+        {
+          "dir": "art/export",
+          "scale": 1,
+          "models": ["ghe-nhua-do", "xe-banh-mi", "xe-tra-sua", "sap-phu-kien"]
+        }
+      ]
+    }
+  },
+  "singles": {
+    "characters": {
+      "dir": "art/vendor/kenney/kenney_mini-characters/Models/GLB format",
+      "scale": 2.5,
+      "models": ["character-male-a", "character-male-c", "character-female-a", "character-female-d"]
+    }
+  }
+}
