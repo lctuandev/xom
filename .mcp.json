@@ -18,6 +18,19 @@
         "--isolated"
       ]
     },
+    "playwright-iphone": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser",
+        "chrome",
+        "--device",
+        "iPhone 16 Pro",
+        "--isolated"
+      ]
+    },
     "chrome-devtools": {
       "type": "stdio",
       "command": "npx",

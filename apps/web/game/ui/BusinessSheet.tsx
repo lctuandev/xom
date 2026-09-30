@@ -7,28 +7,41 @@ import { useEffect, useRef, useState } from "react";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
-import { EquipmentPicker } from "./EquipmentPicker";
 import { Section, Sheet, Stepper } from "./Sheet";
 
 export function BusinessSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
+  const setGoal = useGame((s) => s.setGoal);
   const [changing, setChanging] = useState(false);
   const biz = me?.business;
 
   if (!biz || changing) {
+    // Mua / đổi xe chỉ ở vựa xe Ông Sáu.
     return (
-      <Sheet title={biz ? "Đổi nghề" : "Chọn nghề"} onClose={() => close(null)}>
+      <Sheet title={biz ? "Đổi nghề" : "Chưa có xe hàng"} onClose={() => close(null)}>
         {biz && (
           <button
             type="button"
             onClick={() => setChanging(false)}
-            className="mb-3 h-11 font-semibold text-red"
+            className="mb-3 h-10 font-semibold text-red"
           >
             ← Quay lại quầy
           </button>
         )}
-        <EquipmentPicker onDone={() => setChanging(false)} />
+        <p className="mb-3 text-sm text-ink/70">
+          Xe đẩy mua ở vựa xe Ông Sáu, đầu phố phía tây. Đổi nghề thì xe cũ được bán lại nửa giá.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setGoal({ kind: "place", id: "vua_xe", open: "equipment" });
+            close(null);
+          }}
+          className="h-11 w-full rounded-xl bg-red font-semibold text-cream"
+        >
+          🚶 Tới vựa xe Ông Sáu
+        </button>
       </Sheet>
     );
   }
@@ -39,7 +52,7 @@ export function BusinessSheet() {
 
   return (
     <Sheet title={`${product.emoji} ${equipment.name}`} onClose={() => close(null)}>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <span
           role="img"
           className="text-lg text-sun"
@@ -66,9 +79,9 @@ export function BusinessSheet() {
       </Section>
 
       <Section title="Hàng trong kho">
-        <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
           <div>
-            <p className="text-2xl font-extrabold tabular-nums">{stock}</p>
+            <p className="text-xl font-extrabold tabular-nums">{stock}</p>
             <p className="text-sm text-ink/60">
               {product.name}
               {content.template(product.template).perishable && " · hỏng cuối ngày"}
@@ -76,19 +89,23 @@ export function BusinessSheet() {
           </div>
           <button
             type="button"
-            onClick={() => close("market")}
-            className="h-12 rounded-xl bg-sun px-5 font-semibold"
+            onClick={() => {
+              setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+              close(null);
+            }}
+            className="h-10 rounded-xl bg-sun px-4 font-semibold"
           >
-            Ra chợ
+            🚶 Ra chợ
           </button>
         </div>
       </Section>
 
       <Section title="Hôm nay">
         <div className="grid grid-cols-3 gap-2 text-center">
+          {/* Khách hụt hiện trong báo cáo cuối ngày. */}
           <Stat label="Đã bán" value={String(me.today.sold)} />
           <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
-          <Stat label="Khách hụt" value={String(me.today.lost)} warn={me.today.lost > 0} />
+          <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
         </div>
       </Section>
 
@@ -115,6 +132,9 @@ function OpenButton({
   money: number;
 }) {
   const [busy, setBusy] = useState(false);
+  const atStall = useGame((s) => s.atStall);
+  const setGoal = useGame((s) => s.setGoal);
+  const close = useGame((s) => s.openSheet);
   const lot = biz.lotId ? content.lot(biz.lotId) : null;
   const rentDue = !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay : 0;
   const cantPay = rentDue > money;
@@ -129,8 +149,26 @@ function OpenButton({
           : rentDue
             ? `Tiền thuê chỗ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
             : null;
+  // Phải đẩy xe tới chỗ bán, đứng sau quầy mới mở được.
+  if (!biz.open && lot && !atStall) {
+    return (
+      <div className="mb-4">
+        <button
+          type="button"
+          onClick={() => {
+            setGoal({ kind: "stall", open: "business" });
+            close(null);
+          }}
+          className="h-12 w-full rounded-2xl bg-sun text-base font-semibold active:scale-[0.98]"
+        >
+          🚶 Đẩy xe tới {lot.name}
+        </button>
+        <p className="mt-2 text-center text-sm text-ink/60">Tới nơi rồi mới mở quầy được.</p>
+      </div>
+    );
+  }
   return (
-    <div className="mb-5">
+    <div className="mb-4">
       <button
         type="button"
         disabled={busy || (!biz.open && (working || !lot || stock === 0 || cantPay))}
@@ -139,7 +177,7 @@ function OpenButton({
           await send(biz.open ? "biz:close" : "biz:open", {});
           setBusy(false);
         }}
-        className={`h-14 w-full rounded-2xl text-lg font-semibold active:scale-[0.98] disabled:opacity-40 ${
+        className={`h-12 w-full rounded-2xl text-base font-semibold active:scale-[0.98] disabled:opacity-40 ${
           biz.open ? "bg-ink/10" : "bg-leaf text-cream"
         }`}
       >
@@ -176,7 +214,7 @@ function PriceControl({ biz }: { biz: BusinessView }) {
           : { text: "Đắt — khách bỏ đi, mất uy tín", cls: "text-red" };
 
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm">
+    <div className="rounded-2xl bg-white p-3 shadow-sm">
       <Stepper
         label="giá bán"
         value={price}
@@ -202,7 +240,7 @@ function LotPicker({ biz }: { biz: BusinessView }) {
 
   if (!open && current) {
     return (
-      <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
         <div className="min-w-0">
           <p className="font-extrabold">{current.name}</p>
           <p className="text-sm text-ink/60">
@@ -236,7 +274,7 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                 const res = await send("biz:update", { lotId: lot.id });
                 if (res.ok) setOpen(false);
               }}
-              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white p-4 text-left shadow-sm aria-pressed:ring-2 aria-pressed:ring-red disabled:opacity-40"
+              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white p-3 text-left shadow-sm aria-pressed:ring-2 aria-pressed:ring-red disabled:opacity-40"
             >
               <span className="min-w-0">
                 <span className="block font-extrabold">{lot.name}</span>

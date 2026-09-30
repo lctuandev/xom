@@ -44,6 +44,8 @@ model Player {
   room        Room?    @relation(fields: [roomId], references: [id])
   /// Việc làm thuê đang làm (content job id), null = không đi làm.
   jobId       String?
+  /// Bước kịch bản người mới đang ở (content tutorial step id).
+  tutorial    String   @default("gap_chu_bay")
   createdAt   DateTime @default(now())
 
   businesses Business[]
@@ -134,6 +136,8 @@ model DailyReport {
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
   day          Int
   revenue      Int
+  /// Tiền boa khi phục vụ khách kịp.
+  tips         Int      @default(0)
   stockCost    Int
   rent         Int
   wages        Int

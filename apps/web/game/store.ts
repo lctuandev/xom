@@ -1,9 +1,11 @@
 import type {
   ClockView,
   DayReportView,
+  JobTaskEvent,
   MarketView,
   MeView,
   NotifyEvent,
+  OrderResultEvent,
   SaleEvent,
   Snapshot,
   WorldView,
@@ -17,7 +19,12 @@ export interface PerfStats {
   dpr: number;
 }
 
-export type SheetId = "business" | "market" | "jobs";
+export type SheetId = "business" | "market" | "jobs" | "equipment";
+
+/** Nơi nhân vật đang tự đi tới; tới nơi thì mở sheet tương ứng (nếu có). */
+export type Goal =
+  | { kind: "place"; id: string; open?: SheetId }
+  | { kind: "stall"; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -32,6 +39,20 @@ interface GameState {
   report: DayReportView | null;
   sheet: SheetId | null;
   toasts: Toast[];
+  /** Địa điểm nhân vật đang đứng gần (trong bán kính tương tác). */
+  nearPlace: string | null;
+  /** Nhân vật đang đứng sau quầy của mình. */
+  atStall: boolean;
+  goal: Goal | null;
+  /** Đơn khách đang chờ ở quầy của mình (cũ nhất trước). */
+  orders: SaleEvent[];
+  jobTask: JobTaskEvent | null;
+  /** Đếm trong phiên, dùng cho điều kiện kịch bản. */
+  servedCount: number;
+  jobTasksDone: number;
+  /** Bước kịch bản đang hiện lời thoại (null = không có hội thoại). */
+  dialogue: string | null;
+  seenDialogues: string[];
   perf: PerfStats;
   pingMs: number | null;
   contextLost: boolean;
@@ -44,6 +65,14 @@ interface GameState {
   openSheet: (s: SheetId | null) => void;
   toast: (n: NotifyEvent) => void;
   dismissToast: (id: number) => void;
+  setProximity: (nearPlace: string | null, atStall: boolean) => void;
+  setGoal: (goal: Goal | null) => void;
+  addOrder: (o: SaleEvent) => void;
+  removeOrder: (orderId: string) => void;
+  setJobTask: (t: JobTaskEvent | null) => void;
+  countServed: () => void;
+  countJobTask: () => void;
+  showDialogue: (step: string | null) => void;
   setPerf: (perf: PerfStats) => void;
   setPing: (pingMs: number | null) => void;
   setContextLost: (lost: boolean) => void;
@@ -60,6 +89,15 @@ export const useGame = create<GameState>((set) => ({
   report: null,
   sheet: null,
   toasts: [],
+  nearPlace: null,
+  atStall: false,
+  goal: null,
+  orders: [],
+  jobTask: null,
+  servedCount: 0,
+  jobTasksDone: 0,
+  dialogue: null,
+  seenDialogues: [],
   perf: { fps: 0, calls: 0, triangles: 0, dpr: 1 },
   pingMs: null,
   contextLost: false,
@@ -76,22 +114,41 @@ export const useGame = create<GameState>((set) => ({
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  setProximity: (nearPlace, atStall) => set({ nearPlace, atStall }),
+  setGoal: (goal) => set({ goal }),
+  addOrder: (o) => set((s) => ({ orders: [...s.orders, o] })),
+  removeOrder: (orderId) => set((s) => ({ orders: s.orders.filter((o) => o.orderId !== orderId) })),
+  setJobTask: (jobTask) => set({ jobTask }),
+  countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),
+  countJobTask: () => set((s) => ({ jobTasksDone: s.jobTasksDone + 1 })),
+  showDialogue: (dialogue) =>
+    set((s) => ({
+      dialogue,
+      seenDialogues:
+        dialogue && !s.seenDialogues.includes(dialogue)
+          ? [...s.seenDialogues, dialogue]
+          : s.seenDialogues,
+    })),
   setPerf: (perf) => set({ perf }),
   setPing: (pingMs) => set({ pingMs }),
   setContextLost: (contextLost) => set({ contextLost }),
 }));
 
-/** Kênh sự kiện "có khách mua" cho scene; không qua store để khỏi re-render React. */
-type SaleListener = (sale: SaleEvent) => void;
-const saleListeners = new Set<SaleListener>();
-export const saleBus = {
-  emit: (sale: SaleEvent) => {
-    for (const l of saleListeners) l(sale);
-  },
-  on: (l: SaleListener) => {
-    saleListeners.add(l);
-    return () => {
-      saleListeners.delete(l);
-    };
-  },
-};
+/** Kênh sự kiện cho scene (khách tới / kết quả đơn); không qua store để khỏi re-render React. */
+function createBus<T>() {
+  const listeners = new Set<(v: T) => void>();
+  return {
+    emit: (v: T) => {
+      for (const l of listeners) l(v);
+    },
+    on: (l: (v: T) => void) => {
+      listeners.add(l);
+      return () => {
+        listeners.delete(l);
+      };
+    },
+  };
+}
+
+export const saleBus = createBus<SaleEvent>();
+export const orderResultBus = createBus<OrderResultEvent>();

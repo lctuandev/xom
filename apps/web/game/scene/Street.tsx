@@ -61,25 +61,6 @@ const lamps: Placement[] = xs
 const poles: Placement[] = xs
   .filter((_, i) => i % 3 === 0)
   .map((x) => ({ x: x - 1.8, z: -TILE - 1.4, rot: 0 }));
-const parasols: Placement[] = [
-  { x: -8, z: -TILE + 0.5 },
-  { x: -7, z: -TILE - 0.6 },
-  { x: 12, z: TILE - 0.4 },
-  { x: 16, z: TILE + 0.3 },
-];
-// Ghế nhựa đỏ trước quán bánh mì — asset tự làm trong Blender (art/blender/ghe_nhua.py).
-const stools: Placement[] = [
-  { x: -9.2, z: -3.2, rot: 0.2 },
-  { x: -8.4, z: -2.7, rot: -0.3 },
-  { x: -7.4, z: -3.4, rot: 0.5 },
-  { x: -6.6, z: -2.9, rot: 0.1 },
-  { x: -8.1, z: -4.1, rot: -0.1 },
-];
-const awnings: Placement[] = [
-  { x: -8, z: NORTH + 1.9 },
-  { x: 12, z: SOUTH - 1.9, rot: Math.PI },
-  { x: -16, z: NORTH + 1.9 },
-];
 const cars: Record<"sedan" | "van" | "taxi" | "delivery", Placement[]> = {
   sedan: [{ x: -18, z: 1.6, rot: Math.PI / 2 }],
   van: [{ x: 6, z: -1.6, rot: -Math.PI / 2 }],
@@ -99,10 +80,6 @@ export function Street() {
       ))}
       <Instances model="light-square" at={lamps} />
       <Instances model="electricity-pole" at={poles} />
-      <Instances model="detail-parasol-a" at={parasols.slice(0, 2)} />
-      <Instances model="detail-parasol-b" at={parasols.slice(2)} />
-      <Instances model="detail-awning-wide" at={awnings} />
-      <Instances model="ghe-nhua-do" at={stools} />
       <Instances model="dumpster" at={[{ x: 21, z: TILE + 1.2, rot: Math.PI }]} />
       {Object.entries(cars).map(([model, at]) => (
         <Instances key={model} model={model as keyof typeof cars} at={at} />

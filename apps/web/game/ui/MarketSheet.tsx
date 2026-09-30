@@ -5,6 +5,7 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
 
 /** Chợ đầu mối: giá nhập mỗi ngày dao động quanh giá gốc. */
@@ -24,23 +25,25 @@ export function MarketSheet() {
   );
 
   return (
-    <Sheet title="Chợ đầu mối" onClose={() => close(null)}>
-      <p className="mb-3 text-sm text-ink/60">
-        Giá hôm nay (ngày {market.day}). Mỗi ngày giá một khác.
-      </p>
-      <ul className="flex flex-col gap-3">
-        {products.map((p) => (
-          <ProductRow
-            key={p.id}
-            productId={p.id}
-            price={market.prices[p.id] ?? p.unitCost}
-            money={me.money}
-            stock={me.inventory.find((i) => i.productId === p.id)?.qty ?? 0}
-            mine={me.business?.productId === p.id}
-            reserve={rentReserve}
-          />
-        ))}
-      </ul>
+    <Sheet title="Chợ đầu mối Bà Năm" onClose={() => close(null)}>
+      <PlaceGate placeId="cho_dau_moi" open="market">
+        <p className="mb-3 text-sm text-ink/60">
+          Giá hôm nay (ngày {market.day}). Mỗi ngày giá một khác.
+        </p>
+        <ul className="flex flex-col gap-3">
+          {products.map((p) => (
+            <ProductRow
+              key={p.id}
+              productId={p.id}
+              price={market.prices[p.id] ?? p.unitCost}
+              money={me.money}
+              stock={me.inventory.find((i) => i.productId === p.id)?.qty ?? 0}
+              mine={me.business?.productId === p.id}
+              reserve={rentReserve}
+            />
+          ))}
+        </ul>
+      </PlaceGate>
     </Sheet>
   );
 }
@@ -69,7 +72,7 @@ function ProductRow({
   const perishable = content.template(p.template).perishable;
 
   return (
-    <li className={`rounded-2xl bg-white p-4 shadow-sm ${mine ? "ring-2 ring-sun" : ""}`}>
+    <li className={`rounded-2xl bg-white p-3 shadow-sm ${mine ? "ring-2 ring-sun" : ""}`}>
       <div className="flex items-start gap-3">
         <span className="text-3xl" aria-hidden>
           {p.emoji}

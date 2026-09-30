@@ -3,7 +3,10 @@ import type {
   Ack,
   ClientToServerEvents,
   DayReportView,
+  JobTaskEvent,
   MeView,
+  OrderResultEvent,
+  SaleEvent,
   ServerToClientEvents,
   Snapshot,
 } from "@xom/shared";
@@ -78,13 +81,27 @@ describe("Vòng chơi (e2e)", () => {
 
     // Chỗ đắt (ngã tư 150k) không đủ tiền thuê → phải chọn chỗ vừa túi.
     await emit(socket, "biz:update", { lotId: "nga_tu" });
+    // Chưa đứng ở quầy thì không mở được.
+    const notThere = await emit(socket, "biz:open", {});
+    expect(notThere).toMatchObject({ ok: false, message: expect.stringMatching(/Tới tận quầy/) });
+    const attended = await emit(socket, "biz:attend", { on: true });
+    expect(attended.ok && attended.data.attending).toBe(true);
     const tooExpensive = await emit(socket, "biz:open", {});
     expect(tooExpensive).toMatchObject({ ok: false, error: "insufficient_funds" });
     await emit(socket, "biz:update", { lotId: "cong_truong", price: 14_000 });
     const opened = await emit(socket, "biz:open", {});
+    expect(opened).toMatchObject({ ok: true });
     expect(opened.ok && opened.data.business?.open).toBe(true);
 
-    // Chờ có khách mua (đồng hồ tăng tốc 10ms/phút game).
+    // Có khách mua → server phát đơn; "Đưa hàng" kịp thì được boa.
+    const sale = await new Promise<SaleEvent>((resolve) => socket.once("sale", resolve));
+    expect(sale.line.length).toBeGreaterThan(0);
+    const result = new Promise<OrderResultEvent>((resolve) => socket.once("orderResult", resolve));
+    const served = await emit(socket, "order:serve", { orderId: sale.orderId });
+    expect(served.ok && served.data.today.tips).toBeGreaterThanOrEqual(1_000);
+    expect(await result).toMatchObject({ orderId: sale.orderId, served: true });
+    const again = await emit(socket, "order:serve", { orderId: sale.orderId });
+    expect(again.ok).toBe(false);
     const sold = await new Promise<MeView>((resolve) => {
       socket.on("me", (me) => {
         if (me.today.sold > 0) resolve(me);
@@ -97,6 +114,7 @@ describe("Vòng chơi (e2e)", () => {
     const report = await new Promise<DayReportView>((resolve) => socket.once("dayEnd", resolve));
     expect(report.day).toBe(1);
     expect(report.rent).toBe(80_000);
+    expect(report.tips).toBeGreaterThanOrEqual(1_000);
     expect(report.served + report.spoiledQty).toBe(10);
     const next = await new Promise<Snapshot>((resolve) => socket.once("snapshot", resolve));
     expect(next.clock.day).toBe(2);
@@ -114,6 +132,10 @@ describe("Vòng chơi (e2e)", () => {
     await emit(socket, "biz:update", { lotId: "dau_hem" });
     const started = await emit(socket, "job:start", { jobId: "phu_quan_com" });
     expect(started.ok && started.data.jobId).toBe("phu_quan_com");
+    // Việc vặt: làm kịp được thưởng.
+    const task = await new Promise<JobTaskEvent>((resolve) => socket.once("jobTask", resolve));
+    const done = await emit(socket, "job:task", { taskId: task.id });
+    expect(done.ok && done.data.today.wages).toBeGreaterThanOrEqual(3_000);
     const blocked = await emit(socket, "biz:open", {});
     expect(blocked).toMatchObject({ ok: false, error: "invalid_state" });
     const paid = await new Promise<MeView>((resolve) => {
@@ -121,7 +143,29 @@ describe("Vòng chơi (e2e)", () => {
         if (me.today.wages > 0) resolve(me);
       });
     });
-    expect(paid.today.wages % 10_000).toBe(0);
+    expect(paid.today.wages).toBeGreaterThan(3_000);
+    socket.disconnect();
+  });
+
+  it("vắng chủ thì quầy không bán; tiến độ kịch bản được lưu", async () => {
+    const { body } = await register(url);
+    const { socket, snapshot } = await connect(url, body.accessToken);
+    expect(snapshot.me.tutorial).toBe("gap_chu_bay");
+    const bad = await emit(socket, "tutorial:set", { step: "khong_co" });
+    expect(bad.ok).toBe(false);
+    const set = await emit(socket, "tutorial:set", { step: "den_vua_xe" });
+    expect(set.ok && set.data.tutorial).toBe("den_vua_xe");
+
+    await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
+    await emit(socket, "market:buy", { productId: "banh_mi", qty: 20 });
+    await emit(socket, "biz:update", { lotId: "dau_hem" });
+    await emit(socket, "biz:attend", { on: true });
+    await emit(socket, "biz:open", {});
+    await emit(socket, "biz:attend", { on: false });
+    let sales = 0;
+    socket.on("sale", () => sales++);
+    await new Promise((r) => setTimeout(r, 1500));
+    expect(sales).toBe(0);
     socket.disconnect();
   });
 });

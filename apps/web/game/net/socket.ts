@@ -7,7 +7,7 @@ import {
 } from "@xom/shared";
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
-import { saleBus, useGame } from "../store";
+import { orderResultBus, saleBus, useGame } from "../store";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -43,7 +43,17 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
-  s.on("sale", (sale) => saleBus.emit(sale));
+  s.on("sale", (sale) => {
+    saleBus.emit(sale);
+    if (sale.ownerId === useGame.getState().me?.playerId) game.addOrder(sale);
+  });
+  s.on("orderResult", (r) => {
+    orderResultBus.emit(r);
+    game.removeOrder(r.orderId);
+    if (r.served && r.tip > 0)
+      game.toast({ kind: "good", text: `Khách boa +${r.tip.toLocaleString("vi-VN")}đ` });
+  });
+  s.on("jobTask", (t) => game.setJobTask(t));
   s.on("dayEnd", (report) => game.setReport(report));
   s.on("notify", (n) => game.toast(n));
 

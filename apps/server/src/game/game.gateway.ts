@@ -11,16 +11,20 @@ import {
 } from "@nestjs/websockets";
 import {
   type Ack,
+  attendSchema,
   buyEquipmentSchema,
   type ClientToServerEvents,
   emptySchema,
+  jobTaskSchema,
   type MeView,
   marketBuySchema,
   type PongPayload,
   pingSchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
+  serveOrderSchema,
   startJobSchema,
+  tutorialSchema,
   updateBusinessSchema,
 } from "@xom/shared";
 import type { Server, Socket } from "socket.io";
@@ -37,7 +41,7 @@ interface SocketData {
 type GameSocket = Socket<ClientToServerEvents, ServerToClientEvents, never, SocketData>;
 type GameServer = Server<ClientToServerEvents, ServerToClientEvents, never, SocketData>;
 
-const MAX_INTENTS_PER_SEC = 10;
+const MAX_INTENTS_PER_SEC = 20;
 const playerChannel = (playerId: string) => `player:${playerId}`;
 
 @WebSocketGateway({ ...SOCKET_OPTIONS, transports: [...SOCKET_OPTIONS.transports] })
@@ -131,6 +135,28 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("job:stop")
   stopJob(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, emptySchema, body, (ctx) => this.game.stopJob(ctx));
+  }
+
+  @SubscribeMessage("biz:attend")
+  attend(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, attendSchema, body, (ctx, p) => this.game.attend(ctx, p.on));
+  }
+
+  @SubscribeMessage("order:serve")
+  serve(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, serveOrderSchema, body, (ctx, p) => this.game.serveOrder(ctx, p.orderId));
+  }
+
+  @SubscribeMessage("job:task")
+  jobTask(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, jobTaskSchema, body, (ctx, p) =>
+      this.game.completeJobTask(ctx, p.taskId),
+    );
+  }
+
+  @SubscribeMessage("tutorial:set")
+  tutorial(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, tutorialSchema, body, (ctx, p) => this.game.setTutorial(ctx, p.step));
   }
 
   /** Khung chung cho intent: rate limit → validate zod → chạy trong hàng đợi xóm → Ack<MeView>. */

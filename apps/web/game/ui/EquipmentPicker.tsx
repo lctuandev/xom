@@ -19,9 +19,9 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
         const affordable = (me?.money ?? 0) >= eq.price;
         const owned = current === eq.id;
         return (
-          <li key={eq.id} className="rounded-2xl bg-white p-4 shadow-sm">
+          <li key={eq.id} className="rounded-2xl bg-white p-3 shadow-sm">
             <div className="flex items-start gap-3">
-              <span className="text-4xl" aria-hidden>
+              <span className="text-3xl" aria-hidden>
                 {product.emoji}
               </span>
               <div className="min-w-0 flex-1">

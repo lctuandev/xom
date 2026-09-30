@@ -1,9 +1,9 @@
-import type { ContentData } from "./schema.js";
+import type { ContentInput } from "./schema.js";
 
 // Dữ liệu MVP: 1 xóm, 3 business (bánh mì, trà sữa, phụ kiện), 2 template (docs/PLAN.md §3.1).
 // Mọi con số ở đây là điểm khởi đầu để cân bằng bằng tools/balance.
 
-export const data: ContentData = {
+export const data: ContentInput = {
   templates: [
     { id: "FOOD", name: "Đồ ăn · thức uống", perishable: true },
     { id: "RETAIL", name: "Bán lẻ", perishable: false },
@@ -318,6 +318,219 @@ export const data: ContentData = {
     },
   ],
 
+  // Địa điểm có người đứng quầy (docs/PLAN.md Phase 1.5). Toạ độ trên vỉa hè sát mặt tiền nhà.
+  places: [
+    {
+      id: "vua_xe",
+      name: "Vựa xe Ông Sáu",
+      kind: "equipment_shop",
+      sign: "VỰA XE ÔNG SÁU",
+      signColor: "#2b2118",
+      action: "🛒 Xem xe đẩy",
+      keeper: {
+        name: "Ông Sáu",
+        model: "character-male-c",
+        greeting: "Xe nào cũng chắc hết, con coi hợp nghề nào thì lấy nghề đó.",
+      },
+      position: { x: -21.5, z: -4.9 },
+      facing: 0,
+      props: [
+        { model: "xe-banh-mi", dx: -1.8, dz: 0.3, rot: 0 },
+        { model: "xe-tra-sua", dx: 1.8, dz: 0.3, rot: 0 },
+        { model: "detail-awning-wide", dx: 0, dz: -1.2, rot: 0 },
+      ],
+    },
+    {
+      id: "cho_dau_moi",
+      name: "Chợ đầu mối Bà Năm",
+      kind: "market",
+      sign: "CHỢ ĐẦU MỐI",
+      signColor: "#f6b93b",
+      action: "🧺 Vào chợ",
+      keeper: {
+        name: "Bà Năm",
+        model: "character-female-d",
+        greeting: "Hàng mới về sáng nay nè con. Đồ ăn thì lấy vừa đủ bán, để qua đêm là bỏ.",
+      },
+      position: { x: -6.5, z: 4.9 },
+      facing: Math.PI,
+      props: [
+        { model: "detail-parasol-a", dx: -1.4, dz: 0, rot: 0 },
+        { model: "detail-parasol-b", dx: 1.4, dz: 0.2, rot: 0 },
+        { model: "ghe-nhua-do", dx: -0.6, dz: 0.8, rot: 0.4 },
+        { model: "detail-awning-wide", dx: 0, dz: 1.2, rot: Math.PI },
+      ],
+    },
+    {
+      id: "quan_com",
+      name: "Quán cơm Cô Tư",
+      kind: "job",
+      sign: "CƠM TẤM CÔ TƯ",
+      signColor: "#e4432d",
+      action: "🍚 Vào quán",
+      keeper: {
+        name: "Cô Tư",
+        model: "character-female-a",
+        greeting: "Trưa nay đông lắm, phụ cô một tay đi con!",
+      },
+      jobs: ["phu_quan_com"],
+      position: { x: 15, z: -4.9 },
+      facing: 0,
+      props: [
+        { model: "ghe-nhua-do", dx: -1.6, dz: 0.9, rot: 0.2 },
+        { model: "ghe-nhua-do", dx: -0.9, dz: 1.3, rot: -0.3 },
+        { model: "ghe-nhua-do", dx: 1.1, dz: 1.1, rot: 0.6 },
+        { model: "detail-parasol-a", dx: -1.2, dz: 1.1, rot: 0 },
+        { model: "detail-awning-wide", dx: 0, dz: -1.2, rot: 0 },
+      ],
+    },
+    {
+      id: "buu_cuc",
+      name: "Bưu cục",
+      kind: "job",
+      sign: "BƯU CỤC",
+      signColor: "#2f7d4f",
+      action: "📦 Vào bưu cục",
+      keeper: {
+        name: "Anh Tám",
+        model: "character-male-a",
+        greeting: "Có xe máy chưa em? Có thì chạy đơn quanh xóm, trả theo giờ.",
+      },
+      jobs: ["giao_hang"],
+      position: { x: 19.5, z: 4.9 },
+      facing: Math.PI,
+      props: [{ model: "detail-awning-wide", dx: 0, dz: 1.2, rot: Math.PI }],
+    },
+  ],
+
+  speakers: [
+    {
+      id: "chu_bay",
+      name: "Chú Bảy xe ôm",
+      model: "character-male-c",
+      position: { x: -8, z: -4.6 },
+      facing: Math.PI / 2,
+    },
+  ],
+
+  // Kịch bản người mới — rẽ nhánh buôn bán / làm thuê.
+  tutorial: [
+    {
+      id: "gap_chu_bay",
+      speaker: "chu_bay",
+      lines: [
+        "Ủa, con là người mới dọn về xóm hả? Chú là Bảy, chạy xe ôm đầu hẻm nè.",
+        "Ở xóm này ai cũng tự lo lấy cái nghề. Trong túi con có 500 ngàn — đủ mua một chiếc xe đẩy nhỏ.",
+        "Còn chưa chắc tay thì qua quán cơm Cô Tư phụ việc, kiếm vốn trước cũng được.",
+      ],
+      choices: [
+        { text: "Con muốn buôn bán", next: "den_vua_xe" },
+        { text: "Con đi làm thuê trước", next: "den_quan_com" },
+      ],
+    },
+    {
+      id: "den_vua_xe",
+      objective: "Tới vựa xe Ông Sáu mua một chiếc xe đẩy",
+      target: "vua_xe",
+      until: "has_business",
+      next: "ra_cho",
+    },
+    {
+      id: "ra_cho",
+      speaker: "chu_bay",
+      lines: [
+        "Có xe rồi hả? Giờ ra chợ đầu mối Bà Năm nhập hàng. Đồ ăn để qua đêm là hư, nhập vừa đủ thôi nghe!",
+      ],
+      objective: "Ra chợ đầu mối nhập hàng",
+      target: "cho_dau_moi",
+      until: "has_stock",
+      next: "chon_cho",
+    },
+    {
+      id: "chon_cho",
+      speaker: "chu_bay",
+      lines: [
+        "Giờ chọn chỗ bán. Chỗ đông khách thì thuê đắt — mới làm nên thử Đầu hẻm 12, rẻ mà có khách.",
+      ],
+      objective: "Chọn chỗ bán trong mục Kinh doanh",
+      until: "has_lot",
+      next: "ra_quay",
+    },
+    {
+      id: "ra_quay",
+      objective: "Đẩy xe tới chỗ bán và mở quầy",
+      target: "stall",
+      until: "shop_open",
+      next: "phuc_vu",
+    },
+    {
+      id: "phuc_vu",
+      speaker: "chu_bay",
+      lines: [
+        "Mở hàng rồi đó! Khách tới thì đưa hàng cho lẹ — khách vui là boa thêm, lại nhớ quầy mình.",
+      ],
+      objective: "Phục vụ 3 khách đầu tiên (bấm Đưa hàng)",
+      target: "stall",
+      until: "served_3",
+      next: "xong_buon_ban",
+    },
+    {
+      id: "xong_buon_ban",
+      speaker: "chu_bay",
+      lines: [
+        "Được rồi đó con! Nhớ nè: hết hàng thì ra chợ nhập thêm, đừng để khách về tay không.",
+        "Tối coi sổ sách cuối ngày cho kỹ. Thôi chú chạy cuốc xe đây, chúc con đắt hàng!",
+      ],
+      next: "hoan_thanh",
+    },
+    {
+      id: "den_quan_com",
+      objective: "Tới quán cơm Cô Tư xin việc",
+      target: "quan_com",
+      until: "has_job",
+      next: "lam_viec",
+    },
+    {
+      id: "lam_viec",
+      objective: "Khách gọi món thì bấm Bưng ra (2 lần)",
+      target: "quan_com",
+      until: "job_tasks_2",
+      next: "xong_lam_thue",
+    },
+    {
+      id: "xong_lam_thue",
+      speaker: "chu_bay",
+      lines: [
+        "Siêng dữ ha! Làm thuê thì chắc ăn, lương trả theo giờ.",
+        "Khi nào có vốn thì ghé vựa xe Ông Sáu, tự làm chủ cái quầy. Chú đi đây!",
+      ],
+      next: "hoan_thanh",
+    },
+    // Hết kịch bản người mới.
+    { id: "hoan_thanh" },
+  ],
+
+  customerLines: {
+    cheap: ["Rẻ vậy! Mai ghé nữa nha", "Giá này hời quá", "Cho thêm ổ nữa được hông?"],
+    fair: ["Cho một phần nha", "Bán cho con với", "Như mọi khi nha"],
+    pricey: ["Hơi mắc ha…", "Giá này hơi chát", "Bữa sau bớt chút nha"],
+    thanks: ["Cảm ơn nha!", "Lẹ ghê, gửi tiền nè", "Ngon! Giữ tiền thối luôn"],
+    impatient: ["Lâu quá, thôi đi…", "Đợi hoài…", "Thôi để bữa khác"],
+  },
+
+  jobTasks: {
+    phu_quan_com: [
+      "Bàn 3 gọi 2 dĩa cơm tấm!",
+      "Khách bàn ngoài xin thêm trà đá!",
+      "Dọn bàn 5 giùm cô!",
+    ],
+    giao_hang: [
+      "Đơn mới: giao bánh bao cho nhà số 7!",
+      "Có người gửi gói hàng ra đầu hẻm!",
+      "Giao gấp ly cà phê cho văn phòng!",
+    ],
+  },
+
   economy: {
     startingMoney: 500_000,
     dayStartMinute: 6 * 60,
@@ -327,5 +540,11 @@ export const data: ContentData = {
     outsideOption: 1,
     reputationRate: 0.08,
     startingReputation: 0.5,
+    serveWindowMs: 12_000,
+    tipRate: 0.08,
+    serveReputationBonus: 0.01,
+    jobTaskEveryMinutes: 20,
+    jobTaskBonus: 3_000,
+    interactRadius: 2.5,
   },
 };

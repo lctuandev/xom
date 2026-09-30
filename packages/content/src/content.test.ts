@@ -8,7 +8,7 @@ describe("content", () => {
   });
 
   it("báo lỗi tham chiếu sai", () => {
-    const broken = structuredClone(content.data);
+    const broken = structuredClone(content.data) as typeof content.data;
     broken.equipment[0]?.products.push("khong_ton_tai");
     expect(() => loadContent(broken)).toThrow(/khong_ton_tai/);
   });

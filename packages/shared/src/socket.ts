@@ -2,8 +2,10 @@ import { z } from "zod";
 import type {
   ClockView,
   DayReportView,
+  JobTaskEvent,
   MeView,
   NotifyEvent,
+  OrderResultEvent,
   SaleEvent,
   Snapshot,
   WorldView,
@@ -44,6 +46,10 @@ export interface ClientToServerEvents {
   "biz:close": Intent<Record<string, never>>;
   "job:start": Intent<{ jobId: string }>;
   "job:stop": Intent<Record<string, never>>;
+  "biz:attend": Intent<{ on: boolean }>;
+  "order:serve": Intent<{ orderId: string }>;
+  "job:task": Intent<{ taskId: string }>;
+  "tutorial:set": Intent<{ step: string }>;
 }
 
 export interface ServerToClientEvents {
@@ -54,4 +60,6 @@ export interface ServerToClientEvents {
   sale: (sale: SaleEvent) => void;
   dayEnd: (report: DayReportView) => void;
   notify: (n: NotifyEvent) => void;
+  orderResult: (r: OrderResultEvent) => void;
+  jobTask: (t: JobTaskEvent) => void;
 }

@@ -31,6 +31,27 @@ export function loadContent(raw: unknown): Content {
   for (const l of parsed.lots) {
     if (!profiles.has(l.traffic)) errors.push(`${l.id}: traffic ${l.traffic} không tồn tại`);
   }
+  const places = ids(parsed.places);
+  const jobs = ids(parsed.jobs);
+  const speakers = ids(parsed.speakers);
+  const steps = ids(parsed.tutorial);
+  for (const pl of parsed.places) {
+    for (const j of pl.jobs) if (!jobs.has(j)) errors.push(`${pl.id}: việc ${j} không tồn tại`);
+  }
+  for (const st of parsed.tutorial) {
+    if (st.speaker && !speakers.has(st.speaker))
+      errors.push(`kịch bản ${st.id}: không có NPC ${st.speaker}`);
+    if (st.target && st.target !== "stall" && !places.has(st.target))
+      errors.push(`kịch bản ${st.id}: không có địa điểm ${st.target}`);
+    if (st.next && !steps.has(st.next))
+      errors.push(`kịch bản ${st.id}: bước tiếp ${st.next} không tồn tại`);
+    for (const c of st.choices)
+      if (!steps.has(c.next))
+        errors.push(`kịch bản ${st.id}: lựa chọn tới ${c.next} không tồn tại`);
+    if (st.until && !st.next) errors.push(`kịch bản ${st.id}: có điều kiện nhưng thiếu bước tiếp`);
+  }
+  for (const j of Object.keys(parsed.jobTasks))
+    if (!jobs.has(j)) errors.push(`jobTasks: việc ${j} không tồn tại`);
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
@@ -46,6 +67,9 @@ export class Content {
   readonly trafficById: ReadonlyMap<string, ContentData["trafficProfiles"][number]>;
   readonly jobById: ReadonlyMap<string, ContentData["jobs"][number]>;
   readonly templateById: ReadonlyMap<string, ContentData["templates"][number]>;
+  readonly placeById: ReadonlyMap<string, ContentData["places"][number]>;
+  readonly speakerById: ReadonlyMap<string, ContentData["speakers"][number]>;
+  readonly stepById: ReadonlyMap<string, ContentData["tutorial"][number]>;
 
   constructor(readonly data: ContentData) {
     this.productById = new Map(data.products.map((x) => [x.id, x]));
@@ -54,6 +78,9 @@ export class Content {
     this.trafficById = new Map(data.trafficProfiles.map((x) => [x.id, x]));
     this.jobById = new Map(data.jobs.map((x) => [x.id, x]));
     this.templateById = new Map(data.templates.map((x) => [x.id, x]));
+    this.placeById = new Map(data.places.map((x) => [x.id, x]));
+    this.speakerById = new Map(data.speakers.map((x) => [x.id, x]));
+    this.stepById = new Map(data.tutorial.map((x) => [x.id, x]));
   }
 
   get economy() {
@@ -77,6 +104,19 @@ export class Content {
   }
   template(id: string) {
     return must(this.templateById.get(id), "template", id);
+  }
+  place(id: string) {
+    return must(this.placeById.get(id), "place", id);
+  }
+  speaker(id: string) {
+    return must(this.speakerById.get(id), "speaker", id);
+  }
+  step(id: string) {
+    return must(this.stepById.get(id), "tutorial step", id);
+  }
+  /** Địa điểm nhận việc làm thuê này. */
+  placeForJob(jobId: string) {
+    return this.data.places.find((p) => p.jobs.includes(jobId));
   }
 }
 

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { logout } from "../auth/store";
 import { vnd } from "../format";
 import { type SheetId, useGame } from "../store";
+import { Objective } from "./Objective";
 
 const NAV: { id: SheetId | null; label: string; icon: string }[] = [
   { id: null, label: "Bản đồ", icon: "🗺️" },
@@ -20,15 +21,29 @@ export function Hud() {
   const sheet = useGame((s) => s.sheet);
   const openSheet = useGame((s) => s.openSheet);
   const [menu, setMenu] = useState(false);
+  const nearPlace = useGame((s) => s.nearPlace);
+  const setGoal = useGame((s) => s.setGoal);
+  const toast = useGame((s) => s.toast);
+
+  // "Chợ" = đi bộ tới chợ rồi mở (docs/PLAN.md Phase 1.5); các mục khác mở ngay.
+  const navigate = (id: SheetId | null) => {
+    if (id === "market" && nearPlace !== "cho_dau_moi") {
+      openSheet(null);
+      setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+      toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
+      return;
+    }
+    openSheet(sheet === id ? null : id);
+  };
   const [showPerf, setShowPerf] = useState(false);
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
       <header className="pt-safe pointer-events-auto flex items-center gap-2 px-3">
-        <div className="rounded-full bg-cream/95 px-4 py-2 text-base font-extrabold tabular-nums shadow-sm">
+        <div className="rounded-full bg-cream/95 px-3 py-1.5 text-sm font-extrabold tabular-nums shadow-sm">
           {me ? vnd(me.money) : "…"}
         </div>
-        <div className="rounded-full bg-cream/95 px-4 py-2 text-base font-semibold tabular-nums shadow-sm">
+        <div className="rounded-full bg-cream/95 px-3 py-1.5 text-sm font-semibold tabular-nums shadow-sm">
           {clock ? `N${clock.day} · ${formatClock(clock.minute)}` : "…"}
         </div>
         <div className="flex-1" />
@@ -37,7 +52,7 @@ export function Hud() {
           onClick={() => setMenu((v) => !v)}
           aria-expanded={menu}
           aria-label="Menu"
-          className="flex h-11 items-center gap-2 rounded-full bg-cream/95 px-3 text-sm font-semibold shadow-sm"
+          className="flex h-9 items-center gap-1.5 rounded-full bg-cream/95 px-3 text-xs font-semibold shadow-sm"
         >
           <Connection />☰
         </button>
@@ -58,21 +73,24 @@ export function Hud() {
       )}
 
       <Toasts />
-      <div className="flex flex-col items-start gap-2 px-3">
-        {showPerf && <PerfPanel />}
-        <JobBadge />
+      <div className="flex flex-1 flex-col">
+        <Objective />
+        <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
+          {showPerf && <PerfPanel />}
+          <JobBadge />
+        </div>
       </div>
 
-      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-4 gap-1 bg-cream px-2 pt-2 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
+      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-4 gap-1 bg-cream px-2 pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
         {NAV.map((item) => (
           <button
             key={item.label}
             type="button"
-            onClick={() => openSheet(item.id)}
+            onClick={() => navigate(item.id)}
             aria-current={sheet === item.id ? "page" : undefined}
-            className="flex h-14 flex-col items-center justify-center rounded-xl text-xs font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
+            className="flex h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
           >
-            <span className="text-xl leading-none" aria-hidden>
+            <span className="text-lg leading-none" aria-hidden>
               {item.icon}
             </span>
             {item.label}
@@ -114,7 +132,7 @@ function JobBadge() {
   const me = useGame((s) => s.me);
   if (!me?.jobId) return null;
   return (
-    <div className="rounded-full bg-leaf px-4 py-2 text-sm font-semibold text-cream shadow-sm">
+    <div className="rounded-full bg-leaf px-3 py-1.5 text-xs font-semibold text-cream shadow-sm">
       💼 Đang đi làm · hôm nay +{vnd(me.today.wages)}
     </div>
   );
@@ -134,7 +152,7 @@ function Toasts() {
           key={t.id}
           type="button"
           onClick={() => dismiss(t.id)}
-          className={`pointer-events-auto rounded-2xl px-4 py-3 text-left text-sm font-semibold shadow-md ${
+          className={`pointer-events-auto rounded-xl px-3 py-2 text-left text-sm font-semibold shadow-md ${
             t.kind === "warn"
               ? "bg-red text-cream"
               : t.kind === "good"

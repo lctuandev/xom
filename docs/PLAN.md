@@ -43,9 +43,10 @@
 ## 1. Tiêu chuẩn Mobile-first (áp dụng cho MỌI tính năng)
 
 **Thiết bị mục tiêu**
-- Android tầm trung (≈ Snapdragon 6-series / Helio G8x, 4GB RAM), Chrome — nhóm chính ở VN.
-- iPhone 11 trở lên, Safari (và PWA iOS).
-- Màn hình thiết kế gốc: **360×640 dọc**, test thêm 412×915 và 430×932.
+- iPhone (đang test trên iPhone 16 Pro), Safari và PWA iOS.
+- Android: dùng giả lập Pixel 7 (MCP `playwright-mobile`); không đo riêng máy tầm trung.
+- Màn hình thiết kế gốc: **360×640 dọc**, test thêm 402×874 (iPhone 16 Pro) và 412×915.
+- Mật độ giao diện: gọn, không phóng to — chữ thân 14–15px, nút chính 44px, nút phụ 40px.
 
 **Ngân sách hiệu năng**
 
@@ -291,8 +292,7 @@ Mọi handler: validate zod → kiểm tra quyền → rate limit → gọi serv
 **Thử hiệu năng (quan trọng nhất phase này)**
 - [x] Scene R3F: 1 con phố Kenney City Kit, prop instancing, 10 nhân vật có animation, camera bám theo, chạm để đi, pinch zoom, bảng số đo (FPS/draw call/tris)
 - [x] Đo trong headless (Pixel 7): ~50 draw call, ~50k tris, tổng asset ~620 KB — **đạt ngân sách**
-- [x] iPhone thật: 60 FPS ổn định → **chốt D2: giữ R3F**
-- [ ] Android tầm trung thật (khi có máy)
+- [x] iPhone thật: 60 FPS ổn định → **chốt D2: giữ R3F** (bỏ bước đo Android tầm trung theo quyết định của bạn)
 - [ ] **Cổng quyết định D2**: ≥ 30 FPS ổn định → giữ R3F; không đạt → phương án D2b
 
 **Art**
@@ -320,6 +320,48 @@ Mọi handler: validate zod → kiểm tra quyền → rate limit → gọi serv
 - [ ] Playtest 5 người trên điện thoại ← **cần bạn**
 
 **Hoàn thành khi**: 5 người bạn chơi thử **trên điện thoại của họ** 20 phút, tự hiểu vòng chơi, ≥ 3/5 muốn chơi tiếp; không chiến lược nào "phá game".
+
+### Phase 1.5 — Chiều sâu gameplay: kịch bản, hướng dẫn, hành động (làm ngay sau Phase 1)
+Mục tiêu: mỗi tính năng là một **việc làm trong thế giới**, không phải một nút bấm trong menu.
+
+**Địa điểm có người thật** (dữ liệu trong `packages/content`, mỗi nơi có NPC đứng quầy + biển hiệu):
+
+| Nơi | Người | Làm gì ở đây |
+|---|---|---|
+| Vựa xe Ông Sáu | Ông Sáu | Mua / đổi xe hàng |
+| Chợ đầu mối | Bà Năm | Nhập hàng |
+| Quán cơm Cô Tư | Cô Tư | Xin việc phụ quán |
+| Bưu cục | Anh Tám | Xin việc giao hàng |
+| Góc phố | Chú Bảy xe ôm | Dẫn đường người mới |
+
+**Quy tắc "phải có mặt"**
+- Muốn mua xe / nhập hàng / xin việc → nhân vật **đi bộ tới nơi**; tới gần thì hiện nút hành động ("🧺 Vào chợ"). Thanh điều hướng dưới vẫn dùng được: bấm "Chợ" = tự đi tới chợ rồi mở.
+- Quầy chỉ bán khi **chủ đứng ở quầy**. Rời quầy → khách không mua, HUD báo "Quầy vắng chủ" kèm nút "Về quầy".
+- Đi làm thuê phải ở chỗ làm; rời đi = nghỉ việc.
+
+**Phục vụ khách (hành động chính khi bán)**
+- Mỗi lượt bán server phát "đơn": khách đi tới quầy, bong bóng gọi món ("🥖 ×2").
+- Chủ quầy bấm **"Đưa hàng"** trong ~10 giây → khách vui: **tiền boa** + tăng uy tín. Chậm → khách càu nhàu rồi đi, không có boa.
+- Khách nói theo giá: rẻ → "Rẻ vậy, mai ghé nữa!", đắt → "Hơi mắc ha…".
+
+**Làm thuê có việc cụ thể**: định kỳ có "Bàn 3 gọi cơm!" → bấm "Bưng ra" kịp thời được thưởng thêm.
+
+**Kịch bản người mới (Chú Bảy)** — rẽ nhánh theo lựa chọn:
+```text
+Gặp Chú Bảy ──► "Con muốn buôn bán"  ─► Tới vựa xe Ông Sáu mua xe ─► Ra chợ Bà Năm nhập hàng
+            │                          ─► Chọn chỗ bán (gợi ý Đầu hẻm 12) ─► Tới chỗ, mở quầy
+            │                          ─► Phục vụ 3 khách đầu tiên ─► Chú Bảy dặn dò, xong
+            └► "Con đi làm thuê trước" ─► Tới quán cơm Cô Tư xin việc ─► Bưng 2 mâm cơm
+                                       ─► Chú Bảy: "Có vốn thì ghé vựa xe Ông Sáu nha" , xong
+```
+- Dòng nhiệm vụ luôn hiện trên HUD (việc cần làm + khoảng cách), mũi tên 3D chỉ tới nơi cần đến.
+- Tiến độ kịch bản lưu trên server (`Player.tutorial`).
+
+**Công việc**
+- [ ] Nội dung: địa điểm, NPC, câu thoại, kịch bản (data-driven)
+- [ ] Server: có mặt ở quầy, đơn khách + boa, việc vặt khi làm thuê, lưu tiến độ kịch bản
+- [ ] Client: đi tới nơi → nút hành động, hội thoại NPC, dòng nhiệm vụ + mũi tên, bong bóng khách, nút "Đưa hàng"
+- [ ] Kiểm thử kịch bản bằng Playwright (Pixel 7 + iPhone 16 Pro)
 
 ### Phase 2 — Multiplayer xóm 4 người (Tuần 10–14)
 - [ ] Tạo/vào xóm bằng mã phòng + link mời (Web Share API → Zalo/Messenger)

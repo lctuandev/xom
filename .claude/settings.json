@@ -1,3 +1,9 @@
 {
-  "enabledMcpjsonServers": ["context7", "playwright-mobile", "chrome-devtools", "postgres"]
+  "enabledMcpjsonServers": [
+    "context7",
+    "playwright-mobile",
+    "playwright-iphone",
+    "chrome-devtools",
+    "postgres"
+  ]
 }

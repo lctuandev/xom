@@ -8,6 +8,8 @@ const apiOrigin = process.env.API_ORIGIN ?? "http://localhost:4000";
 const nextConfig: NextConfig = {
   // Bản build tự chứa cho Docker; trace từ gốc monorepo để kèm @xom/shared.
   output: "standalone",
+  // Nút "N" của dev overlay đè lên tab "Bản đồ" ở góc dưới trái trên mobile.
+  devIndicators: false,
   outputFileTracingRoot: path.join(__dirname, "../../"),
   // Cho phép mở dev server từ điện thoại qua LAN và Cloudflare Quick Tunnel.
   allowedDevOrigins: ["*.trycloudflare.com", "192.168.*.*", "10.*.*.*"],

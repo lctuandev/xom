@@ -29,6 +29,8 @@ export interface InventoryView {
 export interface TodayView {
   sold: number;
   revenue: number;
+  /** Tiền boa khi phục vụ kịp. */
+  tips: number;
   lost: number;
   stockCost: number;
   wages: number;
@@ -39,6 +41,10 @@ export interface MeView {
   displayName: string;
   money: number;
   jobId: string | null;
+  /** Bước kịch bản người mới hiện tại. */
+  tutorial: string;
+  /** Chủ đang đứng ở quầy (quầy chỉ bán khi có chủ). */
+  attending: boolean;
   business: BusinessView | null;
   inventory: InventoryView[];
   today: TodayView;
@@ -70,15 +76,40 @@ export interface Snapshot {
 }
 
 export interface SaleEvent {
+  /** Đơn chờ chủ quầy "Đưa hàng". */
+  orderId: string;
   businessId: string;
+  ownerId: string;
   lotId: string;
+  productId: string;
   qty: number;
   archetype: string;
+  /** Câu khách nói khi gọi món (theo mức giá). */
+  line: string;
+  /** Thời điểm hết hạn chờ (ms epoch, giờ server). */
+  expiresAt: number;
+}
+
+/** Kết quả một đơn: phục vụ kịp (có boa) hoặc khách bỏ đi. */
+export interface OrderResultEvent {
+  orderId: string;
+  served: boolean;
+  tip: number;
+  line: string;
+}
+
+/** Việc vặt khi làm thuê: bấm kịp để được thưởng. */
+export interface JobTaskEvent {
+  id: string;
+  jobId: string;
+  text: string;
+  expiresAt: number;
 }
 
 export interface DayReportView {
   day: number;
   revenue: number;
+  tips: number;
   stockCost: number;
   rent: number;
   wages: number;
@@ -112,4 +143,8 @@ export const updateBusinessSchema = z
   })
   .refine((v) => v.price !== undefined || v.lotId !== undefined, "Không có gì để cập nhật");
 export const startJobSchema = z.object({ jobId: contentId });
+export const attendSchema = z.object({ on: z.boolean() });
+export const serveOrderSchema = z.object({ orderId: z.string().min(1).max(64) });
+export const jobTaskSchema = z.object({ taskId: z.string().min(1).max(64) });
+export const tutorialSchema = z.object({ step: contentId });
 export const emptySchema = z.object({}).optional();

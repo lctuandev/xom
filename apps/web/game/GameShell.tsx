@@ -6,12 +6,16 @@ import { refreshAccessToken, useAuth } from "./auth/store";
 import { connectGame } from "./net/socket";
 import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
+import { useTutorial } from "./tutorial";
+import { ActionBar } from "./ui/ActionBar";
 import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
+import { Dialogue } from "./ui/Dialogue";
+import { EquipmentSheet } from "./ui/EquipmentSheet";
 import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
 import { MarketSheet } from "./ui/MarketSheet";
-import { Welcome } from "./ui/Welcome";
+import { useWorldEffects } from "./useWorldEffects";
 
 const LOGIN = "/dang-nhap?next=/play";
 
@@ -21,6 +25,8 @@ export default function GameShell() {
   const me = useGame((s) => s.me);
   const sheet = useGame((s) => s.sheet);
   const [authed, setAuthed] = useState(false);
+  useWorldEffects();
+  useTutorial();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
   useEffect(() => {
@@ -47,7 +53,7 @@ export default function GameShell() {
       <button
         type="button"
         onClick={() => window.location.reload()}
-        className="flex h-full w-full items-center justify-center px-8 text-center text-lg font-semibold"
+        className="flex h-full w-full items-center justify-center px-8 text-center text-base font-semibold"
       >
         Mất kết nối đồ họa. Chạm để tải lại.
       </button>
@@ -56,7 +62,7 @@ export default function GameShell() {
 
   if (!authed || !me) {
     return (
-      <div className="flex h-full items-center justify-center text-lg font-semibold">
+      <div className="flex h-full items-center justify-center text-base font-semibold">
         Đang vào xóm…
       </div>
     );
@@ -69,7 +75,9 @@ export default function GameShell() {
       {sheet === "business" && <BusinessSheet />}
       {sheet === "market" && <MarketSheet />}
       {sheet === "jobs" && <JobsSheet />}
-      <Welcome />
+      {sheet === "equipment" && <EquipmentSheet />}
+      <ActionBar />
+      <Dialogue />
       <DaySummary />
     </div>
   );

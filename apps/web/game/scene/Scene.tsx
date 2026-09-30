@@ -2,16 +2,19 @@
 
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { content } from "@xom/content";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useRef, useState } from "react";
 import { MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
 import { useGame } from "../store";
+import { standBehind } from "../world";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
 import { Customers } from "./Customers";
+import { Places, ProximityWatcher } from "./Places";
+import { getPlayer } from "./player";
 import { Stalls } from "./Stalls";
 import { STREET_BOUNDS, Street, TILE } from "./Street";
+import { TargetArrow } from "./TargetArrow";
 
 const NPC_MODELS: CharacterModel[] = [
   "character-male-c",
@@ -58,30 +61,18 @@ export function Scene() {
   );
 }
 
-/** Chỗ người chơi đứng bán: sau quầy, mặt nhìn ra khách. */
-function standBehind(lotId: string) {
-  const lot = content.lot(lotId);
-  const back = lot.facing === 0 ? -1 : 1;
-  return { x: lot.position.x, z: lot.position.z + back * 0.9, yaw: lot.facing };
-}
-
 function World() {
   const player = useMemo(() => {
-    // Vào game: đứng sẵn sau quầy nếu đã có chỗ bán.
-    const lotId = useGame.getState().me?.business?.lotId;
-    const spot = lotId ? standBehind(lotId) : { x: -11, z: -TILE };
-    return new Walker(spot.x, spot.z, 3.2);
+    const p = getPlayer();
+    // Vào lại game khi quầy đang mở: đứng sẵn sau quầy.
+    const biz = useGame.getState().me?.business;
+    if (biz?.open && biz.lotId) {
+      const spot = standBehind(biz.lotId);
+      p.position.set(spot.x, 0, spot.z);
+      p.yaw = spot.yaw;
+    }
+    return p;
   }, []);
-  const lotId = useGame((s) => s.me?.business?.lotId ?? null);
-  const open = useGame((s) => s.me?.business?.open ?? false);
-
-  // Chọn chỗ mới hoặc mở quầy: tự đi tới đứng sau quầy.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mở quầy (open) cũng phải gọi người chơi về quầy
-  useEffect(() => {
-    if (!lotId) return;
-    const spot = standBehind(lotId);
-    player.moveTo(spot.x, spot.z, spot.yaw);
-  }, [lotId, open, player]);
   const npcs = useMemo(
     () =>
       Array.from({ length: NPC_COUNT }, (_, i) => ({
@@ -101,6 +92,7 @@ function World() {
       return;
     const x = MathUtils.clamp(e.point.x, STREET_BOUNDS.minX, STREET_BOUNDS.maxX);
     const z = MathUtils.clamp(e.point.z, STREET_BOUNDS.minZ, STREET_BOUNDS.maxZ);
+    useGame.getState().setGoal(null);
     player.moveTo(x, z);
   };
 
@@ -115,8 +107,11 @@ function World() {
       <mesh rotation-x={-Math.PI / 2} position-y={0.02} onClick={onGroundClick} visible={false}>
         <planeGeometry args={[200, 200]} />
       </mesh>
+      <Places />
       <Stalls />
       <Customers />
+      <ProximityWatcher />
+      <TargetArrow />
       <TargetMarker walker={player} />
       <Character model="character-male-a" walker={player} />
       {npcs.map((npc, i) => (

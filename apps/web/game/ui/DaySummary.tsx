@@ -24,7 +24,7 @@ export function DaySummary() {
       >
         <p className="text-sm font-semibold text-ink/60 uppercase">Hết ngày {report.day}</p>
         <p
-          className={`mt-1 text-4xl font-extrabold tabular-nums ${report.profit >= 0 ? "text-leaf" : "text-red"}`}
+          className={`mt-1 text-3xl font-extrabold tabular-nums ${report.profit >= 0 ? "text-leaf" : "text-red"}`}
         >
           {report.profit >= 0 ? "+" : ""}
           {vnd(report.profit)}
@@ -80,7 +80,7 @@ export function DaySummary() {
         <button
           type="button"
           onClick={() => setReport(null)}
-          className="mt-6 h-14 w-full rounded-2xl bg-red text-lg font-semibold text-cream"
+          className="mt-6 h-12 w-full rounded-2xl bg-red text-base font-semibold text-cream"
         >
           Sang ngày mới ☀️
         </button>

@@ -86,6 +86,70 @@ export const jobSchema = z.object({
   description: z.string(),
 });
 
+const position = z.object({ x: z.number(), z: z.number() });
+
+/** Địa điểm có người đứng quầy; muốn làm việc ở đó phải đi tới tận nơi. */
+export const placeSchema = z.object({
+  id,
+  name: z.string(),
+  kind: z.enum(["equipment_shop", "market", "job"]),
+  /** Chữ trên biển hiệu. */
+  sign: z.string(),
+  signColor: z.string().regex(/^#[0-9a-f]{6}$/i),
+  /** Nút hành động khi đứng gần, ví dụ "🧺 Vào chợ". */
+  action: z.string(),
+  keeper: z.object({ name: z.string(), model: z.string(), greeting: z.string() }),
+  /** Với kind = job: các việc nhận ở đây. */
+  jobs: z.array(id).default([]),
+  position,
+  facing: z.number(),
+  /** Prop trang trí quanh địa điểm (tên model trong city bundle). */
+  props: z.array(
+    z.object({ model: z.string(), dx: z.number(), dz: z.number(), rot: z.number().default(0) }),
+  ),
+});
+
+export const npcSpeakerSchema = z.object({
+  id,
+  name: z.string(),
+  model: z.string(),
+  position,
+  facing: z.number(),
+});
+
+/** Điều kiện hoàn thành một bước kịch bản; client đánh giá theo trạng thái game. */
+export const conditionSchema = z.enum([
+  "has_business",
+  "has_stock",
+  "has_lot",
+  "shop_open",
+  "served_3",
+  "has_job",
+  "job_tasks_2",
+]);
+
+export const tutorialStepSchema = z.object({
+  id,
+  /** Lời thoại hiện ra khi bắt đầu bước (bỏ trống = chỉ đổi dòng nhiệm vụ). */
+  speaker: id.optional(),
+  lines: z.array(z.string()).default([]),
+  /** Lựa chọn rẽ nhánh ở cuối lời thoại. */
+  choices: z.array(z.object({ text: z.string(), next: id })).default([]),
+  objective: z.string().optional(),
+  /** Nơi cần tới: id địa điểm, "stall" (quầy của mình), hoặc "guide". */
+  target: z.string().optional(),
+  until: conditionSchema.optional(),
+  next: id.optional(),
+});
+
+export const customerLinesSchema = z.object({
+  cheap: z.array(z.string()).min(1),
+  fair: z.array(z.string()).min(1),
+  pricey: z.array(z.string()).min(1),
+  thanks: z.array(z.string()).min(1),
+  impatient: z.array(z.string()).min(1),
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -100,6 +164,17 @@ export const economySchema = z.object({
   /** Tốc độ reputation bám theo độ hài lòng. */
   reputationRate: z.number().positive().max(1),
   startingReputation: z.number().min(0).max(1),
+  /** Thời gian khách chờ được phục vụ (ms thật). */
+  serveWindowMs: z.number().int().positive(),
+  /** Tiền boa ≈ tỉ lệ giá trị đơn khi phục vụ kịp. */
+  tipRate: z.number().min(0).max(1),
+  /** Uy tín cộng thêm mỗi đơn phục vụ kịp. */
+  serveReputationBonus: z.number().min(0).max(0.1),
+  /** Làm thuê: cứ bao nhiêu phút game có một việc vặt, và tiền thưởng khi làm kịp. */
+  jobTaskEveryMinutes: z.number().int().positive(),
+  jobTaskBonus: z.number().int().nonnegative(),
+  /** Bán kính (mét) coi như "đang ở" một địa điểm / quầy. */
+  interactRadius: z.number().positive(),
 });
 
 export const contentSchema = z.object({
@@ -110,6 +185,11 @@ export const contentSchema = z.object({
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
+  places: z.array(placeSchema),
+  speakers: z.array(npcSpeakerSchema),
+  tutorial: z.array(tutorialStepSchema).min(1),
+  customerLines: customerLinesSchema,
+  jobTasks: z.record(id, z.array(z.string()).min(1)),
   economy: economySchema,
 });
 
@@ -121,4 +201,9 @@ export type Lot = z.infer<typeof lotSchema>;
 export type NpcArchetype = z.infer<typeof npcArchetypeSchema>;
 export type Job = z.infer<typeof jobSchema>;
 export type Economy = z.infer<typeof economySchema>;
+export type Place = z.infer<typeof placeSchema>;
+export type Speaker = z.infer<typeof npcSpeakerSchema>;
+export type TutorialStep = z.infer<typeof tutorialStepSchema>;
+export type Condition = z.infer<typeof conditionSchema>;
 export type ContentData = z.infer<typeof contentSchema>;
+export type ContentInput = z.input<typeof contentSchema>;

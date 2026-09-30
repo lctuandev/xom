@@ -99,7 +99,7 @@ export function AuthForm({ next }: { next: string }) {
         <button
           type="submit"
           disabled={busy}
-          className="mt-2 h-14 rounded-2xl bg-red text-lg font-semibold text-cream active:scale-[0.98] disabled:opacity-60"
+          className="mt-2 h-12 rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98] disabled:opacity-60"
         >
           {busy ? "Đang vào…" : mode === "login" ? "Vào xóm" : "Tạo tài khoản & vào xóm"}
         </button>
@@ -131,7 +131,7 @@ function Field({
         name={name}
         aria-invalid={error ? true : undefined}
         aria-describedby={error || hint ? `${id}-note` : undefined}
-        className="h-13 rounded-xl border-2 border-ink/15 bg-white px-4 text-base outline-none focus:border-red aria-invalid:border-red"
+        className="h-12 rounded-xl border-2 border-ink/15 bg-white px-4 text-base outline-none focus:border-red aria-invalid:border-red"
         {...input}
       />
       {(error || hint) && (

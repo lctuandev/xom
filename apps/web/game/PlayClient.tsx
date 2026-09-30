@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 const GameShell = dynamic(() => import("./GameShell"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full items-center justify-center text-lg font-semibold">
+    <div className="flex h-full items-center justify-center text-base font-semibold">
       Đang vào xóm…
     </div>
   ),

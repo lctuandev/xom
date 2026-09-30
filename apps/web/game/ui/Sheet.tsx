@@ -29,18 +29,18 @@ export function Sheet({
         className="relative flex max-h-[68dvh] flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
       >
         <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-ink/20" />
-        <header className="flex items-center justify-between px-5 pt-2 pb-3">
-          <h2 className="text-xl font-extrabold">{title}</h2>
+        <header className="flex items-center justify-between px-4 pt-1 pb-2">
+          <h2 className="text-lg font-extrabold">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-11 items-center justify-center rounded-full bg-ink/5 text-lg"
+            className="flex size-9 items-center justify-center rounded-full bg-ink/5 text-base"
             aria-label="Đóng"
           >
             ✕
           </button>
         </header>
-        <div className="overflow-y-auto overscroll-contain px-5 pb-4">{children}</div>
+        <div className="overflow-y-auto overscroll-contain px-4 pb-3">{children}</div>
       </section>
     </div>
   );
@@ -48,8 +48,8 @@ export function Sheet({
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mb-5">
-      <h3 className="mb-2 text-sm font-semibold tracking-wide text-ink/60 uppercase">{title}</h3>
+    <div className="mb-4">
+      <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-ink/60 uppercase">{title}</h3>
       {children}
     </div>
   );
@@ -73,7 +73,7 @@ export function Stepper({
   label: string;
 }) {
   const btn =
-    "flex size-12 shrink-0 items-center justify-center rounded-xl bg-ink/5 text-2xl font-semibold active:bg-ink/10 disabled:opacity-30";
+    "flex size-11 shrink-0 items-center justify-center rounded-xl bg-ink/5 text-xl font-semibold active:bg-ink/10 disabled:opacity-30";
   return (
     <fieldset className="m-0 flex items-center gap-2 border-0 p-0" aria-label={label}>
       <button
@@ -85,7 +85,7 @@ export function Stepper({
       >
         −
       </button>
-      <output className="min-w-0 flex-1 text-center text-2xl font-extrabold tabular-nums">
+      <output className="min-w-0 flex-1 text-center text-xl font-extrabold tabular-nums">
         {format(value)}
       </output>
       <button
