@@ -1,0 +1,35 @@
+"use client";
+
+import { useFrame, useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
+import { useGame } from "../store";
+import { anchorOf, bubbleEls } from "./anchors";
+
+const HEAD_Y = 2.25;
+const v = new Vector3();
+
+/**
+ * Mỗi frame: chiếu vị trí đầu nhân vật ra màn hình và đặt khung thoại (DOM) vào đó.
+ * Một lớp DOM duy nhất thay cho <Html> của drei — nhẹ hơn và không bị lỗi root khi StrictMode.
+ */
+export function BubbleProjector() {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  useFrame(() => {
+    const myId = useGame.getState().me?.playerId;
+    for (const [key, el] of bubbleEls) {
+      const pos = anchorOf(key, myId);
+      if (!pos) {
+        el.style.visibility = "hidden";
+        continue;
+      }
+      v.set(pos.x, HEAD_Y, pos.z).project(camera);
+      const x = ((v.x + 1) / 2) * size.width;
+      const y = ((1 - v.y) / 2) * size.height;
+      const onScreen = v.z < 1 && x > -80 && x < size.width + 80 && y > -40 && y < size.height + 40;
+      el.style.visibility = onScreen ? "visible" : "hidden";
+      el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -100%)`;
+    }
+  });
+  return null;
+}

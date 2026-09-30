@@ -1,132 +1,128 @@
 "use client";
 
-import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { content } from "@xom/content";
-import type { OrderResultEvent, SaleEvent } from "@xom/shared";
+import type { OrderEvent } from "@xom/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CharacterModel } from "../assets";
-import { orderResultBus, saleBus } from "../store";
+import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
+import { registerAnchor } from "./anchors";
 import { Character, Walker } from "./Character";
 
 /** Giới hạn NPC khách cùng lúc để giữ ngân sách draw call trên mobile. */
-const MAX_CUSTOMERS = 6;
+const MAX_CUSTOMERS = 8;
 /** Sau khi có kết quả, khách đứng nói thêm một chút rồi mới đi. */
-const LINGER_SECONDS = 1.6;
-
-let side = 1;
+const LINGER_SECONDS = 1.8;
 
 /**
- * Mỗi đơn (sự kiện "sale") là một khách đi tới quầy, đứng chờ với bong bóng gọi món.
- * Chủ quầy "Đưa hàng" kịp → khách cảm ơn + boa; chậm → khách càu nhàu rồi đi (docs/PLAN.md Phase 1.5).
+ * Mỗi đơn là một khách: đi tới quầy, xếp hàng, khung thoại dặn món (UC-F3); phàn nàn khi món sai;
+ * cảm ơn/than phiền khi tính tiền xong rồi đi tiếp.
  */
 export function Customers() {
-  const [list, setList] = useState<SaleEvent[]>([]);
+  const [list, setList] = useState<OrderEvent[]>(() => useGame.getState().orders);
 
   useEffect(
     () =>
-      saleBus.on((sale) =>
-        setList((prev) => (prev.length >= MAX_CUSTOMERS ? prev : [...prev, sale])),
-      ),
+      orderBus.on((o) => setList((prev) => (prev.length >= MAX_CUSTOMERS ? prev : [...prev, o]))),
     [],
   );
-
   const remove = (orderId: string) => setList((prev) => prev.filter((c) => c.orderId !== orderId));
 
   return (
     <>
       {list.map((c) => (
-        <Customer key={c.orderId} order={c} onDone={remove} />
+        <Customer key={c.orderId} order={c} slot={slotOf(list, c)} onDone={remove} />
       ))}
     </>
   );
 }
 
-function Customer({ order, onDone }: { order: SaleEvent; onDone: (id: string) => void }) {
+/** Vị trí trong hàng chờ trước quầy (0 = đứng đầu). */
+function slotOf(list: OrderEvent[], o: OrderEvent) {
+  return list.filter((x) => x.lotId === o.lotId).findIndex((x) => x.orderId === o.orderId);
+}
+
+type Tone = "ask" | "good" | "bad";
+
+function Customer({
+  order,
+  slot,
+  onDone,
+}: {
+  order: OrderEvent;
+  slot: number;
+  onDone: (id: string) => void;
+}) {
   const lot = content.lot(order.lotId);
-  const product = content.product(order.productId);
   const archetype = content.data.npcs.find((n) => n.id === order.archetype);
   const model = (archetype?.model ?? "character-male-c") as CharacterModel;
-  // Quầy phía bắc (facing 0) mở mặt về +Z; khách đi dọc mép vỉa hè phía trước quầy rồi dừng trước mặt.
+  // Quầy phía bắc (facing 0) mở mặt về +Z; khách đi dọc mép vỉa hè phía trước quầy.
   const front = lot.facing === 0 ? 1 : -1;
-  const { walker, exit } = useMemo(() => {
-    side = -side;
-    const lane = lot.position.z + front * 1.4;
-    const w = new Walker(lot.position.x + side * 9, lane, 2 + Math.random() * 0.4);
-    const stand = { x: lot.position.x + side * 0.4, z: lot.position.z + front * 1.1 };
-    // Giao điểm đến ngay lúc tạo: frame đầu tiên không được coi là "đã tới quầy".
-    w.moveTo(stand.x, stand.z, lot.facing + Math.PI);
-    return { walker: w, exit: { x: lot.position.x - side * 10, z: lane } };
-  }, [lot, front]);
+  const side = order.orderId.charCodeAt(0) % 2 ? 1 : -1;
+  const lane = lot.position.z + front * 1.6;
+  const walker = useMemo(() => new Walker(lot.position.x + side * 9, lane, 2.2), [lot, side, lane]);
   const phase = useRef<"come" | "wait" | "linger" | "leave">("come");
   const timer = useRef(0);
-  const [bubble, setBubble] = useState<{ text: string; tone: "ask" | "good" | "bad" } | null>(null);
-
-  useEffect(
-    () =>
-      orderResultBus.on((r: OrderResultEvent) => {
-        if (r.orderId !== order.orderId) return;
-        setBubble(
-          r.served
-            ? { text: `${r.line} +${Math.round(r.tip / 1000)}k`, tone: "good" }
-            : { text: r.line, tone: "bad" },
-        );
-        phase.current = "linger";
-        timer.current = 0;
-      }),
-    [order.orderId],
+  const key = `order:${order.orderId}`;
+  const setBubble = useMemo(
+    () => (b: { text: string; tone: Tone } | null) => useGame.getState().setBubble(key, b),
+    [key],
   );
 
+  // Khung thoại của khách bám theo vị trí khách.
+  useEffect(() => {
+    const off = registerAnchor(key, () => walker.position);
+    return () => {
+      off();
+      useGame.getState().setBubble(key, null);
+    };
+  }, [key, walker]);
+
+  // Đứng vào hàng: người đầu đứng sát quầy, người sau xếp dọc mép vỉa hè.
+  useEffect(() => {
+    if (phase.current !== "come" && phase.current !== "wait") return;
+    const x = lot.position.x + (slot === 0 ? 0.4 : side * (0.6 + slot * 0.8));
+    const z = lot.position.z + front * (slot === 0 ? 1.1 : 1.6);
+    walker.moveTo(x, z, lot.facing + Math.PI);
+  }, [slot, walker, lot, front, side]);
+
+  useEffect(() => {
+    const offUpdate = orderUpdateBus.on((u) => {
+      if (u.orderId === order.orderId)
+        setBubble({ text: u.line, tone: u.stage === "correct" ? "good" : "bad" });
+    });
+    const offResult = orderResultBus.on((r) => {
+      if (r.orderId !== order.orderId) return;
+      const tip = r.tip > 0 ? ` +${Math.round(r.tip / 1000)}k boa` : "";
+      setBubble({ text: `${r.line}${tip}`, tone: r.served ? "good" : "bad" });
+      phase.current = "linger";
+      timer.current = 0;
+    });
+    return () => {
+      offUpdate();
+      offResult();
+    };
+  }, [order.orderId, setBubble]);
+
   useFrame((_, dt) => {
-    if (phase.current === "come" && !walker.target) {
-      phase.current = "wait";
-      setBubble({ text: `${order.line} · ${product.emoji}×${order.qty}`, tone: "ask" });
-    } else if (phase.current === "linger") {
-      timer.current += dt;
-      if (timer.current >= LINGER_SECONDS) {
-        phase.current = "leave";
-        setBubble(null);
-        walker.moveTo(exit.x, exit.z);
-      }
-    } else if (phase.current === "leave" && !walker.target) {
-      onDone(order.orderId);
-    } else if (phase.current === "wait" && Date.now() > order.expiresAt + 3000) {
-      // Không nhận được kết quả (mất kết nối…): tự đi.
+    const leave = () => {
       phase.current = "leave";
       setBubble(null);
-      walker.moveTo(exit.x, exit.z);
+      walker.moveTo(lot.position.x - side * 10, lane);
+    };
+    if (phase.current === "come" && !walker.target) {
+      phase.current = "wait";
+      setBubble({ text: order.ask, tone: "ask" });
+    } else if (phase.current === "linger") {
+      timer.current += dt;
+      if (timer.current >= LINGER_SECONDS) leave();
+    } else if (phase.current === "leave" && !walker.target) {
+      onDone(order.orderId);
+    } else if (phase.current !== "leave" && Date.now() > order.expiresAt + 30_000) {
+      // Không nhận được kết quả (mất kết nối…): tự đi.
+      leave();
     }
   });
 
-  return (
-    <group>
-      <Character model={model} walker={walker} />
-      {bubble && <Bubble walker={walker} text={bubble.text} tone={bubble.tone} />}
-    </group>
-  );
-}
-
-const TONE = {
-  ask: "bg-cream text-ink",
-  good: "bg-leaf text-cream",
-  bad: "bg-ink/80 text-cream",
-} as const;
-
-/** Bong bóng lời thoại bám theo đầu nhân vật. */
-function Bubble({ walker, text, tone }: { walker: Walker; text: string; tone: keyof typeof TONE }) {
-  const group = useRef<import("three").Group>(null);
-  useFrame(() => {
-    group.current?.position.set(walker.position.x, 2.2, walker.position.z);
-  });
-  return (
-    <group ref={group}>
-      <Html center style={{ pointerEvents: "none" }} zIndexRange={[20, 0]}>
-        <div
-          className={`max-w-40 rounded-xl px-2.5 py-1 text-center text-xs leading-snug font-semibold whitespace-nowrap shadow-md ${TONE[tone]}`}
-        >
-          {text}
-        </div>
-      </Html>
-    </group>
-  );
+  return <Character model={model} walker={walker} />;
 }

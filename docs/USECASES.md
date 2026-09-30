@@ -112,23 +112,26 @@ Quán cơm Cô Tư xin việc → làm 2 việc vặt → Chú Bảy gợi ý t�
 
 ## D. Giao tiếp & trò chuyện
 
-### UC-D1 · Lời thoại hiện trên đầu nhân vật 🚧
+### UC-D1 · Lời thoại hiện trên đầu nhân vật ✅
 **Ai:** mọi NPC và người chơi.
 **Luồng:** NPC nói → **khung thoại hiện trên đầu** người nói (kiểu game), đuôi khung chỉ vào nhân vật; người chơi bấm vào khung/nút *Tiếp* để sang câu. Lựa chọn trả lời hiện ở dưới (vùng ngón cái); chọn xong câu trả lời hiện trên đầu nhân vật mình.
 **Đời thật:** hai người nói cùng lúc · người nói đi khuất màn hình.
 **Luật:** mỗi nhân vật tối đa 1 khung; khung tự ẩn sau 4 giây nếu không cần bấm; người nói ngoài màn hình thì khung ghim ở mép màn hình kèm mũi tên chỉ hướng.
 **Kiểm chứng:** Playwright: khung thoại của Chú Bảy nằm phía trên nhân vật (toạ độ khung < toạ độ đầu nhân vật trên màn hình).
 
-### UC-D2 · Nói chuyện với NPC 🚧
+**Kiểm chứng (đã chạy):** `apps/web/e2e/*` — khung thoại Chú Bảy/Bà Năm nằm trên đầu nhân vật (`[data-bubble]`).
+### UC-D2 · Nói chuyện với NPC ✅
 **Luồng:** tới gần NPC → nút "💬 Nói chuyện" → chọn chủ đề: *Chào hỏi* · *Hỏi giá hôm nay* · *Hỏi chuyện xóm* (tin đồn: "nghe nói mai mưa", "trường tan sớm") · *Nhờ giúp* (theo nhiệm vụ).
 **Luật:** mỗi NPC có **độ thân thiết** 0–100: chào hỏi mỗi ngày +2, mua hàng +1/lần. Thân thiết ≥ 30: Bà Năm bớt 5% giá nhập; ≥ 60: báo trước giá ngày mai.
 **Kiểm chứng:** e2e server: thân thiết tăng sau chào hỏi, không tăng 2 lần trong một ngày.
 
-### UC-D3 · Câu nói nhanh & biểu cảm của người chơi 🚧
+**Kiểm chứng (đã chạy):** `apps/server/test/game.e2e-spec.ts` (thân thiết +1/lần mua, +2 chào/ngày, không cộng 2 lần); Playwright "Hỏi chuyện xóm".
+### UC-D3 · Câu nói nhanh & biểu cảm của người chơi ✅
 **Luồng:** nút 💬 góc phải → chọn câu có sẵn ("Mời ghé ủng hộ!", "Bánh mì nóng giòn đây!", "Cảm ơn nha", "Xin lỗi, hết hàng rồi") hoặc biểu cảm (👋 😄 🙏 😢) → hiện trên đầu nhân vật.
 **Luật:** câu **rao hàng** khi đang đứng ở quầy mở: kéo thêm khách trong 1 giờ game (+10%, hồi chiêu 30 phút game).
 **Kiểm chứng:** Playwright: bấm câu rao → khung thoại trên đầu nhân vật; server: hệ số khách tăng trong thời gian hiệu lực.
 
+**Kiểm chứng (đã chạy):** e2e server (rao hàng → thông báo, hồi chiêu); Playwright (câu rao hiện trên đầu).
 ### UC-D4 · Chat với người chơi khác ⏳ (Phase 2)
 Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc từ ngữ thô tục; bấm vào người chơi → *Chặn* / *Báo cáo*. Người bị chặn không thấy tin nhắn của mình.
 
@@ -136,7 +139,7 @@ Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc 
 
 ## E. Mua sắm (người chơi là khách)
 
-### UC-E1 · Đi chợ mua nguyên liệu 🚧
+### UC-E1 · Đi chợ mua nguyên liệu ✅
 **Ai:** chủ quầy · **Nơi:** chợ đầu mối Bà Năm.
 **Luồng:** tới chợ → "🧺 Vào chợ" → thấy **từng nguyên liệu** (không phải món làm sẵn): bánh mì phôi, pa-tê, thịt nguội, xíu mại, trứng, dưa leo, đồ chua, hành ngò, ớt, nước sốt… → chọn số lượng (theo gói: "Bánh mì phôi · 10 ổ") → trả tiền → hàng vào kho của quầy.
 **Đời thật & rẽ nhánh:**
@@ -148,6 +151,7 @@ Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc 
 **Luật:** mỗi nguyên liệu có hạn dùng (bánh mì 1 ngày, rau 1 ngày, pa-tê 3 ngày, trân châu 1 ngày, trà khô không hỏng); xuất kho lô cũ trước.
 **Kiểm chứng:** e2e server: mua gói → kho tăng đúng số phần; sau 12:00 hàng tươi đắt hơn 20%.
 
+**Kiểm chứng (đã chạy):** e2e server (mua theo gói, thiếu tiền, mặt hàng không tồn tại); unit `recipe.test.ts` (hàng chiều đắt hơn); Playwright mua 10 nguyên liệu.
 ### UC-E2 · Mặc cả với Bà Năm ⏳
 **Luồng:** trong chợ bấm "🤝 Bớt chút đi bà" trước khi trả tiền → Bà Năm trả lời theo độ thân thiết: bớt 5–10% / "Giá này rẻ rồi con" / hơi phật ý (thân thiết −1) nếu mặc cả liên tục trong ngày.
 **Luật:** mỗi ngày 1 lần mặc cả có tác dụng; xác suất thành công theo thân thiết.
@@ -168,15 +172,16 @@ Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc 
 
 > Thay đổi cốt lõi so với Phase 1: **không còn tự động bán theo nhịp**. Server chỉ quyết định *bao nhiêu khách tới* và *họ muốn gì*; tiền chỉ vào khi người chơi (hoặc nhân viên) **làm đúng món và giao tận tay**.
 
-### UC-F1 · Chuẩn bị quầy 🚧
+### UC-F1 · Chuẩn bị quầy ✅
 **Luồng:** đẩy xe tới chỗ đã thuê → mở quầy (trả tiền chỗ) → quầy hiện nguyên liệu đang có.
 **Đời thật:** quên mua nguyên liệu → quầy mở nhưng món nào thiếu nguyên liệu bị gạch trong thực đơn · xe hư → làm chậm.
 
-### UC-F2 · Thực đơn & giá 🚧
+### UC-F2 · Thực đơn & giá ✅
 **Luồng:** bảng Kinh doanh → *Thực đơn*: bật/tắt từng món ("Bánh mì thịt", "Bánh mì xíu mại", "Bánh mì trứng"), đặt giá từng món; món thêm (thêm trứng +5.000đ, thêm pa-tê +3.000đ).
 **Luật:** món chỉ bán được khi đủ nguyên liệu; giá hợp lý theo giá tham chiếu của món; tắt hết món = không có khách.
 
-### UC-F3 · Khách tới, xếp hàng 🚧
+**Kiểm chứng (đã chạy):** e2e server (tắt hết món bị chặn, đổi giá); khách chỉ gọi món đủ nguyên liệu.
+### UC-F3 · Khách tới, xếp hàng ✅ (khách quen, gọi nhiều phần: ⏳)
 **Luồng:** khách NPC đi tới trước quầy → khung thoại trên đầu nói yêu cầu **cụ thể**: *"Cho con ổ xíu mại, không hành, nhiều ớt nha!"* → xếp vào hàng chờ (thấy số thứ tự trên đầu).
 **Đời thật & rẽ nhánh:**
 - Mỗi khách có **kiên nhẫn** (thanh trên đầu, 30–60 giây thật tuỳ kiểu khách: học sinh vội, cô chú thong thả).
@@ -186,7 +191,8 @@ Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc 
 - Khách gọi 2–3 phần cho cả nhà → mỗi phần yêu cầu riêng.
 **Luật:** số khách tới theo mô hình nhu cầu (chỗ bán, giờ, giá, uy tín, thời tiết, đối thủ); **không có chủ ở quầy (và không có nhân viên) thì không có khách dừng lại**.
 
-### UC-F4 · Làm bánh mì theo đơn 🚧
+**Kiểm chứng (đã chạy):** e2e server (khách chỉ gọi món làm được; vắng chủ không có khách); unit (khách không xin thêm thứ quầy không có).
+### UC-F4 · Làm bánh mì theo đơn ✅ (khách đổi ý giữa chừng: ⏳)
 **Ai:** chủ quầy hoặc nhân viên đứng quầy · **Khi nào:** chạm vào khách đang chờ (hoặc nút "👨‍🍳 Làm món").
 **Luồng (màn hình làm món, thao tác từng bước):**
 1. **Lấy bánh** — chạm ổ bánh mì (trừ 1 ổ khi giao).
@@ -206,17 +212,18 @@ Thanh trên cùng luôn hiện yêu cầu của khách để đối chiếu.
 **Luật:** chấm điểm món = đúng từng bước so với đơn (0–100%); nguyên liệu trừ theo đúng thứ đã cho vào món; server kiểm tra lại toàn bộ (client chỉ gửi danh sách thao tác).
 **Kiểm chứng:** unit test chấm điểm món; e2e server: giao món thiếu nguyên liệu bị từ chối, món sai bị trừ uy tín; Playwright: làm đúng 1 ổ theo đơn "không hành, nhiều ớt".
 
-### UC-F5 · Pha trà sữa theo đơn 🚧
+**Kiểm chứng (đã chạy):** unit chấm món; e2e server (thiếu nguyên liệu bị từ chối, làm sai phải làm lại/giảm giá); Playwright làm đúng 3 món + làm sai 1 món trên iPhone 16 Pro & Pixel 7.
+### UC-F5 · Pha trà sữa theo đơn ✅ (UI chung với bánh mì; chưa có kịch bản Playwright riêng)
 **Luồng:** chọn **ly** (M/L) → **trà nền** (trà sữa truyền thống / trà xanh / hồng trà) → **đường** (0 / 30 / 50 / 70 / 100%) → **đá** (không / ít / bình thường) → **topping** (trân châu đen, trân châu trắng, thạch, pudding — có thể nhiều) → **lắc** (giữ nút 1 giây) → **dán nắp** → đưa khách.
 **Đời thật:** "ít ngọt, nhiều đá, thêm pudding" · hết đá khi mất điện (UC-K4) · khách đổi ý sau khi gọi ("thôi cho ít đường") — khung thoại cập nhật, món đang pha phải chỉnh theo.
 **Luật:** topping tính thêm tiền theo bảng giá của quầy; sai mức đường/đá là lỗi nhẹ (trừ ít điểm), sai topping là lỗi nặng.
 
-### UC-F6 · Bán phụ kiện 🚧
+### UC-F6 · Bán phụ kiện ✅ cơ bản (trả giá, khách xem chơi: ⏳)
 **Luồng:** khách hỏi *"Có kẹp tóc màu hồng hông?"* → tìm đúng món trên sạp (lưới 3×3 món có màu/kiểu) → hỏi *gói quà không?* (khách mua tặng thì có) → gói → tính tiền.
 **Đời thật:** khách chỉ xem không mua (30% khách "xem chơi") · khách trả giá ("bớt 5 ngàn đi") → *Đồng ý* / *Bớt 2 ngàn* / *Giữ giá* (khách có thể bỏ đi).
 **Luật:** phụ kiện không hỏng; trưng bày đủ màu thì bán được nhiều khách hơn.
 
-### UC-F7 · Tính tiền & thối tiền 🚧
+### UC-F7 · Tính tiền & thối tiền ✅ (két tiền lẻ, "cho nợ": ⏳)
 **Luồng:** giao món → khách đưa tiền (tờ 20k / 50k / 100k / 200k, hoặc *chuyển khoản QR*) → màn hình thối: bấm các tờ tiền (1k, 2k, 5k, 10k, 20k, 50k) để ghép tiền thối → *Đưa tiền thối*.
 **Đời thật & rẽ nhánh:**
 - **Thối thiếu** → khách đếm lại, đòi đủ (uy tín −, không lời thêm được đồng nào).
@@ -226,6 +233,7 @@ Thanh trên cùng luôn hiện yêu cầu của khách để đối chiếu.
 **Luật:** két tiền lẻ là kho riêng (đổi tiền lẻ ở chợ); tỉ lệ khách chuyển khoản tăng theo khách văn phòng.
 **Kiểm chứng:** unit test tính tiền thối; e2e: thối thiếu bị ép bù, thối dư bị mất tiền.
 
+**Kiểm chứng (đã chạy):** unit thối đúng/thiếu/dư; e2e server thối thiếu bị đòi đủ; Playwright ghép tờ tiền thối.
 ### UC-F8 · Khách quỵt / hiểu lầm ⏳
 **Đời thật:** hiếm khi khách ăn xong đi luôn (1/200 đơn), hoặc khách nói đã đưa 100k nhưng thật ra đưa 50k.
 **Luật:** chủ quầy có thể *Gọi lại* (60% khách quay lại trả) hoặc *Bỏ qua*; tiền thật khách đưa luôn hiện trên màn hình tính tiền nên hiểu lầm có thể giải thích ("Dạ con nhận 50 ngàn ạ") → khách xin lỗi.
@@ -391,7 +399,7 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 | Giai đoạn | Use case |
 |---|---|
 | **Phase 1.5** ✅ | C1–C3, B2, H1 (cơ bản), phục vụ "Đưa hàng" |
-| **Phase 1.6 — Làm thật** 🚧 | D1, D2, D3 · E1 · F1–F7, F9 · I1 · L1 |
+| **Phase 1.6 — Làm thật** ✅ | D1, D2, D3 · E1 · F1–F7, F9 · I1 · L1 |
 | **Phase 1.7 — Sửa xe & chợ phụ tùng** | G1–G4 · E3 (độ bền xe) · H1 nâng cấp (bưng cơm, giao hàng thật) |
 | **Phase 1.8 — Tuyển dụng (NPC trước)** | H2–H9 với NPC nhân viên / NPC chủ tiệm · E2 · F10 · B4 |
 | **Phase 2 — Nhiều người** | D4 · E4 · J1–J6 · H2–H8 giữa người chơi |

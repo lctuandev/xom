@@ -10,6 +10,7 @@ export function DaySummary() {
   if (!report) return null;
   const rows: [string, number, "in" | "out"][] = [
     ["Doanh thu bán hàng", report.revenue, "in"],
+    ["Tiền boa", report.tips, "in"],
     ["Lương làm thuê", report.wages, "in"],
     ["Nhập hàng", report.stockCost, "out"],
     ["Thuê chỗ", report.rent, "out"],
@@ -59,6 +60,12 @@ export function DaySummary() {
                 <dt>Khách đã phục vụ</dt>
                 <dd className="font-semibold tabular-nums">{report.served}</dd>
               </div>
+              {report.wrong > 0 && (
+                <div className="flex justify-between text-red">
+                  <dt>Món làm sai (giảm giá)</dt>
+                  <dd className="font-semibold tabular-nums">{report.wrong}</dd>
+                </div>
+              )}
               {report.lost > 0 && (
                 <div className="flex justify-between text-red">
                   <dt>Khách hụt (hết hàng/đợi lâu)</dt>

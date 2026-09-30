@@ -3,11 +3,15 @@ import type {
   ClockView,
   DayReportView,
   JobTaskEvent,
+  MakeResult,
   MeView,
   NotifyEvent,
+  OrderEvent,
   OrderResultEvent,
-  SaleEvent,
+  OrderUpdateEvent,
+  SayEvent,
   Snapshot,
+  TalkResult,
   WorldView,
 } from "./game.js";
 
@@ -35,19 +39,27 @@ export const pongSchema = z.object({
 });
 export type PongPayload = z.infer<typeof pongSchema>;
 
-type Intent<P> = (payload: P, ack: (res: Ack<MeView>) => void) => void;
+type Intent<P, R = MeView> = (payload: P, ack: (res: Ack<R>) => void) => void;
 
 export interface ClientToServerEvents {
   ping: (payload: PingPayload, ack: (res: Ack<PongPayload>) => void) => void;
   "equipment:buy": Intent<{ equipmentId: string }>;
-  "market:buy": Intent<{ productId: string; qty: number }>;
-  "biz:update": Intent<{ price?: number; lotId?: string }>;
+  "market:buy": Intent<{ itemId: string; packs: number }>;
+  "biz:update": Intent<{ lotId: string }>;
+  "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;
   "job:start": Intent<{ jobId: string }>;
   "job:stop": Intent<Record<string, never>>;
   "biz:attend": Intent<{ on: boolean }>;
-  "order:serve": Intent<{ orderId: string }>;
+  "order:make": Intent<
+    { orderId: string; build: Record<string, string | string[] | true> },
+    MakeResult
+  >;
+  "order:pay": Intent<{ orderId: string; change: number | null; discount?: boolean }>;
+  "order:decline": Intent<{ orderId: string }>;
+  "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
+  "chat:say": Intent<{ phraseId: string }>;
   "job:task": Intent<{ taskId: string }>;
   "tutorial:set": Intent<{ step: string }>;
 }
@@ -57,7 +69,9 @@ export interface ServerToClientEvents {
   me: (me: MeView) => void;
   clock: (clock: ClockView) => void;
   world: (world: WorldView) => void;
-  sale: (sale: SaleEvent) => void;
+  order: (o: OrderEvent) => void;
+  orderUpdate: (u: OrderUpdateEvent) => void;
+  say: (s: SayEvent) => void;
   dayEnd: (report: DayReportView) => void;
   notify: (n: NotifyEvent) => void;
   orderResult: (r: OrderResultEvent) => void;

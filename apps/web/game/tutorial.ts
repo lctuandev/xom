@@ -3,6 +3,8 @@
 import { type Condition, content } from "@xom/content";
 import { useEffect } from "react";
 import { send } from "./net/socket";
+import { makeableCount } from "./recipes";
+import { comeToPlayer } from "./scene/guide";
 import { useGame } from "./store";
 
 type State = ReturnType<typeof useGame.getState>;
@@ -15,7 +17,11 @@ export function conditionMet(cond: Condition, s: State): boolean {
     case "has_business":
       return !!biz;
     case "has_stock":
-      return !!me?.inventory.some((i) => i.qty > 0 && (!biz || i.productId === biz.productId));
+      // Đủ nguyên liệu làm được ít nhất một món trong thực đơn.
+      return (
+        !!biz &&
+        biz.menu.some((m) => m.on && makeableCount(biz.productId, m.variantId, me?.inventory) > 0)
+      );
     case "has_lot":
       return !!biz?.lotId;
     case "shop_open":
@@ -49,6 +55,8 @@ export function useTutorial() {
         if (s.dialogue !== step.id) {
           // NPC bắt chuyện: đóng bảng đang mở để người chơi tập trung vào lời thoại.
           if (s.sheet) s.openSheet(null);
+          if (s.kitchen) s.openKitchen(null);
+          if (step.speaker) comeToPlayer(step.speaker);
           s.showDialogue(step.id);
         }
         return;

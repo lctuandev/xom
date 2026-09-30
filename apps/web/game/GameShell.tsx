@@ -8,13 +8,17 @@ import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
+import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
 import { EquipmentSheet } from "./ui/EquipmentSheet";
 import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
+import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
+import { QuickChat } from "./ui/QuickChat";
+import { TalkSheet } from "./ui/TalkSheet";
 import { useWorldEffects } from "./useWorldEffects";
 
 const LOGIN = "/dang-nhap?next=/play";
@@ -71,12 +75,16 @@ export default function GameShell() {
   return (
     <div className="relative h-full w-full overflow-hidden select-none">
       <Scene />
+      <BubbleLayer />
       <Hud />
       {sheet === "business" && <BusinessSheet />}
       {sheet === "market" && <MarketSheet />}
       {sheet === "jobs" && <JobsSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
+      {sheet === "talk" && <TalkSheet />}
       <ActionBar />
+      <QuickChat />
+      <Kitchen />
       <Dialogue />
       <DaySummary />
     </div>

@@ -1,3 +1,5 @@
+import type { DishView, OrderEvent } from "@xom/shared";
+
 /** Lỗi nghiệp vụ trả về client qua Ack; message tiếng Việt hiển thị thẳng. */
 export class GameError extends Error {
   constructor(
@@ -16,15 +18,13 @@ export interface Member {
   leaveTimer?: NodeJS.Timeout;
 }
 
-/** Đơn khách đang chờ chủ quầy "Đưa hàng" (chỉ sống trong bộ nhớ, hết hạn sau serveWindowMs). */
+/** Đơn khách đang ở quầy (chỉ sống trong bộ nhớ): chờ làm món → chờ tính tiền → đi. */
 export interface PendingOrder {
-  id: string;
-  ownerId: string;
-  businessId: string;
-  qty: number;
-  /** Giá trị đơn (đã thu tiền lúc bán), để tính tiền boa. */
-  value: number;
-  expiresAt: number;
+  event: OrderEvent;
+  /** Kiên nhẫn của khách (ms). */
+  patienceMs: number;
+  /** Món đã làm (lần gần nhất) và kết quả chấm. */
+  dish: { build: DishView; score: number; mistakes: string[] } | null;
 }
 
 export interface PendingJobTask {
@@ -39,6 +39,10 @@ export class RoomRuntime {
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
   readonly attending = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
+  /** Rao hàng: businessId → hết hiệu lực ở phút game này (trong ngày). */
+  readonly boostUntil = new Map<string, number>();
+  /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */
+  readonly shoutReadyAt = new Map<string, number>();
   readonly jobTasks = new Map<string, PendingJobTask>();
   timer?: NodeJS.Timeout;
   private queue: Promise<unknown> = Promise.resolve();

@@ -2,11 +2,11 @@ import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import {
   attractiveness,
-  marketPrice,
+  customerArrivals,
+  menuPriceRatio,
   nextReputation,
   priceScore,
   type ShopState,
-  simulateTick,
   spoilage,
   takeFifo,
 } from "./economy.js";
@@ -19,31 +19,24 @@ function shop(over: Partial<ShopState> = {}): ShopState {
     id: "a",
     productId: "banh_mi",
     lotId: "cong_truong",
-    price: 15_000,
+    priceRatio: 1,
     reputation: 0.5,
-    stock: 1000,
-    capacityPerHour: 1000,
     demandCarry: 0,
     ...over,
   };
 }
 
-/** Chạy nhiều tick liên tiếp (7:00–8:00) và cộng dồn số bán. */
-function runHour(shops: ShopState[]) {
-  const totals = new Map<string, { sold: number; lostStock: number; lostCapacity: number }>();
+/** Cộng dồn khách tới trong giờ 7:00–8:00. */
+function hour(shops: ShopState[]) {
+  const totals = new Map<string, number>();
   let state = shops;
   for (let m = 7 * 60; m < 8 * 60; m += 5) {
-    const res = simulateTick({ content, shops: state, day: 1, minuteOfDay: m, minutes: 5 });
+    const res = customerArrivals({ content, shops: state, day: 1, minuteOfDay: m, minutes: 5 });
     state = state.map((s) => {
       const r = res.find((x) => x.id === s.id);
       if (!r) return s;
-      const t = totals.get(s.id) ?? { sold: 0, lostStock: 0, lostCapacity: 0 };
-      totals.set(s.id, {
-        sold: t.sold + r.sold,
-        lostStock: t.lostStock + r.lostStock,
-        lostCapacity: t.lostCapacity + r.lostCapacity,
-      });
-      return { ...s, stock: s.stock - r.sold, demandCarry: r.demandCarry };
+      totals.set(s.id, (totals.get(s.id) ?? 0) + r.arrivals);
+      return { ...s, demandCarry: r.demandCarry };
     });
   }
   return totals;
@@ -56,61 +49,43 @@ describe("time", () => {
     expect(valueAt(curve, 7 * 60)).toBe(20);
     expect(valueAt(curve, 23 * 60)).toBe(30);
   });
-
   it("định dạng giờ", () => {
     expect(formatClock(6 * 60 + 5)).toBe("06:05");
   });
 });
 
 describe("giá", () => {
-  it("giá chợ tất định và nằm trong biên độ", () => {
-    const a = marketPrice(banhMi, 3, 0.1);
-    expect(marketPrice(banhMi, 3, 0.1)).toBe(a);
-    expect(a).toBeGreaterThanOrEqual(banhMi.unitCost * 0.9 - 500);
-    expect(a).toBeLessThanOrEqual(banhMi.unitCost * 1.1 + 500);
-    expect(a % 500).toBe(0);
+  it("đắt hơn thì kém hấp dẫn và khách kém hài lòng", () => {
+    expect(attractiveness(1.3, banhMi, 0.5)).toBeLessThan(attractiveness(1, banhMi, 0.5));
+    expect(priceScore(1)).toBe(1);
+    expect(priceScore(2)).toBeLessThan(0.5);
   });
-
-  it("bán đắt hơn thì kém hấp dẫn và khách kém hài lòng", () => {
-    expect(attractiveness(20_000, banhMi, 0.5)).toBeLessThan(attractiveness(15_000, banhMi, 0.5));
-    expect(priceScore(15_000, 15_000)).toBe(1);
-    expect(priceScore(30_000, 15_000)).toBeLessThan(0.5);
+  it("tỉ lệ giá thực đơn là trung bình các món", () => {
+    const r = menuPriceRatio(banhMi, [
+      { variantId: "banh_mi_thit", price: 16_000 },
+      { variantId: "banh_mi_trung", price: 21_000 },
+    ]);
+    expect(r).toBeCloseTo(1.25, 2);
   });
 });
 
-describe("simulateTick", () => {
-  it("cổng trường giờ sáng bán được bánh mì", () => {
-    const sold = runHour([shop()]).get("a")?.sold ?? 0;
-    expect(sold).toBeGreaterThan(5);
+describe("khách tới", () => {
+  it("cổng trường giờ sáng có khách", () => {
+    expect(hour([shop()]).get("a") ?? 0).toBeGreaterThan(5);
   });
-
-  it("không bán quá tồn kho và ghi nhận khách hụt", () => {
-    const t = runHour([shop({ stock: 3 })]).get("a");
-    expect(t?.sold).toBe(3);
-    expect(t?.lostStock).toBeGreaterThan(0);
+  it("đối thủ rẻ hơn ở gần hút nhiều khách hơn", () => {
+    const t = hour([shop({ id: "dat", priceRatio: 1.3 }), shop({ id: "re", priceRatio: 0.85 })]);
+    expect(t.get("re") ?? 0).toBeGreaterThan(t.get("dat") ?? 0);
   });
-
-  it("không bán quá công suất", () => {
-    const t = runHour([shop({ capacityPerHour: 12 })]).get("a");
-    expect(t?.sold).toBeLessThanOrEqual(12);
-    expect(t?.lostCapacity).toBeGreaterThan(0);
+  it("có đối thủ cùng loại thì ít khách hơn; khác loại thì không ảnh hưởng", () => {
+    const alone = hour([shop()]).get("a") ?? 0;
+    expect(hour([shop(), shop({ id: "b" })]).get("a") ?? 0).toBeLessThan(alone);
+    expect(hour([shop(), shop({ id: "ts", productId: "tra_sua" })]).get("a")).toBe(alone);
   });
-
-  it("đối thủ rẻ hơn ở gần thì lấy nhiều khách hơn", () => {
-    const t = runHour([shop({ id: "dat", price: 20_000 }), shop({ id: "re", price: 13_000 })]);
-    expect(t.get("re")?.sold ?? 0).toBeGreaterThan(t.get("dat")?.sold ?? 0);
-  });
-
-  it("có đối thủ thì bán ít hơn khi độc quyền", () => {
-    const alone = runHour([shop()]).get("a")?.sold ?? 0;
-    const shared = runHour([shop(), shop({ id: "b" })]).get("a")?.sold ?? 0;
-    expect(shared).toBeLessThan(alone);
-  });
-
-  it("shop khác danh mục không tranh khách", () => {
-    const alone = runHour([shop()]).get("a")?.sold ?? 0;
-    const withDrink = runHour([shop(), shop({ id: "ts", productId: "tra_sua", price: 25_000 })]);
-    expect(withDrink.get("a")?.sold).toBe(alone);
+  it("rao hàng (boost) kéo thêm khách", () => {
+    expect(hour([shop({ boost: 1.5 })]).get("a") ?? 0).toBeGreaterThan(
+      hour([shop()]).get("a") ?? 0,
+    );
   });
 });
 
@@ -123,48 +98,33 @@ describe("reputation", () => {
   });
 });
 
-describe("tồn kho", () => {
-  it("đồ ăn hỏng cuối ngày, phụ kiện thì không", () => {
+describe("nguyên liệu trong kho", () => {
+  it("hỏng theo hạn dùng từng loại", () => {
     const { kept, spoiled } = spoilage(
       content,
       [
-        { productId: "banh_mi", qty: 5, batchDay: 2 },
-        { productId: "phu_kien", qty: 5, batchDay: 1 },
+        { itemId: "banh_mi_phoi", qty: 5, batchDay: 2 }, // 1 ngày → hỏng cuối ngày 2
+        { itemId: "pate", qty: 5, batchDay: 2 }, // 3 ngày → còn
+        { itemId: "sot", qty: 5, batchDay: 1 }, // không hỏng
       ],
       2,
     );
-    expect(spoiled.map((b) => b.productId)).toEqual(["banh_mi"]);
-    expect(kept.map((b) => b.productId)).toEqual(["phu_kien"]);
+    expect(spoiled.map((b) => b.itemId)).toEqual(["banh_mi_phoi"]);
+    expect(kept.map((b) => b.itemId)).toEqual(["pate", "sot"]);
   });
-
   it("xuất kho FIFO", () => {
     const { batches, taken } = takeFifo(
       [
-        { productId: "phu_kien", qty: 2, batchDay: 3 },
-        { productId: "phu_kien", qty: 4, batchDay: 1 },
+        { itemId: "pate", qty: 2, batchDay: 3 },
+        { itemId: "pate", qty: 4, batchDay: 1 },
       ],
       5,
     );
     expect(taken).toEqual([
-      { productId: "phu_kien", qty: 4, batchDay: 1 },
-      { productId: "phu_kien", qty: 1, batchDay: 3 },
+      { itemId: "pate", qty: 4, batchDay: 1 },
+      { itemId: "pate", qty: 1, batchDay: 3 },
     ]);
-    expect(batches).toEqual([{ productId: "phu_kien", qty: 1, batchDay: 3 }]);
+    expect(batches).toEqual([{ itemId: "pate", qty: 1, batchDay: 3 }]);
     expect(() => takeFifo(batches, 5)).toThrow();
-  });
-});
-
-describe("hài lòng khi hết hàng", () => {
-  it("khách hụt kéo độ hài lòng xuống nhưng không về 0", () => {
-    const [r] = simulateTick({
-      content,
-      shops: [shop({ stock: 1, demandCarry: 10 })],
-      day: 1,
-      minuteOfDay: 7 * 60,
-      minutes: 5,
-    });
-    expect(r?.sold).toBe(1);
-    expect(r?.satisfaction).toBeGreaterThan(0.1);
-    expect(r?.satisfaction).toBeLessThan(0.5);
   });
 });

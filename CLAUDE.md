@@ -12,8 +12,13 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 - Tra tài liệu thư viện qua MCP `context7` trước khi dùng API của Next.js/NestJS/Prisma/R3F.
 - Ưu tiên giải pháp đơn giản, ít thành phần (làm một mình): không thêm service/dashboard nếu script + MCP `postgres` là đủ.
 
+- Use case & kịch bản: `docs/USECASES.md` — tính năng mới phải có use case (luồng, tình huống đời thật, luật game, kiểm chứng) và kịch bản Playwright tương ứng trong `apps/web/e2e`.
+- Tiền chỉ vào ví khi người chơi **làm** (làm món + tính tiền, việc vặt…); không thêm thu nhập tự động.
+- Không dùng `<Html>` của drei (lỗi root với React 19 StrictMode): khung thoại đi qua `BubbleLayer` (DOM) + `BubbleProjector` (canvas).
+
 ## Quy trình khi xong mỗi việc (bắt buộc)
-1. `pnpm lint && pnpm typecheck && pnpm test`
+1. `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @xom/server test:e2e`
+   + kịch bản Playwright: `GAME_TICK_MS=150 pnpm dev` rồi `pnpm --filter @xom/web test:e2e`
 2. **`pnpm deploy:local`** — build lại Docker và deploy bản production lên **http://localhost:5555** (script chờ health check; fail thì chưa được coi là xong).
 - Stack production: `deploy/docker-compose.prod.yml` (project `xom-prod`, DB riêng, mật khẩu trong `deploy/.env` tự sinh, không commit). Chỉ mở cổng 5555; Next proxy `/api` + `/socket.io` sang server nội bộ.
 - Không chạy `pnpm build` khi `pnpm dev` đang chạy (nest build xóa `dist` của dev server).

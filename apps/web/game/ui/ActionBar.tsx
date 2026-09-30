@@ -13,11 +13,12 @@ import { sheetForPlace } from "../world";
 export function ActionBar() {
   const sheet = useGame((s) => s.sheet);
   const dialogue = useGame((s) => s.dialogue);
-  if (sheet || dialogue) return null;
+  const kitchen = useGame((s) => s.kitchen);
+  if (sheet || dialogue || kitchen) return null;
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
       <JobTaskButton />
-      <ServeButton />
+      <KitchenButton />
       <AwayChip />
       <OpenStallButton />
       <PlaceButton />
@@ -44,29 +45,21 @@ function Countdown({ left }: { left: number }) {
   );
 }
 
-function ServeButton() {
+/** Có khách chờ ở quầy: mở màn hình làm món cho khách đến trước. */
+function KitchenButton() {
   const orders = useGame((s) => s.orders);
   const atStall = useGame((s) => s.atStall);
+  const openKitchen = useGame((s) => s.openKitchen);
   const oldest = orders[0];
-  const left = useCountdown(oldest?.expiresAt, content.economy.serveWindowMs);
-  const [busy, setBusy] = useState(false);
+  const left = useCountdown(oldest?.expiresAt, oldest ? oldest.expiresAt - oldest.createdAt : 1);
   if (!oldest || !atStall) return null;
-  const product = content.product(oldest.productId);
   return (
     <button
       type="button"
-      disabled={busy}
-      onClick={async () => {
-        setBusy(true);
-        const res = await send("order:serve", { orderId: oldest.orderId });
-        const g = useGame.getState();
-        g.removeOrder(oldest.orderId);
-        if (res.ok) g.countServed();
-        setBusy(false);
-      }}
+      onClick={() => openKitchen(oldest.orderId)}
       className="pointer-events-auto relative h-12 w-full max-w-xs rounded-2xl bg-leaf px-4 font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
-      🤲 Đưa {product.emoji}×{oldest.qty}
+      👨‍🍳 Làm món cho khách
       {orders.length > 1 && <span className="ml-1 opacity-80">· {orders.length} khách chờ</span>}
       <Countdown left={left} />
     </button>
@@ -126,13 +119,22 @@ function PlaceButton() {
   if (!nearPlace) return null;
   const place = content.place(nearPlace);
   return (
-    <button
-      type="button"
-      onClick={() => openSheet(sheetForPlace(nearPlace))}
-      className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-red px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
-    >
-      {place.action} · {place.keeper.name}
-    </button>
+    <div className="pointer-events-auto flex w-full max-w-xs gap-2">
+      <button
+        type="button"
+        onClick={() => openSheet(sheetForPlace(nearPlace))}
+        className="h-11 flex-1 rounded-2xl bg-red px-3 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
+      >
+        {place.action} · {place.keeper.name}
+      </button>
+      <button
+        type="button"
+        onClick={() => openSheet("talk")}
+        className="h-11 shrink-0 rounded-2xl bg-cream px-3 text-sm font-semibold shadow-lg active:scale-[0.97]"
+      >
+        💬 Nói chuyện
+      </button>
+    </div>
   );
 }
 

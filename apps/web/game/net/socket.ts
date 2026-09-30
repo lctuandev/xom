@@ -7,7 +7,7 @@ import {
 } from "@xom/shared";
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
-import { orderResultBus, saleBus, useGame } from "../store";
+import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -43,16 +43,19 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
-  s.on("sale", (sale) => {
-    saleBus.emit(sale);
-    if (sale.ownerId === useGame.getState().me?.playerId) game.addOrder(sale);
+  s.on("order", (o) => {
+    orderBus.emit(o);
+    if (o.ownerId === useGame.getState().me?.playerId) game.addOrder(o);
+  });
+  s.on("orderUpdate", (u) => {
+    orderUpdateBus.emit(u);
+    game.updateOrder(u);
   });
   s.on("orderResult", (r) => {
     orderResultBus.emit(r);
     game.removeOrder(r.orderId);
-    if (r.served && r.tip > 0)
-      game.toast({ kind: "good", text: `Khách boa +${r.tip.toLocaleString("vi-VN")}đ` });
   });
+  s.on("say", (e) => game.say(e));
   s.on("jobTask", (t) => game.setJobTask(t));
   s.on("dayEnd", (report) => game.setReport(report));
   s.on("notify", (n) => game.toast(n));
@@ -81,26 +84,32 @@ export function connectGame(onSignedOut: () => void): () => void {
 
 type IntentEvent = Exclude<keyof ClientToServerEvents, "ping">;
 
+type AckOf<E extends IntentEvent> = Parameters<Parameters<ClientToServerEvents[E]>[1]>[0];
+
 /** Gửi intent, cập nhật `me` khi thành công, hiện toast khi lỗi. Không bao giờ chờ quá 8 giây. */
 export function send<E extends IntentEvent>(
   event: E,
   payload: Parameters<ClientToServerEvents[E]>[0],
-): Promise<Ack<MeView>> {
+): Promise<AckOf<E>> {
   const game = useGame.getState();
   const s = socket;
   if (!s?.connected) {
     game.toast({ kind: "warn", text: "Đang mất kết nối, thử lại sau" });
-    return Promise.resolve({ ok: false, error: "internal" });
+    return Promise.resolve({ ok: false, error: "internal" } as AckOf<E>);
   }
   return new Promise((resolve) => {
     // biome-ignore lint/suspicious/noExplicitAny: emit với event là union generic
-    (s.timeout(8000).emit as any)(event, payload, (err: Error | null, res: Ack<MeView>) => {
-      const result: Ack<MeView> = err
+    (s.timeout(8000).emit as any)(event, payload, (err: Error | null, res: Ack<unknown>) => {
+      const result: Ack<unknown> = err
         ? { ok: false, error: "internal", message: "Máy chủ không phản hồi" }
         : res;
-      if (result.ok) game.setMe(result.data);
-      else game.toast({ kind: "warn", text: result.message ?? "Không thực hiện được" });
-      resolve(result);
+      if (result.ok) {
+        // Intent trả MeView trực tiếp, hoặc { me, ... } (order:make); npc:talk không có me.
+        const data = result.data as (Partial<MeView> & { me?: MeView }) | undefined;
+        if (data?.me) game.setMe(data.me);
+        else if (data && "playerId" in data) game.setMe(data as MeView);
+      } else game.toast({ kind: "warn", text: result.message ?? "Không thực hiện được" });
+      resolve(result as AckOf<E>);
     });
   });
 }

@@ -364,7 +364,7 @@ Gặp Chú Bảy ──► "Con muốn buôn bán"  ─► Tới vựa xe Ông S
 - [ ] Kiểm thử kịch bản bằng Playwright (Pixel 7 + iPhone 16 Pro)
 
 ### Phase 1.6 → 1.8 — "Làm thật" (chi tiết từng thao tác: `docs/USECASES.md`)
-- **1.6 Làm thật:** thoại trên đầu nhân vật, nói chuyện NPC + thân thiết, câu rao hàng; chợ bán **nguyên liệu**;
+- **1.6 Làm thật ✅:** thoại trên đầu nhân vật, nói chuyện NPC + thân thiết, câu rao hàng; chợ bán **nguyên liệu**;
   khách gọi món cụ thể → **tự tay làm** bánh mì / trà sữa / chọn phụ kiện → **tính tiền, thối tiền**; tiền chỉ vào khi giao món.
 - **1.7 Sửa xe & chợ phụ tùng:** nghề dịch vụ (chẩn đoán → báo giá → sửa → bảo hành); việc làm thuê thành thao tác thật.
 - **1.8 Tuyển dụng (NPC trước):** đăng tin, bảng tin xóm, ứng tuyển, ca làm, ký quỹ lương, đánh giá hai chiều; NPC nhân viên / NPC chủ tiệm lấp chỗ trống.

@@ -7,6 +7,7 @@ import { MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
 import { useGame } from "../store";
 import { standBehind } from "../world";
+import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
 import { Customers } from "./Customers";
@@ -111,6 +112,7 @@ function World() {
       <Stalls />
       <Customers />
       <ProximityWatcher />
+      <BubbleProjector />
       <TargetArrow />
       <TargetMarker walker={player} />
       <Character model="character-male-a" walker={player} />

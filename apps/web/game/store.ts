@@ -2,11 +2,12 @@ import type {
   ClockView,
   DayReportView,
   JobTaskEvent,
-  MarketView,
   MeView,
   NotifyEvent,
+  OrderEvent,
   OrderResultEvent,
-  SaleEvent,
+  OrderUpdateEvent,
+  SayEvent,
   Snapshot,
   WorldView,
 } from "@xom/shared";
@@ -19,7 +20,22 @@ export interface PerfStats {
   dpr: number;
 }
 
-export type SheetId = "business" | "market" | "jobs" | "equipment";
+/** Khung thoại trên đầu nhân vật; key = playerId / id NPC / "order:<id>". */
+export interface Bubble {
+  text: string;
+  tone: "say" | "ask" | "good" | "bad";
+  big?: boolean;
+  /** Tự ẩn lúc này (ms epoch); bỏ trống = hiện tới khi bị xoá. */
+  until?: number;
+}
+
+export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk";
+
+/** Đơn khách ở quầy mình + trạng thái món đã làm. */
+export interface OrderState extends OrderEvent {
+  made: "none" | "correct" | "wrong";
+  mistakes: string[];
+}
 
 /** Nơi nhân vật đang tự đi tới; tới nơi thì mở sheet tương ứng (nếu có). */
 export type Goal =
@@ -35,7 +51,6 @@ interface GameState {
   me: MeView | null;
   clock: ClockView | null;
   world: WorldView;
-  market: MarketView | null;
   report: DayReportView | null;
   sheet: SheetId | null;
   toasts: Toast[];
@@ -45,13 +60,18 @@ interface GameState {
   atStall: boolean;
   goal: Goal | null;
   /** Đơn khách đang chờ ở quầy của mình (cũ nhất trước). */
-  orders: SaleEvent[];
+  orders: OrderState[];
+  /** Đơn đang mở màn hình làm món. */
+  kitchen: string | null;
+  bubbles: Record<string, Bubble>;
   jobTask: JobTaskEvent | null;
   /** Đếm trong phiên, dùng cho điều kiện kịch bản. */
   servedCount: number;
   jobTasksDone: number;
   /** Bước kịch bản đang hiện lời thoại (null = không có hội thoại). */
   dialogue: string | null;
+  /** Câu đang hiện trong hội thoại (bắt đầu từ 0). */
+  dialoguePage: number;
   seenDialogues: string[];
   perf: PerfStats;
   pingMs: number | null;
@@ -67,12 +87,19 @@ interface GameState {
   dismissToast: (id: number) => void;
   setProximity: (nearPlace: string | null, atStall: boolean) => void;
   setGoal: (goal: Goal | null) => void;
-  addOrder: (o: SaleEvent) => void;
+  addOrder: (o: OrderEvent) => void;
+  updateOrder: (u: OrderUpdateEvent) => void;
   removeOrder: (orderId: string) => void;
+  /** Làm lại món (sau khi khách chê sai). */
+  resetDish: (orderId: string) => void;
+  openKitchen: (orderId: string | null) => void;
+  say: (s: SayEvent, ms?: number) => void;
+  setBubble: (key: string, b: Bubble | null) => void;
   setJobTask: (t: JobTaskEvent | null) => void;
   countServed: () => void;
   countJobTask: () => void;
   showDialogue: (step: string | null) => void;
+  setDialoguePage: (page: number) => void;
   setPerf: (perf: PerfStats) => void;
   setPing: (pingMs: number | null) => void;
   setContextLost: (lost: boolean) => void;
@@ -85,7 +112,6 @@ export const useGame = create<GameState>((set) => ({
   me: null,
   clock: null,
   world: { lots: [] },
-  market: null,
   report: null,
   sheet: null,
   toasts: [],
@@ -93,15 +119,24 @@ export const useGame = create<GameState>((set) => ({
   atStall: false,
   goal: null,
   orders: [],
+  kitchen: null,
+  bubbles: {},
   jobTask: null,
   servedCount: 0,
   jobTasksDone: 0,
   dialogue: null,
+  dialoguePage: 0,
   seenDialogues: [],
   perf: { fps: 0, calls: 0, triangles: 0, dpr: 1 },
   pingMs: null,
   contextLost: false,
-  applySnapshot: (s) => set({ me: s.me, clock: s.clock, world: s.world, market: s.market }),
+  applySnapshot: (s) =>
+    set({
+      me: s.me,
+      clock: s.clock,
+      world: s.world,
+      orders: s.orders.map((o) => ({ ...o, made: "none", mistakes: [] })),
+    }),
   setMe: (me) => set({ me }),
   setClock: (clock) => set({ clock }),
   setWorld: (world) => set({ world }),
@@ -116,14 +151,46 @@ export const useGame = create<GameState>((set) => ({
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   setProximity: (nearPlace, atStall) => set({ nearPlace, atStall }),
   setGoal: (goal) => set({ goal }),
-  addOrder: (o) => set((s) => ({ orders: [...s.orders, o] })),
-  removeOrder: (orderId) => set((s) => ({ orders: s.orders.filter((o) => o.orderId !== orderId) })),
+  addOrder: (o) => set((s) => ({ orders: [...s.orders, { ...o, made: "none", mistakes: [] }] })),
+  updateOrder: (u) =>
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.orderId === u.orderId
+          ? { ...o, made: u.stage, mistakes: u.mistakes, expiresAt: u.expiresAt }
+          : o,
+      ),
+    })),
+  removeOrder: (orderId) =>
+    set((s) => ({
+      orders: s.orders.filter((o) => o.orderId !== orderId),
+      kitchen: s.kitchen === orderId ? null : s.kitchen,
+    })),
+  resetDish: (orderId) =>
+    set((s) => ({
+      orders: s.orders.map((o) =>
+        o.orderId === orderId ? { ...o, made: "none", mistakes: [] } : o,
+      ),
+    })),
+  openKitchen: (kitchen) => set({ kitchen, sheet: null }),
+  say: (e, ms = 4000) =>
+    set((s) => ({
+      bubbles: { ...s.bubbles, [e.who]: { text: e.text, tone: "say", until: Date.now() + ms } },
+    })),
+  setBubble: (key, b) =>
+    set((s) => {
+      const bubbles = { ...s.bubbles };
+      if (b) bubbles[key] = b;
+      else delete bubbles[key];
+      return { bubbles };
+    }),
   setJobTask: (jobTask) => set({ jobTask }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),
   countJobTask: () => set((s) => ({ jobTasksDone: s.jobTasksDone + 1 })),
+  setDialoguePage: (dialoguePage) => set({ dialoguePage }),
   showDialogue: (dialogue) =>
     set((s) => ({
       dialogue,
+      dialoguePage: 0,
       seenDialogues:
         dialogue && !s.seenDialogues.includes(dialogue)
           ? [...s.seenDialogues, dialogue]
@@ -150,5 +217,6 @@ function createBus<T>() {
   };
 }
 
-export const saleBus = createBus<SaleEvent>();
+export const orderBus = createBus<OrderEvent>();
 export const orderResultBus = createBus<OrderResultEvent>();
+export const orderUpdateBus = createBus<OrderUpdateEvent>();

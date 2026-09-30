@@ -21,6 +21,6 @@ test("người mới: đi làm thuê ở quán cơm Cô Tư", async ({ page }) =
     await expect(page.getByText(/Làm tốt!/).first()).toBeVisible();
   }
   const done = await readDialogue(page);
-  await expect(done.getByText(/vựa xe Ông Sáu/)).toBeVisible();
+  await expect(page.locator('[data-bubble="chu_bay"]')).toContainText(/vựa xe Ông Sáu/);
   await done.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
 });

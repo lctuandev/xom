@@ -49,6 +49,7 @@ model Player {
   createdAt   DateTime @default(now())
 
   businesses Business[]
+  relations  NpcRelation[]
   inventory  InventoryItem[]
   reports    DailyReport[]
 }
@@ -106,7 +107,8 @@ model Business {
   equipmentId String
   productId   String
   lotId       String?
-  price       Int
+  /// Thực đơn: variantId → { on, price } (docs/USECASES.md UC-F2).
+  menu        Json           @default("{}")
   status      BusinessStatus @default(CLOSED)
   reputation  Float
   demandCarry Float          @default(0)
@@ -120,14 +122,15 @@ model Business {
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.
 model InventoryItem {
-  id        String @id @default(uuid(7)) @db.Uuid
-  playerId  String @db.Uuid
-  player    Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  productId String
-  batchDay  Int
-  qty       Int
+  id       String @id @default(uuid(7)) @db.Uuid
+  playerId String @db.Uuid
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// Id nguyên liệu (content ingredients).
+  itemId   String
+  batchDay Int
+  qty      Int
 
-  @@unique([playerId, productId, batchDay])
+  @@unique([playerId, itemId, batchDay])
 }
 
 model DailyReport {
@@ -144,6 +147,8 @@ model DailyReport {
   spoiledQty   Int
   spoiledValue Int
   served       Int
+  /// Món làm sai phải giảm giá.
+  wrong        Int      @default(0)
   lost         Int
   satisfaction Float
   reputation   Float
@@ -162,4 +167,16 @@ model GameEvent {
   createdAt DateTime @default(now())
 
   @@index([type, createdAt])
+}
+
+/// Độ thân thiết người chơi – NPC (UC-D2): chào hỏi, mua bán thường xuyên thì thân hơn.
+model NpcRelation {
+  playerId     String @db.Uuid
+  player       Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  npcId        String
+  friendship   Int    @default(0)
+  /// Ngày game gần nhất đã chào (mỗi ngày chỉ tính một lần).
+  lastGreetDay Int    @default(0)
+
+  @@id([playerId, npcId])
 }

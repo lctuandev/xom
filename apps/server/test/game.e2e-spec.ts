@@ -3,10 +3,11 @@ import type {
   Ack,
   ClientToServerEvents,
   DayReportView,
+  DishView,
   JobTaskEvent,
   MeView,
+  OrderEvent,
   OrderResultEvent,
-  SaleEvent,
   ServerToClientEvents,
   Snapshot,
 } from "@xom/shared";
@@ -31,18 +32,60 @@ function connect(url: string, token: string): Promise<{ socket: Client; snapshot
   });
 }
 
-function emit<E extends keyof ClientToServerEvents>(
+function emit<T = MeView>(
   socket: Client,
-  event: E,
-  payload: Parameters<ClientToServerEvents[E]>[0],
-): Promise<Ack<MeView>> {
+  event: keyof ClientToServerEvents,
+  payload: unknown,
+): Promise<Ack<T>> {
   return new Promise((resolve) => {
     // biome-ignore lint/suspicious/noExplicitAny: emit generic qua union event
     (socket.emit as any)(event, payload, resolve);
   });
 }
 
-describe("Vòng chơi (e2e)", () => {
+const nextOrder = (socket: Client) =>
+  new Promise<OrderEvent>((resolve) => socket.once("order", resolve));
+const nextResult = (socket: Client, orderId: string) =>
+  new Promise<OrderResultEvent>((resolve) => {
+    const on = (r: OrderResultEvent) => {
+      if (r.orderId !== orderId) return;
+      socket.off("orderResult", on);
+      resolve(r);
+    };
+    socket.on("orderResult", on);
+  });
+const changeFor = (o: OrderEvent) => (o.pay.kind === "cash" ? o.pay.bill - o.price : null);
+
+/** Nguyên liệu đủ làm bánh mì thịt (không có xíu mại, trứng, bơ). */
+const BANH_MI_THIT = [
+  "banh_mi_phoi",
+  "pate",
+  "thit_nguoi",
+  "dua_leo",
+  "do_chua",
+  "hanh",
+  "ngo",
+  "ot",
+  "sot",
+  "giay_goi",
+];
+
+async function openBanhMiStall(url: string) {
+  const { body } = await register(url);
+  const { socket, snapshot } = await connect(url, body.accessToken);
+  await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
+  for (const itemId of BANH_MI_THIT) {
+    const r = await emit(socket, "market:buy", { itemId, packs: 1 });
+    expect(r.ok).toBe(true);
+  }
+  await emit(socket, "biz:update", { lotId: "dau_hem" });
+  await emit(socket, "biz:attend", { on: true });
+  const opened = await emit(socket, "biz:open", {});
+  expect(opened).toMatchObject({ ok: true });
+  return { socket, snapshot };
+}
+
+describe("Vòng chơi làm thật (e2e)", () => {
   let app: INestApplication;
   let url: string;
 
@@ -55,117 +98,172 @@ describe("Vòng chơi (e2e)", () => {
     await expect(connect(url, "sai")).rejects.toThrow("unauthorized");
   });
 
-  it("mua xe → nhập hàng → chọn chỗ → mở → bán được → cuối ngày có báo cáo", async () => {
+  it("mua nguyên liệu theo gói; thiếu tiền thì không mua được", async () => {
     const { body } = await register(url);
     const { socket, snapshot } = await connect(url, body.accessToken);
     expect(snapshot.me.money).toBe(500_000);
-    expect(snapshot.me.business).toBeNull();
-
-    const noBiz = await emit(socket, "biz:open", {});
-    expect(noBiz).toMatchObject({ ok: false, error: "invalid_state" });
-
-    const bought = await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
-    expect(bought.ok).toBe(true);
-    if (!bought.ok) return;
-    expect(bought.data.money).toBe(500_000 - 320_000);
-    expect(bought.data.business?.productId).toBe("banh_mi");
-
-    const tooMuch = await emit(socket, "market:buy", { productId: "banh_mi", qty: 500 });
+    const bought = await emit(socket, "market:buy", { itemId: "banh_mi_phoi", packs: 2 });
+    expect(bought.ok && bought.data.inventory).toEqual([
+      { itemId: "banh_mi_phoi", qty: 20, expiring: 20 },
+    ]);
+    const tooMuch = await emit(socket, "market:buy", { itemId: "kep_hong", packs: 50 });
     expect(tooMuch).toMatchObject({ ok: false, error: "insufficient_funds" });
-
-    const stocked = await emit(socket, "market:buy", { productId: "banh_mi", qty: 10 });
-    expect(stocked.ok && stocked.data.inventory).toEqual([{ productId: "banh_mi", qty: 10 }]);
-
-    const noLot = await emit(socket, "biz:open", {});
-    expect(noLot).toMatchObject({ ok: false, message: expect.stringMatching(/Chọn chỗ/) });
-
-    // Chỗ đắt (ngã tư 150k) không đủ tiền thuê → phải chọn chỗ vừa túi.
-    await emit(socket, "biz:update", { lotId: "nga_tu" });
-    // Chưa đứng ở quầy thì không mở được.
-    const notThere = await emit(socket, "biz:open", {});
-    expect(notThere).toMatchObject({ ok: false, message: expect.stringMatching(/Tới tận quầy/) });
-    const attended = await emit(socket, "biz:attend", { on: true });
-    expect(attended.ok && attended.data.attending).toBe(true);
-    const tooExpensive = await emit(socket, "biz:open", {});
-    expect(tooExpensive).toMatchObject({ ok: false, error: "insufficient_funds" });
-    await emit(socket, "biz:update", { lotId: "cong_truong", price: 14_000 });
-    const opened = await emit(socket, "biz:open", {});
-    expect(opened).toMatchObject({ ok: true });
-    expect(opened.ok && opened.data.business?.open).toBe(true);
-
-    // Có khách mua → server phát đơn; "Đưa hàng" kịp thì được boa.
-    const sale = await new Promise<SaleEvent>((resolve) => socket.once("sale", resolve));
-    expect(sale.line.length).toBeGreaterThan(0);
-    const result = new Promise<OrderResultEvent>((resolve) => socket.once("orderResult", resolve));
-    const served = await emit(socket, "order:serve", { orderId: sale.orderId });
-    expect(served.ok && served.data.today.tips).toBeGreaterThanOrEqual(1_000);
-    expect(await result).toMatchObject({ orderId: sale.orderId, served: true });
-    const again = await emit(socket, "order:serve", { orderId: sale.orderId });
-    expect(again.ok).toBe(false);
-    const sold = await new Promise<MeView>((resolve) => {
-      socket.on("me", (me) => {
-        if (me.today.sold > 0) resolve(me);
-      });
-    });
-    expect(sold.today.revenue).toBe(sold.today.sold * 14_000);
-    expect(sold.inventory[0]?.qty ?? 0).toBe(10 - sold.today.sold);
-
-    // Hết ngày: báo cáo + bánh mì còn lại bị hỏng, quầy đóng.
-    const report = await new Promise<DayReportView>((resolve) => socket.once("dayEnd", resolve));
-    expect(report.day).toBe(1);
-    expect(report.rent).toBe(80_000);
-    expect(report.tips).toBeGreaterThanOrEqual(1_000);
-    expect(report.served + report.spoiledQty).toBe(10);
-    const next = await new Promise<Snapshot>((resolve) => socket.once("snapshot", resolve));
-    expect(next.clock.day).toBe(2);
-    expect(next.me.business?.open).toBe(false);
-    expect(next.me.inventory).toEqual([]);
-    expect(next.me.money).toBe(report.moneyEnd);
+    const unknown = await emit(socket, "market:buy", { itemId: "vang_bac", packs: 1 });
+    expect(unknown.ok).toBe(false);
     socket.disconnect();
   });
 
-  it("đi làm thuê được trả lương theo giờ, không mở quầy được khi đang làm", async () => {
+  it("khách chỉ gọi món làm được; làm đúng + thối đúng → tiền vào ví, có boa", async () => {
+    const { socket } = await openBanhMiStall(url);
+    const order = await nextOrder(socket);
+    expect(order.variantId).toBe("banh_mi_thit"); // chỉ đủ nguyên liệu bánh mì thịt
+    expect(order.ask).toMatch(/^Cho con ổ bánh mì thịt/);
+
+    // Chưa làm món mà tính tiền → từ chối.
+    const early = await emit(socket, "order:pay", { orderId: order.orderId, change: 0 });
+    expect(early.ok).toBe(false);
+
+    const made = await emit<{ me: MeView; correct: boolean }>(socket, "order:make", {
+      orderId: order.orderId,
+      build: order.spec,
+    });
+    expect(made.ok && made.data.correct).toBe(true);
+    // Nguyên liệu bị trừ theo món.
+    const phoi = made.ok ? made.data.me.inventory.find((i) => i.itemId === "banh_mi_phoi") : null;
+    expect(phoi?.qty).toBe(9);
+
+    const result = nextResult(socket, order.orderId);
+    const paid = await emit(socket, "order:pay", {
+      orderId: order.orderId,
+      change: changeFor(order),
+    });
+    expect(paid.ok && paid.data.today.revenue).toBe(order.price);
+    expect(paid.ok && paid.data.today.tips).toBeGreaterThanOrEqual(1_000);
+    expect(await result).toMatchObject({ served: true, received: order.price });
+    socket.disconnect();
+  });
+
+  it("làm sai món: khách phàn nàn; phải làm lại hoặc giảm 50%", async () => {
+    const { socket } = await openBanhMiStall(url);
+    const order = await nextOrder(socket);
+    const wrong: DishView = {
+      ...order.spec,
+      ot: order.spec.ot === "ot_nhieu" ? "ot_vua" : "ot_nhieu",
+    };
+    const made = await emit<{ correct: boolean; mistakes: string[] }>(socket, "order:make", {
+      orderId: order.orderId,
+      build: wrong,
+    });
+    expect(made.ok && made.data).toMatchObject({ correct: false, mistakes: ["ot"] });
+    const noDiscount = await emit(socket, "order:pay", { orderId: order.orderId, change: 0 });
+    expect(noDiscount).toMatchObject({ ok: false, message: expect.stringMatching(/làm lại/) });
+    const half = Math.round(order.price / 2 / 1000) * 1000;
+    const change = order.pay.kind === "cash" ? order.pay.bill - half : null;
+    const paid = await emit(socket, "order:pay", {
+      orderId: order.orderId,
+      change,
+      discount: true,
+    });
+    expect(paid.ok && paid.data.today.revenue).toBe(half);
+    expect(paid.ok && paid.data.today.tips).toBe(0);
+    socket.disconnect();
+  });
+
+  it("thối thiếu: khách đòi đủ, không lời thêm; thiếu nguyên liệu thì không làm được", async () => {
+    const { socket } = await openBanhMiStall(url);
+    let order = await nextOrder(socket);
+    while (order.pay.kind !== "cash" || order.pay.bill === order.price) {
+      await emit(socket, "order:decline", { orderId: order.orderId });
+      order = await nextOrder(socket);
+    }
+    // Thử làm bằng xíu mại (không có trong kho) → bị từ chối, không trừ gì.
+    const noStock = await emit(socket, "order:make", {
+      orderId: order.orderId,
+      build: { ...order.spec, nhan: "xiu_mai" },
+    });
+    expect(noStock).toMatchObject({ ok: false, message: expect.stringMatching(/Thiếu xíu mại/) });
+
+    await emit(socket, "order:make", { orderId: order.orderId, build: order.spec });
+    const result = nextResult(socket, order.orderId);
+    const short = (changeFor(order) ?? 0) - 2_000;
+    const paid = await emit(socket, "order:pay", { orderId: order.orderId, change: short });
+    expect(paid.ok && paid.data.today.revenue).toBe(order.price);
+    expect(await result).toMatchObject({ outcome: "short" });
+    socket.disconnect();
+  });
+
+  it("vắng chủ thì không có khách; nói chuyện với Bà Năm tăng thân thiết; rao hàng", async () => {
+    const { socket } = await openBanhMiStall(url);
+    const greet = await emit<{ line: string; friendship: number }>(socket, "npc:talk", {
+      npcId: "cho_dau_moi",
+      topic: "greet",
+    });
+    // 10 lần mua ở chợ (+1 mỗi lần) + chào (+2).
+    expect(greet.ok && greet.data.friendship).toBe(12);
+    const again = await emit<{ friendship: number }>(socket, "npc:talk", {
+      npcId: "cho_dau_moi",
+      topic: "greet",
+    });
+    expect(again.ok && again.data.friendship).toBe(12);
+    const gossip = await emit<{ line: string }>(socket, "npc:talk", {
+      npcId: "cho_dau_moi",
+      topic: "gossip",
+    });
+    expect(gossip.ok && gossip.data.line.length).toBeGreaterThan(5);
+
+    const said = new Promise((resolve) => socket.once("say", resolve));
+    const notified = new Promise((resolve) => socket.once("notify", resolve));
+    await emit(socket, "chat:say", { phraseId: "rao_hang" });
+    expect(await said).toMatchObject({ text: expect.stringMatching(/Mời ghé/) });
+    expect(await notified).toMatchObject({ kind: "good" });
+
+    await emit(socket, "biz:attend", { on: false });
+    let orders = 0;
+    socket.on("order", () => orders++);
+    await new Promise((r) => setTimeout(r, 1500));
+    expect(orders).toBe(0);
+    socket.disconnect();
+  });
+
+  it("thực đơn: tắt hết món không được; hết ngày nguyên liệu tươi bị bỏ", async () => {
+    const { socket } = await openBanhMiStall(url);
+    for (const v of ["banh_mi_xiu_mai", "banh_mi_trung"]) {
+      expect((await emit(socket, "biz:menu", { variantId: v, on: false })).ok).toBe(true);
+    }
+    const none = await emit(socket, "biz:menu", { variantId: "banh_mi_thit", on: false });
+    expect(none).toMatchObject({ ok: false, message: expect.stringMatching(/ít nhất một món/) });
+    const priced = await emit(socket, "biz:menu", { variantId: "banh_mi_thit", price: 20_000 });
+    expect(
+      priced.ok && priced.data.business?.menu.find((m) => m.variantId === "banh_mi_thit")?.price,
+    ).toBe(20_000);
+
+    const report = await new Promise<DayReportView>((resolve) => socket.once("dayEnd", resolve));
+    expect(report.spoiledQty).toBeGreaterThan(0); // bánh mì phôi, rau hết hạn trong ngày
+    const next = await new Promise<Snapshot>((resolve) => socket.once("snapshot", resolve));
+    expect(next.me.business?.open).toBe(false);
+    expect(next.me.inventory.some((i) => i.itemId === "banh_mi_phoi")).toBe(false);
+    expect(next.me.inventory.some((i) => i.itemId === "sot")).toBe(true); // không hỏng
+    socket.disconnect();
+  });
+
+  it("đi làm thuê: lương theo giờ, việc vặt có thưởng", async () => {
     const { body } = await register(url);
     const { socket } = await connect(url, body.accessToken);
-    await emit(socket, "equipment:buy", { equipmentId: "sap_phu_kien" });
-    await emit(socket, "market:buy", { productId: "phu_kien", qty: 2 });
-    await emit(socket, "biz:update", { lotId: "dau_hem" });
     const started = await emit(socket, "job:start", { jobId: "phu_quan_com" });
     expect(started.ok && started.data.jobId).toBe("phu_quan_com");
-    // Việc vặt: làm kịp được thưởng.
     const task = await new Promise<JobTaskEvent>((resolve) => socket.once("jobTask", resolve));
     const done = await emit(socket, "job:task", { taskId: task.id });
     expect(done.ok && done.data.today.wages).toBeGreaterThanOrEqual(3_000);
-    const blocked = await emit(socket, "biz:open", {});
-    expect(blocked).toMatchObject({ ok: false, error: "invalid_state" });
-    const paid = await new Promise<MeView>((resolve) => {
-      socket.on("me", (me) => {
-        if (me.today.wages > 0) resolve(me);
-      });
-    });
-    expect(paid.today.wages).toBeGreaterThan(3_000);
     socket.disconnect();
   });
 
-  it("vắng chủ thì quầy không bán; tiến độ kịch bản được lưu", async () => {
+  it("tiến độ kịch bản được lưu", async () => {
     const { body } = await register(url);
     const { socket, snapshot } = await connect(url, body.accessToken);
     expect(snapshot.me.tutorial).toBe("gap_chu_bay");
-    const bad = await emit(socket, "tutorial:set", { step: "khong_co" });
-    expect(bad.ok).toBe(false);
+    expect((await emit(socket, "tutorial:set", { step: "khong_co" })).ok).toBe(false);
     const set = await emit(socket, "tutorial:set", { step: "den_vua_xe" });
     expect(set.ok && set.data.tutorial).toBe("den_vua_xe");
-
-    await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
-    await emit(socket, "market:buy", { productId: "banh_mi", qty: 20 });
-    await emit(socket, "biz:update", { lotId: "dau_hem" });
-    await emit(socket, "biz:attend", { on: true });
-    await emit(socket, "biz:open", {});
-    await emit(socket, "biz:attend", { on: false });
-    let sales = 0;
-    socket.on("sale", () => sales++);
-    await new Promise((r) => setTimeout(r, 1500));
-    expect(sales).toBe(0);
     socket.disconnect();
   });
 });

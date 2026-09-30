@@ -8,6 +8,7 @@ import { useGame } from "../store";
 import { placeSpot, standBehind } from "../world";
 import { Character, Walker } from "./Character";
 import { Instances, type Placement } from "./CityKit";
+import { speakerWalker } from "./guide";
 import { distanceTo, getPlayer } from "./player";
 import { Sign } from "./Sign";
 
@@ -35,13 +36,7 @@ export function Places() {
         <PlaceKeeper key={place.id} place={place} />
       ))}
       {content.data.speakers.map((sp) => (
-        <StaticNpc
-          key={sp.id}
-          model={sp.model as CharacterModel}
-          x={sp.position.x}
-          z={sp.position.z}
-          yaw={sp.facing}
-        />
+        <Character key={sp.id} model={sp.model as CharacterModel} walker={speakerWalker(sp.id)} />
       ))}
     </>
   );

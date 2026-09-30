@@ -16,14 +16,21 @@ import {
   type ClientToServerEvents,
   emptySchema,
   jobTaskSchema,
+  type MakeResult,
   type MeView,
+  makeOrderSchema,
   marketBuySchema,
+  menuSchema,
+  orderIdSchema,
   type PongPayload,
+  payOrderSchema,
   pingSchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
-  serveOrderSchema,
+  saySchema,
   startJobSchema,
+  type TalkResult,
+  talkSchema,
   tutorialSchema,
   updateBusinessSchema,
 } from "@xom/shared";
@@ -55,6 +62,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   ) {}
 
   afterInit() {
+    this.game.orders.setEmitter({
+      order: (roomId, e) => this.server.to(`room:${roomId}`).emit("order", e),
+      update: (roomId, e) => this.server.to(`room:${roomId}`).emit("orderUpdate", e),
+      result: (roomId, e) => this.server.to(`room:${roomId}`).emit("orderResult", e),
+    });
     this.game.setEmitter({
       toRoom: (roomId: string, event: string, data: unknown) =>
         this.server.to(`room:${roomId}`).emit(event as "clock", data as never),
@@ -108,13 +120,15 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("market:buy")
   marketBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, marketBuySchema, body, (ctx, p) =>
-      this.game.marketBuy(ctx, p.productId, p.qty),
+      this.game.marketBuy(ctx, p.itemId, p.packs),
     );
   }
 
   @SubscribeMessage("biz:update")
   updateBusiness(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, updateBusinessSchema, body, (ctx, p) => this.game.updateBusiness(ctx, p));
+    return this.handle(c, updateBusinessSchema, body, (ctx, p) =>
+      this.game.updateLot(ctx, p.lotId),
+    );
   }
 
   @SubscribeMessage("biz:open")
@@ -142,9 +156,43 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handle(c, attendSchema, body, (ctx, p) => this.game.attend(ctx, p.on));
   }
 
-  @SubscribeMessage("order:serve")
-  serve(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, serveOrderSchema, body, (ctx, p) => this.game.serveOrder(ctx, p.orderId));
+  @SubscribeMessage("biz:menu")
+  menu(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, menuSchema, body, (ctx, p) =>
+      this.game.setMenu(ctx, p.variantId, { on: p.on, price: p.price }),
+    );
+  }
+
+  @SubscribeMessage("order:make")
+  make(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<MakeResult>> {
+    return this.handleWith(c, makeOrderSchema, body, async (ctx, p) => {
+      const r = await this.game.orders.make(ctx.room, ctx.playerId, p.orderId, p.build);
+      return { ...r, me: await this.game.me(ctx.room, ctx.playerId) };
+    });
+  }
+
+  @SubscribeMessage("order:pay")
+  pay(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, payOrderSchema, body, (ctx, p) =>
+      this.game.orders.pay(ctx.room, ctx.playerId, p.orderId, p.change, p.discount),
+    );
+  }
+
+  @SubscribeMessage("order:decline")
+  decline(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, orderIdSchema, body, (ctx, p) =>
+      this.game.orders.decline(ctx.room, ctx.playerId, p.orderId),
+    );
+  }
+
+  @SubscribeMessage("npc:talk")
+  talk(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<TalkResult>> {
+    return this.handleWith(c, talkSchema, body, (ctx, p) => this.game.talk(ctx, p.npcId, p.topic));
+  }
+
+  @SubscribeMessage("chat:say")
+  say(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, saySchema, body, (ctx, p) => this.game.say(ctx, p.phraseId));
   }
 
   @SubscribeMessage("job:task")
@@ -159,13 +207,26 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handle(c, tutorialSchema, body, (ctx, p) => this.game.setTutorial(ctx, p.step));
   }
 
-  /** Khung chung cho intent: rate limit → validate zod → chạy trong hàng đợi xóm → Ack<MeView>. */
-  private async handle<P>(
+  /** Intent trả về MeView mới. */
+  private handle<P>(
     client: GameSocket,
     schema: ZodType<P>,
     body: unknown,
     fn: (ctx: IntentContext, payload: P) => Promise<void>,
   ): Promise<Ack<MeView>> {
+    return this.handleWith(client, schema, body, async (ctx, p) => {
+      await fn(ctx, p);
+      return this.game.me(ctx.room, ctx.playerId);
+    });
+  }
+
+  /** Khung chung cho intent: rate limit → validate zod → chạy trong hàng đợi xóm → Ack<T>. */
+  private async handleWith<P, T>(
+    client: GameSocket,
+    schema: ZodType<P>,
+    body: unknown,
+    fn: (ctx: IntentContext, payload: P) => Promise<T>,
+  ): Promise<Ack<T>> {
     const data = client.data;
     if (!data?.playerId) return { ok: false, error: "unauthorized" };
     const now = Date.now();
@@ -178,8 +239,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       return { ok: false, error: "invalid_payload", message: parsed.error.issues[0]?.message };
     }
     try {
-      const me = await this.game.intent(data.playerId, (ctx) => fn(ctx, parsed.data));
-      return { ok: true, data: me };
+      return {
+        ok: true,
+        data: await this.game.intentWith(data.playerId, (ctx) => fn(ctx, parsed.data)),
+      };
     } catch (err) {
       if (err instanceof GameError) return { ok: false, error: err.code, message: err.message };
       this.logger.error("intent lỗi", err as Error);

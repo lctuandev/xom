@@ -6,6 +6,7 @@ import { priceScore } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
+import { baseCost, ingredientsOfProduct, makeableCount } from "../recipes";
 import { useGame } from "../store";
 import { Section, Sheet, Stepper } from "./Sheet";
 
@@ -48,7 +49,10 @@ export function BusinessSheet() {
 
   const product = content.product(biz.productId);
   const equipment = content.equipment(biz.equipmentId);
-  const stock = me.inventory.find((i) => i.productId === biz.productId)?.qty ?? 0;
+  // Số phần còn làm được của các món đang bán (theo nguyên liệu trong kho).
+  const stock = biz.menu
+    .filter((m) => m.on)
+    .reduce((sum, m) => sum + makeableCount(biz.productId, m.variantId, me.inventory), 0);
 
   return (
     <Sheet title={`${product.emoji} ${equipment.name}`} onClose={() => close(null)}>
@@ -70,23 +74,20 @@ export function BusinessSheet() {
 
       <OpenButton biz={biz} stock={stock} working={me.jobId !== null} money={me.money} />
 
-      <Section title="Giá bán">
-        <PriceControl biz={biz} />
+      <Section title="Thực đơn & giá">
+        <MenuEditor biz={biz} />
       </Section>
 
       <Section title="Chỗ bán">
         <LotPicker biz={biz} />
       </Section>
 
-      <Section title="Hàng trong kho">
-        <div className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
-          <div>
-            <p className="text-xl font-extrabold tabular-nums">{stock}</p>
-            <p className="text-sm text-ink/60">
-              {product.name}
-              {content.template(product.template).perishable && " · hỏng cuối ngày"}
-            </p>
-          </div>
+      <Section title="Nguyên liệu trong kho">
+        <StockList productId={biz.productId} />
+        <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
+          <p className="text-sm">
+            Làm được khoảng <b className="tabular-nums">{stock}</b> phần
+          </p>
           <button
             type="button"
             onClick={() => {
@@ -143,7 +144,7 @@ function OpenButton({
     : !lot
       ? "Chọn chỗ bán bên dưới trước"
       : stock === 0
-        ? "Chưa có hàng — ra chợ nhập trước"
+        ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
         : cantPay
           ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
           : rentDue
@@ -188,48 +189,111 @@ function OpenButton({
   );
 }
 
-/** Đổi giá tại chỗ, gửi lên server sau khi ngừng bấm 400ms. */
-function PriceControl({ biz }: { biz: BusinessView }) {
-  const product = content.product(biz.productId);
-  const [price, setPrice] = useState(biz.price);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+/** Bật/tắt món, chỉnh giá từng món (gửi lên server sau khi ngừng bấm 400ms). */
+function MenuEditor({ biz }: { biz: BusinessView }) {
+  return (
+    <ul className="flex flex-col gap-2">
+      {biz.menu.map((m) => (
+        <MenuRow key={m.variantId} biz={biz} item={m} />
+      ))}
+    </ul>
+  );
+}
 
-  useEffect(() => setPrice(biz.price), [biz.price]);
+function MenuRow({ biz, item }: { biz: BusinessView; item: BusinessView["menu"][number] }) {
+  const variant = content.variant(biz.productId, item.variantId);
+  const inventory = useGame((s) => s.me?.inventory);
+  const [price, setPrice] = useState(item.price);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => setPrice(item.price), [item.price]);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const change = (v: number) => {
     setPrice(v);
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => void send("biz:update", { price: v }), 400);
+    timer.current = setTimeout(
+      () => void send("biz:menu", { variantId: item.variantId, price: v }),
+      400,
+    );
   };
-
-  const score = priceScore(price, product.refPrice);
+  const cost = baseCost(biz.productId, item.variantId);
+  const can = makeableCount(biz.productId, item.variantId, inventory);
+  const score = priceScore(price / variant.refPrice);
   const verdict =
-    price < product.refPrice * 0.85
-      ? { text: "Rẻ — đông khách, lãi mỏng", cls: "text-leaf" }
+    price < variant.refPrice * 0.85
+      ? { text: "Rẻ", cls: "text-leaf" }
       : score >= 0.95
         ? { text: "Hợp lý", cls: "text-leaf" }
         : score >= 0.7
-          ? { text: "Hơi đắt — khách bớt hài lòng", cls: "text-sun" }
-          : { text: "Đắt — khách bỏ đi, mất uy tín", cls: "text-red" };
+          ? { text: "Hơi đắt", cls: "text-sun" }
+          : { text: "Đắt", cls: "text-red" };
 
   return (
-    <div className="rounded-2xl bg-white p-3 shadow-sm">
-      <Stepper
-        label="giá bán"
-        value={price}
-        onChange={change}
-        step={1_000}
-        min={1_000}
-        max={product.refPrice * 4}
-        format={vnd}
-      />
-      <p className={`mt-2 text-center text-sm font-semibold ${verdict.cls}`}>{verdict.text}</p>
-      <p className="text-center text-xs text-ink/50">
-        Khách thấy hợp lý khoảng {vnd(product.refPrice)} · lãi {vnd(price - product.unitCost)}/phần
-        theo giá nhập gốc
-      </p>
-    </div>
+    <li className={`rounded-2xl bg-white p-3 shadow-sm ${item.on ? "" : "opacity-60"}`}>
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-extrabold first-letter:uppercase">{variant.name}</p>
+          <p className="text-xs text-ink/60">
+            Vốn ~{vnd(cost)} · lãi {vnd(price - cost)} · còn làm được {can}
+          </p>
+        </div>
+        <label className="flex shrink-0 items-center gap-1.5 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={item.on}
+            onChange={(e) =>
+              void send("biz:menu", { variantId: item.variantId, on: e.target.checked })
+            }
+            className="size-5 accent-red"
+          />
+          Bán
+        </label>
+      </div>
+      {item.on && (
+        <div className="mt-2">
+          <Stepper
+            label={`giá ${variant.name}`}
+            value={price}
+            onChange={change}
+            step={1_000}
+            min={1_000}
+            max={variant.refPrice * 4}
+            format={vnd}
+          />
+          <p className={`mt-1 text-center text-xs font-semibold ${verdict.cls}`}>
+            {verdict.text} · khách thấy hợp lý khoảng {vnd(variant.refPrice)}
+          </p>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function StockList({ productId }: { productId: string }) {
+  const inventory = useGame((s) => s.me?.inventory ?? []);
+  const ids = ingredientsOfProduct(productId);
+  return (
+    <ul className="grid grid-cols-2 gap-1.5">
+      {ids.map((id) => {
+        const ing = content.ingredient(id);
+        const row = inventory.find((i) => i.itemId === id);
+        return (
+          <li
+            key={id}
+            className="flex items-center gap-1.5 rounded-xl bg-white px-2.5 py-1.5 text-xs shadow-sm"
+          >
+            <span aria-hidden>{ing.emoji}</span>
+            <span className="min-w-0 flex-1 truncate">{ing.name}</span>
+            <b className={`tabular-nums ${row ? "" : "text-red"}`}>{row?.qty ?? 0}</b>
+            {row && row.expiring > 0 && (
+              <span className="text-[10px] text-red" title="Hỏng tối nay">
+                ⏳
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

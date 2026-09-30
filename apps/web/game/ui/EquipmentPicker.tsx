@@ -27,12 +27,10 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
               <div className="min-w-0 flex-1">
                 <p className="text-lg font-extrabold">{eq.name}</p>
                 <p className="text-sm text-ink/70">
-                  Bán {product.name.toLowerCase()} · tối đa {eq.capacityPerHour} khách/giờ
+                  {product.recipe.variants.map((v) => v.name).join(", ")}
                 </p>
-                <p className="text-sm text-ink/70">
-                  {content.template(product.template).perishable
-                    ? "Hàng hỏng cuối ngày"
-                    : "Hàng để lâu được"}
+                <p className="text-xs text-ink/60">
+                  {product.recipe.steps.length} bước làm mỗi món · tối đa {eq.queueSize} khách chờ
                 </p>
               </div>
             </div>

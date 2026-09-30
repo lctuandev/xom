@@ -1,16 +1,5 @@
 {
   "version": "0.2",
-  "ignorePaths": ["docs/**", "art/**", "CLAUDE.md", "**/*.vi.json"],
-  "words": [
-    "xom",
-    "nestjs",
-    "argon",
-    "cloudflared",
-    "meshopt",
-    "gltf",
-    "Kenney",
-    "Quaternius",
-    "Serwist",
-    "zustand"
-  ]
+  "enabled": false,
+  "//": "Code và tài liệu viết comment tiếng Việt — kiểm tra chính tả tiếng Anh chỉ gây nhiễu."
 }

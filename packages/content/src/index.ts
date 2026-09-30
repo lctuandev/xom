@@ -1,7 +1,60 @@
 import { data } from "./data.js";
-import { type ContentData, contentSchema } from "./schema.js";
+import { type ContentData, contentSchema, type Recipe } from "./schema.js";
 
 export * from "./schema.js";
+
+/** Công thức: mọi bước/lựa chọn/nguyên liệu được tham chiếu phải tồn tại. */
+function checkRecipe(pid: string, r: Recipe, ingredients: Set<string>): string[] {
+  const errs: string[] = [];
+  const steps = new Map(r.steps.map((s) => [s.id, s]));
+  const hasOption = (stepId: string, opt: string) =>
+    steps.get(stepId)?.options.some((o) => o.id === opt) ?? false;
+  const checkSel = (where: string, sel: Record<string, string | string[]>) => {
+    for (const [stepId, v] of Object.entries(sel)) {
+      const st = steps.get(stepId);
+      if (!st) {
+        errs.push(`${pid} ${where}: không có bước ${stepId}`);
+        continue;
+      }
+      if (st.kind === "single" && Array.isArray(v))
+        errs.push(`${pid} ${where}: bước ${stepId} chỉ chọn 1`);
+      if (st.kind === "multi" && !Array.isArray(v))
+        errs.push(`${pid} ${where}: bước ${stepId} cần danh sách`);
+      for (const opt of Array.isArray(v) ? v : [v]) {
+        if (!hasOption(stepId, opt)) errs.push(`${pid} ${where}: bước ${stepId} không có ${opt}`);
+      }
+    }
+  };
+  for (const st of r.steps) {
+    for (const o of st.options) {
+      if (o.ingredient && !ingredients.has(o.ingredient))
+        errs.push(`${pid}/${st.id}: không có nguyên liệu ${o.ingredient}`);
+    }
+    if (st.ingredient && !ingredients.has(st.ingredient))
+      errs.push(`${pid}/${st.id}: không có nguyên liệu ${st.ingredient}`);
+    for (const opt of Object.keys(st.pick ?? {}))
+      if (!hasOption(st.id, opt)) errs.push(`${pid}/${st.id}: pick ${opt} không tồn tại`);
+    if (
+      st.kind === "single" &&
+      !(st.id in r.defaults) &&
+      !st.pick &&
+      !r.variants.every((v) => st.id in v.fixed)
+    )
+      errs.push(`${pid}/${st.id}: bước chọn 1 cần mặc định, pick, hoặc được mọi món cố định`);
+  }
+  checkSel("defaults", r.defaults);
+  for (const v of r.variants) checkSel(`món ${v.id}`, v.fixed);
+  for (const m of r.mods) {
+    const st = steps.get(m.step);
+    if (!st) {
+      errs.push(`${pid} mod ${m.id}: không có bước ${m.step}`);
+      continue;
+    }
+    for (const opt of [m.add, m.remove, m.set])
+      if (opt && !hasOption(m.step, opt)) errs.push(`${pid} mod ${m.id}: không có ${opt}`);
+  }
+  return errs;
+}
 
 /** Validate và kiểm tra tham chiếu chéo; ném lỗi ngay khi build/khởi động nếu nội dung sai. */
 export function loadContent(raw: unknown): Content {
@@ -19,10 +72,11 @@ export function loadContent(raw: unknown): Content {
       seen.add(x.id);
     }
   }
+  const ingredients = ids(parsed.ingredients);
   for (const p of parsed.products) {
     if (!templates.has(p.template)) errors.push(`${p.id}: template ${p.template} không tồn tại`);
-    if (p.unitCost >= p.refPrice) errors.push(`${p.id}: giá nhập phải thấp hơn giá tham chiếu`);
     if (Object.keys(p.interestByHour).length === 0) errors.push(`${p.id}: thiếu interestByHour`);
+    errors.push(...checkRecipe(p.id, p.recipe, ingredients));
   }
   for (const e of parsed.equipment) {
     for (const pid of e.products)
@@ -70,6 +124,7 @@ export class Content {
   readonly placeById: ReadonlyMap<string, ContentData["places"][number]>;
   readonly speakerById: ReadonlyMap<string, ContentData["speakers"][number]>;
   readonly stepById: ReadonlyMap<string, ContentData["tutorial"][number]>;
+  readonly ingredientById: ReadonlyMap<string, ContentData["ingredients"][number]>;
 
   constructor(readonly data: ContentData) {
     this.productById = new Map(data.products.map((x) => [x.id, x]));
@@ -81,6 +136,7 @@ export class Content {
     this.placeById = new Map(data.places.map((x) => [x.id, x]));
     this.speakerById = new Map(data.speakers.map((x) => [x.id, x]));
     this.stepById = new Map(data.tutorial.map((x) => [x.id, x]));
+    this.ingredientById = new Map(data.ingredients.map((x) => [x.id, x]));
   }
 
   get economy() {
@@ -113,6 +169,14 @@ export class Content {
   }
   step(id: string) {
     return must(this.stepById.get(id), "tutorial step", id);
+  }
+  ingredient(id: string) {
+    return must(this.ingredientById.get(id), "ingredient", id);
+  }
+  /** Món (variant) theo id trong công thức của một sản phẩm. */
+  variant(productId: string, variantId: string) {
+    const v = this.product(productId).recipe.variants.find((x) => x.id === variantId);
+    return must(v, "variant", variantId);
   }
   /** Địa điểm nhận việc làm thuê này. */
   placeForJob(jobId: string) {

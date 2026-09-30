@@ -1,11 +1,12 @@
 import type { Content, Product } from "@xom/content";
 import { seededRandom, valueAt } from "./time.js";
 
-// Mô hình nhu cầu (docs/PLAN.md §3.3):
+// Mô hình khách tới (docs/PLAN.md §3.3, docs/USECASES.md UC-F3):
 //   customers  = footTraffic(lot, t) × interest(product, t)
-//   attract(b) = (refPrice / price)^elasticity × repFactor(b)
+//   attract(b) = (1 / tỉ lệ giá thực đơn)^elasticity × repFactor(b)
 //   share(b)   = attract(b) / (Σ attract các shop cùng danh mục trong bán kính + outsideOption)
-//   sales(b)   = min(customers × share(b), tồn kho, công suất)
+//   arrivals   = customers × share(b)   (tích lũy phần lẻ qua các nhịp)
+// Khách tới không có nghĩa là bán được: người chơi phải làm món và giao tận tay.
 
 /** Mức ảnh hưởng tới uy tín của một khách hụt so với một khách được phục vụ. */
 export const LOST_WEIGHT = 0.4;
@@ -13,48 +14,50 @@ export const LOST_WEIGHT = 0.4;
 /** Bán kính (mét) mà các shop cùng danh mục tranh khách của nhau. */
 export const COMPETITION_RADIUS = 12;
 
-/** Giá nhập ở chợ đầu mối trong ngày: dao động tất định quanh unitCost, làm tròn 500đ. */
-export function marketPrice(product: Product, day: number, swing: number): number {
-  const r = seededRandom("market", product.id, day)();
-  const price = product.unitCost * (1 + (r * 2 - 1) * swing);
-  return Math.max(500, Math.round(price / 500) * 500);
-}
-
-/** Điểm hài lòng về giá: 1 khi bán bằng/rẻ hơn giá tham chiếu, giảm dần khi đắt hơn. */
-export function priceScore(price: number, refPrice: number): number {
-  return Math.min(1, Math.max(0, 1 - (price / refPrice - 1) * 1.2));
+/** Điểm hài lòng về giá theo tỉ lệ giá bán / giá hợp lý: 1 khi ≤ 1, giảm dần khi đắt hơn. */
+export function priceScore(ratio: number): number {
+  return Math.min(1, Math.max(0, 1 - (ratio - 1) * 1.2));
 }
 
 export function repFactor(reputation: number): number {
   return 0.5 + reputation;
 }
 
-export function attractiveness(price: number, product: Product, reputation: number): number {
-  return (product.refPrice / price) ** product.elasticity * repFactor(reputation);
+export function attractiveness(priceRatio: number, product: Product, reputation: number): number {
+  return (1 / priceRatio) ** product.elasticity * repFactor(reputation);
+}
+
+/** Tỉ lệ giá trung bình của các món đang bán so với giá khách thấy hợp lý. */
+export function menuPriceRatio(
+  product: Product,
+  menu: { variantId: string; price: number }[],
+): number {
+  const ratios = menu
+    .map((m) => {
+      const v = product.recipe.variants.find((x) => x.id === m.variantId);
+      return v ? m.price / v.refPrice : null;
+    })
+    .filter((r): r is number => r !== null);
+  return ratios.length ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 1;
 }
 
 export interface ShopState {
   id: string;
   productId: string;
   lotId: string;
-  price: number;
+  /** Giá bán / giá hợp lý (trung bình thực đơn). */
+  priceRatio: number;
   reputation: number;
-  /** Tổng tồn kho hiện có của sản phẩm. */
-  stock: number;
-  capacityPerHour: number;
+  /** Hệ số khách tạm thời (rao hàng, thời tiết…), mặc định 1. */
+  boost?: number;
   /** Phần lẻ nhu cầu mang sang tick sau (tránh làm tròn mất khách). */
   demandCarry: number;
 }
 
-export interface ShopTickResult {
+export interface ArrivalResult {
   id: string;
-  sold: number;
-  /** Khách muốn mua nhưng hết hàng. */
-  lostStock: number;
-  /** Khách muốn mua nhưng quầy làm không kịp. */
-  lostCapacity: number;
-  /** Trung bình điểm hài lòng của mọi khách tới (kể cả khách hụt). */
-  satisfaction: number;
+  /** Số khách dừng lại ở quầy trong nhịp này. */
+  arrivals: number;
   demandCarry: number;
 }
 
@@ -67,20 +70,20 @@ export interface TickInput {
   minutes: number;
 }
 
-/** Tính một nhịp bán hàng cho mọi shop đang mở trong một xóm. */
-export function simulateTick({
+/** Một nhịp: mỗi quầy đang mở (có người đứng) có bao nhiêu khách dừng lại. */
+export function customerArrivals({
   content,
   shops,
   day,
   minuteOfDay,
   minutes,
-}: TickInput): ShopTickResult[] {
+}: TickInput): ArrivalResult[] {
   const hours = minutes / 60;
   const outside = content.economy.outsideOption;
   const info = shops.map((s) => {
     const product = content.product(s.productId);
     const lot = content.lot(s.lotId);
-    return { s, product, lot, attract: attractiveness(s.price, product, s.reputation) };
+    return { s, product, lot, attract: attractiveness(s.priceRatio, product, s.reputation) };
   });
 
   return info.map(({ s, product, lot, attract }) => {
@@ -96,19 +99,9 @@ export function simulateTick({
     const share = attract / (rivals.reduce((sum, o) => sum + o.attract, 0) + outside);
     // Nhiễu ±20% tất định theo shop/thời điểm để mỗi nhịp không giống hệt nhau.
     const noise = 0.8 + seededRandom("demand", s.id, day, minuteOfDay)() * 0.4;
-    const expected = traffic * hours * interest * share * noise;
-
-    const carry = s.demandCarry + expected;
-    const demand = Math.floor(carry);
-    const capacity = Math.round(s.capacityPerHour * hours);
-    const sold = Math.min(demand, s.stock, capacity);
-    const lostStock = Math.max(0, Math.min(demand, capacity) - s.stock);
-    const lostCapacity = Math.max(0, demand - capacity);
-    const served = priceScore(s.price, product.refPrice) * 0.6 + 0.4;
-    // Khách hụt kéo độ hài lòng xuống, nhưng nhẹ hơn một khách được phục vụ (trọng số LOST_WEIGHT).
-    const unserved = demand - sold;
-    const satisfaction = demand > 0 ? (sold * served) / (sold + unserved * LOST_WEIGHT) : served;
-    return { id: s.id, sold, lostStock, lostCapacity, satisfaction, demandCarry: carry - demand };
+    const carry = s.demandCarry + traffic * hours * interest * share * noise * (s.boost ?? 1);
+    const arrivals = Math.floor(carry);
+    return { id: s.id, arrivals, demandCarry: carry - arrivals };
   });
 }
 
@@ -126,32 +119,31 @@ export function nextReputation(
 }
 
 export interface Batch {
-  productId: string;
+  /** Id nguyên liệu. */
+  itemId: string;
   qty: number;
   /** Ngày nhập hàng. */
   batchDay: number;
 }
 
-/** Cuối ngày: tách lô hàng đã hết hạn (chỉ template perishable). */
-export function spoilage(content: Content, batches: Batch[], day: number) {
-  const kept: Batch[] = [];
-  const spoiled: Batch[] = [];
+/** Cuối ngày: tách lô nguyên liệu đã hết hạn dùng. */
+export function spoilage<B extends Batch>(content: Content, batches: B[], day: number) {
+  const kept: B[] = [];
+  const spoiled: B[] = [];
   for (const b of batches) {
-    const p = content.product(b.productId);
-    const perishable = content.template(p.template).perishable;
-    const expired =
-      perishable && p.shelfLifeDays !== null && day - b.batchDay + 1 >= p.shelfLifeDays;
+    const life = content.ingredient(b.itemId).shelfLifeDays;
+    const expired = life !== null && day - b.batchDay + 1 >= life;
     (expired ? spoiled : kept).push(b);
   }
   return { kept, spoiled };
 }
 
 /** Lấy hàng theo FIFO (lô cũ trước), trả về các lô sau khi trừ. */
-export function takeFifo(batches: Batch[], qty: number): { batches: Batch[]; taken: Batch[] } {
+export function takeFifo<B extends Batch>(batches: B[], qty: number): { batches: B[]; taken: B[] } {
   const sorted = [...batches].sort((a, b) => a.batchDay - b.batchDay);
   let left = qty;
-  const taken: Batch[] = [];
-  const rest: Batch[] = [];
+  const taken: B[] = [];
+  const rest: B[] = [];
   for (const b of sorted) {
     if (left <= 0) {
       rest.push(b);

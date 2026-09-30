@@ -11,8 +11,87 @@ const byHour = z.record(z.string().regex(/^([0-9]|1[0-9]|2[0-3])$/), z.number().
 export const templateSchema = z.object({
   id: z.enum(["FOOD", "RETAIL"]),
   name: z.string(),
-  /** Hàng tồn có bị hỏng theo ngày không. */
-  perishable: z.boolean(),
+});
+
+/** Nguyên liệu / hàng nhập ở chợ, mua theo gói, dùng theo phần. */
+export const ingredientSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  /** Đơn vị một phần: "ổ", "phần", "ly"… */
+  unit: z.string(),
+  /** Số phần trong một gói ở chợ. */
+  packSize: z.number().int().positive(),
+  /** Giá gốc một phần. */
+  costPerUnit: vnd,
+  /** Số ngày dùng được kể từ ngày nhập; null = không hỏng. */
+  shelfLifeDays: z.number().int().positive().nullable(),
+  /** Hàng tươi: buổi chiều ở chợ đắt hơn. */
+  fresh: z.boolean().default(false),
+});
+
+/** Một lựa chọn trong một bước làm món (ví dụ: "Hành lá" ở bước "Rau"). */
+export const recipeOptionSchema = z.object({
+  id,
+  label: z.string(),
+  emoji: z.string(),
+  /** Nguyên liệu tiêu hao khi chọn (bỏ trống = không tốn, ví dụ mức đường). */
+  ingredient: id.optional(),
+  qty: z.number().int().positive().default(1),
+  /** Khách yêu cầu thêm thứ này (ngoài mặc định) thì tính thêm tiền. */
+  extraPrice: z.number().int().nonnegative().default(0),
+  /** Cách khách nói khi chọn lựa chọn này khác mặc định: "size L", "ít đá". */
+  say: z.string().optional(),
+});
+
+/**
+ * Một bước làm món. single: chọn 1; multi: chọn nhiều; action: bấm 1 lần; hold: giữ nút.
+ * pick: khách tự chọn lựa chọn cho bước này theo trọng số (ví dụ size ly, mức đường).
+ */
+export const recipeStepSchema = z.object({
+  id,
+  label: z.string(),
+  kind: z.enum(["single", "multi", "action", "hold"]),
+  /** Chữ trên nút cho bước action/hold: "🔪 Xẻ bánh", "Lắc". */
+  verb: z.string().optional(),
+  options: z.array(recipeOptionSchema).default([]),
+  /** Nguyên liệu cho bước action (ví dụ giấy gói). */
+  ingredient: id.optional(),
+  pick: z.record(id, z.number().nonnegative()).optional(),
+  /** Mức quan trọng khi chấm điểm món (sai nhân nặng hơn sai rau). */
+  weight: z.number().positive().default(1),
+});
+
+export const recipeVariantSchema = z.object({
+  id,
+  name: z.string(),
+  /** Lựa chọn cố định của món này (ví dụ nhân = xíu mại). */
+  fixed: z.record(id, z.union([id, z.array(id)])).default({}),
+  /** Giá khách thấy hợp lý. */
+  refPrice: vnd,
+  /** Độ phổ biến khi khách chọn món. */
+  popularity: z.number().positive().default(1),
+});
+
+/** Yêu cầu riêng của khách: "không hành", "nhiều ớt", "thêm pudding". */
+export const recipeModSchema = z.object({
+  id,
+  step: id,
+  add: id.optional(),
+  remove: id.optional(),
+  set: id.optional(),
+  say: z.string(),
+  chance: z.number().min(0).max(1),
+});
+
+export const recipeSchema = z.object({
+  steps: z.array(recipeStepSchema).min(1),
+  /** Lựa chọn mặc định của các bước single/multi. */
+  defaults: z.record(id, z.union([id, z.array(id)])).default({}),
+  variants: z.array(recipeVariantSchema).min(1),
+  mods: z.array(recipeModSchema).default([]),
+  /** Cách khách mở lời: "Cho con {món}" — {dish} được thay bằng tên món + yêu cầu. */
+  ask: z.string(),
 });
 
 export const productSchema = z.object({
@@ -25,16 +104,11 @@ export const productSchema = z.object({
   sign: z.string(),
   /** Màu nền biển hiệu. */
   signColor: z.string().regex(/^#[0-9a-f]{6}$/i),
-  /** Giá nhập tham chiếu ở chợ đầu mối. */
-  unitCost: vnd,
-  /** Giá bán "hợp lý" mà khách kỳ vọng. */
-  refPrice: vnd,
   /** Độ nhạy với giá: càng lớn khách càng bỏ đi khi giá cao. */
   elasticity: z.number().positive(),
-  /** Số ngày giữ được; null = không hỏng. */
-  shelfLifeDays: z.number().int().positive().nullable(),
   /** Tỉ lệ người qua đường quan tâm, theo giờ. */
   interestByHour: byHour,
+  recipe: recipeSchema,
 });
 
 export const equipmentSchema = z.object({
@@ -43,8 +117,8 @@ export const equipmentSchema = z.object({
   price: vnd,
   /** Sản phẩm mà thiết bị này bán được. */
   products: z.array(id).min(1),
-  /** Số khách phục vụ tối đa mỗi giờ. */
-  capacityPerHour: z.number().int().positive(),
+  /** Số khách tối đa đứng chờ trước quầy; đông hơn thì khách mới bỏ đi. */
+  queueSize: z.number().int().positive(),
   /** Tên model trong city bundle (packages/assets). */
   model: z.string(),
 });
@@ -73,6 +147,10 @@ export const lotSchema = z.object({
 export const npcArchetypeSchema = z.object({
   id,
   name: z.string(),
+  /** Thời gian chờ tối đa trước quầy (giây thật). */
+  patienceSec: z.number().int().positive(),
+  /** Tỉ lệ trả bằng chuyển khoản (không cần thối tiền). */
+  transferRate: z.number().min(0).max(1),
   /** Model nhân vật dùng để minh họa. */
   model: z.string(),
   /** Mức ưa thích theo danh mục sản phẩm. */
@@ -98,7 +176,13 @@ export const placeSchema = z.object({
   signColor: z.string().regex(/^#[0-9a-f]{6}$/i),
   /** Nút hành động khi đứng gần, ví dụ "🧺 Vào chợ". */
   action: z.string(),
-  keeper: z.object({ name: z.string(), model: z.string(), greeting: z.string() }),
+  keeper: z.object({
+    name: z.string(),
+    model: z.string(),
+    greeting: z.string(),
+    /** Chuyện để nói khi người chơi hỏi (UC-D2). */
+    talk: z.object({ price: z.array(z.string()).min(1), gossip: z.array(z.string()).min(1) }),
+  }),
   /** Với kind = job: các việc nhận ở đây. */
   jobs: z.array(id).default([]),
   position,
@@ -164,8 +248,10 @@ export const economySchema = z.object({
   /** Tốc độ reputation bám theo độ hài lòng. */
   reputationRate: z.number().positive().max(1),
   startingReputation: z.number().min(0).max(1),
-  /** Thời gian khách chờ được phục vụ (ms thật). */
+  /** Thời gian chờ cho việc vặt khi làm thuê (ms thật). */
   serveWindowMs: z.number().int().positive(),
+  /** Buổi chiều (từ 12:00) hàng tươi ở chợ đắt hơn tỉ lệ này. */
+  afternoonMarkup: z.number().min(0).max(1),
   /** Tiền boa ≈ tỉ lệ giá trị đơn khi phục vụ kịp. */
   tipRate: z.number().min(0).max(1),
   /** Uy tín cộng thêm mỗi đơn phục vụ kịp. */
@@ -175,6 +261,16 @@ export const economySchema = z.object({
   jobTaskBonus: z.number().int().nonnegative(),
   /** Bán kính (mét) coi như "đang ở" một địa điểm / quầy. */
   interactRadius: z.number().positive(),
+  /** Rao hàng: hệ số khách, thời gian hiệu lực và hồi chiêu (phút game). */
+  shoutBoost: z.number().min(1),
+  shoutMinutes: z.number().int().positive(),
+  shoutCooldownMinutes: z.number().int().positive(),
+  /** Mua sỉ từ số gói này trở lên được giảm giá. */
+  bulkPacks: z.number().int().positive(),
+  bulkDiscount: z.number().min(0).max(0.5),
+  /** Thân thiết với người bán từ mức này trở lên được bớt giá (UC-D2). */
+  friendDiscountAt: z.number().int().min(0).max(100),
+  friendDiscount: z.number().min(0).max(0.5),
 });
 
 export const contentSchema = z.object({
@@ -185,9 +281,12 @@ export const contentSchema = z.object({
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
+  ingredients: z.array(ingredientSchema),
   places: z.array(placeSchema),
   speakers: z.array(npcSpeakerSchema),
   tutorial: z.array(tutorialStepSchema).min(1),
+  /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
+  quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
   jobTasks: z.record(id, z.array(z.string()).min(1)),
   economy: economySchema,
@@ -202,6 +301,10 @@ export type NpcArchetype = z.infer<typeof npcArchetypeSchema>;
 export type Job = z.infer<typeof jobSchema>;
 export type Economy = z.infer<typeof economySchema>;
 export type Place = z.infer<typeof placeSchema>;
+export type Ingredient = z.infer<typeof ingredientSchema>;
+export type Recipe = z.infer<typeof recipeSchema>;
+export type RecipeStep = z.infer<typeof recipeStepSchema>;
+export type RecipeVariant = z.infer<typeof recipeVariantSchema>;
 export type Speaker = z.infer<typeof npcSpeakerSchema>;
 export type TutorialStep = z.infer<typeof tutorialStepSchema>;
 export type Condition = z.infer<typeof conditionSchema>;
