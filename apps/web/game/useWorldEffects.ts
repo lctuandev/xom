@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { walkTo } from "./nav";
 import { send } from "./net/socket";
 import { getPlayer } from "./scene/player";
 import { useGame } from "./store";
@@ -30,7 +31,7 @@ export function useWorldEffects() {
       // Goal mới → đi tới đó.
       if (s.goal && s.goal !== prev.goal) {
         const spot = spotFor(s.goal, s.me);
-        if (spot) getPlayer().moveTo(spot.x, spot.z, spot.yaw);
+        if (spot) walkTo(getPlayer(), spot.x, spot.z, spot.yaw);
       }
     });
   }, []);

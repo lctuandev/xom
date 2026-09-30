@@ -1,5 +1,5 @@
 import { data } from "./data.js";
-import { type ContentData, contentSchema, type Recipe } from "./schema.js";
+import { type ContentData, contentSchema, MAP_WALKABLE, type Recipe } from "./schema.js";
 
 export * from "./schema.js";
 
@@ -113,6 +113,24 @@ export function loadContent(raw: unknown): Content {
     for (const f of [m.add, m.remove])
       if (f && !foods.has(f)) errors.push(`quán cơm: yêu cầu ${m.id} dùng ${f} không có`);
   }
+  // Bản đồ: các hàng dài bằng nhau; địa điểm, chỗ bán, nhà giao hàng phải đứng trên ô đi được.
+  const m = parsed.map;
+  if (m.rows.some((r) => r.length !== m.rows[0]?.length))
+    errors.push("bản đồ: các hàng phải dài bằng nhau");
+  const cellAt = (x: number, z: number) => {
+    const c = Math.round((x - m.origin.x) / m.tile);
+    const r = Math.round((z - m.origin.z) / m.tile);
+    return m.rows[r]?.[c] ?? "";
+  };
+  const onFoot = (label: string, x: number, z: number) => {
+    if (!MAP_WALKABLE.includes(cellAt(x, z) || "?"))
+      errors.push(`bản đồ: ${label} (${x}, ${z}) không đứng trên ô đi được`);
+  };
+  for (const pl of parsed.places)
+    onFoot(`địa điểm ${pl.id}`, pl.position.x, pl.position.z + (pl.facing === 0 ? 1.4 : -1.4));
+  for (const l of parsed.lots) onFoot(`chỗ bán ${l.id}`, l.position.x, l.position.z);
+  for (const a of parsed.delivery.addresses)
+    onFoot(`nhà ${a.id}`, a.position.x, a.position.z + (a.facing === 0 ? 1.3 : -1.3));
   if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
     errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
   for (const j of parsed.jobs) {

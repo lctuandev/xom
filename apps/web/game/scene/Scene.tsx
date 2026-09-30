@@ -5,6 +5,7 @@ import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber"
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
+import { MAP_BOUNDS, randomSpotNear, walkTo } from "../nav";
 import { useGame } from "../store";
 import { standBehind } from "../world";
 import { AddressSigns, DeliveryPins, DoorPeople } from "./Addresses";
@@ -18,7 +19,7 @@ import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
 import { Stalls } from "./Stalls";
-import { STREET_BOUNDS, Street, TILE } from "./Street";
+import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
 
 const NPC_MODELS: CharacterModel[] = [
@@ -27,12 +28,7 @@ const NPC_MODELS: CharacterModel[] = [
   "character-female-d",
   "character-male-a",
 ];
-const NPC_COUNT = 6;
-// NPC đi trên hai dải vỉa hè.
-const SIDEWALK_ZONES: [number, number][] = [
-  [-TILE - 1.4, -TILE + 1.4],
-  [TILE - 1.4, TILE + 1.4],
-];
+const NPC_COUNT = 10;
 
 export function Scene() {
   const [dpr, setDpr] = useState(1.5);
@@ -88,11 +84,10 @@ function World() {
     () =>
       Array.from({ length: NPC_COUNT }, (_, i) => ({
         model: NPC_MODELS[i % NPC_MODELS.length] ?? "character-male-c",
-        walker: new Walker(
-          MathUtils.randFloat(STREET_BOUNDS.minX, STREET_BOUNDS.maxX),
-          i % 2 ? TILE : -TILE,
-          MathUtils.randFloat(1.1, 1.6),
-        ),
+        walker: (() => {
+          const p = randomSpotNear(MathUtils.randFloat(-40, 40), MathUtils.randFloat(-20, 20), 6);
+          return new Walker(p.x, p.z, MathUtils.randFloat(1.1, 1.6));
+        })(),
       })),
     [],
   );
@@ -101,10 +96,10 @@ function World() {
     // Bỏ qua nếu là kéo/pinch chứ không phải chạm.
     if (e.delta > 12 || pinchState.active || performance.now() - pinchState.lastPinchEnd < 300)
       return;
-    const x = MathUtils.clamp(e.point.x, STREET_BOUNDS.minX, STREET_BOUNDS.maxX);
-    const z = MathUtils.clamp(e.point.z, STREET_BOUNDS.minZ, STREET_BOUNDS.maxZ);
+    const x = MathUtils.clamp(e.point.x, MAP_BOUNDS.minX, MAP_BOUNDS.maxX);
+    const z = MathUtils.clamp(e.point.z, MAP_BOUNDS.minZ, MAP_BOUNDS.maxZ);
     useGame.getState().setGoal(null);
-    player.moveTo(x, z);
+    walkTo(player, x, z);
   };
 
   return (
@@ -141,10 +136,9 @@ function World() {
 }
 
 function Npc({ model, walker }: { model: CharacterModel; walker: Walker }) {
-  useWanderer(walker, {
-    minX: STREET_BOUNDS.minX,
-    maxX: STREET_BOUNDS.maxX,
-    zones: SIDEWALK_ZONES,
+  useWanderer(walker, (w) => {
+    const p = randomSpotNear(w.position.x, w.position.z, 16);
+    walkTo(w, p.x, p.z);
   });
   return <Character model={model} walker={walker} />;
 }
@@ -155,9 +149,9 @@ function TargetMarker({ walker }: { walker: Walker }) {
   useFrame(({ clock }) => {
     const m = ref.current;
     if (!m) return;
-    m.visible = walker.target !== null;
-    if (walker.target) {
-      m.position.set(walker.target.x, 0.04, walker.target.z);
+    m.visible = walker.dest !== null;
+    if (walker.dest) {
+      m.position.set(walker.dest.x, 0.04, walker.dest.z);
       m.scale.setScalar(1 + Math.sin(clock.elapsedTime * 8) * 0.1);
     }
   });

@@ -31,7 +31,6 @@ async function servePlate(page: Page) {
   const panel = page.locator("[data-items]");
   await expect(panel).toBeVisible({ timeout: 60_000 });
   const items = JSON.parse((await panel.getAttribute("data-items")) ?? "[]") as string[];
-  await page.getByRole("button", { name: "🍽️ Lấy dĩa" }).tap();
   for (const id of items) {
     const food = R.foods.find((f) => f.id === id);
     if (!food) throw new Error(id);
@@ -42,7 +41,11 @@ async function servePlate(page: Page) {
     await expect(scoop).toBeEnabled({ timeout: 30_000 });
     await scoop.tap();
   }
-  await page.getByRole("button", { name: "🤲 Đưa dĩa" }).tap();
+  // Phiếu tích đủ các món cần múc rồi mới đưa.
+  await expect(page.getByRole("list", { name: "Cần múc" }).locator("li").first()).toContainText(
+    "✓",
+  );
+  await page.getByRole("button", { name: "🤲 Đưa món" }).tap();
 }
 
 test("người mới: đứng quầy múc cơm ở quán Cô Tư rồi ra ca nhận phiếu lương", async ({ page }) => {
@@ -96,24 +99,24 @@ test("thu ngân bấm máy tính tiền theo phiếu, thu và thối tiền", as
   await expect(page.getByText(/xong 1 việc/)).toBeVisible();
 });
 
-test("bưng bê: đi tới cửa bếp cầm dĩa, đi tới đúng bàn đặt; khách ngồi ăn", async ({ page }) => {
+test("bưng bê: tới cửa bếp lấy dĩa, bưng tới đúng bàn rồi bấm giao món; khách ngồi ăn", async ({
+  page,
+}) => {
   await enterQuanCom(page, "Minh");
   await page.getByRole("button", { name: /Bưng bê/ }).tap();
-  // Cô Tư múc cho khách → dĩa ra cửa bếp; khách tự đi tới bàn ngồi chờ.
-  const pass = page.getByRole("button", { name: /^Bàn \d/ }).first();
-  await expect(pass).toBeEnabled({ timeout: 60_000 });
-  const table = ((await pass.textContent()) ?? "").match(/Bàn (\d)/)?.[1];
-  await pass.tap();
-  // Nhân vật đi tới cửa bếp rồi mới cầm được dĩa.
+  // Cô Tư múc cho khách → dĩa ra cửa bếp; phải đi tới cửa bếp mới lấy được.
+  const toPass = page.getByRole("button", { name: /📍 Tới cửa bếp lấy dĩa/ });
+  const grab = page.getByRole("button", { name: /🍽️ Lấy dĩa bàn \d/ }).first();
+  await expect(toPass.or(grab)).toBeVisible({ timeout: 60_000 });
+  if (await toPass.isVisible()) await toPass.tap();
+  await expect(grab).toBeVisible();
+  const table = ((await grab.textContent()) ?? "").match(/bàn (\d)/)?.[1];
+  await grab.tap();
   await expect(page.getByText(`Đang cầm: dĩa bàn ${table}`)).toBeVisible();
   await shot(page, "10-bung-be");
-  await page
-    .getByRole("group", { name: "Bàn" })
-    .getByRole("button", { name: new RegExp(`Bàn ${table}$`) })
-    .tap();
+  // Bưng tới bàn: tới nơi mới có nút giao món.
+  await page.getByRole("button", { name: `📍 Mang dĩa tới bàn ${table}` }).tap();
+  await page.getByRole("button", { name: `🤲 Giao món bàn ${table}` }).tap();
   await expect(page.getByText(/xong 1 việc/)).toBeVisible();
-  await expect(
-    page.getByRole("group", { name: "Bàn" }).getByRole("button", { name: `🍽️ Bàn ${table}` }),
-  ).toBeVisible();
   await shot(page, "11-khach-an");
 });

@@ -10,6 +10,7 @@ import { registerAnchor } from "../scene/anchors";
 import { Character, Walker } from "../scene/Character";
 import { Sign } from "../scene/Sign";
 import { useGame } from "../store";
+import { isTap } from "./cam";
 import { Model } from "./models";
 import { ROOM, Room, TableTop } from "./quancom/Room";
 import {
@@ -100,7 +101,11 @@ function Trays({ shift, onScoop }: { shift: ShiftView; onScoop?: (foodId: string
         const [x, z] = TRAY_POS[i] ?? [0, 0];
         const left = shift.trays[f.id] ?? 0;
         return (
-          <group key={f.id} position={[x, COUNTER_Y, z]} onClick={() => onScoop?.(f.id)}>
+          <group
+            key={f.id}
+            position={[x, COUNTER_Y, z]}
+            onClick={(e) => isTap(e) && onScoop?.(f.id)}
+          >
             <mesh position={[0, 0.03, 0]}>
               <boxGeometry args={[0.44, 0.06, 0.36]} />
               <meshLambertMaterial color="#b9c2c9" />
@@ -190,7 +195,12 @@ function DinerActor({ d, all, scale }: { d: DinerView; all: DinerView[]; scale: 
 
   const sitting = d.stage === "seated" || d.stage === "eating";
   const model = LOOKS[d.look % LOOKS.length] ?? "character-male-c";
-  return <SitWhenArrived walker={walker} model={model} sitting={sitting} />;
+  return (
+    <group>
+      <SitWhenArrived walker={walker} model={model} sitting={sitting} />
+      {d.stage === "eating" && <Spoon walker={walker} />}
+    </group>
+  );
 }
 
 /** Ngồi xuống khi đã tới ghế (đang đi thì vẫn đi). */
@@ -309,7 +319,10 @@ function Tables({
   shift: ShiftView;
   onTable?: (table: number, e: ThreeEvent<MouseEvent>) => void;
 }) {
-  const eating = new Set(shift.diners.filter((d) => d.stage === "eating").map((d) => d.table));
+  const eatingBy = new Map(
+    shift.diners.filter((d) => d.stage === "eating").map((d) => [d.table, d] as const),
+  );
+  const eating = new Set(eatingBy.keys());
   const arguing = new Set(shift.diners.filter((d) => d.incident === "argue").map((d) => d.table));
   return (
     <group>
@@ -318,7 +331,7 @@ function Tables({
         const state = shift.tables[i] ?? "free";
         return (
           <group key={n}>
-            <group onClick={(e) => onTable?.(n, e)}>
+            <group onClick={(e) => isTap(e) && onTable?.(n, e)}>
               <Model name="table" position={[x, 0, z]} />
             </group>
             <Model name="chair" position={[x - 0.6, 0, z + 0.1]} rotation={Math.PI / 2} />
@@ -332,10 +345,11 @@ function Tables({
             />
             {eating.has(n) && (
               <group>
-                <FullPlate position={[x - 0.2, 0.77, z]} />
+                <EatingPlate x={x - 0.2} z={z} diner={eatingBy.get(n)} scale={shift.scale} />
                 <Model name="cup-tea" position={[x - 0.2, 0.77, z - 0.28]} />
               </group>
             )}
+            <WipeCloth table={n} x={x} z={z} />
             {state === "dirty" && (
               <group position={[x - 0.15, 0.77, z]}>
                 <Model name="plate" />
@@ -345,6 +359,80 @@ function Tables({
           </group>
         );
       })}
+    </group>
+  );
+}
+
+/** Lệch đồng hồ server − máy (ms), cập nhật mỗi khi nhận ca làm. */
+export const serverClock = { offset: 0 };
+
+/** Dĩa đang ăn: cơm, sườn vơi dần theo thời gian ăn (20 phút game). */
+function EatingPlate({
+  x,
+  z,
+  diner,
+  scale,
+}: {
+  x: number;
+  z: number;
+  diner: DinerView | undefined;
+  scale: number;
+}) {
+  const food = useRef<Group>(null);
+  useFrame(() => {
+    if (!food.current || !diner) return;
+    const eatMs = 20 * 1000 * scale;
+    const left = 1 - Math.min(1, (Date.now() + serverClock.offset - diner.since) / eatMs);
+    food.current.scale.setScalar(Math.max(0.15, left));
+  });
+  return (
+    <group position={[x, 0.77, z]}>
+      <Model name="plate" />
+      <group ref={food}>
+        <Food id="com" position={[-0.05, 0.02, 0]} scale={0.8} />
+        <Food id="suon" position={[0.06, 0.02, 0]} scale={0.8} />
+      </group>
+    </group>
+  );
+}
+
+/** Khăn lau chạy vòng trên mặt bàn khi mình đang lau bàn đó. */
+function WipeCloth({ table, x, z }: { table: number; x: number; z: number }) {
+  const g = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const el = g.current;
+    if (!el) return;
+    const w = staff.wiping;
+    el.visible = !!w && w.table === table && Date.now() < w.until;
+    if (!el.visible) return;
+    const t = clock.elapsedTime * 7;
+    el.position.set(x + Math.cos(t) * 0.25, 0.8, z + Math.sin(t) * 0.18);
+  });
+  return (
+    <group ref={g} visible={false}>
+      <mesh>
+        <boxGeometry args={[0.24, 0.03, 0.16]} />
+        <meshLambertMaterial color="#6fb3d2" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Muỗng đưa lên đưa xuống khi khách đang ăn. */
+function Spoon({ walker }: { walker: Walker }) {
+  const g = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    const el = g.current;
+    if (!el) return;
+    const t = (Math.sin(clock.elapsedTime * 4) + 1) / 2;
+    el.position.set(walker.position.x + 0.28, 0.85 + t * 0.35, walker.position.z);
+  });
+  return (
+    <group ref={g}>
+      <mesh rotation-z={0.4}>
+        <cylinderGeometry args={[0.012, 0.012, 0.22, 5]} />
+        <meshLambertMaterial color="#d9d9d9" />
+      </mesh>
     </group>
   );
 }
@@ -364,7 +452,7 @@ function PassPlates({
         <group
           key={p.id}
           position={[L.pass.x - 0.45 + i * 0.3, 1.0, 0.0]}
-          onClick={(e) => onPass?.(p.id, e)}
+          onClick={(e) => isTap(e) && onPass?.(p.id, e)}
         >
           <FullPlate position={[0, 0, 0]} />
           <Sign
@@ -398,6 +486,7 @@ export function QuanComScene({
   const role = shift?.role;
   const scale = shift?.scale ?? 1;
   const diners = shift?.diners ?? [];
+  const myId = useGame((s) => s.me?.playerId);
   return (
     <group>
       <Room />
@@ -408,7 +497,7 @@ export function QuanComScene({
         visible={false}
         onClick={(e) => {
           e.stopPropagation();
-          onFloor?.(e.point.x, e.point.z);
+          if (isTap(e)) onFloor?.(e.point.x, e.point.z);
         }}
       >
         <planeGeometry args={[ROOM.maxX - ROOM.minX - 0.6, -ROOM.minZ - 0.8]} />
@@ -423,11 +512,15 @@ export function QuanComScene({
       ))}
 
       {/* Mình và đồng nghiệp: vị trí nào mình không làm thì có người làm thay */}
-      {/* Đứng quầy / thu ngân: camera là mắt mình nên không vẽ chính mình */}
-      {role !== "dung_quay" && (
+      {/* Đứng quầy: mình đứng bên phải dãy khay; vị trí mình không làm thì có người làm thay. */}
+      {role === "dung_quay" ? (
+        <Worker x={1.0} z={0.62} yaw={Math.PI} model="character-male-a" anchor={myId} />
+      ) : (
         <Worker x={0} z={0.62} yaw={Math.PI} model="character-female-a" anchor="quan_com" />
       )}
-      {role !== "thu_ngan" && (
+      {role === "thu_ngan" ? (
+        <Worker x={L.cashier.x} z={0.62} yaw={Math.PI} model="character-male-a" anchor={myId} />
+      ) : (
         <Worker x={L.cashier.x} z={0.62} yaw={Math.PI} model="character-female-d" />
       )}
       {role === "bung_be"

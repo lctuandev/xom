@@ -16,20 +16,11 @@ function rotate(x: number, z: number, rot: number) {
   return { x: x * c + z * s, z: -x * s + z * c };
 }
 
-const BUILDINGS = [
-  "building-a",
-  "building-b",
-  "building-c",
-  "building-d",
-  "building-e",
-  "building-f",
-  "building-g",
-  "building-h",
-] as const;
+const MODELS = [...new Set(buildingPlacements.map((b) => b.model))];
 
 export function NightLights() {
   const lampBox = useModelBox("light-square");
-  const boxes = useModelBoxes(BUILDINGS);
+  const boxes = useModelBoxes(MODELS);
   const lots = useGame((s) => s.world.lots);
 
   const lamps = useMemo<GlowPoint[]>(() => {
@@ -45,21 +36,24 @@ export function NightLights() {
 
   const windows = useMemo<GlowPoint[]>(() => {
     const out: GlowPoint[] = [];
-    let k = 0;
-    for (const [model, list] of buildingPlacements) {
-      const box = boxes[model];
-      for (const p of list) {
-        // Mặt tiền quay ra đường: north (rot 0) mặt ở +z, south (rot π) mặt ở −z.
-        const face = (p.rot ?? 0) === 0 ? box.max.z : -box.max.z;
-        for (let y = 3.6; y < box.max.y - 0.8; y += 2.6) {
-          for (const dx of [-1.1, 1.1]) {
-            k++;
-            if (k % 5 === 0 || k % 7 === 0) continue; // vài phòng tắt đèn
-            out.push({ x: p.x + dx, y, z: p.z + face + ((p.rot ?? 0) === 0 ? 0.06 : -0.06) });
-          }
+    buildingPlacements.forEach((p, k) => {
+      const box = boxes[p.model];
+      if (!box) return;
+      // Mặt tiền: trục +z của model, xoay theo hướng nhà.
+      const rot = p.rot ?? 0;
+      const fx = Math.sin(rot);
+      const fz = Math.cos(rot);
+      const face = box.max.z + 0.06;
+      let n = 0;
+      for (let y = 3.6; y < box.max.y - 0.8; y += 2.6) {
+        for (const dx of [-1.1, 1.1]) {
+          n++;
+          if ((k + n) % 5 === 0 || (k + n) % 7 === 0) continue; // vài phòng tắt đèn
+          // Dịch ngang theo mặt tiền (vuông góc hướng nhà).
+          out.push({ x: p.x + fx * face + fz * dx, y, z: p.z + fz * face - fx * dx });
         }
       }
-    }
+    });
     return out;
   }, [boxes]);
 

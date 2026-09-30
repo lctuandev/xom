@@ -88,7 +88,7 @@
 ### UC-B5 · Sự kiện trong xóm ⏳
 Hội chợ đêm cuối tuần · đám cưới trong hẻm (đặt 50 phần bánh mì) · tan trường sớm · mất điện (trà sữa không có đá) · kiểm tra vệ sinh an toàn thực phẩm. Chi tiết ở nhóm K.
 
-### UC-B6 · Xóm rộng, đường xá ra đường xá ⏳ (Phase 1.10)
+### UC-B6 · Xóm rộng, đường xá ra đường xá ✅ (bản đầu)
 > Người chơi yêu cầu: map chuẩn chỉnh hơn, đường xá phân chia hợp lý, map rộng hơn, nhiều cảnh vật hơn.
 
 **Bố cục (khoảng 3×2 dãy phố):** một **đường lớn** hai chiều có vạch, ngã tư có **đèn giao thông + vạch sang đường**, hai **đường nhánh**
@@ -98,6 +98,11 @@ Vỉa hè rộng để bày sạp; cột điện dây chằng chịt, biển hi�
 **Luật:** bản đồ khai báo trong `packages/content` (đường, lô, khu) — thêm khu mới bằng dữ liệu; mỗi lô bán có hướng mặt tiền;
 người đi bộ trên vỉa hè/hẻm, sang đường ở vạch; xe chạy trên làn đường.
 **Hiệu năng:** gộp mesh theo khu (instancing), vật ở xa bỏ bớt chi tiết; giữ ngân sách draw call mobile (PLAN §1).
+**Đã làm:** bản đồ lưới 27×15 ô (4 m) trong `content.map` (kiểm tra địa điểm/chỗ bán/nhà giao hàng phải đứng trên ô đi được);
+phố chính giữ nguyên, 2 đường dọc có ngã tư + đèn giao thông, 2 phố sau, hẻm có vạch sang đường, công viên (cây, hoa, ghế đá),
+chợ (dù, ghế nhựa), trường học (sân, hàng rào), toà văn phòng + bãi xe, dãy nhà ở; cây + đèn đường + cột điện dọc vỉa hè;
+**tìm đường A\*** (`packages/sim/src/grid.ts`): chạm vào nhà thì đi ra vỉa hè trước nhà, đi vòng qua hẻm/đường dọc, không xuyên nhà;
+NPC đi dạo theo đường xá. **Chưa:** xe chạy trên đường, làm mờ nhà che nhân vật.
 
 ### UC-B7 · Góc nhìn tự do ✅ (bản đầu)
 Chụm 2 ngón: zoom; **xoay 2 ngón**: xoay quanh nhân vật (0–360°); **kéo 2 ngón lên/xuống**: nghiêng (nhìn cao từ trên ↔ gần ngang tầm người);
@@ -479,7 +484,13 @@ bé Út bưng + dọn bàn); khách than → xin lỗi; gây lộn → can ngăn
 server kiểm thời gian đi bộ của bưng bê (cửa bếp ↔ bàn); camera riêng từng vai (đứng quầy/thu ngân nhìn qua quầy, bưng bê camera đi theo),
 chạm sàn để đi, chạm dĩa/bàn để tự đi tới làm; quán có gạch bông, ốp gạch men, cửa ra phố, cửa sổ, bảng giá, quạt trần quay,
 bàn thờ Thần Tài, TV, tủ nước ngọt, bếp có máy hút mùi, bồn rửa, tủ lạnh, nồi cơm.
-**Chưa:** hoạt ảnh múc/ăn (tay), dĩa vơi dần, khách say, nhiều người chơi cùng làm một quán (Phase 2), bưu cục sống động tương tự.
+**Bản 2 (theo góp ý người chơi):** camera lùi xa thấy cả quán, **kéo một ngón xoay 360°, chụm để thu/phóng** ở mọi vai (tường phía camera tự ẩn);
+bưng bê **tự đi tới cửa bếp lấy dĩa → bưng tới bàn → tới nơi mới bấm "Giao món"** (nút hành động chỉ hiện đúng chỗ, danh sách
+"việc cần làm" để chạm là đi tới — không còn lưới bàn nên quán lớn cỡ nào cũng dùng được); **lau bàn thấy khăn chạy trên mặt bàn**;
+khách **ăn thấy muỗng đưa lên xuống, cơm vơi dần**; đứng quầy: **phiếu ghi rõ công thức phải múc** (cơm sườn = cơm + sườn + dưa + canh,
+tích ✓ khi múc đủ, múc thừa báo đỏ), quầy khay dạng lưới có tên + số phần, dĩa đang múc chạm để bỏ bớt, nút "Đưa món".
+**Chưa:** khách say, nhiều người chơi cùng làm một quán (Phase 2), bưu cục sống động tương tự, **quầy riêng của người chơi là một căn nhà
+có không gian quán như Cô Tư** (UC-W6).
 **Kiểm chứng:** unit `floor.test.ts` (vòng đời, than/xin lỗi, quỵt, gây lộn, bàn/đi bộ); e2e server `work.e2e-spec.ts`
 (bưng bê cầm dĩa → đi tới bàn, khách trả tiền ra về có đánh giá); Playwright `nguoi-moi-lam-thue.spec.ts` (3 vai, iPhone 16 Pro + Pixel 7).
 

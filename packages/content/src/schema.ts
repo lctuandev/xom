@@ -181,6 +181,19 @@ export const jobSchema = z.object({
 /** Quán cơm Cô Tư: món trong khay, dĩa khách gọi, đồ uống (docs/USECASES.md UC-W2…W4). */
 const point = z.object({ x: z.number(), z: z.number() });
 
+/**
+ * Bản đồ xóm (docs/USECASES.md UC-B6): lưới ô vuông, mỗi ký tự một ô.
+ * = đường ngang · | đường dọc · + ngã ba/ngã tư · c vạch sang đường · s vỉa hè · a hẻm
+ * B nhà phố · T nhà cao tầng · K trường học · H nhà ở · P công viên · M chợ · S sân trường · L bãi xe · . đất trống
+ */
+export const MAP_WALKABLE = "=|+csaPMSL";
+export const mapSchema = z.object({
+  tile: z.number().positive(),
+  /** Tâm ô đầu tiên (hàng 0, cột 0). */
+  origin: point,
+  rows: z.array(z.string().regex(/^[=|+csaBTKHPMSL.]+$/)).min(1),
+});
+
 export const restaurantSchema = z.object({
   foods: z.array(z.object({ id, name: z.string(), emoji: z.string(), model: z.string() })),
   dishes: z.array(
@@ -361,6 +374,7 @@ export const contentSchema = z.object({
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
+  map: mapSchema,
   restaurant: restaurantSchema,
   delivery: deliverySchema,
   ingredients: z.array(ingredientSchema),

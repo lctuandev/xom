@@ -1043,6 +1043,30 @@ export const data: ContentInput = {
     },
   },
 
+  // Bản đồ xóm (UC-B6): phố chính z = 0 (các địa điểm cũ giữ nguyên toạ độ), hai đường dọc x = ±28,
+  // hai phố sau z = ±20, hẻm x = 0; công viên (tây bắc), chợ (tây nam), trường học (đông bắc), toà văn phòng + bãi xe (đông nam).
+  map: {
+    tile: 4,
+    origin: { x: -52, z: -28 },
+    rows: [
+      "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+      "ssssss|sssssssssssss|ssssss",
+      "======+=============+======",
+      "ssssss|sssssssssssss|ssssss",
+      "BPPPPB|BBBBBBaBBBBBB|BKKKKB",
+      "BPPPPB|BBBBBBaBBBBBB|BSSSSB",
+      "ssssss|sssssssssssss|ssssss",
+      "======+======c======+======",
+      "ssssss|sssssssssssss|ssssss",
+      "BMMMMB|BBBBBBaBBBBBB|BTTTTB",
+      "BMMMMB|BBBBBBaBBBBBB|BLLLLB",
+      "ssssss|sssssssssssss|ssssss",
+      "======+=============+======",
+      "ssssss|sssssssssssss|ssssss",
+      "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+    ],
+  },
+
   // Nhà trong xóm để giao hàng: trước mặt tiền, hai bên phố (Street.tsx).
   delivery: {
     addresses: [

@@ -14,7 +14,13 @@
             "electricity-pole",
             "electricity-wires",
             "dumpster",
-            "construction-cone"
+            "construction-cone",
+            "road-bend",
+            "road-crossing",
+            "road-end",
+            "traffic-light",
+            "light-curved",
+            "road-sign-street"
           ]
         },
         {
@@ -34,18 +40,73 @@
             "detail-parasol-a",
             "detail-parasol-b",
             "low-detail-building-a",
-            "low-detail-building-b"
+            "low-detail-building-b",
+            "building-i",
+            "building-j",
+            "building-k",
+            "building-l",
+            "building-m",
+            "building-n",
+            "building-skyscraper-a",
+            "building-skyscraper-b",
+            "building-skyscraper-c",
+            "building-skyscraper-d",
+            "building-skyscraper-e",
+            "low-detail-building-c",
+            "low-detail-building-d",
+            "low-detail-building-e",
+            "low-detail-building-f",
+            "low-detail-building-g",
+            "low-detail-building-h",
+            "low-detail-building-wide-a",
+            "low-detail-building-wide-b",
+            "detail-overhang",
+            "detail-overhang-wide"
           ]
         },
         {
           "dir": "art/vendor/kenney/kenney_car-kit/Models/GLB format",
           "scale": 1.6,
-          "models": ["sedan", "van", "taxi", "delivery"]
+          "models": [
+            "sedan",
+            "van",
+            "taxi",
+            "delivery",
+            "suv",
+            "hatchback-sports",
+            "truck",
+            "police"
+          ]
         },
         {
           "dir": "art/export",
           "scale": 1,
           "models": ["ghe-nhua-do", "xe-banh-mi", "xe-tra-sua", "sap-phu-kien"]
+        },
+        {
+          "dir": "art/vendor/kenney/kenney_nature-kit/Models/GLTF format",
+          "scale": 3.2,
+          "models": [
+            "tree_default",
+            "tree_oak",
+            "tree_detailed",
+            "tree_palmTall",
+            "tree_fat",
+            "plant_bush",
+            "plant_bushLarge",
+            "flower_redA",
+            "flower_yellowA",
+            "flower_purpleA",
+            "fence_simple",
+            "grass_large",
+            "rock_smallA",
+            "pot_large"
+          ]
+        },
+        {
+          "dir": "art/vendor/kenney/kenney_furniture-kit/Models/GLTF format",
+          "scale": 2.3,
+          "models": ["bench", "trashcan"]
         }
       ]
     },

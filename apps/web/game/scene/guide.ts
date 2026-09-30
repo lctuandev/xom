@@ -1,4 +1,5 @@
 import { content } from "@xom/content";
+import { walkTo } from "../nav";
 import { Walker } from "./Character";
 import { getPlayer } from "./player";
 
@@ -29,5 +30,5 @@ export function comeToPlayer(id: string) {
     // Ở xa quá: xuất hiện đầu phố gần đó rồi chạy tới.
     w.position.set(tx - 8, 0, tz);
   }
-  w.moveTo(tx, tz, Math.PI / 2);
+  walkTo(w, tx, tz, Math.PI / 2);
 }

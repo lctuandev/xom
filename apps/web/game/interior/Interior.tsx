@@ -1,11 +1,10 @@
 "use client";
 
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { content } from "@xom/content";
 import type { ShiftView } from "@xom/shared";
 import { formatClock } from "@xom/sim";
 import { Suspense, useEffect, useState } from "react";
-import { Vector3 } from "three";
 import { vnd } from "../format";
 import { send, sendWork } from "../net/socket";
 import { BubbleProjector } from "../scene/BubbleProjector";
@@ -17,51 +16,22 @@ import { FloorAlerts } from "../ui/work/FloorAlerts";
 import { PlatePanel, RegisterPanel, WaiterPanel } from "../ui/work/QuanComPanels";
 import { RolePicker } from "../ui/work/RolePicker";
 import { BuuCucScene } from "./BuuCuc";
-import { QuanComScene } from "./QuanCom";
-import { ROOM } from "./quancom/Room";
+import { type CamPreset, OrbitCam } from "./cam";
+import { QuanComScene, serverClock } from "./QuanCom";
 import { goTo, passStand, resetStaff, staff, tableStand } from "./quancom/staff";
 
-type Cam = { pos: [number, number, number]; look: [number, number, number] };
-
 /**
- * Mỗi vị trí một góc nhìn (docs/USECASES.md UC-W8), đủ rộng để thấy khách ra vào:
- * đứng quầy/thu ngân nhìn từ sau quầy ra cửa và phòng ăn; bưng bê thì camera trên cao đi theo mình.
+ * Mỗi vị trí một góc nhìn mặc định (docs/USECASES.md UC-W8), lùi xa để thấy cả phòng và khách ra vào;
+ * kéo một ngón để xoay, chụm để thu/phóng (cam.tsx). Bưng bê: camera cao, trượt theo mình.
  */
-const CAMERAS: Record<string, Cam> = {
-  quan_com: { pos: [0, 8.6, 5.4], look: [0, 0, -3.4] },
-  // Đứng sau quầy nhìn qua vai (không thấy chính mình): khay trước mặt, hàng khách, cửa, phòng ăn.
-  dung_quay: { pos: [0.3, 3.0, 1.8], look: [-1.2, 0.3, -3.2] },
-  thu_ngan: { pos: [2.6, 3.0, 1.8], look: [0.6, 0.3, -3.2] },
-  buu_cuc: { pos: [0.4, 3.2, 3.9], look: [-0.5, 0.6, -2.0] },
-  giao_hang: { pos: [0.4, 3.2, 3.9], look: [-0.5, 0.6, -2.0] },
+const PRESETS: Record<string, CamPreset> = {
+  quan_com: { focus: [0, 0, -3.2], dist: 14, pitch: 0.75, yaw: 0 },
+  dung_quay: { focus: [-0.6, 0.8, -2.2], dist: 8, pitch: 1.0, yaw: 0.15 },
+  thu_ngan: { focus: [1.2, 0.8, -2.2], dist: 8, pitch: 1.0, yaw: -0.3 },
+  bung_be: { focus: [0, 0, -3], dist: 13, pitch: 0.62, yaw: 0 },
+  buu_cuc: { focus: [-0.5, 0.6, -1.4], dist: 7.5, pitch: 1.0, yaw: 0.1 },
+  giao_hang: { focus: [-0.5, 0.6, -1.4], dist: 7.5, pitch: 1.0, yaw: 0.1 },
 };
-
-function CameraRig({ cam }: { cam: Cam }) {
-  const camera = useThree((s) => s.camera);
-  useEffect(() => {
-    camera.position.set(...cam.pos);
-    camera.lookAt(...cam.look);
-  }, [camera, cam]);
-  return null;
-}
-
-const camPos = new Vector3();
-const camLook = new Vector3();
-
-/** Bưng bê: camera nhìn chéo từ trên cao, trượt theo nhân vật (vẫn thấy gần hết phòng ăn). */
-function FollowCam() {
-  const camera = useThree((s) => s.camera);
-  useFrame((_, dt) => {
-    const p = staff.walker.position;
-    const x = p.x * 0.55;
-    const z = Math.min(0.5, Math.max(ROOM.minZ + 3, p.z));
-    camPos.set(x, 7.4, z + 5.6);
-    camLook.set(x, 0, z - 1.6);
-    camera.position.lerp(camPos, Math.min(1, dt * 3));
-    camera.lookAt(camLook);
-  });
-  return null;
-}
 
 /**
  * Không gian riêng khi vào làm (docs/USECASES.md UC-W1, W8): cảnh 3D bên trong thay cho bản đồ.
@@ -76,8 +46,13 @@ export default function Interior({ placeId }: { placeId: string }) {
   const place = content.place(placeId);
   const here = shift && shift.placeId === placeId ? shift : null;
   const role = here?.role;
-  const cam = CAMERAS[role ?? placeId] ?? CAMERAS.quan_com;
+  const preset = PRESETS[role ?? placeId] ?? (PRESETS.quan_com as CamPreset);
   const waiter = role === "bung_be";
+
+  // Bù lệch đồng hồ server để diễn đúng nhịp (ăn vơi dần…).
+  useEffect(() => {
+    if (here) serverClock.offset = here.now - Date.now();
+  }, [here]);
 
   // Vào ca bưng bê: đứng ở cửa bếp.
   useEffect(() => {
@@ -110,18 +85,19 @@ export default function Interior({ placeId }: { placeId: string }) {
         <color attach="background" args={["#2b2118"]} />
         <hemisphereLight args={["#fff6e5", "#8a7f70", 1.7]} />
         <directionalLight position={[3, 6, 4]} intensity={1.2} />
-        {waiter ? <FollowCam /> : <CameraRig cam={cam} />}
+        <OrbitCam preset={preset} follow={waiter ? staff.walker.position : undefined} />
         <Suspense fallback={null}>
           {placeId === "quan_com" ? (
             <QuanComScene
               shift={here}
               plate={plate ?? []}
               onScoop={(f) => {
-                if (plate !== null && (here?.trays[f] ?? 0) > plate.filter((x) => x === f).length)
-                  setPlate([...plate, f]);
+                const cur = plate ?? [];
+                if ((here?.trays[f] ?? 0) > cur.filter((x) => x === f).length)
+                  setPlate([...cur, f]);
               }}
-              onPass={waiter ? (id) => actions.grab(id) : undefined}
-              onTable={waiter ? (n) => actions.table(n) : undefined}
+              onPass={waiter ? () => actions.toPass() : undefined}
+              onTable={waiter ? (n) => actions.toTable(n) : undefined}
               onFloor={waiter ? (x, z) => goTo(x, z) : undefined}
             />
           ) : (
@@ -177,7 +153,7 @@ export default function Interior({ placeId }: { placeId: string }) {
         ) : here.role === "thu_ngan" ? (
           <RegisterPanel shift={here} />
         ) : here.role === "bung_be" ? (
-          <WaiterPanel shift={here} onPass={actions.grab} onTable={actions.table} />
+          <WaiterPanel shift={here} actions={actions} />
         ) : (
           <DeliveryDesk shift={here} onPick={pick} />
         )}
@@ -194,40 +170,54 @@ function dinerAt(shift: ShiftView, table: number) {
   );
 }
 
+export type WaiterActions = ReturnType<typeof waiterActions>;
+
 /**
- * Việc của bưng bê: đi tới nơi rồi mới làm (server kiểm thời gian đi bộ).
- * Vai khác gọi `calm` thì làm tại chỗ (nói vọng ra).
+ * Việc của bưng bê: chạm để đi tới (cửa bếp / bàn), tới nơi thì bấm nút hành động ở dưới
+ * (lấy dĩa, giao món, lau bàn, can ngăn). Server kiểm thời gian đi bộ.
  */
 function waiterActions() {
   const shiftNow = () => useGame.getState().shift;
-  const walkThen = (spot: { x: number; z: number; face: number }, act: () => void) => {
-    if (shiftNow()?.role !== "bung_be") return act();
-    goTo(spot.x, spot.z, act, spot.face);
-  };
   return {
-    grab: (id: string) =>
-      walkThen(passStand, () => void sendWork({ kind: "grab", taskId: id }, "quan_com")),
-    table: (n: number) =>
-      walkThen(tableStand(n), () => {
-        const sh = shiftNow();
-        if (!sh) return;
-        const who = dinerAt(sh, n);
-        const speaker = who ? `diner:${who.id}` : "quan_com";
-        const argue = sh.diners.find((d) => d.table === n && d.incident === "argue");
-        if (argue) {
-          void sendWork({ kind: "calm", taskId: argue.id }, `diner:${argue.id}`);
-          return;
-        }
-        const held = sh.pass.filter((p) => sh.holding.includes(p.id));
-        const plate = held.find((p) => p.table === n) ?? held[0];
-        if (plate) void sendWork({ kind: "serve", taskId: plate.id, table: n }, speaker);
-        else if (sh.tables[n - 1] === "dirty")
-          void sendWork({ kind: "clean", table: n }, "quan_com");
-      }),
-    calm: (dinerId: string, table: number) =>
-      walkThen(
-        tableStand(table),
+    toPass: () => goTo(passStand.x, passStand.z, undefined, passStand.face),
+    toTable: (n: number) => {
+      const s = tableStand(n);
+      goTo(s.x, s.z, undefined, s.face);
+    },
+    grab: (id: string) => void sendWork({ kind: "grab", taskId: id }, "quan_com"),
+    serve: (n: number) => {
+      const sh = shiftNow();
+      if (!sh) return;
+      const held = sh.pass.filter((p) => sh.holding.includes(p.id));
+      const plate = held.find((p) => p.table === n) ?? held[0];
+      const who = dinerAt(sh, n);
+      if (plate)
+        void sendWork(
+          { kind: "serve", taskId: plate.id, table: n },
+          who ? `diner:${who.id}` : "quan_com",
+        );
+    },
+    wipe: (n: number, scale: number) => {
+      // Lau vài giây (thấy khăn chạy trên bàn) rồi mới xong.
+      const ms = Math.max(600, 1500 * Math.min(1, scale * 2));
+      staff.wiping = { table: n, until: Date.now() + ms };
+      setTimeout(() => {
+        staff.wiping = null;
+        void sendWork({ kind: "clean", table: n }, "quan_com");
+      }, ms);
+    },
+    calm: (dinerId: string, table: number) => {
+      if (shiftNow()?.role !== "bung_be") {
+        void sendWork({ kind: "calm", taskId: dinerId }, `diner:${dinerId}`);
+        return;
+      }
+      const s = tableStand(table);
+      goTo(
+        s.x,
+        s.z,
         () => void sendWork({ kind: "calm", taskId: dinerId }, `diner:${dinerId}`),
-      ),
+        s.face,
+      );
+    },
   };
 }

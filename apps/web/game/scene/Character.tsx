@@ -3,7 +3,7 @@
 import { useAnimations, useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
-import { type Group, MathUtils, Vector3 } from "three";
+import { type Group, Vector3 } from "three";
 import { clone } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { CHARACTER_URLS, type CharacterModel } from "../assets";
 import { toLambert } from "./materials";
@@ -25,9 +25,25 @@ export class Walker {
   /** Hướng quay mặt khi tới nơi (ví dụ đứng sau quầy nhìn ra khách). */
   arriveYaw: number | null = null;
 
+  /** Các điểm rẽ còn lại sau `target` (đi theo đường xá). */
+  private route: Vector3[] = [];
+  /** Điểm cuối của lộ trình (để vẽ vòng đích). */
+  dest: Vector3 | null = null;
+
   moveTo(x: number, z: number, arriveYaw: number | null = null) {
+    this.route = [];
     this.target = new Vector3(x, 0, z);
+    this.dest = this.target;
     this.arriveYaw = arriveYaw;
+  }
+
+  /** Đi qua lần lượt các điểm (điểm cuối là đích). */
+  follow(points: { x: number; z: number }[], arriveYaw: number | null = null) {
+    const [first, ...rest] = points;
+    if (!first) return;
+    this.moveTo(first.x, first.z, arriveYaw);
+    this.route = rest.map((p) => new Vector3(p.x, 0, p.z));
+    this.dest = this.route[this.route.length - 1] ?? this.target;
   }
 
   /** Trả về true nếu đang di chuyển. */
@@ -37,7 +53,13 @@ export class Walker {
     const dz = this.target.z - this.position.z;
     const dist = Math.hypot(dx, dz);
     if (dist < 0.05) {
+      const next = this.route.shift();
+      if (next) {
+        this.target = next;
+        return true;
+      }
       this.target = null;
+      this.dest = null;
       if (this.arriveYaw !== null) this.yaw = this.arriveYaw;
       return false;
     }
@@ -109,24 +131,15 @@ export function Character({
   );
 }
 
-/** NPC đi dạo ngẫu nhiên trong vùng cho phép, dừng nghỉ vài giây giữa các chặng. */
-export function useWanderer(
-  walker: Walker,
-  bounds: { minX: number; maxX: number; zones: [number, number][] },
-) {
+/** NPC đi dạo: tới một chỗ ngẫu nhiên (theo đường xá), dừng nghỉ vài giây rồi đi tiếp. */
+export function useWanderer(walker: Walker, go: (w: Walker) => void) {
   const rest = useRef(Math.random() * 3);
   useFrame((_, dt) => {
     if (walker.target) return;
     rest.current -= dt;
     if (rest.current > 0) return;
     rest.current = 1 + Math.random() * 4;
-    const zone = bounds.zones[Math.floor(Math.random() * bounds.zones.length)] ?? [0, 0];
-    const x = MathUtils.clamp(
-      walker.position.x + MathUtils.randFloatSpread(16),
-      bounds.minX,
-      bounds.maxX,
-    );
-    walker.moveTo(x, MathUtils.randFloat(zone[0], zone[1]));
+    go(walker);
   });
 }
 

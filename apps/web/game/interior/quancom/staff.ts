@@ -11,7 +11,25 @@ export const WALK_SPEED = 2.2;
 export const staff = {
   walker: new Walker(L.pass.x, L.pass.z, WALK_SPEED),
   pending: null as null | (() => void),
+  /** Đang lau bàn (bàn nào, tới lúc nào) — để diễn khăn lau. */
+  wiping: null as null | { table: number; until: number },
 };
+
+/** Đứng gần đâu: cửa bếp và/hoặc bàn số mấy (để hiện nút hành động đúng chỗ). */
+export function whereIsStaff(): { pass: boolean; table: number | null } {
+  const p = staff.walker.position;
+  const pass = Math.hypot(p.x - L.pass.x, p.z - L.pass.z) < 1.4;
+  let table: number | null = null;
+  let best = 1.9;
+  L.tables.forEach((t, i) => {
+    const d = Math.hypot(p.x - t.x, p.z - t.z);
+    if (d < best) {
+      best = d;
+      table = i + 1;
+    }
+  });
+  return { pass, table };
+}
 
 /** Đi tới (x, z); tới nơi thì làm `then`. Chạm chỗ khác giữa đường thì bỏ việc cũ. */
 export function goTo(x: number, z: number, then?: () => void, face?: number) {
@@ -46,4 +64,5 @@ export function resetStaff() {
   staff.walker.position.set(L.pass.x, 0, L.pass.z);
   staff.walker.target = null;
   staff.pending = null;
+  staff.wiping = null;
 }

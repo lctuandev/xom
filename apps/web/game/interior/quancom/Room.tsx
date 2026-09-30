@@ -5,6 +5,7 @@ import { content } from "@xom/content";
 import { useMemo, useRef } from "react";
 import { CanvasTexture, DoubleSide, type Group, RepeatWrapping, SRGBColorSpace } from "three";
 import { Sign } from "../../scene/Sign";
+import { Cutaway } from "../cam";
 import { Model } from "../models";
 
 // Quán cơm Cô Tư — phần nhà (docs/USECASES.md UC-W8): nền gạch bông, tường ốp gạch men nửa dưới,
@@ -178,56 +179,64 @@ export function Room() {
         <meshLambertMaterial color="#5d6168" />
       </mesh>
 
-      {/* Tường: sau, phải, trước (sau bếp), trái (chừa cửa) */}
-      <Wall from={[ROOM.maxX, ROOM.minZ]} to={[ROOM.minX, ROOM.minZ]} />
-      <Wall from={[ROOM.maxX, ROOM.maxZ]} to={[ROOM.maxX, ROOM.minZ]} />
-      <Wall from={[ROOM.minX, ROOM.maxZ]} to={[ROOM.maxX, ROOM.maxZ]} color="#efe2c4" />
-      <Wall from={[ROOM.minX, ROOM.minZ]} to={[ROOM.minX, doorFrom]} />
-      <Wall from={[ROOM.minX, doorTo]} to={[ROOM.minX, ROOM.maxZ]} />
-      {/* Khung cửa + biển "ĐANG MỞ CỬA" */}
-      <mesh position={[ROOM.minX, ROOM.height - 0.45, DOOR_Z]}>
-        <boxGeometry args={[0.12, 0.9, DOOR_W]} />
-        <meshLambertMaterial color="#f3e2b8" />
-      </mesh>
-      <Sign
-        text="ĐANG MỞ CỬA"
-        position={[ROOM.minX + 0.08, 2.55, DOOR_Z]}
-        rotationY={Math.PI / 2}
-        bg="#2f7d4f"
-        size={[1.1, 0.26]}
-      />
+      {/* Tường: camera ra phía ngoài bức nào thì bức đó (và đồ treo trên nó) ẩn đi. */}
+      <Cutaway at={[0, ROOM.minZ]} inward={[0, 1]}>
+        <Wall from={[ROOM.maxX, ROOM.minZ]} to={[ROOM.minX, ROOM.minZ]} />
+        <Window x={-2.9} z={ROOM.minZ} />
+        <Window x={0} z={ROOM.minZ} />
+        <Window x={2.9} z={ROOM.minZ} />
+        <Sign text="CƠM TẤM CÔ TƯ" position={[0, 2.85, ROOM.minZ + 0.02]} bg="#e4432d" />
+      </Cutaway>
+      <Cutaway at={[ROOM.maxX, 0]} inward={[-1, 0]}>
+        <Wall from={[ROOM.maxX, ROOM.maxZ]} to={[ROOM.maxX, ROOM.minZ]} />
+        <Sign
+          text="SƯỜN 35K · SƯỜN BÌ CHẢ 45K"
+          position={[ROOM.maxX - 0.02, 2.45, -3.6]}
+          rotationY={-Math.PI / 2}
+          bg="#1f3b2d"
+          size={[2.6, 0.4]}
+        />
+        <Sign
+          text="SƯỜN TRỨNG 40K · CHẢ TRỨNG 32K"
+          position={[ROOM.maxX - 0.02, 2.0, -3.6]}
+          rotationY={-Math.PI / 2}
+          bg="#1f3b2d"
+          size={[2.6, 0.4]}
+        />
+        <Sign
+          text="TRÀ ĐÁ 3K · NƯỚC NGỌT 12K"
+          position={[ROOM.maxX - 0.02, 1.55, -3.6]}
+          rotationY={-Math.PI / 2}
+          bg="#1f3b2d"
+          size={[2.6, 0.4]}
+        />
+        <group position={[ROOM.maxX - 0.35, 1.95, -6.2]} rotation-y={-Math.PI / 2}>
+          <Model name="televisionVintage" />
+        </group>
+      </Cutaway>
+      <Cutaway at={[0, ROOM.maxZ]} inward={[0, -1]}>
+        <Wall from={[ROOM.minX, ROOM.maxZ]} to={[ROOM.maxX, ROOM.maxZ]} color="#efe2c4" />
+      </Cutaway>
+      <Cutaway at={[ROOM.minX, 0]} inward={[1, 0]}>
+        <Wall from={[ROOM.minX, ROOM.minZ]} to={[ROOM.minX, doorFrom]} />
+        <Wall from={[ROOM.minX, doorTo]} to={[ROOM.minX, ROOM.maxZ]} />
+        {/* Khung cửa + biển "ĐANG MỞ CỬA" */}
+        <mesh position={[ROOM.minX, ROOM.height - 0.45, DOOR_Z]}>
+          <boxGeometry args={[0.12, 0.9, DOOR_W]} />
+          <meshLambertMaterial color="#f3e2b8" />
+        </mesh>
+        <Sign
+          text="ĐANG MỞ CỬA"
+          position={[ROOM.minX + 0.08, 2.55, DOOR_Z]}
+          rotationY={Math.PI / 2}
+          bg="#2f7d4f"
+          size={[1.1, 0.26]}
+        />
+        <Window x={ROOM.minX} z={-6.4} rot={Math.PI / 2} />
+      </Cutaway>
       <Model name="rugDoormat" position={[ROOM.minX + 0.6, 0, DOOR_Z]} rotation={Math.PI / 2} />
       <Model name="trashcan" position={[ROOM.minX + 0.35, 0, DOOR_Z + 1.3]} />
       <Model name="plantSmall1" position={[ROOM.minX + 0.35, 0, DOOR_Z - 1.2]} />
-
-      <Window x={-2.9} z={ROOM.minZ} />
-      <Window x={0} z={ROOM.minZ} />
-      <Window x={2.9} z={ROOM.minZ} />
-      <Window x={ROOM.minX} z={-6.4} rot={Math.PI / 2} />
-
-      {/* Bảng hiệu + bảng giá trên tường */}
-      <Sign text="CƠM TẤM CÔ TƯ" position={[0, 2.85, ROOM.minZ + 0.02]} bg="#e4432d" />
-      <Sign
-        text="SƯỜN 35K · SƯỜN BÌ CHẢ 45K"
-        position={[ROOM.maxX - 0.02, 2.45, -3.6]}
-        rotationY={-Math.PI / 2}
-        bg="#1f3b2d"
-        size={[2.6, 0.4]}
-      />
-      <Sign
-        text="SƯỜN TRỨNG 40K · CHẢ TRỨNG 32K"
-        position={[ROOM.maxX - 0.02, 2.0, -3.6]}
-        rotationY={-Math.PI / 2}
-        bg="#1f3b2d"
-        size={[2.6, 0.4]}
-      />
-      <Sign
-        text="TRÀ ĐÁ 3K · NƯỚC NGỌT 12K"
-        position={[ROOM.maxX - 0.02, 1.55, -3.6]}
-        rotationY={-Math.PI / 2}
-        bg="#1f3b2d"
-        size={[2.6, 0.4]}
-      />
 
       <Fan x={-1.45} z={-5.1} />
       <Fan x={1.45} z={-5.1} />
@@ -236,10 +245,7 @@ export function Room() {
       ))}
 
       <Altar />
-      {/* TV treo góc tường phải, tủ nước ngọt cạnh quầy tính tiền */}
-      <group position={[ROOM.maxX - 0.35, 1.95, -6.2]} rotation-y={-Math.PI / 2}>
-        <Model name="televisionVintage" />
-      </group>
+      {/* Tủ nước ngọt cạnh quầy tính tiền */}
       <Model
         name="kitchenFridgeSmall"
         position={[ROOM.maxX - 0.4, 0, -1.2]}
