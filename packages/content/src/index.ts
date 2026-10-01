@@ -1,5 +1,12 @@
 import { data } from "./data.js";
-import { type ContentData, contentSchema, MAP_WALKABLE, type Recipe } from "./schema.js";
+import {
+  type ContentData,
+  contentSchema,
+  MAP_WALKABLE,
+  type Recipe,
+  type WeatherId,
+  type WeatherKind,
+} from "./schema.js";
 
 export * from "./schema.js";
 
@@ -141,6 +148,12 @@ export function loadContent(raw: unknown): Content {
     if (!parsed.places.some((pl) => pl.jobs.includes(j.id)))
       errors.push(`việc ${j.id}: không có địa điểm nhận việc`);
   }
+  const weatherIds = new Set(parsed.weather.kinds.map((k) => k.id));
+  if (weatherIds.size !== parsed.weather.kinds.length) errors.push("thời tiết: kiểu trời bị trùng");
+  for (const k of parsed.weather.kinds)
+    for (const cat of Object.keys(k.category))
+      if (!parsed.products.some((p) => p.category === cat))
+        errors.push(`thời tiết ${k.id}: không có danh mục ${cat}`);
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
@@ -212,6 +225,14 @@ export class Content {
   variant(productId: string, variantId: string) {
     const v = this.product(productId).recipe.variants.find((x) => x.id === variantId);
     return must(v, "variant", variantId);
+  }
+  /** Kiểu trời theo id (luôn có đủ 4 kiểu — đã kiểm khi nạp). */
+  weatherKind(id: WeatherId): WeatherKind {
+    return must(
+      this.data.weather.kinds.find((k) => k.id === id),
+      "weather",
+      id,
+    );
   }
   /** Địa điểm nhận việc làm thuê này. */
   placeForJob(jobId: string) {

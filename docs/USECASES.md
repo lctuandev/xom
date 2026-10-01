@@ -80,10 +80,24 @@
 ### UC-B3 · Một ngày trong xóm ✅
 **Luật:** 1 phút thật = 1 phút game; ngày chơi 06:00–22:00 (16 phút thật); ban đêm bỏ qua. Cuối ngày: quầy đóng, đồ ăn tươi hỏng, tổng kết lãi/lỗ.
 
-### UC-B4 · Thời tiết ⏳
-**Đời thật:** trưa nắng gắt người ta mua nước; mưa thì đường vắng, ai có dù/mái che mới bán được; mưa xong khách túa ra.
-**Luật:** mỗi ngày có dự báo (xem ở HUD); nắng: đồ uống +30% khách; mưa: khách −50%, quầy **có mái che** (nâng cấp) chỉ −20%; sau mưa 1 giờ khách +20%.
-**Kiểm chứng:** unit test `@xom/sim` hệ số thời tiết; Playwright: HUD hiện biểu tượng thời tiết.
+### UC-B4 · Thời tiết ✅ (bản đầu)
+**Hệ thống:** 🌦️ Thế giới thay đổi · **Luật:** 8.1 (buộc thích nghi), 12.1 (không thêm nút), 15 (dữ liệu điều khiển), 11 (âm thanh).
+**Đời thật:** trưa nắng gắt người ta mua nước; mưa thì đường vắng, ai có mái che mới bán được; bão thì shipper chạy chậm, khách trả thêm phụ phí;
+chiều Sài Gòn hay đổ mưa, nhìn trời kéo mây là biết dọn hàng.
+**Luồng:** thanh 🕒 trên HUD hiện kiểu trời (☀️ nắng · 🌫️ âm u · 🌧️ mưa · ⛈️ bão; ban đêm trời quang là 🌙). Trời sắp đổi (trong 90 phút game)
+→ thanh giờ hiện "→🌧️" và dải tin báo trước *"Khoảng 14:00 có mưa — chuẩn bị dời vô chỗ có mái"*. Tới giờ: thông báo
+*"Trời đổ mưa — xe đẩy vắng khách, tiệm có mái đông lên"*, hạt mưa rơi, trời xám lại, tiếng mưa rào rào; giông thì chớp + sấm, đèn đường bật.
+**Luật game:**
+- Trời chia khối 2 giờ, chọn theo trọng số theo giờ (chiều hay mưa) + 50% giữ nguyên trời khối trước; **tất định theo (xóm, ngày)** —
+  `weatherPlan` trong `packages/sim/src/weather.ts`, bảng số trong `content.weather`.
+- Khách: hệ số theo chỗ bán **ngoài trời (xe đẩy)** / **trong nhà (tiệm)** × theo danh mục: mưa xe đẩy ×0,5, tiệm ×1,15, đồ nóng (bánh mì) ×1,15,
+  đồ uống lạnh ×0,8; bão xe đẩy ×0,2; nắng đồ uống ×1,2. Quán cơm Cô Tư (có mái) cũng đông/vắng theo hệ số trong nhà.
+- Giao hàng: mưa chạy chậm ×0,8 + phụ phí 20%, bão ×0,6 + phụ phí 50% (khách trả, người giao hưởng, tính lúc giao xong);
+  đường trơn chạy nhanh dễ móp hàng dễ vỡ hơn (×1,6 / ×2,5).
+- Thích nghi: dời xe đẩy vào tiệm có mái, đổi giờ bán, chuyển sang giao hàng lúc bão (phụ phí cao).
+**Kiểm chứng:** unit `packages/sim/src/weather.test.ts` (tất định, đủ 4 kiểu, chiều mưa nhiều hơn sáng, hệ số khách, phụ phí, dự báo, đè khoảng trời);
+e2e server `weather.e2e-spec.ts` (đồng hồ mang trời, báo trước, lệnh thử chỉ ở dev, phụ phí bão); Playwright `thoi-tiet.spec.ts`.
+**Chưa:** mái che nâng cấp cho xe đẩy, "sau mưa khách túa ra", khách gọi ít đá khi trời mưa.
 
 ### UC-B5 · Sự kiện trong xóm ⏳
 Hội chợ đêm cuối tuần · đám cưới trong hẻm (đặt 50 phần bánh mì) · tan trường sớm · mất điện (trà sữa không có đá) · kiểm tra vệ sinh an toàn thực phẩm. Chi tiết ở nhóm K.
@@ -597,7 +611,7 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 | Mã | Sự kiện | Ảnh hưởng |
 |---|---|---|
 | UC-K1 | Hội chợ đêm cuối tuần | Gian hàng tạm, khách đông, nhiều hạng mục thắng (doanh thu, món đẹp, phục vụ) |
-| UC-K2 | Mưa | Xem UC-B4 |
+| UC-K2 | Mưa ✅ | Xem UC-B4 |
 | UC-K3 | Tan trường sớm | Quầy gần trường đông đột xuất 1 giờ |
 | UC-K4 | Mất điện | Không có đá (trà sữa bán kém), đèn quầy tắt buổi tối |
 | UC-K5 | Kiểm tra vệ sinh ATTP | Ngẫu nhiên; quầy từng bán đồ hỏng / nhiều món sai bị nhắc nhở hoặc phạt nhẹ |

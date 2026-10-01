@@ -19,6 +19,7 @@ import {
   decoyCodes,
   deliveryOrder,
   deliveryPay,
+  deliverySurcharge,
   type Floor,
   type FloorConfig,
   type FloorEvent,
@@ -58,6 +59,8 @@ interface DeliveryState extends DeliveryTaskView {
   laterUntil: number;
   /** Tiền mặt khách đưa cho đơn này (để kiểm tiền nộp). */
   cash: number;
+  /** Phụ phí mưa/bão tính lúc giao xong (UC-B4) — người giao được hưởng. */
+  surcharge: number;
 }
 
 /** Phiếu tính tiền của một khách (các dòng trên máy + tổng đúng). */
@@ -215,7 +218,9 @@ export class WorkService {
             })
         : [],
       tables: f ? tableStates(f, floorCfg(s)) : [],
-      deliveries: s.deliveries.map(({ absent: _a, laterUntil: _l, cash: _c, ...v }) => v),
+      deliveries: s.deliveries.map(
+        ({ absent: _a, laterUntil: _l, cash: _c, surcharge: _s, ...v }) => v,
+      ),
       cashHeld: s.cashHeld,
       fast: s.fast,
       diners: f ? f.diners.map(dinerView) : [],
@@ -380,7 +385,9 @@ export class WorkService {
   private async floorStep(room: RoomRuntime, s: Shift): Promise<boolean> {
     if (!s.floor) return false;
     const rand = seededRandom("floor", s.playerId, room.day, room.minute, Date.now());
-    const events = floorTick(s.floor, floorCfg(s), { now: Date.now(), minute: room.minute, rand });
+    // Trời mưa người ta chui vào quán có mái nhiều hơn (UC-B4).
+    const cfg = { ...floorCfg(s), crowd: room.sky.indoor };
+    const events = floorTick(s.floor, cfg, { now: Date.now(), minute: room.minute, rand });
     await this.floorEvents(room, s, events);
     return true;
   }
@@ -611,6 +618,7 @@ export class WorkService {
             absent: o.absent,
             laterUntil: 0,
             cash: 0,
+            surcharge: 0,
           });
         }
         return { ok: true, line: "Phiếu giao nè, soạn đúng mã trên kệ nha!", pay: 0 };
@@ -652,7 +660,8 @@ export class WorkService {
           };
         }
         const rand = seededRandom("door", d.id, room.day, room.minute);
-        if (d.fragile && s.fast && rand() < D().fragileDamageFast) {
+        // Đường trơn (mưa, bão) chạy nhanh càng dễ móp hàng.
+        if (d.fragile && s.fast && rand() < D().fragileDamageFast * room.sky.delivery.damage) {
           d.stage = "refused";
           return { ok: false, line: "Hàng móp hết rồi, tôi không nhận đâu!", pay: 0 };
         }
@@ -706,7 +715,14 @@ export class WorkService {
         }
         d.stage = "delivered";
         d.door = null;
-        return { ok: true, line: "Ký rồi nè, cảm ơn em nha!", pay: 0 };
+        d.surcharge = this.surcharge(room, s, d);
+        return {
+          ok: true,
+          line: d.surcharge
+            ? `Mưa gió vầy mà em vẫn giao, gửi thêm ${d.surcharge.toLocaleString("vi-VN")}đ phụ phí nè!`
+            : "Ký rồi nè, cảm ơn em nha!",
+          pay: 0,
+        };
       }
       case "absent": {
         const d = this.delivery(s, a.taskId, ["absent"]);
@@ -714,6 +730,7 @@ export class WorkService {
           if (d.cod > 0)
             return { ok: false, line: "Đơn thu tiền hộ không gửi hàng xóm được.", pay: 0 };
           d.stage = "delivered";
+          d.surcharge = this.surcharge(room, s, d);
           return { ok: true, line: "Chị hàng xóm nhận giùm rồi.", pay: 0 };
         }
         if (a.choice === "later") {
@@ -734,7 +751,7 @@ export class WorkService {
           if (d.stage !== "delivered") continue;
           const addr = D().addresses.find((x) => x.id === d.addressId);
           const meters = addr ? Math.hypot(addr.position.x - post.x, addr.position.z - post.z) : 0;
-          pay += deliveryPay(piece, meters);
+          pay += deliveryPay(piece, meters) + d.surcharge;
           cashDue += d.cash;
         }
         const finished = s.deliveries.filter(
@@ -759,6 +776,15 @@ export class WorkService {
         return { ok: net > 0, line, pay: net };
       }
     }
+  }
+
+  /** Phụ phí mưa/bão của một đơn theo trời lúc giao (khách trả thêm, bưu cục chuyển cho người giao). */
+  private surcharge(room: RoomRuntime, s: Shift, d: DeliveryState): number {
+    const piece = content.job(s.jobId).roles.find((r) => r.id === s.role)?.piecePay ?? 0;
+    const post = content.place(s.placeId).position;
+    const addr = D().addresses.find((x) => x.id === d.addressId);
+    const meters = addr ? Math.hypot(addr.position.x - post.x, addr.position.z - post.z) : 0;
+    return deliverySurcharge(room.sky, deliveryPay(piece, meters));
   }
 
   private floor(s: Shift): Floor {

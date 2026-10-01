@@ -392,6 +392,48 @@ export const economySchema = z.object({
   friendDiscount: z.number().min(0).max(0.5),
 });
 
+/** Bốn kiểu trời (docs/DESIGN.md §8): ảnh hưởng khách, giao hàng, ánh sáng, tiếng. */
+export const WEATHER_IDS = ["sunny", "cloudy", "rain", "storm"] as const;
+export const weatherIdSchema = z.enum(WEATHER_IDS);
+
+export const weatherKindSchema = z.object({
+  id: weatherIdSchema,
+  name: z.string(),
+  emoji: z.string(),
+  /** Hệ số khách ghé chỗ bán ngoài trời (xe đẩy, sạp) và trong nhà có mái (tiệm, quán cơm). */
+  outdoor: z.number().min(0).max(3),
+  indoor: z.number().min(0).max(3),
+  /** Hệ số khách theo danh mục sản phẩm (trời nóng đồ uống lạnh bán chạy…). */
+  category: z.record(id, z.number().min(0).max(3)).default({}),
+  delivery: z.object({
+    /** Tốc độ chạy xe (hệ số). */
+    speed: z.number().positive().max(2),
+    /** Phụ phí khách trả thêm mỗi đơn (tỉ lệ tiền đơn) — người giao được hưởng. */
+    surcharge: z.number().min(0).max(2),
+    /** Hàng dễ vỡ chạy nhanh dễ móp hơn (nhân xác suất). */
+    damage: z.number().min(0).max(5),
+  }),
+  /** Trời tối thêm 0–1 (mây, mưa). */
+  dim: z.number().min(0).max(1),
+  /** Mật độ hạt mưa 0–1 (0 = không mưa). */
+  rain: z.number().min(0).max(1),
+  /** Câu báo khi trời chuyển sang kiểu này (dải tin), và câu dự báo trước: {time} = giờ bắt đầu. */
+  news: z.string(),
+  forecast: z.string(),
+});
+
+export const weatherSchema = z.object({
+  kinds: z.array(weatherKindSchema).length(WEATHER_IDS.length),
+  /** Trời đổi theo từng khối thời gian này (phút game). */
+  blockMinutes: z.number().int().min(30).max(480),
+  /** Xác suất khối sau giữ nguyên trời của khối trước (trời không đổi xoành xoạch). */
+  persist: z.number().min(0).max(1),
+  /** Trọng số chọn từng kiểu trời theo giờ trong ngày. */
+  weights: z.record(weatherIdSchema, byHour),
+  /** Báo trước bao nhiêu phút game khi trời sắp đổi. */
+  forecastMinutes: z.number().int().positive(),
+});
+
 export const contentSchema = z.object({
   templates: z.array(templateSchema),
   products: z.array(productSchema),
@@ -412,6 +454,7 @@ export const contentSchema = z.object({
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
   economy: economySchema,
+  weather: weatherSchema,
 });
 
 export type Template = z.infer<typeof templateSchema>;
@@ -433,5 +476,8 @@ export type RecipeVariant = z.infer<typeof recipeVariantSchema>;
 export type Speaker = z.infer<typeof npcSpeakerSchema>;
 export type TutorialStep = z.infer<typeof tutorialStepSchema>;
 export type Condition = z.infer<typeof conditionSchema>;
+export type WeatherId = z.infer<typeof weatherIdSchema>;
+export type WeatherKind = z.infer<typeof weatherKindSchema>;
+export type Weather = z.infer<typeof weatherSchema>;
 export type ContentData = z.infer<typeof contentSchema>;
 export type ContentInput = z.input<typeof contentSchema>;

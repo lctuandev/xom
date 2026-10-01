@@ -29,9 +29,9 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
-| 🌦️ Thế giới thay đổi | Ngày/đêm, sạp theo giờ | **Chưa có thời tiết, giao thông/xe chạy** | 3 |
+| 🌦️ Thế giới thay đổi | ✅ Ngày/đêm, sạp theo giờ, **thời tiết** 4 kiểu (khách, giao hàng, hạt mưa, tiếng mưa/sấm, báo trước) | Giao thông/xe chạy, mái che xe đẩy | 3 |
 | 🎲 Sự kiện | Khách VIP chưa; chuyện trong quán (than, cãi, quỵt) | **Chưa có sự kiện khu phố/toàn server/do người chơi tạo (khai trương)** | 3 |
-| 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) | Tiếng mưa (chờ thời tiết), âm theo khoảng cách | 3 |
+| 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) + **mưa, sấm** (bus môi trường chỉnh riêng) | Âm theo khoảng cách | 3 |
 | 🏠 Tài sản | Thuê nhà mặt tiền làm tiệm | Nhà ở, trang trí, nội thất sưu tầm | 4 |
 | 🛵 Phương tiện | Xe máy giao hàng (chỉ là tốc độ) | Xe đạp/xe máy sở hữu, xăng, hư hỏng | 4 |
 | 🏪 Làm ăn | Kho, giá, rao hàng, khách, đánh giá, hỏng hàng | Nhà cung cấp/giá biến động, đối thủ, trào lưu | 3 |
@@ -95,7 +95,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ✅ | 1.10 | UC-B9 · 8 sạp, mua ăn tại chỗ |
 | Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | 🚧 | 1.10 | UC-B10 · NPC ghé sạp/vào quán ✅, xe cộ ⏳ |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
-| Thời tiết (mưa, nắng) | ⏳ | 1.9 | UC-B4 |
+| Thời tiết (nắng, âm u, mưa, bão): khách, giao hàng, hạt mưa GPU, tiếng mưa/sấm, báo trước trên dải tin | ✅ | 1.11 | UC-B4 |
 | Tương tác vật thể: ngồi, nhặt, đặt, mở cửa | ⏳ | 2–3 | |
 | Nhà riêng, trang trí | 💤 | 3 | Mục 14 |
 
@@ -224,7 +224,7 @@ Mua/thuê nhà, trang trí, nội thất, mời bạn. (Nội thất Kenney đã
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Kịch bản người mới rẽ nhánh | ✅ | 1.5 | UC-C |
-| Sự kiện ngẫu nhiên (mưa, mất điện, tan trường sớm) | ⏳ | 1.9 | UC-K |
+| Sự kiện ngẫu nhiên (mưa ✅, mất điện, tan trường sớm) | 🚧 | 1.9 | UC-K |
 | Sự kiện chung (chợ đêm) | ⏳ | 3 | UC-K1 |
 | Sự kiện riêng (reviewer, chủ nhà tăng giá) | ⏳ | sau | |
 

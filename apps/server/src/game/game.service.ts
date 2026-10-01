@@ -11,6 +11,7 @@ import type {
   SayEvent,
   Snapshot,
   TalkResult,
+  WeatherIdView,
   WorldView,
 } from "@xom/shared";
 import {
@@ -19,8 +20,10 @@ import {
   levelOf,
   marketPackPrice,
   menuPriceRatio,
+  overrideWeather,
   seededRandom,
   spoilage,
+  weatherDemand,
 } from "@xom/sim";
 import {
   InsufficientFundsError,
@@ -197,7 +200,7 @@ export class GameService implements OnModuleDestroy {
     });
   }
 
-  private roomFor(playerId: string): RoomRuntime | undefined {
+  roomFor(playerId: string): RoomRuntime | undefined {
     const id = this.roomOfPlayer.get(playerId);
     return id ? this.rooms.get(id) : undefined;
   }
@@ -495,6 +498,18 @@ export class GameService implements OnModuleDestroy {
     this.emitter?.toRoom(room.id, "say", { who: `vendor:${v.id}`, text: `${line} (${item.name})` });
   }
 
+  /** Dev/test (UC-B4): ép thời tiết của xóm mình trong một khoảng; production không cho. */
+  async debugWeather(
+    { room }: IntentContext,
+    p: { kind: WeatherIdView; after: number; minutes: number },
+  ) {
+    if (process.env.NODE_ENV === "production")
+      throw new GameError("invalid_state", "Không có lệnh này");
+    const from = room.minute + p.after;
+    room.weather = overrideWeather(room.weather, { from, to: from + p.minutes, kind: p.kind });
+    this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
+  }
+
   /** Ví người chơi đổi ngoài intent của chính họ (mua của hàng xóm): gửi lại số dư. */
   async emitMe(playerId: string) {
     const room = this.roomFor(playerId);
@@ -634,7 +649,7 @@ export class GameService implements OnModuleDestroy {
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }
-      this.emitter?.toRoom(room.id, "clock", { day: room.day, minute: room.minute });
+      this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
     } catch (err) {
       this.logger.error(`tick xóm ${room.id} lỗi`, err as Error);
     }
@@ -662,7 +677,13 @@ export class GameService implements OnModuleDestroy {
           menuOf(b).filter((m) => m.on),
         ),
         reputation: b.reputation,
-        boost: (room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1,
+        boost:
+          ((room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1) *
+          weatherDemand(
+            room.sky,
+            content.lot(b.lotId ?? "").kind,
+            content.product(b.productId).category,
+          ),
         demandCarry: b.demandCarry,
       })),
     });
@@ -741,6 +762,7 @@ export class GameService implements OnModuleDestroy {
     }
     room.day += 1;
     room.minute = content.economy.dayStartMinute;
+    room.planWeather();
     await this.persistClock(room);
     this.emitWorld(room);
     for (const playerId of room.members.keys()) {
@@ -750,10 +772,14 @@ export class GameService implements OnModuleDestroy {
 
   // ───────────────────────── View ─────────────────────────
 
+  clockOf(room: RoomRuntime): ClockView {
+    return { day: room.day, minute: room.minute, weather: room.weatherView() };
+  }
+
   async snapshot(room: RoomRuntime, playerId: string): Promise<Snapshot> {
     return {
       me: await this.me(room, playerId),
-      clock: { day: room.day, minute: room.minute },
+      clock: this.clockOf(room),
       world: { lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)) },
       shift: this.work.view(room, playerId),
       roster: this.roster(room),

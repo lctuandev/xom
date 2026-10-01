@@ -147,6 +147,8 @@ export interface FloorConfig {
   role: Role;
   names: string[];
   newId: () => string;
+  /** Hệ số khách tới (thời tiết: trời mưa người ta vào quán có mái nhiều hơn). */
+  crowd?: number;
 }
 
 const COMPLAINTS = [
@@ -423,7 +425,7 @@ export function floorTick(f: Floor, cfg: FloorConfig, t: FloorClock, minutes = 1
   const events: FloorEvent[] = [];
 
   // 1. Khách tới: còn bàn trống thì vào (giữ bàn ngay), hết bàn thì đi quán khác.
-  const { arrivals, carry } = restaurantArrivals(cfg.r, minute, minutes, f.carry);
+  const { arrivals, carry } = restaurantArrivals(cfg.r, minute, minutes, f.carry, cfg.crowd);
   f.carry = carry;
   for (let k = 0; k < arrivals; k++) admit(f, cfg, t);
 

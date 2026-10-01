@@ -72,6 +72,8 @@ const BANH_MI_THIT = [
 async function openBanhMiStall(url: string) {
   const { body } = await register(url);
   const { socket, snapshot } = await connect(url, body.accessToken);
+  // Trời mưa bão thì xe đẩy vắng khách (UC-B4) — test vòng bán cần trời nắng cho chắc.
+  await emit(socket, "debug:weather", { kind: "sunny", minutes: 960 });
   await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
   for (const itemId of BANH_MI_THIT) {
     const r = await emit(socket, "market:buy", { itemId, packs: 1 });

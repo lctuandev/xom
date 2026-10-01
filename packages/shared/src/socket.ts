@@ -73,6 +73,8 @@ export interface ClientToServerEvents {
   "xom:join": Intent<{ code: string }>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
   "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
+  /** Dev/test: ép thời tiết xóm mình (production từ chối). */
+  "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
   "shop:order": Intent<{
     businessId: string;

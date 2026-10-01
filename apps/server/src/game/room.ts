@@ -1,4 +1,6 @@
-import type { DishView, MovePayload, OrderEvent } from "@xom/shared";
+import { content } from "@xom/content";
+import type { DishView, MovePayload, OrderEvent, WeatherView } from "@xom/shared";
+import { upcomingWeather, type WeatherSpan, weatherAt, weatherPlan } from "@xom/sim";
 import type { Shift } from "./work.js";
 
 /** Lỗi nghiệp vụ trả về client qua Ack; message tiếng Việt hiển thị thẳng. */
@@ -46,6 +48,8 @@ export class RoomRuntime {
   readonly shifts = new Map<string, Shift>();
   /** Người chơi vừa đổi vị trí, chờ phát cho cả xóm ở nhịp 10 Hz. */
   readonly dirtyPeers = new Set<string>();
+  /** Thời tiết cả ngày hôm nay (tất định theo xóm + ngày; sự kiện có thể đè). */
+  weather: WeatherSpan[] = [];
   timer?: NodeJS.Timeout;
   peerTimer?: NodeJS.Timeout;
   private queue: Promise<unknown> = Promise.resolve();
@@ -56,7 +60,34 @@ export class RoomRuntime {
     readonly code: string,
     public day: number,
     public minute: number,
-  ) {}
+  ) {
+    this.planWeather();
+  }
+
+  /** Lập thời tiết cho ngày hiện tại (gọi khi nạp xóm và khi sang ngày mới). */
+  planWeather() {
+    const eco = content.economy;
+    this.weather = weatherPlan(
+      content.data.weather,
+      eco.dayStartMinute,
+      eco.dayEndMinute,
+      this.id,
+      this.day,
+    );
+  }
+
+  /** Kiểu trời đang có (content). */
+  get sky() {
+    return content.weatherKind(weatherAt(this.weather, this.minute).kind);
+  }
+
+  weatherView(): WeatherView {
+    const next = upcomingWeather(this.weather, this.minute, content.data.weather.forecastMinutes);
+    return {
+      now: weatherAt(this.weather, this.minute).kind,
+      next: next ? { kind: next.kind, at: next.from } : null,
+    };
+  }
 
   get channel() {
     return `room:${this.id}`;

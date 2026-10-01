@@ -15,6 +15,7 @@ import {
   attendSchema,
   buyEquipmentSchema,
   type ClientToServerEvents,
+  debugWeatherSchema,
   emptySchema,
   joinRoomSchema,
   type MakeResult,
@@ -309,6 +310,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.logger.error("chuyển xóm lỗi", err as Error);
       return { ok: false, error: "internal", message: "Có lỗi, thử lại sau" };
     }
+  }
+
+  @SubscribeMessage("debug:weather")
+  debugWeather(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugWeatherSchema, body, (ctx, p) => this.game.debugWeather(ctx, p));
   }
 
   @SubscribeMessage("tutorial:set")

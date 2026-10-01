@@ -2,10 +2,20 @@ import { z } from "zod";
 
 // View (server → client) và intent (client → server) của vòng chơi (docs/PLAN.md §3.9).
 
+/** Kiểu trời (khớp content.weather.kinds). */
+export type WeatherIdView = "sunny" | "cloudy" | "rain" | "storm";
+
+export interface WeatherView {
+  now: WeatherIdView;
+  /** Trời sắp đổi (trong khoảng dự báo) — để báo trước "chiều nay có mưa". */
+  next: { kind: WeatherIdView; at: number } | null;
+}
+
 export interface ClockView {
   day: number;
   /** Phút trong ngày (game). */
   minute: number;
+  weather: WeatherView;
 }
 
 export interface MenuItemView {
@@ -482,3 +492,10 @@ export const joinRoomSchema = z.object({
     .regex(/^[0-9a-f]{8}$/, "Mã xóm gồm 8 ký tự"),
 });
 export const emptySchema = z.object({}).optional();
+/** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
+export const debugWeatherSchema = z.object({
+  kind: z.enum(["sunny", "cloudy", "rain", "storm"]),
+  /** Bắt đầu sau bao nhiêu phút game kể từ bây giờ. */
+  after: z.number().int().min(0).max(600).default(0),
+  minutes: z.number().int().min(1).max(960),
+});

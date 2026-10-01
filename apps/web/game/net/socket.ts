@@ -110,6 +110,9 @@ export function connectGame(onSignedOut: () => void): () => void {
   };
   document.addEventListener("visibilitychange", onVisible);
   const stopPresence = startPresence(s);
+  // Bản dev: kịch bản Playwright gọi lệnh thử nghiệm (ép thời tiết…) qua đây; server production từ chối.
+  if (process.env.NODE_ENV !== "production")
+    (window as unknown as { xomDebug: unknown }).xomDebug = { send };
 
   return () => {
     stopPresence();

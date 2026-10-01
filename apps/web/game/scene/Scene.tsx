@@ -20,6 +20,7 @@ import { NightLights } from "./NightLights";
 import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
+import { Rain } from "./Rain";
 import { Stalls } from "./Stalls";
 import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
@@ -129,6 +130,7 @@ function World() {
       <BubbleProjector />
       <TargetArrow />
       <TargetMarker walker={player} />
+      <Rain follow={player} />
       <PlayerCharacter walker={player} />
       {npcs.map((npc, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: danh sách NPC cố định

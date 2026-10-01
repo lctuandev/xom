@@ -11,6 +11,9 @@ export async function register(page: Page, name = "Tuấn", start = "/play") {
   await page.getByLabel("Mật khẩu").fill("matkhau123");
   await page.getByRole("button", { name: /Tạo tài khoản & vào xóm/ }).tap();
   await page.waitForURL(`**${start}`);
+  // Trời ngẫu nhiên (UC-B4) làm khách lúc đông lúc vắng — kịch bản mặc định chạy với trời nắng cho ổn định.
+  await expect(page.locator("[data-clock]")).toBeVisible();
+  await setWeather(page, "sunny");
 }
 
 /**
@@ -167,6 +170,22 @@ export const BANH_MI_THIT = [
   "sot",
   "giay_goi",
 ];
+
+/** Ép thời tiết xóm mình (lệnh thử nghiệm, chỉ bản dev): `after`/`minutes` tính bằng phút game. */
+export async function setWeather(page: Page, kind: string, after = 0, minutes = 960) {
+  const ok = await page.evaluate(
+    async (p) => {
+      const dbg = (
+        window as unknown as {
+          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+        }
+      ).xomDebug;
+      return (await dbg?.send("debug:weather", p))?.ok ?? false;
+    },
+    { kind, after, minutes },
+  );
+  expect(ok).toBe(true);
+}
 
 /** Người mới đi theo kịch bản tới lúc mở quầy bánh mì ở Đầu hẻm 12 (xe, nguyên liệu, chỗ bán). */
 export async function openBanhMiStall(page: Page, lot: RegExp = /Đầu hẻm 12/) {

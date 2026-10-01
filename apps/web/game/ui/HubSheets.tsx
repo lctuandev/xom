@@ -163,7 +163,7 @@ function AudioSettings() {
     setAudioLevels(patch);
     setLv(audioLevels());
   };
-  const slider = (label: string, key: "music" | "sfx" | "voice") => (
+  const slider = (label: string, key: "music" | "sfx" | "voice" | "ambient") => (
     <label className="flex items-center gap-2 text-sm font-semibold">
       <span className="w-24 shrink-0">{label}</span>
       <input
@@ -193,6 +193,7 @@ function AudioSettings() {
       {slider("🎵 Nhạc nền", "music")}
       {slider("🔔 Hiệu ứng", "sfx")}
       {slider("🗣️ Giọng nói", "voice")}
+      {slider("🌧️ Môi trường", "ambient")}
     </div>
   );
 }

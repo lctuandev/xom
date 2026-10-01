@@ -1,9 +1,18 @@
 "use client";
 
 import { content } from "@xom/content";
+import { formatClock } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { setAmbient, setMusicMood, sfx, startMusic, stopMusic, unlockAudio } from "./audio";
+import {
+  setAmbient,
+  setMusicMood,
+  setRain,
+  sfx,
+  startMusic,
+  stopMusic,
+  unlockAudio,
+} from "./audio";
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
 import ShopInterior from "./interior/ShopInterior";
@@ -156,11 +165,37 @@ function useInvite() {
   }, [invite, roster, dialogue, sheet]);
 }
 
-/** Dải tin chuyện trong xóm: sạp bày hàng, sang ngày mới (tin hàng xóm vào/ra đẩy từ socket). */
+/**
+ * Dải tin chuyện trong xóm: sạp bày hàng, sang ngày mới, trời đổi + báo trước trời sắp đổi (UC-B4)
+ * để người chơi kịp thích nghi (tin hàng xóm vào/ra đẩy từ socket).
+ */
 function useNews() {
   const minute = useGame((s) => s.clock?.minute ?? -1);
   const day = useGame((s) => s.clock?.day ?? 0);
+  const sky = useGame((s) => s.clock?.weather.now ?? null);
+  const nextSky = useGame((s) => s.clock?.weather.next?.kind ?? null);
+  const nextAt = useGame((s) => s.clock?.weather.next?.at ?? null);
   const last = useRef<{ open: Set<string>; day: number } | null>(null);
+  const lastSky = useRef<string | null>(null);
+  const warned = useRef<string | null>(null);
+  useEffect(() => {
+    if (!sky) return;
+    const push = useGame.getState().pushNews;
+    if (lastSky.current && lastSky.current !== sky) {
+      const k = content.weatherKind(sky);
+      push(k.news);
+      useGame.getState().toast({ kind: "info", text: k.news });
+    }
+    lastSky.current = sky;
+  }, [sky]);
+  useEffect(() => {
+    if (!nextSky || nextAt === null) return;
+    const key = `${day}:${nextSky}:${nextAt}`;
+    if (warned.current === key) return;
+    warned.current = key;
+    const k = content.weatherKind(nextSky);
+    useGame.getState().pushNews(k.forecast.replace("{time}", formatClock(nextAt)));
+  }, [nextSky, nextAt, day]);
   useEffect(() => {
     if (minute < 0) return;
     const push = useGame.getState().pushNews;
@@ -205,4 +240,8 @@ function useSound() {
     const crowd = rush ? 1 : h >= 21 || h < 6 ? 0.25 : 0.55;
     setAmbient(inside ? "inside" : "street", crowd);
   }, [minute, inside]);
+  const sky = useGame((s) => s.clock?.weather.now ?? "sunny");
+  useEffect(() => {
+    setRain(content.weatherKind(sky).rain, !!inside);
+  }, [sky, inside]);
 }

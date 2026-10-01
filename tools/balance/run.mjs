@@ -1,10 +1,20 @@
 // Mô phỏng headless N ngày cho mọi chiến lược để cân bằng kinh tế (docs/PLAN.md, docs/USECASES.md).
 // Mô hình "làm thật": khách tới theo customerArrivals; người chơi làm món mất `serveSec` giây thật / đơn
 // (1 giây thật = 1 phút game), hàng chờ tối đa queueSize; khách không được phục vụ thì bỏ đi.
+// Thời tiết tính theo kế hoạch trời tất định mỗi ngày (như server).
 // Chạy: pnpm balance [số ngày]   → bảng tóm tắt + out/strategies.csv
 import { mkdirSync, writeFileSync } from "node:fs";
 import { content } from "@xom/content";
-import { baseSpec, customerArrivals, dishCost, LOST_WEIGHT, nextReputation } from "@xom/sim";
+import {
+  baseSpec,
+  customerArrivals,
+  dishCost,
+  LOST_WEIGHT,
+  nextReputation,
+  weatherAt,
+  weatherDemand,
+  weatherPlan,
+} from "@xom/sim";
 
 const DAYS = Number(process.argv[2] ?? 30);
 const eco = content.economy;
@@ -35,6 +45,14 @@ function runStrategy(equipment, lot, mult, serveSec) {
   const perTick = tick / serveSec; // số đơn làm được mỗi nhịp (1 phút game = 1 giây thật)
   for (let day = 1; day <= DAYS; day++) {
     money -= lot.rentPerDay;
+    // Thời tiết thật của ngày (UC-B4): mưa bão xe đẩy vắng khách, tiệm có mái đông hơn.
+    const sky = weatherPlan(
+      content.data.weather,
+      eco.dayStartMinute,
+      eco.dayEndMinute,
+      "balance",
+      day,
+    );
     let queue = 0;
     let work = 0;
     for (let m = eco.dayStartMinute; m < eco.dayEndMinute; m += tick) {
@@ -50,6 +68,11 @@ function runStrategy(equipment, lot, mult, serveSec) {
             lotId: lot.id,
             priceRatio: mult,
             reputation,
+            boost: weatherDemand(
+              content.weatherKind(weatherAt(sky, m).kind),
+              lot.kind,
+              product.category,
+            ),
             demandCarry: carry,
           },
         ],
