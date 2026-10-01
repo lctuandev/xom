@@ -8,7 +8,7 @@
   --xom-leaf: #2f7d4f;
   --xom-sky: #bfe3f2;
   /* Chiều cao thanh điều hướng dưới (h-12 + pt-1.5 + pb-safe); sheet nằm ngay trên nó. */
-  --nav-h: calc(3.375rem + max(env(safe-area-inset-bottom), 0.5rem));
+  --nav-h: calc(3.75rem + max(env(safe-area-inset-bottom), 0.5rem));
 }
 
 @theme inline {

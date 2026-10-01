@@ -130,6 +130,11 @@ phần quyết định chính (nút Mở quầy, cách trả tiền…) để tr
 **Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** — nhìn là biết (tô phở = Ăn uống,
 rổ rau = Chợ, cúp = Bảng xóm, bánh răng = Cài đặt, bong bóng = Chat); tên đầy đủ ở `aria-label`/`title`; class `icon-halo`
 (quầng trắng + bóng) để nổi trên mọi nền 3D. Cột neo trái tối đa 3 icon (Luật 12.1).
+**Luật 12.6 — Thanh trên & thanh dưới:** thanh trạng thái chỉ chứa *số liệu* (tiền, uy tín, no/khát khi thấp, ngày · trời · giờ),
+trải tới mép phải, icon SVG cùng bộ (`IconCash`, `IconStar`, `IconRice`, `IconDrop`, `IconWeather`); tiền dưới 1 triệu ghi đủ, từ 1 triệu
+thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo: trái = ăn uống, chợ, bảng xóm;
+phải = cài đặt. Thanh điều hướng dưới dùng icon vẽ tay cỡ lớn **có nhãn chữ đè nhẹ ở chân icon** (mục đang mở: icon nổi lên, nhãn đỏ;
+Nhiệm vụ ở giữa to nhất). Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
 **Luật 12.5 — Sheet hay Modal:** *bottom sheet* cho thao tác trong lúc chơi, cần vẫn thấy bản đồ (chợ, làm ăn, quầy hàng xóm…);
 *modal* giữa màn hình (`Modal`) cho nội dung xem trọn vẹn, cần tập trung (bảng xếp hạng, hướng dẫn cài đặt). Bảng xếp hạng
 có bục vinh danh 2–1–3: hạng 1 khung vàng + vương miện + viền sáng xoay (tắt khi máy bật giảm chuyển động), hạng 2 bạc, hạng 3 đồng.

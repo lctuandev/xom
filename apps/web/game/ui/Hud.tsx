@@ -2,14 +2,30 @@
 
 import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { vnd } from "../format";
+import { vnd, vndHud } from "../format";
 import { type SheetId, useGame } from "../store";
-import { IconFood, IconGear, IconMarket, IconTrophy } from "./icons";
+import {
+  IconCash,
+  IconDrop,
+  IconFood,
+  IconGear,
+  IconJob,
+  IconMap,
+  IconMarket,
+  IconNeighbors,
+  IconQuest,
+  IconRice,
+  IconShop,
+  IconStar,
+  IconTrophy,
+  IconWeather,
+} from "./icons";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
-type NavItem = { id: SheetId | null; label: string; icon: string };
+type NavItem = { id: SheetId | null; label: string; icon: (c: string) => ReactNode };
 
 /**
  * Điều hướng chính (docs/PLAN.md — HUD): 5 mục theo nhóm tính năng, giữa là Nhiệm vụ (nổi lên).
@@ -17,11 +33,11 @@ type NavItem = { id: SheetId | null; label: string; icon: string };
  * Việc làm = làm thuê (sau này: bảng tuyển dụng) · Hàng xóm = ai online, mời bạn (sau này: bạn bè, chat).
  */
 const NAV: NavItem[] = [
-  { id: null, label: "Xóm", icon: "🗺️" },
-  { id: "business", label: "Làm ăn", icon: "🏪" },
-  { id: "quests", label: "Nhiệm vụ", icon: "🎯" },
-  { id: "jobs", label: "Việc làm", icon: "💼" },
-  { id: "xom", label: "Hàng xóm", icon: "👥" },
+  { id: null, label: "Xóm", icon: (c) => <IconMap className={c} /> },
+  { id: "business", label: "Làm ăn", icon: (c) => <IconShop className={c} /> },
+  { id: "quests", label: "Nhiệm vụ", icon: (c) => <IconQuest className={c} /> },
+  { id: "jobs", label: "Việc làm", icon: (c) => <IconJob className={c} /> },
+  { id: "xom", label: "Hàng xóm", icon: (c) => <IconNeighbors className={c} /> },
 ];
 
 export function Hud() {
@@ -32,36 +48,41 @@ export function Hud() {
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-      <header className="pt-safe pointer-events-auto flex items-start gap-2 px-3">
+      <header className="pt-safe pointer-events-auto flex items-start gap-2 pr-2 pl-3">
         <ProfileBadge />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <ResourceBar />
           <NewsTicker />
         </div>
-        <button
-          type="button"
-          onClick={() => openSheet(sheet === "settings" ? null : "settings")}
-          aria-label="Cài đặt"
-          title="Cài đặt"
-          className="relative flex size-11 shrink-0 items-center justify-center active:scale-90"
-        >
-          <IconGear className="icon-halo size-10" />
-          <ConnectionDot />
-        </button>
       </header>
 
       <Toasts />
       <div className="flex flex-1 flex-col">
         <Objective />
         <DeliveryHud />
-        <SideRail />
+        {/* Icon neo hai bên bản đồ: trái = ăn uống, chợ, bảng xóm · phải = cài đặt (góp ý UI: gỡ khỏi thanh trên). */}
+        <div className="flex items-start justify-between">
+          <SideRail />
+          <div className="mt-2 flex flex-col gap-1.5 px-2">
+            <button
+              type="button"
+              onClick={() => openSheet(sheet === "settings" ? null : "settings")}
+              aria-label="Cài đặt"
+              title="Cài đặt"
+              className="pointer-events-auto relative flex size-12 items-center justify-center active:scale-90"
+            >
+              <IconGear className="icon-halo size-10" />
+              <ConnectionDot />
+            </button>
+          </div>
+        </div>
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
           {showPerf && <PerfPanel />}
           <JobBadge />
         </div>
       </div>
 
-      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-5 items-end gap-0.5 bg-cream px-1.5 pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
+      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-5 items-end gap-0.5 rounded-t-3xl bg-gradient-to-b from-cream to-[#f3e3c3] px-1.5 pt-1 shadow-[0_-2px_14px_rgba(0,0,0,0.12)]">
         {NAV.map((item) => {
           const center = item.id === "quests";
           const active = sheet === item.id;
@@ -73,24 +94,28 @@ export function Hud() {
               aria-label={label}
               onClick={() => openSheet(active ? null : item.id)}
               aria-current={active ? "page" : undefined}
-              className={
-                center
-                  ? "-mt-6 flex flex-col items-center gap-0.5 text-[11px] font-semibold"
-                  : "relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
-              }
+              className={`group relative flex flex-col items-center ${center ? "-mt-7" : "h-14 justify-end"}`}
             >
+              {/* Icon vẽ tay cỡ lớn; nhãn chữ đè nhẹ ở chân icon (góp ý UI) — mục đang mở nổi lên + nhãn đỏ. */}
               {center ? (
-                <span className="flex size-14 items-center justify-center rounded-full bg-red text-2xl text-cream shadow-lg ring-4 ring-cream">
-                  {item.icon}
+                <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-b from-[#ffe6a8] to-sun shadow-lg ring-4 ring-cream transition-transform group-aria-[current=page]:scale-105">
+                  {item.icon("size-11 drop-shadow-sm")}
                 </span>
               ) : (
-                <span className="text-lg leading-none" aria-hidden>
-                  {item.icon}
+                <span className="flex h-11 items-end transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
+                  {item.icon("size-10 drop-shadow-[0_2px_1px_rgba(59,36,20,0.25)]")}
                 </span>
               )}
-              {item.label}
+              <span
+                aria-hidden
+                className={`relative -mt-2.5 rounded-full px-1.5 py-px text-[10px] leading-tight font-extrabold whitespace-nowrap shadow-sm ring-1 ring-cream/80 ${
+                  active ? "bg-red text-cream" : "bg-ink/80 text-cream"
+                }`}
+              >
+                {item.label}
+              </span>
               {item.id === "xom" && online > 1 && (
-                <span className="absolute top-0.5 right-3 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream">
+                <span className="absolute top-0 right-2 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream ring-2 ring-cream">
                   {online}
                 </span>
               )}
@@ -128,43 +153,50 @@ function ProfileBadge() {
   );
 }
 
-/** Thanh chỉ số: tiền · uy tín quầy · giờ (mặt trời/trăng). */
+/** Thanh chỉ số: tiền · uy tín quầy · no/khát · ngày, trời, giờ — icon vẽ tay, trải tới mép phải. */
 function ResourceBar() {
   const me = useGame((s) => s.me);
   const clock = useGame((s) => s.clock);
   const minute = clock?.minute ?? 0;
   const night = minute >= 1080 || minute < 330;
   const sky = clock?.weather.now ?? "sunny";
-  // Trời quang ban đêm thì là trăng; còn lại hiện kiểu trời (UC-B4) — không thêm nút mới (Luật 12.1).
-  const icon = night && sky === "sunny" ? "🌙" : content.weatherKind(sky).emoji;
   const next = clock?.weather.next;
   const skyLabel = `${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
   const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
-    <div className="flex items-center gap-2 rounded-full bg-ink/80 py-1 pr-3 pl-1 text-cream shadow-md">
+    <div className="flex h-9 items-center gap-1.5 rounded-full bg-ink/85 py-1 pr-2.5 pl-1 text-cream shadow-md">
       <span
-        className="rounded-full bg-cream/15 px-2 py-0.5 text-sm font-extrabold tabular-nums"
+        className="flex items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold tabular-nums"
         data-money={me?.money}
+        title={me ? `Tiền mặt ${vnd(me.money)}` : undefined}
       >
-        💵 {me ? vnd(me.money) : "…"}
+        <IconCash className="size-5 shrink-0" />
+        {me ? vndHud(me.money) : "…"}
       </span>
       {rep !== null && (
-        <span className="text-xs font-semibold tabular-nums">⭐ {rep.toFixed(1)}</span>
+        <span
+          className="flex items-center gap-0.5 text-xs font-bold tabular-nums"
+          title="Uy tín quầy"
+        >
+          <IconStar className="size-4" />
+          {rep.toFixed(1)}
+        </span>
       )}
       <NeedsChip />
       <span
-        className="ml-auto text-xs font-semibold tabular-nums"
+        className="ml-auto flex items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums"
         data-clock={clock ? minute : undefined}
         data-weather={clock ? sky : undefined}
         title={skyLabel}
       >
-        N{clock?.day ?? 1} <span aria-hidden>{icon}</span>
+        <span className="opacity-80">N{clock?.day ?? 1}</span>
+        <IconWeather kind={sky} night={night} className="size-5" />
         <span className="sr-only">{skyLabel}</span>
         {next && (
-          <span aria-hidden className="opacity-80">
-            →{content.weatherKind(next.kind).emoji}
+          <span aria-hidden className="flex items-center opacity-80" data-next={next.kind}>
+            ›<IconWeather kind={next.kind} className="size-4" />
           </span>
-        )}{" "}
+        )}
         {clock ? formatClock(minute) : "…"}
       </span>
     </div>
@@ -249,10 +281,10 @@ function NeedsChip() {
   const openSheet = useGame((s) => s.openSheet);
   if (!needs || (needs.food >= 50 && needs.drink >= 50)) return null;
   const low = content.data.needs.lowAt;
-  const item = (icon: string, v: number, label: string) =>
+  const item = (icon: ReactNode, v: number, label: string) =>
     v < 50 ? (
       <span
-        className={`tabular-nums ${v < low ? "animate-pulse text-[#ff9b8a]" : ""}`}
+        className={`flex items-center gap-0.5 tabular-nums ${v < low ? "animate-pulse text-[#ff9b8a]" : ""}`}
         title={`${label} ${v}%`}
       >
         {icon}
@@ -267,8 +299,8 @@ function NeedsChip() {
       data-needs={`${needs.food}:${needs.drink}`}
       className="flex items-center gap-1 rounded-full bg-cream/15 px-1.5 py-0.5 text-xs font-semibold"
     >
-      {item("🍚", needs.food, "No")}
-      {item("💧", needs.drink, "Đỡ khát")}
+      {item(<IconRice className="size-4" />, needs.food, "No")}
+      {item(<IconDrop className="size-4" />, needs.drink, "Đỡ khát")}
     </button>
   );
 }
