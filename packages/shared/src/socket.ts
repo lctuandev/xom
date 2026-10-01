@@ -13,6 +13,7 @@ import type {
   PayMethod,
   PayslipView,
   PeerPos,
+  ReviewsView,
   RosterView,
   SayEvent,
   ShiftView,
@@ -91,6 +92,10 @@ export interface ClientToServerEvents {
   "debug:grant": Intent<{ money?: number; xp?: number }>;
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
+  /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */
+  "review:list": Intent<{ ownerId: string }, ReviewsView>;
+  "review:write": Intent<{ ownerId: string; stars: number; text: string }, ReviewsView>;
+  "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
   "shop:order": Intent<{
     businessId: string;

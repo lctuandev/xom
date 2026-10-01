@@ -125,6 +125,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Business = loại + vị trí + sản phẩm + kho + giá + uy tín + doanh thu/chi phí | ✅ | 1–1.6 | Template FOOD / RETAIL |
 | Thêm nghề bằng dữ liệu (công thức từng bước) | ✅ | 1.6 | `packages/content` |
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
+| Sổ đánh giá quầy: khách NPC/hàng xóm chấm sao + viết, chủ quầy trả lời, che từ tục | ✅ | 1.11 | UC-F11 |
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
@@ -201,7 +202,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Uy tín quầy (sao) theo món đúng, nhanh, giá, thối tiền | ✅ | 1.6 | |
-| Review có lời ("ngon nhưng chờ lâu") | ⏳ | 2 | |
+| Review có lời ("ngon nhưng chờ lâu"): sổ đánh giá quầy, chủ quầy trả lời | ✅ | 1.11 | UC-F11 |
 | Reviewer ghé, viral | ⏳ | sau | UC-I2 |
 | Phiếu lương ca ✅ · uy tín người làm thuê ⏳ | 🚧 | 1.7–1.9 | UC-W7 |
 

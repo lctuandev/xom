@@ -56,6 +56,7 @@ model Player {
   relations  NpcRelation[]
   inventory  InventoryItem[]
   reports    DailyReport[]
+  reviews    Review[]       @relation("ReviewsReceived")
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -171,6 +172,28 @@ model DailyReport {
   createdAt    DateTime @default(now())
 
   @@unique([playerId, day])
+}
+
+/// Sổ đánh giá quầy (docs/USECASES.md UC-F11): khách NPC hoặc người chơi chấm sao + vài chữ; chủ quầy trả lời một lần.
+/// Gắn với chủ quầy (không xoá khi đổi nghề — tiếng tăm đi theo người).
+model Review {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  ownerId    String    @db.Uuid
+  owner      Player    @relation("ReviewsReceived", fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Món của quầy nào (productId) lúc được đánh giá.
+  productId  String
+  /// Người chơi viết (null = khách NPC).
+  authorId   String?   @db.Uuid
+  authorName String
+  stars      Int
+  text       String
+  day        Int
+  reply      String?
+  repliedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([authorId, ownerId, day])
+  @@index([ownerId, createdAt])
 }
 
 /// Thay cho analytics: ghi sự kiện để query khi cần (docs/PLAN.md, nguyên tắc làm một mình).

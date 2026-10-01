@@ -1,4 +1,4 @@
-import type { Content, Skill, SkillId } from "@xom/content";
+import type { Content, ReviewTag, Skill, SkillId } from "@xom/content";
 
 // Tiến trình (docs/DESIGN.md §4): người chơi phải luôn thấy "mình đang phát triển".
 // Kinh nghiệm (KN) chỉ đến từ làm thật; cấp độ tăng chậm dần; danh tiếng xã hội theo số khách đã phục vụ + uy tín.
@@ -99,4 +99,64 @@ export function addSkill(
 /** Cấp cần để mở một thứ (1 nếu không khoá). */
 export function unlockLevel(content: Content, id: "lot_house" | "event_host"): number {
   return content.data.unlocks.find((u) => u.id === id)?.level ?? 1;
+}
+
+// ───────── Sổ đánh giá quầy (content.reviews, UC-F11) ─────────
+
+/** Số sao từ độ hài lòng 0–1. */
+export function reviewStars(satisfaction: number): number {
+  if (satisfaction >= 0.9) return 5;
+  if (satisfaction >= 0.75) return 4;
+  if (satisfaction >= 0.55) return 3;
+  if (satisfaction >= 0.35) return 2;
+  return 1;
+}
+
+/** Tình huống chính để chọn câu: lỗi nặng nhất trước, rồi giá, rồi tốc độ. */
+export function reviewTagOf(o: {
+  served: boolean;
+  correct?: boolean;
+  fast?: boolean;
+  short?: boolean;
+  priceRatio?: number;
+  vip?: boolean;
+}): ReviewTag {
+  if (!o.served) return "lost";
+  if (o.vip) return o.correct && o.fast && !o.short ? "vip_good" : "vip_bad";
+  if (o.short) return "short";
+  if (o.correct === false) return "wrong";
+  if ((o.priceRatio ?? 1) > 1.15) return "pricey";
+  if (!o.fast) return "slow";
+  if ((o.priceRatio ?? 1) < 0.9) return "cheap";
+  return o.fast ? "fast" : "ok";
+}
+
+/** Che từ tục trong chữ người chơi viết (giữ chữ đầu cho dễ hiểu là bị che). */
+export function maskText(text: string, banned: readonly string[]): string {
+  let out = text;
+  for (const w of banned) {
+    const re = new RegExp(
+      `(^|[^\\p{L}])(${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})(?=$|[^\\p{L}])`,
+      "giu",
+    );
+    out = out.replace(re, (_m, pre: string) => `${pre}***`);
+  }
+  return out;
+}
+
+/** Điểm trung bình (1 chữ số thập phân) + phân bố 1–5 sao. */
+export function reviewSummary(stars: readonly number[]): {
+  avg: number;
+  count: number;
+  dist: number[];
+} {
+  const dist = [0, 0, 0, 0, 0];
+  for (const s of stars) {
+    const i = Math.min(5, Math.max(1, s)) - 1;
+    dist[i] = (dist[i] ?? 0) + 1;
+  }
+  const avg = stars.length
+    ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10
+    : 0;
+  return { avg, count: stars.length, dist };
 }

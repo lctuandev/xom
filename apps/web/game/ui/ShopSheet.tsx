@@ -7,6 +7,7 @@ import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
+import { RatingLine, ReviewBook, useReviews } from "./Reviews";
 import { Sheet } from "./Sheet";
 
 /**
@@ -23,6 +24,9 @@ export function ShopSheet() {
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [mods, setMods] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const { view: rating, setView: setRating } = useReviews(lot?.ownerId);
+  // Vừa mua thì mở sẵn sổ để chấm sao; viết xong vẫn để mở cho thấy đánh giá của mình.
+  const [bookOpen, setBookOpen] = useState(false);
   if (!lot) return null;
 
   const recipe = content.product(lot.productId).recipe;
@@ -54,6 +58,18 @@ export function ShopSheet() {
       <p className="mb-2 text-sm text-ink/60">
         {content.product(lot.productId).name} · người thật đứng quầy, làm tay theo lời bạn dặn.
       </p>
+      <details
+        className="mb-3"
+        open={bookOpen || !!rating?.canWrite}
+        onToggle={(e) => setBookOpen(e.currentTarget.open)}
+      >
+        <summary className="cursor-pointer text-sm">
+          <RatingLine view={rating} /> · 📒 Sổ đánh giá
+        </summary>
+        <div className="mt-2">
+          <ReviewBook ownerId={lot.ownerId} owner={false} onChange={setRating} />
+        </div>
+      </details>
       <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0" aria-label="Thực đơn">
         {menu.map((m) => {
           const v = recipe.variants.find((x) => x.id === m.variantId);

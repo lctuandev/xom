@@ -11,7 +11,7 @@ import {
 } from "./helpers";
 
 // Mua của nhau (docs/USECASES.md UC-J3): An mở xe bánh mì; Bình vào xóm An, tới quầy gọi món
-// "không hành"; An làm tay đúng lời dặn; tính tiền thì tiền đi từ ví Bình sang ví An.
+// "không hành"; An làm tay đúng lời dặn; Bình trả tiền mặt, An thối; Bình chấm sao, An trả lời (UC-F11).
 test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả tiền mặt, chủ quầy thối", async ({
   browser,
   page,
@@ -88,5 +88,27 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
     .poll(async () => Number(await b.locator("[data-money]").getAttribute("data-money")))
     .toBeLessThan(moneyBefore);
   await shot(b, "24-nhan-mon");
+
+  // Sổ đánh giá (UC-F11): Bình vừa mua nên chấm sao + viết vài chữ; An trả lời trong bảng Làm ăn.
+  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
+  await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
+  await expect(shop).toBeVisible({ timeout: 30_000 });
+  const write = shop.locator("[data-write-review]");
+  await expect(write).toBeVisible();
+  await write.getByRole("radio", { name: "4 sao" }).tap();
+  await write.getByRole("textbox", { name: "Lời đánh giá" }).fill("Bánh giòn, chủ quầy làm kỹ");
+  await write.getByRole("button", { name: "Gửi" }).tap();
+  await expect(shop.getByText("Bánh giòn, chủ quầy làm kỹ")).toBeVisible();
+  await expect(write).toHaveCount(0);
+  await shot(b, "25-danh-gia");
+
+  await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
+  const book = page.getByRole("region", { name: "Sổ đánh giá" });
+  const review = book.locator("[data-review]").filter({ hasText: "Bánh giòn" });
+  await review.scrollIntoViewIfNeeded();
+  await review.getByRole("button", { name: "💬 Trả lời" }).tap();
+  await review.getByRole("button", { name: "Cảm ơn bạn nhiều nha! 🥰" }).tap();
+  await expect(review.getByText(/Chủ quầy: Cảm ơn bạn nhiều nha!/)).toBeVisible();
+  await shot(page, "26-tra-loi-danh-gia");
   await ctx.close();
 });

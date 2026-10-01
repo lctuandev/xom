@@ -34,6 +34,9 @@ import {
   payOrderSchema,
   pingSchema,
   repairSchema,
+  reviewListSchema,
+  reviewReplySchema,
+  reviewWriteSchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
@@ -281,6 +284,25 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("npc:talk")
   talk(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<TalkResult>> {
     return this.handleWith(c, talkSchema, body, (ctx, p) => this.game.talk(ctx, p.npcId, p.topic));
+  }
+
+  @SubscribeMessage("review:list")
+  reviewList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewListSchema, body, (ctx, p) =>
+      this.game.reviewList(ctx, p.ownerId),
+    );
+  }
+
+  @SubscribeMessage("review:write")
+  reviewWrite(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewWriteSchema, body, (ctx, p) => this.game.reviewWrite(ctx, p));
+  }
+
+  @SubscribeMessage("review:reply")
+  reviewReply(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewReplySchema, body, (ctx, p) =>
+      this.game.reviewReply(ctx, p.reviewId, p.text),
+    );
   }
 
   @SubscribeMessage("chat:say")

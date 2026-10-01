@@ -233,6 +233,30 @@ export interface SayEvent {
   text: string;
 }
 
+/** Một đánh giá trong sổ đánh giá quầy (UC-F11). */
+export interface ReviewView {
+  id: string;
+  authorName: string;
+  /** Người chơi viết (khác khách NPC). */
+  fromPlayer: boolean;
+  stars: number;
+  text: string;
+  day: number;
+  reply: string | null;
+}
+
+export interface ReviewsView {
+  ownerId: string;
+  ownerName: string;
+  avg: number;
+  count: number;
+  /** Số đánh giá 1★…5★. */
+  dist: number[];
+  /** Người xem đã mua ở quầy hôm nay và chưa đánh giá. */
+  canWrite: boolean;
+  items: ReviewView[];
+}
+
 export interface TalkResult {
   line: string;
   friendship: number;
@@ -562,3 +586,12 @@ export const debugWeatherSchema = z.object({
   after: z.number().int().min(0).max(600).default(0),
   minutes: z.number().int().min(1).max(960),
 });
+
+const reviewText = z.string().trim().min(1).max(140);
+export const reviewListSchema = z.object({ ownerId: z.string().uuid() });
+export const reviewWriteSchema = z.object({
+  ownerId: z.string().uuid(),
+  stars: z.number().int().min(1).max(5),
+  text: reviewText,
+});
+export const reviewReplySchema = z.object({ reviewId: z.string().uuid(), text: reviewText });

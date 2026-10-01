@@ -1562,6 +1562,79 @@ export const data: ContentInput = {
     { id: "vay_tay", text: "👋" },
   ],
 
+  // Sổ đánh giá quầy (UC-F11): câu theo tình huống — giọng khách xóm + chút Gen Z.
+  reviews: {
+    chance: 0.3,
+    lostChance: 0.35,
+    replyRep: 0.01,
+    maxText: 140,
+    names: [
+      "Linh",
+      "Huy",
+      "Trâm",
+      "Khoa",
+      "Ngọc",
+      "Tú",
+      "Bảo",
+      "My",
+      "Đạt",
+      "Vy",
+      "chú Tư",
+      "cô Sáu",
+    ],
+    lines: {
+      fast: [
+        "Làm lẹ dữ, chưa kịp lướt xong cái story là có món 😳",
+        "Nhanh gọn lẹ, 10 điểm không có nhưng",
+        "Đứng chờ chưa tới một phút, mê!",
+      ],
+      ok: [
+        "Ổn áp nha, mai ghé tiếp",
+        "Ăn được, giá mềm, chủ quầy dễ thương",
+        "Vừa miệng, không có gì để chê",
+      ],
+      slow: [
+        "Chờ hơi lâu nha shop, sáng đi làm trễ luôn 🥲",
+        "Ngon mà đợi mỏi chân quá trời",
+        "Làm chậm rì, lần sau đặt trước chắc ổn hơn",
+      ],
+      wrong: [
+        "Dặn không hành mà vẫn có hành, buồn ghê 😤",
+        "Kêu một đằng làm một nẻo, xỉu",
+        "Sai món mà được giảm giá nên thôi bỏ qua",
+      ],
+      pricey: [
+        "Hơi chát so với mặt bằng xóm á",
+        "Giá này ở chợ mua được hai cái rồi 💸",
+        "Ngon nhưng ví mình khóc nhẹ",
+      ],
+      cheap: [
+        "Rẻ mà chất lượng, kèo thơm 🔥",
+        "Giá học sinh, ủng hộ dài dài",
+        "Rẻ bất ngờ, ăn xong còn tiền mua trà đá",
+      ],
+      short: [
+        "Thối thiếu tiền nha, phải đòi mới đưa đủ 😒",
+        "Tính tiền ẩu quá, check lại giùm cái",
+      ],
+      lost: [
+        "Đứng chờ mòn mỏi không ai làm, thôi đi quán khác",
+        "Hàng đông mà một mình làm, bỏ cuộc 🫠",
+        "Đợi hoài không tới lượt, bye",
+      ],
+      vip_good: [
+        "Chuẩn vị, làm kỹ, sẽ giới thiệu bạn bè 👍",
+        "Quầy nhỏ mà làm có tâm, recommend nha",
+      ],
+      vip_bad: ["Kỳ vọng nhiều mà hơi thất vọng", "Chưa tới, còn phải luyện thêm"],
+    },
+    quickReplies: {
+      good: ["Cảm ơn bạn nhiều nha! 🥰", "Mai ghé tiếp nha, có món mới đó!"],
+      bad: ["Xin lỗi bạn, lần sau mình làm kỹ hơn ạ 🙏", "Cảm ơn góp ý, mình sửa liền nha!"],
+    },
+    banned: ["đm", "dm", "đmm", "vcl", "vl", "đéo", "địt", "lồn", "cặc", "đĩ"],
+  },
+
   customerLines: {
     cheap: ["Rẻ vậy! Mai ghé nữa nha", "Giá này hời quá", "Cho thêm ổ nữa được hông?"],
     fair: ["Cho một phần nha", "Bán cho con với", "Như mọi khi nha"],

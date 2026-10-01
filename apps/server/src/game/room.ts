@@ -51,6 +51,8 @@ export class RoomRuntime {
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
   readonly attending = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
+  /** Hàng xóm đã mua ở quầy ai hôm nay (`buyer:owner:day`) — mới được viết đánh giá (UC-F11). */
+  readonly purchases = new Set<string>();
   /** Rao hàng: businessId → hết hiệu lực ở phút game này (trong ngày). */
   readonly boostUntil = new Map<string, number>();
   /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */

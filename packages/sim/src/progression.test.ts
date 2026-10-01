@@ -5,8 +5,12 @@ import {
   fameOf,
   holdFactor,
   levelOf,
+  maskText,
   patienceFactor,
   remembersOrders,
+  reviewStars,
+  reviewSummary,
+  reviewTagOf,
   skillLevel,
   unlockLevel,
   XP,
@@ -57,5 +61,52 @@ describe("kỹ năng & mở khoá (DESIGN §4, Luật 4.2)", () => {
   it("nhà mặt tiền mở ở cấp 3, khai trương ở cấp 2", () => {
     expect(unlockLevel(content, "lot_house")).toBe(3);
     expect(unlockLevel(content, "event_host")).toBe(2);
+  });
+});
+
+describe("sổ đánh giá", () => {
+  it("sao theo độ hài lòng", () => {
+    expect(reviewStars(1)).toBe(5);
+    expect(reviewStars(0.8)).toBe(4);
+    expect(reviewStars(0.6)).toBe(3);
+    expect(reviewStars(0.4)).toBe(2);
+    expect(reviewStars(0)).toBe(1);
+  });
+  it("tình huống: lỗi nặng nhất trước", () => {
+    expect(reviewTagOf({ served: false })).toBe("lost");
+    expect(reviewTagOf({ served: true, correct: false, short: true, fast: true })).toBe("short");
+    expect(reviewTagOf({ served: true, correct: false, fast: true })).toBe("wrong");
+    expect(reviewTagOf({ served: true, correct: true, fast: true, priceRatio: 1.3 })).toBe(
+      "pricey",
+    );
+    expect(reviewTagOf({ served: true, correct: true, fast: false })).toBe("slow");
+    expect(reviewTagOf({ served: true, correct: true, fast: true, priceRatio: 0.8 })).toBe("cheap");
+    expect(reviewTagOf({ served: true, correct: true, fast: true })).toBe("fast");
+    expect(reviewTagOf({ served: true, correct: true, fast: true, vip: true })).toBe("vip_good");
+  });
+  it("che từ tục, không che chữ thường có chứa", () => {
+    const banned = content.data.reviews.banned;
+    expect(maskText("ngon vl luôn", banned)).toBe("ngon *** luôn");
+    expect(maskText("xem vlog review", banned)).toBe("xem vlog review");
+    expect(maskText("ĐM chờ lâu", banned)).toBe("*** chờ lâu");
+  });
+  it("điểm trung bình + phân bố", () => {
+    expect(reviewSummary([5, 4, 4, 1])).toEqual({ avg: 3.5, count: 4, dist: [1, 0, 0, 2, 1] });
+    expect(reviewSummary([])).toEqual({ avg: 0, count: 0, dist: [0, 0, 0, 0, 0] });
+  });
+  it("mỗi tình huống có câu", () => {
+    for (const tag of [
+      "fast",
+      "ok",
+      "slow",
+      "wrong",
+      "pricey",
+      "cheap",
+      "short",
+      "lost",
+      "vip_good",
+      "vip_bad",
+    ] as const)
+      expect(content.data.reviews.lines[tag]?.length).toBeGreaterThan(1);
   });
 });

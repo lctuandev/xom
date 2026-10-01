@@ -22,6 +22,8 @@ import {
   pickArchetype,
   pickPayment,
   priceScore,
+  reviewStars,
+  reviewTagOf,
   type SkillPoints,
   scoreDish,
   seededRandom,
@@ -43,6 +45,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
 import { addToReport } from "./report.js";
+import { purchaseKey, ReviewService } from "./reviews.js";
 import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
@@ -78,6 +81,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
+    private readonly reviews: ReviewService,
   ) {}
 
   setEmitter(emit: OrderEmitter) {
@@ -378,6 +382,7 @@ export class OrderService {
     }
     room.orders.delete(orderId);
     if (e.buyerId) {
+      room.purchases.add(purchaseKey(e.buyerId, e.ownerId, room.day));
       this.emit?.charged(e.buyerId);
       const line =
         e.pay.kind === "transfer"
@@ -386,6 +391,14 @@ export class OrderService {
       this.emit?.result(room.id, { orderId, served: true, tip: 0, line, outcome, received });
       return;
     }
+
+    // Sổ đánh giá (UC-F11): khách viết theo đúng chuyện vừa xảy ra.
+    const tag = reviewTagOf({ served: true, correct, fast, short, priceRatio: ratio, vip: !!vip });
+    void this.reviews
+      .npc(e, room.day, reviewStars(satisfaction), tag, {
+        force: !!vip || e.archetype === "reviewer",
+      })
+      .catch(() => undefined);
 
     const lines = content.data.customerLines;
     const line = vip
@@ -486,6 +499,12 @@ export class OrderService {
       }
       room.orders.delete(id);
       await this.recordLost(room, e.ownerId, e.businessId, 1, order.vip);
+      if (!e.buyerId)
+        void this.reviews
+          .npc(e, room.day, 1 + Math.round(seededRandom("lost", id)()), "lost", {
+            chance: content.data.reviews.lostChance,
+          })
+          .catch(() => undefined);
       this.emit?.result(room.id, {
         orderId: id,
         served: false,

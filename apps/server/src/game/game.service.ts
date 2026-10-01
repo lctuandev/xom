@@ -55,6 +55,7 @@ import { addItems, inventoryView, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { addToReport, emptyReport } from "./report.js";
+import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
 import { WorkService } from "./work.js";
 
@@ -123,10 +124,12 @@ export class GameService implements OnModuleDestroy {
     private readonly ledger: LedgerService,
     readonly orders: OrderService,
     readonly work: WorkService,
+    readonly reviews: ReviewService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
     this.emitter = emitter;
+    this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -602,6 +605,26 @@ export class GameService implements OnModuleDestroy {
     );
   }
 
+  /** Sổ đánh giá của một chủ quầy cùng xóm (hoặc của mình). */
+  reviewList({ room, playerId }: IntentContext, ownerId: string) {
+    return this.reviews.list(room, playerId, ownerId);
+  }
+
+  async reviewWrite(
+    { room, playerId }: IntentContext,
+    p: { ownerId: string; stars: number; text: string },
+  ) {
+    const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
+    await this.reviews.write(room, { id: playerId, name }, p.ownerId, p.stars, p.text);
+    return this.reviews.list(room, playerId, p.ownerId);
+  }
+
+  async reviewReply({ room, playerId }: IntentContext, reviewId: string, text: string) {
+    await this.reviews.reply(playerId, reviewId, text);
+    void this.emitMe(playerId);
+    return this.reviews.list(room, playerId, playerId);
+  }
+
   /**
    * Mua đồ ăn ở sạp NPC (UC-B9, B10): sạp phải đang bày (đúng giờ), mình phải đứng gần; tiền đi qua sổ cái.
    * Người bán nói một câu, thân thiết +1.
@@ -1035,6 +1058,7 @@ export class GameService implements OnModuleDestroy {
     for (const playerId of [...room.shifts.keys()]) await this.work.end(room, playerId, "day_end");
     room.boostUntil.clear();
     room.shoutReadyAt.clear();
+    room.purchases.clear();
     for (const playerId of room.members.keys()) {
       await this.closeAllFor(room, playerId);
       const report = await this.prisma.$transaction(async (tx) => {

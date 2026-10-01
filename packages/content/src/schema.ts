@@ -381,6 +381,41 @@ export const customerLinesSchema = z.object({
   impatient: z.array(z.string()).min(1),
 });
 
+/** Sổ đánh giá quầy (UC-F11): khách NPC/người chơi chấm sao + viết vài chữ; chủ quầy trả lời. */
+export const reviewTag = z.enum([
+  "fast",
+  "slow",
+  "wrong",
+  "pricey",
+  "cheap",
+  "short",
+  "lost",
+  "vip_good",
+  "vip_bad",
+  "ok",
+]);
+export type ReviewTag = z.infer<typeof reviewTag>;
+export const reviewsSchema = z.object({
+  /** Khách NPC tính tiền xong có viết đánh giá (khách sộp, reviewer luôn viết). */
+  chance: z.number().min(0).max(1),
+  /** Khách chờ lâu bỏ đi có viết đánh giá xấu. */
+  lostChance: z.number().min(0).max(1),
+  /** Trả lời khéo đánh giá ≤ 3 sao thì gỡ lại chút uy tín. */
+  replyRep: z.number().min(0).max(0.1),
+  maxText: z.number().int().min(20).max(500),
+  /** Tên khách NPC ký dưới đánh giá. */
+  names: z.array(z.string()).min(3),
+  /** Câu theo tình huống; mỗi tình huống ≥ 2 câu. */
+  lines: z.record(reviewTag, z.array(z.string()).min(2)),
+  /** Câu trả lời nhanh cho chủ quầy. */
+  quickReplies: z.object({
+    good: z.array(z.string()).min(1),
+    bad: z.array(z.string()).min(1),
+  }),
+  /** Từ bị che bằng *** trong chữ người chơi viết. */
+  banned: z.array(z.string()),
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -604,6 +639,7 @@ export const contentSchema = z.object({
   /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
+  reviews: reviewsSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

@@ -360,6 +360,23 @@ Dọn quầy → tổng kết: doanh thu, tiền boa, nguyên liệu đã dùng 
 **Đời thật:** "Mai đám giỗ, đặt giùm cô 30 ổ bánh mì lúc 10 giờ."
 **Luật:** NPC gửi đơn đặt (số lượng, giờ lấy, cọc 30%) → nhận hoặc từ chối → tới giờ phải có đủ món làm sẵn → khách trả phần còn lại; trễ hoặc thiếu → mất cọc, uy tín −.
 
+### UC-F11 · Sổ đánh giá quầy + chủ quầy trả lời ✅ (bản đầu)
+**Hệ thống:** ⭐ Uy tín · 🏪 Làm ăn · 🤝 Xã hội · **Luật:** 4 (danh tiếng thấy được), 7 (đánh giá → khách → doanh thu), 14 (server kiểm đã mua).
+**Đời thật:** ăn xong khách lên Google Maps/nhóm Zalo khu phố chấm sao, chê chờ lâu, khen rẻ; chủ quán khéo thì vào trả lời,
+xin lỗi đàng hoàng — người đọc thấy quán có tâm.
+**Luồng:**
+- Khách NPC tính tiền xong có ~30% viết đánh giá (khách sộp, reviewer luôn viết); khách chờ lâu bỏ đi ~35% chấm 1–2★.
+  Sao theo độ hài lòng; câu theo đúng chuyện vừa xảy ra (sai món, thối thiếu, đắt, chậm, rẻ, nhanh) — `content.reviews.lines`.
+- Chủ quầy: bảng *Làm ăn* → *📒 Sổ đánh giá* (điểm trung bình, phân bố sao, 20 đánh giá mới nhất) → *💬 Trả lời*: chọn câu nhanh hoặc tự viết.
+  Đánh giá ≤ 2★ hoặc của hàng xóm thì có thông báo.
+- Hàng xóm: bảng gọi món quầy hàng xóm hiện *★ 4.2 (15 đánh giá)*; vừa mua xong thì mở ra là ô chấm sao + viết vài chữ.
+**Luật game:** chỉ người đã mua ở quầy hôm nay mới viết được, mỗi ngày một lần mỗi quầy, không tự đánh giá mình;
+trả lời mỗi đánh giá một lần; trả lời đánh giá ≤ 3★ thì uy tín quầy +1% và *Ăn nói* +1; chữ người chơi viết tối đa 140 ký tự,
+từ tục bị che `***`. Sổ gắn với chủ quầy — đổi nghề vẫn giữ tiếng.
+**Kiểm chứng:** unit `progression.test.ts` (sao, tình huống, che từ, trung bình); e2e server `reviews.e2e-spec.ts`;
+Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
+**Chưa:** đánh giá ảnh hưởng lượng khách mới (hiện qua uy tín), báo cáo đánh giá sai sự thật.
+
 ---
 
 ## G. Dịch vụ sửa xe (nghề mới, template SERVICE)
