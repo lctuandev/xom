@@ -1,7 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
 import type { MeView, NotifyEvent, OrderEvent, Snapshot } from "@xom/shared";
-import { emit, join, next, openBanhMiStall } from "./client.js";
+import { atmDeposit, emit, join, next, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
 
 // Chọn cách trả tiền (DESIGN §2, docs/USECASES.md UC-I8): 💵 tiền mặt · 🏦 chuyển khoản · tự chọn.
@@ -34,7 +34,7 @@ describe("Trả bằng gì (e2e)", () => {
     socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await wait(80);
     const deposit = start - 100_000;
-    await emit(socket, "atm:use", { atmId: atm.id, action: "deposit", amount: deposit });
+    await atmDeposit(socket, deposit);
     const yard = content.place("vua_xe").position;
     socket.emit("move", { x: yard.x, z: yard.z + 1.4, yaw: 0, moving: false, inside: null });
     await wait(80);
@@ -106,7 +106,7 @@ describe("Trả bằng gì (e2e)", () => {
     if (!atm) throw new Error("bản đồ không có ATM");
     b.socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await wait(80);
-    await emit(b.socket, "atm:use", { atmId: atm.id, action: "deposit", amount: 100_000 });
+    await atmDeposit(b.socket, 100_000);
     const lot = content.lot("dau_hem").position;
     b.socket.emit("move", { x: lot.x + 1, z: lot.z + 1.2, yaw: 0, moving: false, inside: null });
     await wait(120);

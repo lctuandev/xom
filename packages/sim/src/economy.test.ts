@@ -8,6 +8,7 @@ import {
   customerArrivals,
   menuPriceRatio,
   nextReputation,
+  pinError,
   priceScore,
   repairCost,
   type ShopState,
@@ -202,5 +203,16 @@ describe("choosePayment — trả bằng gì", () => {
     expect(choosePayment({ ...stall, cash: 0, amount: 20_000, method: "auto" })).toEqual({
       error: "Sạp chỉ nhận tiền mặt — ra cây ATM rút đã",
     });
+  });
+});
+
+describe("PIN ATM", () => {
+  it("đúng 6 số, không trùng hết, không dãy liên tiếp", () => {
+    expect(pinError("12345")).toMatch(/6 chữ số/);
+    expect(pinError("12a456")).toMatch(/6 chữ số/);
+    expect(pinError("111111")).toMatch(/giống nhau/);
+    expect(pinError("123456")).toMatch(/liên tiếp/);
+    expect(pinError("654321")).toMatch(/liên tiếp/);
+    expect(pinError("270915")).toBeNull();
   });
 });

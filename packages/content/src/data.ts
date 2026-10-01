@@ -2019,6 +2019,9 @@ export const data: ContentInput = {
       depositStep: 10_000,
       // Mua lặt vặt (dưới 200k) thì móc tiền mặt; mua xe, trả tiền nhà thì quét mã chuyển khoản.
       cashFirstBelow: 200_000,
+      // Rút ATM mất phí như ngoài đời; sai PIN 3 lần máy nuốt thẻ (UC-I6).
+      withdrawFee: 1_000,
+      pinTries: 3,
     },
     serveReputationBonus: 0.01,
     interactRadius: 2.5,

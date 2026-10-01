@@ -67,6 +67,8 @@ export interface MeView {
   money: number;
   /** 🏦 Số dư tài khoản ngân hàng (xem trong Hồ sơ / ATM). */
   bank: number;
+  /** Thẻ ATM: đã tạo PIN chưa, có đang bị máy giữ thẻ không. */
+  atm: { hasPin: boolean; locked: boolean };
   jobId: string | null;
   /** Bước kịch bản người mới hiện tại. */
   tutorial: string;
@@ -641,11 +643,29 @@ export const debugGrantSchema = z.object({
   xp: z.number().int().min(1).max(100_000).optional(),
 });
 /** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
+const atmId = z.string().regex(/^atm_[0-9]+_[0-9]+$/);
+const pin = z.string().max(12);
 export const atmSchema = z.object({
-  atmId: z.string().regex(/^atm_[0-9]+_[0-9]+$/),
+  atmId,
   action: z.enum(["deposit", "withdraw"]),
   amount: z.number().int().min(1_000).max(100_000_000),
+  pin,
 });
+export const atmAuthSchema = z.object({ atmId, pin });
+export const atmPinSchema = z.object({ atmId, pin, old: pin.optional() });
+
+/** Biên lai ATM (UC-I6). */
+export interface AtmReceipt {
+  code: string;
+  atmId: string;
+  action: "deposit" | "withdraw";
+  amount: number;
+  fee: number;
+  /** Số dư tài khoản sau giao dịch. */
+  balance: number;
+  day: number;
+  minute: number;
+}
 /** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
 export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
 export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });

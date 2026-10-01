@@ -1,3 +1,4 @@
+import { content } from "@xom/content";
 import type {
   Ack,
   ClientToServerEvents,
@@ -83,3 +84,14 @@ export async function openBanhMiStall(url: string) {
 }
 
 export const changeFor = (o: OrderEvent) => (o.pay.kind === "cash" ? o.pay.bill - o.price : null);
+
+/** Ra cây ATM gần nhất (đứng sát), tạo PIN nếu chưa có rồi nộp tiền mặt vào tài khoản (UC-I6). */
+export async function atmDeposit(socket: Client, amount: number, pin = "270915") {
+  const atm = content.atms[0];
+  if (!atm) throw new Error("bản đồ không có ATM");
+  socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
+  await new Promise((r) => setTimeout(r, 80));
+  await emit(socket, "atm:pin", { atmId: atm.id, pin });
+  const res = await emit(socket, "atm:use", { atmId: atm.id, action: "deposit", amount, pin });
+  if (!res.ok) throw new Error(`nộp ATM: ${res.message}`);
+}

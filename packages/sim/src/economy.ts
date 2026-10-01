@@ -196,6 +196,15 @@ export function atmAmountError(amount: number, step: number): string | null {
   return null;
 }
 
+/** Mã PIN ATM hợp lệ: đúng 6 số, không trùng hết, không dãy liên tiếp (như ngân hàng thật bắt buộc). */
+export function pinError(pin: string): string | null {
+  if (!/^\d{6}$/.test(pin)) return "PIN gồm đúng 6 chữ số";
+  if (/^(\d)\1{5}$/.test(pin)) return "PIN không được 6 số giống nhau";
+  if ("0123456789".includes(pin) || "9876543210".includes(pin))
+    return "PIN không được là dãy số liên tiếp";
+  return null;
+}
+
 export interface Maintenance {
   wearPerServe: number;
   slowAt: number;

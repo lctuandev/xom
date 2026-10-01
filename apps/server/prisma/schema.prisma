@@ -52,6 +52,10 @@ model Player {
   skills      Json     @default("{}")
   /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
   achievements Json    @default("{}")
+  /// Mã PIN thẻ ATM (băm sha256 kèm id người chơi) — null = chưa tạo (UC-I6).
+  atmPin       String?
+  /// Sai PIN quá số lần cho phép: máy giữ thẻ tới hết ngày game này.
+  atmLockDay   Int?
   createdAt   DateTime @default(now())
 
   businesses Business[]

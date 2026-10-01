@@ -12,6 +12,8 @@ import {
 import { content } from "@xom/content";
 import {
   type Ack,
+  atmAuthSchema,
+  atmPinSchema,
   atmSchema,
   attendSchema,
   buyEquipmentSchema,
@@ -404,7 +406,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("atm:use")
   atm(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, atmSchema, body, (ctx, p) => this.game.useAtm(ctx, p));
+    return this.handleWith(c, atmSchema, body, async (ctx, p) => {
+      const receipt = await this.game.useAtm(ctx, p);
+      return { me: await this.game.me(ctx.room, ctx.playerId), receipt };
+    });
+  }
+
+  @SubscribeMessage("atm:auth")
+  atmAuth(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, atmAuthSchema, body, (ctx, p) => this.game.atmAuth(ctx, p.atmId, p.pin));
+  }
+
+  @SubscribeMessage("atm:pin")
+  atmPin(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, atmPinSchema, body, (ctx, p) =>
+      this.game.atmSetPin(ctx, p.atmId, p.pin, p.old),
+    );
   }
 
   @SubscribeMessage("event:host")

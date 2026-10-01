@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type {
+  AtmReceipt,
   ClockView,
   DayReportView,
   EventView,
@@ -88,7 +89,14 @@ export interface ClientToServerEvents {
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
   "vendor:buy": Intent<{ vendorId: string; itemId: string; pay?: PayMethod }>;
   /** Rút / gửi tiền ở cây ATM (UC-I6). */
-  "atm:use": Intent<{ atmId: string; action: "deposit" | "withdraw"; amount: number }>;
+  "atm:use": Intent<
+    { atmId: string; action: "deposit" | "withdraw"; amount: number; pin: string },
+    { me: MeView; receipt: AtmReceipt }
+  >;
+  /** Nhập PIN ở màn hình ATM (sai quá số lần thì máy giữ thẻ). */
+  "atm:auth": Intent<{ atmId: string; pin: string }>;
+  /** Tạo PIN lần đầu / đổi PIN (cần PIN cũ). */
+  "atm:pin": Intent<{ atmId: string; pin: string; old?: string }>;
   /** Người chơi tổ chức sự kiện (khai trương). */
   "event:host": Intent<{ eventId: string; pay?: PayMethod }>;
   /** Dev/test: đặt giờ của xóm (production từ chối). */

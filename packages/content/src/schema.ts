@@ -577,6 +577,10 @@ export const economySchema = z.object({
     depositStep: vnd,
     /** "Tự chọn" cách trả: dưới mức này trả tiền mặt trước, từ mức này chuyển khoản trước (như ngoài đời). */
     cashFirstBelow: vnd,
+    /** Phí mỗi lần rút tiền ở ATM (nội mạng ~1.000đ ngoài đời). */
+    withdrawFee: vnd,
+    /** Sai PIN bấy nhiêu lần thì máy giữ thẻ tới hôm sau. */
+    pinTries: z.number().int().min(1).max(5),
   }),
 });
 

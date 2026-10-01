@@ -693,7 +693,14 @@ không bao giờ âm; ATM chỉ chuyển giữa hai ví của chính mình qua s
 cuối ngày lãi 0,2% cho số dư từ 100k, **tối đa 3.000đ/ngày**, làm tròn xuống 500đ (`bankInterest` trong sim) — có trong báo cáo cuối ngày.
 **Kiểm chứng:** unit `economy.test.ts` (lãi, trần, bội số ATM); e2e server `bank.e2e-spec.ts` (chuyển khoản vào 🏦, tiền mặt vào 💵, ATM xa/gần,
 bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
-**Chưa:** phí rút ở ATM khác ngân hàng, chuyển tiền tự do giữa người chơi, trả lương nhân viên qua tài khoản.
+**Máy ATM như thật (bản 2, modal):** màn hình xanh + bàn phím (Huỷ đỏ / Xoá vàng / Đồng ý xanh) + khe thẻ, khe tiền:
+*💳 Đưa thẻ vào* → lần đầu **tạo PIN 6 số** (nhập 2 lần; không 6 số giống nhau, không dãy liên tiếp — `pinError`) → **nhập PIN**
+→ menu *Rút tiền · Nộp tiền · Xem số dư · Đổi PIN · Nhận lại thẻ* → chọn số tiền (hoặc *Số khác*, nhập theo nghìn đồng)
+→ màn xác nhận (rút: **phí 1.000đ/lần** trừ vào tài khoản) → *Máy đang đếm tiền…* → *Mời nhận tiền* → *In biên lai?* (mã GD FTxxx…,
+máy, ngày giờ game, số tiền, phí, số dư) → *Giao dịch khác?* → *Nhận lại thẻ*.
+**Luật PIN (server):** PIN băm sha256 kèm id người chơi, không lưu thô; mọi giao dịch phải gửi kèm PIN; sai **3 lần** máy giữ thẻ tới hết
+ngày game (`Player.atmLockDay`, migration `atm_pin`); đổi PIN phải đúng PIN cũ. e2e `bank.e2e-spec.ts` (tạo/đổi PIN, phí, biên lai, giữ thẻ).
+**Chưa:** model 3D cây ATM / phòng giao dịch (Blender), quầy giao dịch viên (mở thẻ, cấp lại PIN), chuyển tiền tự do giữa người chơi.
 
 ### UC-I8 · Trả bằng gì: 💵 tiền mặt / 🏦 chuyển khoản / tự chọn ✅ (bản đầu)
 **Hệ thống:** 💰 Kinh tế · **Luật:** 2 (tách tiền mặt / ngân hàng), 14 (server kiểm ví, kiểm sạp nhận gì).

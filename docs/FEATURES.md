@@ -111,6 +111,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 |---|---|---|---|
 | Tiền mặt, sổ cái kép, ví không âm | ✅ | 1 | |
 | Ngân hàng (tiền mặt vs tài khoản), chuyển khoản vào 🏦, cây ATM rút/gửi, lãi rất nhỏ có trần | ✅ | 1.11 | UC-I6 |
+| ATM như thật: đưa thẻ, tạo/nhập/đổi PIN 6 số (sai 3 lần giữ thẻ), rút có phí, nộp tiền, xem số dư, biên lai | ✅ | 1.11 | UC-I6 |
 | Chọn cách trả khi mua: tự chọn / 💵 / 🏦; sạp nhỏ chỉ nhận tiền mặt; hàng xóm trả tiền mặt thì chủ quầy thối | ✅ | 1.11 | UC-I8 |
 | Mua bán với NPC | ✅ | 1.6 | Chợ, vựa xe, khách |
 | Mua bán / chuyển tiền giữa người chơi | 🚧 | 2 | Mua món ở quầy nhau ✅ (UC-J3); tặng/chuyển tiền tự do ⏳ |
