@@ -57,4 +57,7 @@ test("ATM: tạo PIN, nộp tiền, in biên lai, rút tiền có phí, nhận l
   await tapScreen("Không — nhận lại thẻ");
   await tapScreen("💳 Nhận thẻ");
   await expect(atm).toHaveCount(0);
+  // Cây ATM (model Blender) ngay trước mặt nhân vật.
+  await page.waitForTimeout(800);
+  await shot(page, "72-cay-atm");
 });

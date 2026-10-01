@@ -700,7 +700,10 @@ bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
 máy, ngày giờ game, số tiền, phí, số dư) → *Giao dịch khác?* → *Nhận lại thẻ*.
 **Luật PIN (server):** PIN băm sha256 kèm id người chơi, không lưu thô; mọi giao dịch phải gửi kèm PIN; sai **3 lần** máy giữ thẻ tới hết
 ngày game (`Player.atmLockDay`, migration `atm_pin`); đổi PIN phải đúng PIN cũ. e2e `bank.e2e-spec.ts` (tạo/đổi PIN, phí, biên lai, giữ thẻ).
-**Chưa:** model 3D cây ATM / phòng giao dịch (Blender), quầy giao dịch viên (mở thẻ, cấp lại PIN), chuyển tiền tự do giữa người chơi.
+**Model 3D:** cây ATM vẽ bằng Blender (`cay_atm` trong `art/blender/nha_que.py` → bundle village "cay-atm", ~200 tam giác, 1 material,
+vẽ instanced): bệ đá, thân tủ xanh ngân hàng, băng vàng, màn hình lõm, bàn phím nghiêng, khe thẻ/tiền/biên lai, mái che + đèn LED, camera;
+biển "🏧 XÓM BANK".
+**Chưa:** phòng giao dịch + quầy giao dịch viên (mở thẻ, cấp lại PIN khi bị giữ thẻ), chuyển tiền tự do giữa người chơi.
 
 ### UC-I8 · Trả bằng gì: 💵 tiền mặt / 🏦 chuyển khoản / tự chọn ✅ (bản đầu)
 **Hệ thống:** 💰 Kinh tế · **Luật:** 2 (tách tiền mặt / ngân hàng), 14 (server kiểm ví, kiểm sạp nhận gì).
