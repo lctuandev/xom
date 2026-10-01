@@ -63,6 +63,22 @@ export function vendorSeats(id: string): Spot[] {
   }));
 }
 
+/** Chỗ đứng dùng cây ATM: trước màn hình (UC-I6). */
+export function atmSpot(id: string): Spot | null {
+  const a = content.atms.find((x) => x.id === id);
+  if (!a) return null;
+  const front = a.facing === 0 ? 1 : -1;
+  return { x: a.x, z: a.z + front * 0.9, yaw: a.facing + Math.PI };
+}
+
+/** Cây ATM gần một điểm nhất. */
+export function nearestAtm(x: number, z: number) {
+  let best = content.atms[0];
+  for (const a of content.atms)
+    if (best && Math.hypot(a.x - x, a.z - z) < Math.hypot(best.x - x, best.z - z)) best = a;
+  return best;
+}
+
 /** Sạp đang bày hàng lúc này. */
 export function vendorOpen(id: string, minute: number): boolean {
   const v = content.data.vendors.find((x) => x.id === id);
@@ -79,6 +95,7 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
   if (typeof target !== "string" && target.kind === "address") return addressSpot(target.id);
   if (typeof target !== "string" && target.kind === "shop") return shopSpot(target.lotId);
   if (typeof target !== "string" && target.kind === "vendor") return vendorSpot(target.id);
+  if (typeof target !== "string" && target.kind === "atm") return atmSpot(target.id);
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";
   return content.placeById.has(id) ? placeSpot(id) : null;
 }

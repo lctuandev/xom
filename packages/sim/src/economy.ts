@@ -170,3 +170,23 @@ export function pickArchetype(content: Content, category: string, rand: () => nu
   }
   return npcs[npcs.length - 1]?.id ?? "khach_vang_lai";
 }
+
+/**
+ * Lãi ngân hàng một ngày (DESIGN §2, Luật 2.3): tỉ lệ rất nhỏ, chỉ cho số dư từ mức tối thiểu, có trần,
+ * làm tròn xuống 500đ (không có tiền lẻ). Không bao giờ thành nguồn sống.
+ */
+export function bankInterest(
+  balance: number,
+  bank: { interestRate: number; interestCap: number; interestMin: number },
+): number {
+  if (balance < bank.interestMin) return 0;
+  const raw = Math.min(bank.interestCap, balance * bank.interestRate);
+  return Math.floor(raw / 500) * 500;
+}
+
+/** Số tiền rút/gửi ở ATM phải là bội số của `step` và dương. Trả về lý do nếu không hợp lệ. */
+export function atmAmountError(amount: number, step: number): string | null {
+  if (!Number.isInteger(amount) || amount <= 0) return "Số tiền không hợp lệ";
+  if (amount % step !== 0) return `ATM chỉ nhận bội số ${step.toLocaleString("vi-VN")}đ`;
+  return null;
+}

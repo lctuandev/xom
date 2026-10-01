@@ -1,7 +1,9 @@
 import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import {
+  atmAmountError,
   attractiveness,
+  bankInterest,
   customerArrivals,
   menuPriceRatio,
   nextReputation,
@@ -126,5 +128,23 @@ describe("nguyên liệu trong kho", () => {
     ]);
     expect(batches).toEqual([{ itemId: "pate", qty: 1, batchDay: 3 }]);
     expect(() => takeFifo(batches, 5)).toThrow();
+  });
+});
+
+describe("ngân hàng (DESIGN §2, Luật 2.3)", () => {
+  const bank = content.economy.bank;
+  it("lãi rất nhỏ, có trần, không lẻ dưới 500đ; số dư thấp không có lãi", () => {
+    expect(bankInterest(50_000, bank)).toBe(0);
+    expect(bankInterest(400_000, bank)).toBe(500);
+    expect(bankInterest(1_000_000, bank)).toBe(2_000);
+    expect(bankInterest(100_000_000, bank)).toBe(bank.interestCap);
+    // Gửi 1 triệu cả tháng chưa bằng một buổi làm thuê (≈80k): không sống bằng lãi được.
+    expect(bankInterest(1_000_000, bank) * 30).toBeLessThan(80_000);
+  });
+
+  it("ATM chỉ nhận bội số mệnh giá", () => {
+    expect(atmAmountError(50_000, 10_000)).toBeNull();
+    expect(atmAmountError(15_000, 10_000)).toMatch(/bội số 10\.000đ/);
+    expect(atmAmountError(0, 10_000)).not.toBeNull();
   });
 });

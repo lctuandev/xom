@@ -60,7 +60,10 @@ export interface TodayView {
 export interface MeView {
   playerId: string;
   displayName: string;
+  /** 💵 Tiền mặt (hiện trên HUD). */
   money: number;
+  /** 🏦 Số dư tài khoản ngân hàng (xem trong Hồ sơ / ATM). */
+  bank: number;
   jobId: string | null;
   /** Bước kịch bản người mới hiện tại. */
   tutorial: string;
@@ -413,7 +416,9 @@ export interface DayReportView {
   wrong: number;
   satisfaction: number;
   reputation: number;
-  /** Lãi/lỗ tiền mặt trong ngày. */
+  /** Lãi ngân hàng nhận cuối ngày. */
+  interest: number;
+  /** Lãi/lỗ trong ngày (gồm cả tiền vào tài khoản). */
   profit: number;
   moneyEnd: number;
 }
@@ -517,6 +522,14 @@ export const joinRoomSchema = z.object({
 export const emptySchema = z.object({}).optional();
 /** Dev/test: cộng tiền mặt (qua sổ cái, lý do "debug") — production từ chối. */
 export const debugGrantSchema = z.object({ money: z.number().int().min(1_000).max(10_000_000) });
+/** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
+export const atmSchema = z.object({
+  atmId: z.string().regex(/^atm_[0-9]+_[0-9]+$/),
+  action: z.enum(["deposit", "withdraw"]),
+  amount: z.number().int().min(1_000).max(100_000_000),
+});
+/** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
+export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
 export const hostEventSchema = z.object({ eventId: contentId });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({

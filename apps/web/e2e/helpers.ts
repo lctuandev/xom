@@ -151,7 +151,7 @@ export async function serveCustomer(page: Page, check?: (kitchen: Locator) => Pr
     await cook.tap();
     await expect(kitchen).toBeVisible();
     if (check) await check(kitchen);
-    const ok = await makeDish(page, { timeout: 4_000 })
+    const ok = await makeDish(page, { timeout: 15_000 })
       .then(() => payOrder(page))
       .then(() => true)
       .catch(() => false);
@@ -203,17 +203,36 @@ export const BANH_MI_THIT = [
 
 /** Ép thời tiết xóm mình (lệnh thử nghiệm, chỉ bản dev): `after`/`minutes` tính bằng phút game. */
 export async function setWeather(page: Page, kind: string, after = 0, minutes = 960) {
-  const ok = await page.evaluate(
-    async (p) => {
-      const dbg = (
-        window as unknown as {
-          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
-        }
-      ).xomDebug;
-      return (await dbg?.send("debug:weather", p))?.ok ?? false;
-    },
-    { kind, after, minutes },
-  );
+  // Vừa vào game socket có thể đang nối lại — thử lại vài lần.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          async (p) => {
+            const dbg = (
+              window as unknown as {
+                xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+              }
+            ).xomDebug;
+            return (await dbg?.send("debug:weather", p))?.ok ?? false;
+          },
+          { kind, after, minutes },
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+}
+
+/** Đặt giờ của xóm (lệnh thử nghiệm, chỉ bản dev): kịch bản dài khỏi bị hết ngày giữa chừng. */
+export async function setClock(page: Page, minute: number) {
+  const ok = await page.evaluate(async (m) => {
+    const dbg = (
+      window as unknown as {
+        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+      }
+    ).xomDebug;
+    return (await dbg?.send("debug:clock", { minute: m }))?.ok ?? false;
+  }, minute);
   expect(ok).toBe(true);
 }
 

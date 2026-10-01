@@ -68,7 +68,10 @@ model Room {
 }
 
 enum WalletKind {
+  /// 💵 Tiền mặt của người chơi ("player:<id>") — ví có từ trước, số dư giữ nguyên.
   PLAYER
+  /// 🏦 Tài khoản ngân hàng của người chơi ("bank:<id>"): nhận chuyển khoản, rút/gửi ở ATM (DESIGN §2).
+  PLAYER_BANK
   SYSTEM
 }
 
@@ -76,7 +79,7 @@ enum WalletKind {
 model Wallet {
   id      String        @id @default(uuid(7)) @db.Uuid
   kind    WalletKind
-  /// "player:<playerId>" hoặc "system:<tên>".
+  /// "player:<playerId>" (tiền mặt), "bank:<playerId>" (ngân hàng) hoặc "system:<tên>".
   key     String        @unique
   balance BigInt        @default(0)
   entries LedgerEntry[]
@@ -145,6 +148,8 @@ model DailyReport {
   revenue      Int
   /// Tiền boa khi phục vụ khách kịp.
   tips         Int      @default(0)
+  /// Lãi ngân hàng nhận cuối ngày (rất nhỏ, có trần).
+  interest     Int      @default(0)
   stockCost    Int
   rent         Int
   wages        Int

@@ -74,8 +74,12 @@ export interface ClientToServerEvents {
   "xom:join": Intent<{ code: string }>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
   "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
+  /** Rút / gửi tiền ở cây ATM (UC-I6). */
+  "atm:use": Intent<{ atmId: string; action: "deposit" | "withdraw"; amount: number }>;
   /** Người chơi tổ chức sự kiện (khai trương). */
   "event:host": Intent<{ eventId: string }>;
+  /** Dev/test: đặt giờ của xóm (production từ chối). */
+  "debug:clock": Intent<{ minute: number }>;
   /** Dev/test: cộng tiền (production từ chối). */
   "debug:grant": Intent<{ money: number }>;
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */

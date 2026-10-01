@@ -16,6 +16,8 @@ import type {
   WorldView,
 } from "@xom/shared";
 import {
+  atmAmountError,
+  bankInterest,
   canHost,
   chanceIn,
   customerArrivals,
@@ -30,6 +32,7 @@ import {
   weatherDemand,
 } from "@xom/sim";
 import {
+  bankWallet,
   InsufficientFundsError,
   LedgerService,
   playerWallet,
@@ -58,6 +61,8 @@ export const MAX_MEMBERS = 8;
 const PEER_FLUSH_MS = 100;
 /** Khoảng cách tối đa (m) tới quầy để gọi món. */
 const ORDER_REACH = 6;
+/** Khoảng cách tối đa (m) tới cây ATM. */
+const ATM_REACH = 3;
 
 /** Cổng phát sự kiện ra socket; gateway cung cấp để service không phụ thuộc Socket.IO. */
 export interface GameEmitter {
@@ -332,6 +337,46 @@ export class GameService implements OnModuleDestroy {
     });
   }
 
+  /**
+   * Rút / gửi tiền ở cây ATM (DESIGN §2, UC-I6): phải đứng ngay cây ATM (server kiểm vị trí), số tiền là bội số
+   * mệnh giá; tiền chỉ chuyển giữa 💵 ví và 🏦 tài khoản của chính mình qua sổ cái (không sinh tiền).
+   */
+  async useAtm(
+    { room, playerId }: IntentContext,
+    p: { atmId: string; action: "deposit" | "withdraw"; amount: number },
+  ) {
+    const atm = content.atms.find((a) => a.id === p.atmId);
+    if (!atm) throw new GameError("invalid_payload", "Không có cây ATM này");
+    const pos = room.members.get(playerId)?.pos;
+    if (pos && (pos.inside || Math.hypot(pos.x - atm.x, pos.z - atm.z) > ATM_REACH))
+      throw new GameError("invalid_state", "Tới tận cây ATM mới rút/gửi tiền được");
+    const bank = content.economy.bank;
+    const step = p.action === "withdraw" ? bank.withdrawStep : bank.depositStep;
+    const bad = atmAmountError(p.amount, step);
+    if (bad) throw new GameError("invalid_payload", bad);
+    const deposit = p.action === "deposit";
+    try {
+      await this.prisma.$transaction((tx) =>
+        this.ledger.transfer(
+          tx,
+          deposit ? playerWallet(playerId) : bankWallet(playerId),
+          deposit ? bankWallet(playerId) : playerWallet(playerId),
+          p.amount,
+          deposit ? "atm_deposit" : "atm_withdraw",
+          atm.id,
+        ),
+      );
+    } catch (err) {
+      if (err instanceof InsufficientFundsError)
+        throw new GameError(
+          "insufficient_funds",
+          deposit ? "Không đủ tiền mặt để gửi" : "Tài khoản không đủ số dư",
+        );
+      throw err;
+    }
+    void this.log(playerId, deposit ? "atm_deposit" : "atm_withdraw", { amount: p.amount });
+  }
+
   /** Người chơi phải đứng ở địa điểm này (gần người đứng quầy, hoặc đang ở trong) — server kiểm, không tin client. */
   requireAt(room: RoomRuntime, playerId: string, placeId: string, message: string) {
     const pos = room.members.get(playerId)?.pos;
@@ -557,6 +602,14 @@ export class GameService implements OnModuleDestroy {
       discount = Math.max(discount, fx.discount ?? 0);
     }
     return { demand, discount };
+  }
+
+  /** Dev/test: đặt giờ trong ngày của xóm mình; production không cho. */
+  async debugClock({ room }: IntentContext, minute: number) {
+    if (process.env.NODE_ENV === "production")
+      throw new GameError("invalid_state", "Không có lệnh này");
+    room.minute = minute;
+    this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
   }
 
   /** Dev/test: cộng tiền mặt cho mình (để kịch bản thử tính năng cần vốn); production không cho. */
@@ -810,6 +863,13 @@ export class GameService implements OnModuleDestroy {
         }
         if (spoiled.length)
           await tx.inventoryItem.deleteMany({ where: { id: { in: spoiled.map((b) => b.id) } } });
+        // Lãi ngân hàng (rất nhỏ, có trần — Luật 2.3).
+        const interest = bankInterest(
+          await this.ledger.balance(tx, bankWallet(playerId)),
+          content.economy.bank,
+        );
+        if (interest > 0)
+          await this.ledger.transfer(tx, SYSTEM.bank, bankWallet(playerId), interest, "interest");
         const biz = await tx.business.findFirst({ where: { ownerId: playerId } });
         const moneyEnd = BigInt(await this.ledger.balance(tx, playerWallet(playerId)));
         const row = await tx.dailyReport.upsert({
@@ -822,8 +882,15 @@ export class GameService implements OnModuleDestroy {
             spoiledValue,
             reputation: biz?.reputation ?? 0,
             moneyEnd,
+            interest,
           },
-          update: { spoiledQty, spoiledValue, reputation: biz?.reputation ?? 0, moneyEnd },
+          update: {
+            spoiledQty,
+            spoiledValue,
+            reputation: biz?.reputation ?? 0,
+            moneyEnd,
+            interest,
+          },
         });
         await this.event(tx, playerId, "day_end", {
           day,
@@ -846,7 +913,14 @@ export class GameService implements OnModuleDestroy {
         wrong: report.wrong,
         satisfaction: report.satisfaction,
         reputation: report.reputation,
-        profit: report.revenue + report.tips + report.wages - report.stockCost - report.rent,
+        interest: report.interest,
+        profit:
+          report.revenue +
+          report.tips +
+          report.wages +
+          report.interest -
+          report.stockCost -
+          report.rent,
         moneyEnd: Number(report.moneyEnd),
       });
     }
@@ -882,12 +956,13 @@ export class GameService implements OnModuleDestroy {
   }
 
   async me(room: RoomRuntime, playerId: string): Promise<MeView> {
-    const [player, biz, inventory, report, money, relations, served] = await Promise.all([
+    const [player, biz, inventory, report, money, bank, relations, served] = await Promise.all([
       this.prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
       this.businessOf(playerId),
       inventoryView(this.prisma, playerId, room.day),
       this.prisma.dailyReport.findUnique({ where: { playerId_day: { playerId, day: room.day } } }),
       this.ledger.balance(this.prisma, playerWallet(playerId)),
+      this.ledger.balance(this.prisma, bankWallet(playerId)),
       this.prisma.npcRelation.findMany({ where: { playerId } }),
       this.prisma.dailyReport.aggregate({ where: { playerId }, _sum: { served: true } }),
     ]);
@@ -897,6 +972,7 @@ export class GameService implements OnModuleDestroy {
       playerId,
       displayName: player.displayName,
       money,
+      bank,
       jobId: player.jobId,
       tutorial: player.tutorial,
       attending: room.attending.has(playerId),

@@ -65,7 +65,8 @@ export type SheetId =
   | "quests"
   | "profile"
   | "settings"
-  | "recipes";
+  | "recipes"
+  | "atm";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -81,7 +82,9 @@ export type Goal =
   /** Tới quầy hàng xóm (businessId) để gọi món. */
   | { kind: "shop"; id: string; lotId: string; open?: SheetId }
   /** Tới sạp đồ ăn NPC. */
-  | { kind: "vendor"; id: string; open?: SheetId };
+  | { kind: "vendor"; id: string; open?: SheetId }
+  /** Tới cây ATM. */
+  | { kind: "atm"; id: string; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -134,6 +137,9 @@ interface GameState {
   /** Món mình đã gọi ở quầy hàng xóm, đang chờ. */
   purchase: Purchase | null;
   setNearShop: (id: string | null) => void;
+  /** Cây ATM đang đứng gần (UC-I6). */
+  nearAtm: string | null;
+  setNearAtm: (id: string | null) => void;
   /** Sạp đồ ăn NPC đang đứng gần (UC-B9). */
   nearVendor: string | null;
   setNearVendor: (id: string | null) => void;
@@ -236,6 +242,8 @@ export const useGame = create<GameState>((set) => ({
   nearShop: null,
   purchase: null,
   setNearShop: (nearShop) => set({ nearShop }),
+  nearAtm: null,
+  setNearAtm: (nearAtm) => set({ nearAtm }),
   nearVendor: null,
   setNearVendor: (nearVendor) => set({ nearVendor }),
   eating: null,

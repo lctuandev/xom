@@ -14,7 +14,8 @@ import { Sheet } from "./Sheet";
  */
 export function ShopSheet() {
   const lot = useGame((s) => s.world.lots.find((l) => l.businessId === s.nearShop));
-  const money = useGame((s) => s.me?.money ?? 0);
+  // Trả bằng chuyển khoản nếu tài khoản đủ, không thì tiền mặt (UC-I6).
+  const money = useGame((s) => Math.max(s.me?.money ?? 0, s.me?.bank ?? 0));
   const close = useGame((s) => s.openSheet);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});

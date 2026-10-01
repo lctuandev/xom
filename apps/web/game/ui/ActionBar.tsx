@@ -21,6 +21,7 @@ export function ActionBar() {
       <PurchaseChip />
       <EatingChip />
       <VendorButton />
+      <AtmButton />
       <ShopButton />
       <KitchenButton />
       <AwayChip />
@@ -28,6 +29,22 @@ export function ActionBar() {
       <EnterShopButton />
       <PlaceButton />
     </div>
+  );
+}
+
+/** Đứng trước cây ATM: rút / gửi tiền (UC-I6). */
+function AtmButton() {
+  const id = useGame((s) => s.nearAtm);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!id) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("atm")}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-[#2c5aa0] px-4 font-semibold text-cream shadow-lg active:scale-[0.97]"
+    >
+      🏧 Rút / gửi tiền · ATM
+    </button>
   );
 }
 

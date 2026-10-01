@@ -19,10 +19,12 @@ import {
   XP,
 } from "@xom/sim";
 import {
+  bankWallet,
   InsufficientFundsError,
   LedgerService,
   playerWallet,
   SYSTEM,
+  type Tx,
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -159,8 +161,13 @@ export class OrderService {
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     const order = customOrder(product.recipe, menu, choice.variantId, choice.picks, choice.mods);
     if (typeof order === "string") throw new GameError("invalid_state", order);
-    const money = await this.ledger.balance(this.prisma, playerWallet(buyer.id));
-    if (money < order.price) throw new GameError("insufficient_funds", "Không đủ tiền");
+    // Hàng xóm trả bằng chuyển khoản nếu tài khoản đủ, không thì đưa tiền mặt.
+    const [cash, bank] = await Promise.all([
+      this.ledger.balance(this.prisma, playerWallet(buyer.id)),
+      this.ledger.balance(this.prisma, bankWallet(buyer.id)),
+    ]);
+    if (Math.max(cash, bank) < order.price)
+      throw new GameError("insufficient_funds", "Không đủ tiền");
     const now = Date.now();
     const event: OrderEvent = {
       orderId: randomUUID(),
@@ -276,16 +283,7 @@ export class OrderService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        if (received > 0) {
-          await this.ledger.transfer(
-            tx,
-            e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
-            playerWallet(playerId),
-            received,
-            "sale",
-            e.businessId,
-          );
-        }
+        if (received > 0) await this.collect(tx, e, received);
         if (tip > 0)
           await this.ledger.transfer(
             tx,
@@ -350,6 +348,34 @@ export class OrderService {
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
   }
 
+  /**
+   * Thu tiền một đơn (DESIGN §2): khách trả chuyển khoản → vào 🏦 tài khoản chủ quầy; tiền mặt → 💵 ví.
+   * Khách là hàng xóm: chuyển khoản nếu tài khoản đủ, không thì trả tiền mặt.
+   */
+  private async collect(tx: Tx, e: OrderEvent, amount: number) {
+    if (e.buyerId) {
+      const bank = await this.ledger.balance(tx, bankWallet(e.buyerId));
+      const viaBank = bank >= amount;
+      await this.ledger.transfer(
+        tx,
+        viaBank ? bankWallet(e.buyerId) : playerWallet(e.buyerId),
+        viaBank ? bankWallet(e.ownerId) : playerWallet(e.ownerId),
+        amount,
+        "sale",
+        e.businessId,
+      );
+      return;
+    }
+    await this.ledger.transfer(
+      tx,
+      SYSTEM.customers,
+      e.pay.kind === "transfer" ? bankWallet(e.ownerId) : playerWallet(e.ownerId),
+      amount,
+      "sale",
+      e.businessId,
+    );
+  }
+
   /** "Xin lỗi, hết rồi": khách đi, không mất tiền nhưng hơi buồn. */
   async decline(room: RoomRuntime, playerId: string, orderId: string) {
     const order = this.requireOrder(room, playerId, orderId);
@@ -371,14 +397,7 @@ export class OrderService {
         room.orders.delete(id);
         try {
           await this.prisma.$transaction(async (tx) => {
-            await this.ledger.transfer(
-              tx,
-              e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
-              playerWallet(e.ownerId),
-              e.price,
-              "sale",
-              e.businessId,
-            );
+            await this.collect(tx, e, e.price);
             await addToReport(tx, e.ownerId, room.day, {
               revenue: e.price,
               served: 1,

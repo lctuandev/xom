@@ -12,9 +12,11 @@ import {
 import { content } from "@xom/content";
 import {
   type Ack,
+  atmSchema,
   attendSchema,
   buyEquipmentSchema,
   type ClientToServerEvents,
+  debugClockSchema,
   debugGrantSchema,
   debugWeatherSchema,
   emptySchema,
@@ -314,9 +316,19 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
+  @SubscribeMessage("atm:use")
+  atm(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, atmSchema, body, (ctx, p) => this.game.useAtm(ctx, p));
+  }
+
   @SubscribeMessage("event:host")
   hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, hostEventSchema, body, (ctx, p) => this.game.hostEvent(ctx, p.eventId));
+  }
+
+  @SubscribeMessage("debug:clock")
+  debugClock(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugClockSchema, body, (ctx, p) => this.game.debugClock(ctx, p.minute));
   }
 
   @SubscribeMessage("debug:grant")

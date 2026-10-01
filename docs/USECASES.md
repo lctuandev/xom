@@ -583,6 +583,20 @@ Quầy cùng loại gần nhau chia khách theo giá & uy tín. Có thông báo 
 ### UC-I5 · Sổ sách ✅ (cuối ngày) / Lịch sử giao dịch ⏳
 Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập hàng, thuê chỗ, lương trả/nhận.
 
+### UC-I6 · Tiền mặt & ngân hàng, cây ATM ✅ (bản đầu)
+**Hệ thống:** 💰 Kinh tế · **Luật:** 2 (💵/🏦 tách riêng), 2.1 (sổ cái kép), 2.3 (lãi có trần), 12.1 (HUD chỉ 💵), 14 (đứng gần mới dùng ATM).
+**Đời thật:** khách quét mã chuyển khoản thì tiền vào tài khoản, không cầm được ngay; muốn đi chợ trả tiền mặt thì phải ra cây ATM rút;
+cuối tháng ngân hàng trả chút lãi, không ai sống bằng lãi gửi vài trăm nghìn.
+**Luồng:** khách trả chuyển khoản → tiền vào 🏦; khách trả tiền mặt (+ tiền boa) → 💵. Hàng xóm mua của nhau: chuyển khoản nếu tài khoản đủ,
+không thì trả tiền mặt. HUD chỉ hiện 💵; 🏦 xem ở Hồ sơ (*🚶 Tới cây ATM gần nhất*) hoặc bảng ATM. Tới cây ATM (ô **N** trên bản đồ: cạnh chợ Bà Năm,
+giữa phố gần quán cơm) → *🏧 Rút / gửi tiền · ATM* → chọn số tiền (bội số 10.000đ).
+**Luật game:** ví tiền mặt cũ giữ nguyên số dư (migration `bank_account` chỉ thêm loại ví `PLAYER_BANK` + cột lãi); tài khoản `bank:<id>` tạo dần,
+không bao giờ âm; ATM chỉ chuyển giữa hai ví của chính mình qua sổ cái (`atm_deposit`/`atm_withdraw`), phải đứng trong 3 m (server kiểm);
+cuối ngày lãi 0,2% cho số dư từ 100k, **tối đa 3.000đ/ngày**, làm tròn xuống 500đ (`bankInterest` trong sim) — có trong báo cáo cuối ngày.
+**Kiểm chứng:** unit `economy.test.ts` (lãi, trần, bội số ATM); e2e server `bank.e2e-spec.ts` (chuyển khoản vào 🏦, tiền mặt vào 💵, ATM xa/gần,
+bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
+**Chưa:** phí rút ở ATM khác ngân hàng, chuyển tiền tự do giữa người chơi, trả lương nhân viên qua tài khoản.
+
 ---
 
 ## J. Nhiều người chơi (Phase 2)

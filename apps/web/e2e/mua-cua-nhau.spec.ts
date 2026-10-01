@@ -5,6 +5,7 @@ import {
   payOrder,
   readDialogue,
   register,
+  setClock,
   shot,
   waitForMorning,
 } from "./helpers";
@@ -19,6 +20,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
   await register(page, "An");
   await waitForMorning(page, 9);
   await openBanhMiStall(page);
+  await setClock(page, 7 * 60);
   await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
@@ -35,6 +37,9 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
   await b.getByRole("dialog", { name: "Xóm" }).getByRole("button", { name: "Vào xóm" }).tap();
   await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
 
+  // Hai người cùng chơi trên máy chậm thì kịch bản dài hơn một ngày game — tua xóm về sáng sớm.
+  await setClock(page, 7 * 60);
+
   // Bình mở bảng Xóm → "Tới quầy" của An → tới nơi bảng gọi món tự mở.
   await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
@@ -48,8 +53,13 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
   );
   await shot(b, "22-goi-mon-hang-xom");
   const moneyBefore = Number(await b.locator("[data-money]").getAttribute("data-money"));
-  await shop.getByRole("button", { name: /^🛒 Gọi món ·/ }).tap();
-  await expect(b.getByText(/⏳ Chờ An làm: bánh mì thịt, không hành/)).toBeVisible();
+  // Quầy đông (đủ hàng chờ) thì đợi bớt khách rồi gọi lại — như ngoài đời.
+  const waiting = b.getByText(/⏳ Chờ An làm: bánh mì thịt, không hành/);
+  for (let i = 0; i < 12 && !(await waiting.isVisible()); i++) {
+    if (await shop.isVisible()) await shop.getByRole("button", { name: /^🛒 Gọi món ·/ }).tap();
+    await waiting.waitFor({ timeout: 8_000 }).catch(() => undefined);
+  }
+  await expect(waiting).toBeVisible();
 
   // An mở màn hình làm món; khách NPC tới trước thì xin lỗi cho qua (cho nhanh), tới đơn Bình thì làm tay.
   for (let i = 0; i < 8; i++) {

@@ -24,7 +24,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Hệ thống | Đã có | Lệch luật / còn thiếu → việc làm tiếp | Ưu tiên |
 |---|---|---|---|
 | 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
-| 💰 Kinh tế | Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k | **Chưa tách 🏦 ngân hàng** (chuyển khoản đang vào thẳng tiền mặt) | 3 |
+| 💰 Kinh tế | ✅ Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k, **tách 💵 tiền mặt / 🏦 ngân hàng**, cây ATM, lãi có trần | Chuyển tiền tự do giữa người chơi, phí ATM | 3 |
 | 💸 Money sink | Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp | Thiếu **bảo trì xe/quầy, phí chợ/thuế, lương nhân viên, trang trí, xăng** | 3 |
 | 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
@@ -104,7 +104,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Tiền mặt, sổ cái kép, ví không âm | ✅ | 1 | |
-| Ngân hàng (tiền mặt vs tài khoản), chuyển khoản | ⏳ | 2 | Khách đã có trả chuyển khoản |
+| Ngân hàng (tiền mặt vs tài khoản), chuyển khoản vào 🏦, cây ATM rút/gửi, lãi rất nhỏ có trần | ✅ | 1.11 | UC-I6 |
 | Mua bán với NPC | ✅ | 1.6 | Chợ, vựa xe, khách |
 | Mua bán / chuyển tiền giữa người chơi | 🚧 | 2 | Mua món ở quầy nhau ✅ (UC-J3); tặng/chuyển tiền tự do ⏳ |
 | Thuê chỗ bán theo ngày | ✅ | 1 | |

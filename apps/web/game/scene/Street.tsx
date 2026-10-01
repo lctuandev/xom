@@ -11,7 +11,7 @@ import { Instances, type Placement } from "./CityKit";
 
 export const TILE = content.data.map.tile;
 const ROAD = "=|+c";
-const WALK = "=|+csaPMSL";
+const WALK = "=|+csaPMSLN";
 
 const BUILDINGS: CityModel[] = [
   "building-a",
@@ -103,7 +103,7 @@ function layout() {
         // Đèn giao thông ở hai góc chéo.
         put(out, "traffic-light", { x: x + 1.7, z: z + 1.7, rot: Math.PI });
         put(out, "traffic-light", { x: x - 1.7, z: z - 1.7, rot: 0 });
-      } else if ("saMSL".includes(ch)) {
+      } else if ("saMSLN".includes(ch)) {
         put(out, "tile-low", { x, z });
         if (ch === "s") {
           // Đèn đường sát mép đường (so le), cây phía trong vỉa hè.

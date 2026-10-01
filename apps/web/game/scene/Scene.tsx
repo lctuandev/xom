@@ -10,6 +10,7 @@ import { MAP_BOUNDS, randomSpotNear, walkTo } from "../nav";
 import { useGame } from "../store";
 import { placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
 import { AddressSigns, DeliveryPins, DoorPeople } from "./Addresses";
+import { Atms } from "./Atms";
 import { registerAnchor } from "./anchors";
 import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
@@ -124,6 +125,7 @@ function World() {
       <Peers />
       <NightLights />
       <Stalls />
+      <Atms />
       <Vendors />
       <Customers />
       <ProximityWatcher />

@@ -181,6 +181,8 @@ export class Content {
   readonly speakerById: ReadonlyMap<string, ContentData["speakers"][number]>;
   readonly stepById: ReadonlyMap<string, ContentData["tutorial"][number]>;
   readonly ingredientById: ReadonlyMap<string, ContentData["ingredients"][number]>;
+  /** Cây ATM suy ra từ ô "N" trên bản đồ: vị trí giữa ô, mặt quay ra đường. */
+  readonly atms: { id: string; x: number; z: number; facing: number }[];
 
   constructor(readonly data: ContentData) {
     this.productById = new Map(data.products.map((x) => [x.id, x]));
@@ -193,6 +195,22 @@ export class Content {
     this.speakerById = new Map(data.speakers.map((x) => [x.id, x]));
     this.stepById = new Map(data.tutorial.map((x) => [x.id, x]));
     this.ingredientById = new Map(data.ingredients.map((x) => [x.id, x]));
+    const m = data.map;
+    const road = (r: number, c: number) => "=|+c".includes(m.rows[r]?.[c] ?? ".");
+    this.atms = m.rows.flatMap((row, r) =>
+      [...row].flatMap((ch, c) =>
+        ch === "N"
+          ? [
+              {
+                id: `atm_${r}_${c}`,
+                x: m.origin.x + c * m.tile,
+                z: m.origin.z + r * m.tile,
+                facing: road(r + 1, c) ? 0 : road(r - 1, c) ? Math.PI : 0,
+              },
+            ]
+          : [],
+      ),
+    );
   }
 
   get economy() {

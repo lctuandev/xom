@@ -189,13 +189,14 @@ const point = z.object({ x: z.number(), z: z.number() });
  * Bản đồ xóm (docs/USECASES.md UC-B6): lưới ô vuông, mỗi ký tự một ô.
  * = đường ngang · | đường dọc · + ngã ba/ngã tư · c vạch sang đường · s vỉa hè · a hẻm
  * B nhà phố · T nhà cao tầng · K trường học · H nhà ở · P công viên · M chợ · S sân trường · L bãi xe · . đất trống
+ * N cây ATM trên vỉa hè (rút/gửi tiền ngân hàng, UC-I6)
  */
-export const MAP_WALKABLE = "=|+csaPMSL";
+export const MAP_WALKABLE = "=|+csaPMSLN";
 export const mapSchema = z.object({
   tile: z.number().positive(),
   /** Tâm ô đầu tiên (hàng 0, cột 0). */
   origin: point,
-  rows: z.array(z.string().regex(/^[=|+csaBTKHPMSL.]+$/)).min(1),
+  rows: z.array(z.string().regex(/^[=|+csaBTKHPMSLN.]+$/)).min(1),
 });
 
 /** Sạp đồ ăn NPC bày theo giờ (docs/USECASES.md UC-B9): người chơi mua ăn tại chỗ. */
@@ -390,6 +391,15 @@ export const economySchema = z.object({
   /** Thân thiết với người bán từ mức này trở lên được bớt giá (UC-D2). */
   friendDiscountAt: z.number().int().min(0).max(100),
   friendDiscount: z.number().min(0).max(0.5),
+  /** Ngân hàng (DESIGN §2, Luật 2.3): lãi rất nhỏ mỗi ngày, có trần; rút/gửi ở cây ATM theo bội số. */
+  bank: z.object({
+    interestRate: z.number().min(0).max(0.01),
+    interestCap: z.number().int().nonnegative(),
+    /** Số dư dưới mức này không có lãi. */
+    interestMin: z.number().int().nonnegative(),
+    withdrawStep: vnd,
+    depositStep: vnd,
+  }),
 });
 
 /** Bốn kiểu trời (docs/DESIGN.md §8): ảnh hưởng khách, giao hàng, ánh sáng, tiếng. */

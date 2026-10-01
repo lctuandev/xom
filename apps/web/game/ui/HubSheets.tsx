@@ -7,7 +7,9 @@ import { useState } from "react";
 import { audioLevels, setAudioLevels } from "../audio";
 import { logout } from "../auth/store";
 import { vnd } from "../format";
+import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
+import { nearestAtm } from "../world";
 import { Sheet } from "./Sheet";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
@@ -126,7 +128,8 @@ export function ProfileSheet() {
         </p>
       </div>
       <div className="rounded-2xl bg-white p-3 shadow-sm">
-        {row("Tiền mặt", vnd(me.money))}
+        {row("💵 Tiền mặt", vnd(me.money))}
+        {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}
         {me.business &&
           row(
             "Uy tín quầy",
@@ -136,6 +139,19 @@ export function ProfileSheet() {
         {row("Tiền boa", vnd(me.today.tips))}
         {row("Làm thuê", vnd(me.today.wages))}
       </div>
+      <button
+        type="button"
+        onClick={() => {
+          const p = getPlayer().position;
+          const atm = nearestAtm(p.x, p.z);
+          if (!atm) return;
+          close(null);
+          useGame.getState().setGoal({ kind: "atm", id: atm.id, open: "atm" });
+        }}
+        className="mt-2 h-11 w-full rounded-xl bg-[#2c5aa0] font-semibold text-cream"
+      >
+        🚶 Tới cây ATM gần nhất
+      </button>
       <p className="mt-4 mb-1.5 text-sm font-extrabold">Thân thiết</p>
       {friends.length === 0 ? (
         <p className="text-sm text-ink/60">Chưa thân ai — nói chuyện, mua hàng nhiều sẽ thân.</p>

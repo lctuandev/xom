@@ -21,6 +21,7 @@ import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
+import { AtmSheet } from "./ui/AtmSheet";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
@@ -126,6 +127,7 @@ export default function GameShell() {
       {sheet === "profile" && <ProfileSheet />}
       {sheet === "settings" && <SettingsSheet />}
       {sheet === "recipes" && <RecipeSheet />}
+      {sheet === "atm" && <AtmSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />
