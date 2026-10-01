@@ -76,7 +76,7 @@ kiểm vị trí + hạn); trễ / bỏ: hoàn thưởng, mất cọc (`penalty:
 `ContractService` (board, take, prepare, deliver, drop, tick, trustEvent). **Còn lại (1.20b):** người chơi đăng việc, nghiệm
 thu, phân xử, chấm sao.
 
-## 4. 🛵 Xe ôm (1.21)
+## 4. 🛵 Xe ôm (1.21) ✅ bản đầu
 
 **Nhân vật:** **Anh Lực** — trưởng trạm xe ôm gốc me đầu ngõ, cho người mới thuê xe *Wave cũ* 30k/ngày.
 **Luồng:** đứng ở trạm → khách vẫy (cư dân cụ thể, có điểm đến) → **trả giá** (giá chuẩn theo khoảng cách; nói thách quá → khách
@@ -84,6 +84,10 @@ thu, phân xử, chấm sao.
 mặt, thối → khách chấm sao (xe ôm uy tín thì khách quen gọi riêng).
 **Money sink:** thuê xe / xăng mỗi chuyến; xe hao mòn → tiệm sửa xe (người chơi hoặc Chú Chín).
 **Dữ liệu:** dùng lại Shift (job `xe_om`) + đường đi giao hàng (UC-W5); `content.rides` (giá/km, mức thách được chấp nhận).
+**Đã làm (UC-N1):** xe ôm là nghề *tự chạy* (không qua Shift — không có chủ trả lương): `RideService` giữ cuốc trong bộ nhớ
+(thuê xe theo ngày lưu `Player.bikeRentDay`); trạm là địa điểm kind `ride`; đường lớn / hẻm = A* có trọng số loại ô
+(`ROUTE_WEIGHTS`); tốc độ theo `congestion(minute)` + mưa; server kiểm thời gian chạy tối thiểu. Còn lại: xe hao mòn, mua xe
+riêng, khách quen gọi riêng.
 
 ## 5. 🚦 Giao thông (1.21, cùng xe ôm)
 

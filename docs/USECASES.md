@@ -944,6 +944,29 @@ tận nhà, chấm sao người nhận, tin cậy mở chợ người chơi.
 
 ---
 
+## N. Đi lại & giao thông (docs/KIENTRUC.md §4–5)
+
+### UC-N1 · Chạy xe ôm ✅ (bản đầu)
+**Nhân vật:** **Chú Lực** — trưởng trạm xe ôm gốc me (đầu đường, gần ngã tư phía tây), cho người mới thuê *Wave cũ*; khách là
+cư dân có tên (Bé Su, Bà Tư vé số, Chị Thảo kế toán…).
+**Luồng:** Việc làm → 💼 Làm thuê → **🛵 Chạy xe ôm** → đi tới trạm (tới nơi tự mở sheet) → **Thuê xe 30k/ngày** →
+**🙋 Đứng chờ khách** (giờ cao điểm khách tới nhanh, giữa trưa / khuya chờ lâu gấp 3) → khách vẫy: *"Chú ơi, chở tui tới Nhà số 15
+bao nhiêu?"* (quãng đường, giá chuẩn = 12k + 8k/100 m) → **trả giá**: *Bớt chút ×0,9 · Giá chuẩn · Nhích lên ×1,25 · Nói thách
+×1,6* (nói thách thì khách hay *"Mắc quá, thôi tui đi bộ"*; mưa bão khách dễ chịu giá) → **chọn đường**: 🛣️ *đường lớn* (nhanh lúc
+vắng, giờ cao điểm kẹt cứng — chậm tới 60%) hay 🏘️ *đi hẻm* (không kẹt, mưa thì trơn, xóc) — sheet báo ước số giây mỗi đường +
+độ kẹt → **chạy thật** theo đường đã chọn (tìm đường A* có trọng số loại ô) → tới nơi **🛬 Tới nơi rồi** → khách chấm sao (nhanh
+hơn mong đợi 5⭐, chậm quá 1–2⭐; đi hẻm lúc mưa −1⭐) + boa (5⭐: 2–5k) → **thu tiền**: chuyển khoản, đưa đủ, hoặc tờ lớn phải
+**thối tiền** (thối thiếu: −2⭐, mất boa, 🤝 −2) → **trừ xăng** (1k/100 m, cả lượt về trạm) → về trạm chờ khách tiếp.
+**Luật game:** tiền chỉ có khi chở thật — server kiểm đứng ở trạm, tới đúng nơi và **không tới nhanh hơn tốc độ xe cho phép**
+(×1,4 sai số); đang mở quầy / đang trong ca làm thuê thì không chạy xe ôm; money sink: thuê xe + xăng; mọi đồng tiền qua sổ cái
+(`bike_rent`, `ride_fare`, `ride_tip`, `fuel`), đo lường `ride_rent`, `ride_haggle`, `ride_done`, `ride_abandon`.
+**Dữ liệu:** `content.rides` (giá, xăng, mức trả giá, tốc độ đường, câu thoại, sao); `Player.bikeRentDay / rides / rideStars`;
+sim `congestion`, `rideFare`, `rideFuel`, `haggleChance`, `routeSpeed`, `rideStars`, `rideTip`, `passengerWait`,
+`Grid.path(…, ROUTE_WEIGHTS)`.
+**Kiểm chứng:** sim `rides.test.ts`; e2e server `rides.e2e-spec.ts` (chưa thuê / đứng xa bị từ chối; cuốc đủ bước: tiền thuê,
+giá, tới nhanh quá bị từ chối, thu tiền + xăng, Chuyện; nói thách bị từ chối); Playwright `xe-om.spec.ts`.
+**Sau này:** khách quen gọi riêng xe ôm uy tín, xe hao mòn → tiệm sửa xe, mua xe riêng, chở hàng thuê, giao thông 3D (UC-N2).
+
 ## L. Hệ thống & lỗi
 
 | Mã | Tình huống | Hành vi mong đợi |

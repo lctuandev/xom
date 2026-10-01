@@ -579,6 +579,38 @@ export interface RegularView {
   lastDay: number;
 }
 
+/** 🛵 Xe ôm (KIENTRUC §4, UC-N1): trạng thái cuốc xe của mình. */
+export interface RideView {
+  /** idle: chưa chờ khách · waiting: đang chờ · offer: khách hỏi giá · route: đã chốt giá, chọn đường ·
+   *  riding: đang chở · pay: tới nơi, thu tiền. */
+  stage: "idle" | "waiting" | "offer" | "route" | "riding" | "pay";
+  /** Đã thuê xe hôm nay chưa. */
+  bikeToday: boolean;
+  today: { rides: number; earned: number };
+  /** Sao trung bình khách chấm (cả đời). */
+  rating: { rides: number; avg: number };
+  /** Phút game khách tới (khi đang chờ). */
+  readyAt?: number;
+  passenger?: { residentId: string; name: string; bio: string; line: string };
+  dest?: { kind: "address" | "lot"; id: string; label: string; x: number; z: number };
+  /** Quãng đường (m) theo đường lớn — để báo giá. */
+  meters?: number;
+  /** Giá chuẩn cuốc này. */
+  fare?: number;
+  /** Giá đã chốt. */
+  price?: number;
+  /** Ước thời gian (giây) mỗi đường, độ kẹt xe, trời mưa. */
+  routes?: { road: number; alley: number; jam: number; wet: boolean };
+  route?: "road" | "alley";
+  /** Tốc độ chạy (m/s) khi đang chở. */
+  speed?: number;
+  /** Tới nơi: khách trả tiền thế nào, chấm mấy sao, nói gì, boa bao nhiêu. */
+  pay?: { kind: "transfer" } | { kind: "cash"; bill: number };
+  stars?: number;
+  comment?: string;
+  tip?: number;
+}
+
 /** Một việc trên bảng việc xóm (KIENTRUC §3). */
 export interface ContractView {
   id: string;
@@ -796,6 +828,12 @@ export const debugClockSchema = z.object({
 });
 /** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
 /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const rideRentSchema = z.object({ pay: payMethodSchema.optional() });
+export const rideOfferSchema = z.object({ ratio: z.number().min(0.5).max(3) });
+export const rideGoSchema = z.object({ route: z.enum(["road", "alley"]) });
+export const ridePaySchema = z.object({
+  change: z.number().int().min(0).max(1_000_000).nullable(),
+});
 export const contractIdSchema = z.object({ id: z.string().uuid() });
 /** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
 export const debugContractSchema = z.object({ templateId: contentId });

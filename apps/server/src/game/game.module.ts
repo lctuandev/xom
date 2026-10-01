@@ -7,6 +7,7 @@ import { OrderService } from "./orders.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { ReviewService } from "./reviews.js";
+import { RideService } from "./rides.js";
 import { StaffService } from "./staff.js";
 import { StatsService } from "./stats.js";
 import { StoryService } from "./story.js";
@@ -25,6 +26,7 @@ import { WorkService } from "./work.js";
     RegularService,
     StaffService,
     ContractService,
+    RideService,
     ProjectService,
     VoiceAiService,
     WorkService,

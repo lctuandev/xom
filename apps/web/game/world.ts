@@ -97,6 +97,8 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
     return shopSpot(target.lotId);
   if (typeof target !== "string" && target.kind === "vendor") return vendorSpot(target.id);
   if (typeof target !== "string" && target.kind === "atm") return atmSpot(target.id);
+  if (typeof target !== "string" && target.kind === "point")
+    return { x: target.x, z: target.z, yaw: 0 };
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";
   return content.placeById.has(id) ? placeSpot(id) : null;
 }
@@ -104,5 +106,11 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
 /** Sheet mở khi tương tác với một địa điểm. */
 export function sheetForPlace(placeId: string) {
   const kind = content.place(placeId).kind;
-  return kind === "market" ? "market" : kind === "equipment_shop" ? "equipment" : "jobs";
+  return kind === "market"
+    ? "market"
+    : kind === "equipment_shop"
+      ? "equipment"
+      : kind === "ride"
+        ? "ride"
+        : "jobs";
 }

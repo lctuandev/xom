@@ -1,6 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
+import { ROUTE_WEIGHTS } from "@xom/sim";
 import { useEffect } from "react";
 import { walkTo } from "./nav";
 import { send } from "./net/socket";
@@ -27,14 +28,20 @@ export function useWorldEffects() {
 
       // Chạy xe giao hàng nhanh hơn đi bộ; chạy nhanh thì nhanh nữa; mưa bão đường trơn phải chạy chậm (UC-B4).
       const sky = content.weatherKind(s.clock?.weather.now ?? "sunny");
-      const speed =
-        s.shift?.role === "giao_hang" ? (s.shift.fast ? 7 : 4.5) * sky.delivery.speed : 4;
+      // Chở khách xe ôm: tốc độ server tính theo đường đã chọn (kẹt xe / mưa).
+      const riding = s.ride?.stage === "riding" ? s.ride : null;
+      const speed = riding?.speed
+        ? riding.speed
+        : s.shift?.role === "giao_hang"
+          ? (s.shift.fast ? 7 : 4.5) * sky.delivery.speed
+          : 4;
       if (getPlayer().speed !== speed) getPlayer().speed = speed;
 
       // Goal mới → đi tới đó.
       if (s.goal && s.goal !== prev.goal) {
         const spot = spotFor(s.goal, s.me);
-        if (spot) walkTo(getPlayer(), spot.x, spot.z, spot.yaw);
+        const weights = riding?.route ? ROUTE_WEIGHTS[riding.route] : undefined;
+        if (spot) walkTo(getPlayer(), spot.x, spot.z, spot.yaw, weights);
       }
     });
   }, []);

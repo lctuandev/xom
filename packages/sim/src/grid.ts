@@ -79,25 +79,50 @@ export class Grid {
     return best ?? p;
   }
 
-  /** Đoạn thẳng a→b không đi qua ô cấm (lấy mẫu mỗi 0,5 m). */
-  clear(a: Pt, b: Pt): boolean {
+  /** Đoạn thẳng a→b không đi qua ô cấm (lấy mẫu mỗi 0,5 m); `avoid`: loại ô không được cắt ngang khi nắn thẳng. */
+  clear(a: Pt, b: Pt, avoid?: ReadonlySet<string>): boolean {
     const d = Math.hypot(b.x - a.x, b.z - a.z);
     const n = Math.max(1, Math.ceil(d / 0.5));
     for (let i = 0; i <= n; i++) {
       const t = i / n;
-      if (!this.canStand({ x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t })) return false;
+      const p = { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t };
+      if (!this.canStand(p)) return false;
+      if (avoid) {
+        const { c, r } = this.cellOf(p);
+        if (avoid.has(this.charAt(c, r))) return false;
+      }
     }
     return true;
+  }
+
+  /** Chiều dài (mét) đi từ `from` qua các điểm rẽ. */
+  static length(from: Pt, pts: readonly Pt[]): number {
+    let d = 0;
+    let cur = from;
+    for (const p of pts) {
+      d += Math.hypot(p.x - cur.x, p.z - cur.z);
+      cur = p;
+    }
+    return d;
   }
 
   /**
    * Đường đi từ `from` tới `to`: các điểm rẽ (không gồm `from`, điểm cuối là `to` đã kéo vào ô đi được).
    * Đi thẳng được thì chỉ một điểm.
    */
-  path(from: Pt, to: Pt): Pt[] {
+  path(from: Pt, to: Pt, weights?: Readonly<Record<string, number>>): Pt[] {
     const goal = this.nearest(to);
     const start = this.canStand(from) ? from : this.nearest(from);
-    if (this.clear(start, goal)) return start === from ? [goal] : [start, goal];
+    // Đi theo loại đường (xe ôm: đường lớn / hẻm): ô đắt (≥ 2) thì né, không nắn thẳng cắt qua.
+    const weight = (c: number, r: number) => weights?.[this.charAt(c, r)] ?? 1;
+    const avoid = weights
+      ? new Set(
+          Object.entries(weights)
+            .filter(([, w]) => w >= 2)
+            .map(([ch]) => ch),
+        )
+      : undefined;
+    if (this.clear(start, goal, avoid)) return start === from ? [goal] : [start, goal];
     const s = this.cellOf(start);
     const g = this.cellOf(goal);
     const key = (c: number, r: number) => r * this.cols + c;
@@ -129,7 +154,7 @@ export class Grid {
         // Đi chéo không được cắt góc nhà.
         if (dc && dr && (!this.walkable(c + dc, r) || !this.walkable(c, r + dr))) continue;
         const k = key(nc, nr);
-        const g2 = (cost.get(key(c, r)) ?? 0) + (dc && dr ? Math.SQRT2 : 1);
+        const g2 = (cost.get(key(c, r)) ?? 0) + (dc && dr ? Math.SQRT2 : 1) * weight(nc, nr);
         if (g2 < (cost.get(k) ?? Number.POSITIVE_INFINITY)) {
           cost.set(k, g2);
           came.set(k, key(c, r));
@@ -152,7 +177,7 @@ export class Grid {
     let i = 0;
     while (i < cells.length) {
       let j = cells.length - 1;
-      while (j > i && !this.clear(cur, cells[j] as Pt)) j--;
+      while (j > i && !this.clear(cur, cells[j] as Pt, avoid)) j--;
       const next = cells[j] as Pt;
       out.push(next);
       cur = next;

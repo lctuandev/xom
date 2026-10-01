@@ -9,6 +9,7 @@ export * from "./progression.js";
 export * from "./projects.js";
 export * from "./recipe.js";
 export * from "./regulars.js";
+export * from "./rides.js";
 export * from "./staff.js";
 export * from "./stats.js";
 export * from "./story.js";

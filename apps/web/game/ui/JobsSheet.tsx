@@ -97,11 +97,41 @@ function JobList() {
           );
         })}
       </ul>
+      <RideCard
+        here={nearPlace === content.data.rides.stationPlaceId}
+        onGo={() => {
+          close(null);
+          if (nearPlace === content.data.rides.stationPlaceId) close("ride");
+          else setGoal({ kind: "place", id: content.data.rides.stationPlaceId, open: "ride" });
+        }}
+      />
       {shopOpen && (
         <p className="mt-3 text-center text-sm text-ink/60">
           Đang mở quầy — đóng quầy rồi mới đi làm thuê được.
         </p>
       )}
     </>
+  );
+}
+
+/** 🛵 Xe ôm (KIENTRUC §4): tự chạy, không có chủ trả lương — thuê xe, đón khách ở trạm. */
+function RideCard({ here, onGo }: { here: boolean; onGo: () => void }) {
+  const r = content.data.rides;
+  const place = content.place(r.stationPlaceId);
+  return (
+    <div className="mt-3 rounded-2xl bg-white p-3 shadow-sm" data-job="xe_om">
+      <p className="font-extrabold">🛵 Chạy xe ôm · {place.name}</p>
+      <p className="text-sm text-ink/60">
+        Thuê xe của {place.keeper.name} {vnd(r.bikeRentPerDay)}/ngày, đón khách ở trạm, trả giá,
+        chọn đường lớn hay hẻm. Xăng tự trả, khách chấm sao.
+      </p>
+      <button
+        type="button"
+        onClick={onGo}
+        className="mt-2 h-11 w-full rounded-xl bg-leaf font-semibold text-cream"
+      >
+        {here ? place.action : `🚶 Đi tới ${place.name}`}
+      </button>
+    </div>
   );
 }

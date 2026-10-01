@@ -6,8 +6,14 @@ import type { Walker } from "./scene/Character";
 export const grid = new Grid(content.data.map);
 
 /** Cho một người đi tới (x, z) theo đường xá; chạm vào nhà thì đi tới vỉa hè trước nhà. */
-export function walkTo(w: Walker, x: number, z: number, arriveYaw: number | null = null) {
-  w.follow(grid.path({ x: w.position.x, z: w.position.z }, { x, z }), arriveYaw);
+export function walkTo(
+  w: Walker,
+  x: number,
+  z: number,
+  arriveYaw: number | null = null,
+  weights?: Readonly<Record<string, number>>,
+) {
+  w.follow(grid.path({ x: w.position.x, z: w.position.z }, { x, z }, weights), arriveYaw);
 }
 
 /** Điểm đi được ngẫu nhiên quanh một chỗ (NPC đi dạo). */

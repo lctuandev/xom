@@ -207,6 +207,10 @@ export function loadContent(raw: unknown): Content {
     for (const a of v.ask)
       if (!a.includes("{dish}")) errors.push(`giọng thoại ${v.archetype}: câu "${a}" thiếu {dish}`);
   }
+  // Xe ôm: trạm phải là địa điểm kind "ride".
+  const station = parsed.places.find((p) => p.id === parsed.rides.stationPlaceId);
+  if (!station || station.kind !== "ride")
+    errors.push(`xe ôm: trạm ${parsed.rides.stationPlaceId} phải là địa điểm kind "ride"`);
   // Bảng việc xóm: món, chỗ giao phải có thật; số lượng hợp lệ.
   for (const t of parsed.contracts.templates) {
     const prod = parsed.products.find((p) => p.id === t.productId);

@@ -12,6 +12,7 @@ import type {
   NotifyEvent,
   PayMethod,
   PeerPos,
+  RideView,
   RosterView,
   SayEvent,
   Snapshot,
@@ -75,6 +76,7 @@ import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
+import { RideService } from "./rides.js";
 import { GameError, RoomRuntime } from "./room.js";
 import { StaffService } from "./staff.js";
 import { StatsService } from "./stats.js";
@@ -116,6 +118,7 @@ export interface GameEmitter {
   toPlayer(playerId: string, event: "dayEnd", data: DayReportView): void;
   toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
   toPlayer(playerId: string, event: "notify", data: NotifyEvent): void;
+  toPlayer(playerId: string, event: "ride", data: RideView): void;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -159,6 +162,7 @@ export class GameService implements OnModuleDestroy {
     readonly regulars: RegularService,
     readonly staff: StaffService,
     readonly contracts: ContractService,
+    readonly rides: RideService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -170,6 +174,10 @@ export class GameService implements OnModuleDestroy {
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.contracts.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.rides.setNotifier(
+      (playerId, n) => emitter.toPlayer(playerId, "notify", n),
+      (playerId, r) => emitter.toPlayer(playerId, "ride", r),
+    );
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -322,6 +330,7 @@ export class GameService implements OnModuleDestroy {
           await this.staff.finishShift(room, playerId);
           await this.closeAllFor(room, playerId);
           await this.work.end(room, playerId, "left");
+          this.rides.clear(playerId);
           await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
           room.members.delete(playerId);
           this.roomOfPlayer.delete(playerId);
@@ -1393,6 +1402,7 @@ export class GameService implements OnModuleDestroy {
           await this.needsTick(room);
         }
         await this.work.tick(room);
+        await this.rides.tick(room);
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }

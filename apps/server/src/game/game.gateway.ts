@@ -49,6 +49,9 @@ import {
   reviewListSchema,
   reviewReplySchema,
   reviewWriteSchema,
+  rideGoSchema,
+  rideOfferSchema,
+  ridePaySchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
@@ -351,6 +354,66 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("regulars:list")
   regularsList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.regulars.list(ctx.playerId));
+  }
+
+  @SubscribeMessage("ride:view")
+  rideView(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.rides.view(ctx.room, ctx.playerId),
+    );
+  }
+
+  @SubscribeMessage("ride:rent")
+  rideRent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.rides.rent(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("ride:wait")
+  rideWait(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.rides.wait(ctx.room, ctx.playerId),
+    );
+  }
+
+  @SubscribeMessage("ride:offer")
+  rideOffer(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, rideOfferSchema, body, (ctx, p) =>
+      this.game.rides.offer(ctx.room, ctx.playerId, p.ratio),
+    );
+  }
+
+  @SubscribeMessage("ride:go")
+  rideGo(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, rideGoSchema, body, (ctx, p) =>
+      this.game.rides.go(ctx.room, ctx.playerId, p.route),
+    );
+  }
+
+  @SubscribeMessage("ride:arrive")
+  rideArrive(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.rides.arrive(ctx.room, ctx.playerId),
+    );
+  }
+
+  @SubscribeMessage("ride:pay")
+  ridePay(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, ridePaySchema, body, async (ctx, p) => {
+      const r = await this.game.rides.pay(ctx.room, ctx.playerId, p.change);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("ride:quit")
+  rideQuit(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.rides.quit(ctx.room, ctx.playerId),
+    );
   }
 
   @SubscribeMessage("contract:list")

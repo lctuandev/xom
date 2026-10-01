@@ -65,6 +65,10 @@ model Player {
   trust        Int      @default(50)
   /// Tin cậy quá thấp: khoá nhận việc trên bảng việc xóm tới hết ngày game này.
   trustLockDay Int?
+  /// 🛵 Xe ôm (KIENTRUC §4): ngày game đã thuê xe Wave của Chú Lực; số cuốc đã chạy; tổng sao khách chấm.
+  bikeRentDay  Int?
+  rides        Int      @default(0)
+  rideStars    Int      @default(0)
   createdAt   DateTime @default(now())
 
   businesses Business[]

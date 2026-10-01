@@ -1646,6 +1646,36 @@ export const data: ContentInput = {
       ],
     },
     {
+      id: "tram_xe_om",
+      name: "Trạm xe ôm gốc me",
+      kind: "ride",
+      sign: "XE ÔM",
+      signColor: "#d4881c",
+      action: "🛵 Ra trạm xe ôm",
+      keeper: {
+        name: "Chú Lực",
+        model: "character-male-c",
+        greeting: "Muốn chạy xe ôm hả? Chú cho thuê con Wave cũ, xăng tự đổ nghen.",
+        talk: {
+          price: [
+            "Xe chú cho thuê 30 ngàn một ngày, xăng con tự lo.",
+            "Nói thách vừa thôi, khách quen người ta biết giá hết đó.",
+          ],
+          gossip: [
+            "Giờ tan tầm đường lớn kẹt cứng, chui hẻm cho lẹ.",
+            "Trời mưa khách dễ chịu giá, mà hẻm trơn lắm, chạy từ từ.",
+          ],
+        },
+      },
+      jobs: [],
+      position: { x: -32, z: -3.6 },
+      facing: 0,
+      props: [
+        { model: "road-sign-street", dx: 1.2, dz: 0.2, rot: 0 },
+        { model: "ghe-nhua-do", dx: -1, dz: 0.3, rot: 0.6 },
+      ],
+    },
+    {
       id: "buu_cuc",
       name: "Bưu cục",
       kind: "job",
@@ -2081,6 +2111,51 @@ export const data: ContentInput = {
   },
 
   // Nhân viên thuê đứng quầy thay (KIENTRUC §2): bán khi chủ rời quầy / thoát game, tới hết ca; trả lương theo giờ.
+  rides: {
+    stationPlaceId: "tram_xe_om",
+    jamProfile: "crossroad",
+    bikeRentPerDay: 30_000,
+    fuelPer100m: 1_000,
+    baseFare: 12_000,
+    farePer100m: 8_000,
+    minMeters: 18,
+    haggle: [
+      { ratio: 0.9, label: "Bớt chút" },
+      { ratio: 1, label: "Giá chuẩn" },
+      { ratio: 1.25, label: "Nhích lên" },
+      { ratio: 1.6, label: "Nói thách" },
+    ],
+    acceptSlope: 1.4,
+    rainAcceptBonus: 0.25,
+    routes: {
+      road: { name: "Đường lớn", speed: 7.5, jamSlow: 0.6 },
+      alley: { name: "Đi hẻm", speed: 5.5, rainSlow: 0.35 },
+    },
+    expectSpeed: 5.5,
+    waitMinutes: 6,
+    tip: { five: [2_000, 5_000], four: [0, 2_000] },
+    lines: {
+      ask: [
+        "Chú ơi, chở tui tới {place} bao nhiêu?",
+        "Anh xe ôm ơi, ra {place} nhiêu tiền?",
+        "Con ơi chở cô về {place}, lấy bao nhiêu?",
+      ],
+      accept: ["Ừ, đi lẹ giùm cái.", "Được, chạy đi con.", "Ok chốt, đi thôi!"],
+      refuse: [
+        "Mắc quá, thôi tui đi bộ cho khoẻ.",
+        "Giá cắt cổ vậy ai đi, thôi khỏi!",
+        "Hông được đâu, để kêu xe khác.",
+      ],
+      stars: {
+        "5": ["Chạy êm mà lẹ ghê, lần sau kêu nữa nha!", "Tay lái lụa luôn, boa nè."],
+        "4": ["Cũng được, cảm ơn nghen.", "Ổn áp, hôm sau đi tiếp."],
+        "3": ["Hơi lâu ha, mà thôi cũng tới.", "Lần sau chạy lẹ chút nha."],
+        "2": ["Trời đất, đi gì lâu dữ vậy!", "Xóc muốn rớt ruột luôn á."],
+        "1": ["Thôi khỏi đi nữa.", "Lần sau tui kêu xe khác."],
+      },
+    },
+  },
+
   contracts: {
     keeper: "Chú Hai tổ trưởng",
     perDay: 3,
@@ -2216,6 +2291,7 @@ export const data: ContentInput = {
     { id: "first_regular", emoji: "❤️", text: "Có khách quen đầu tiên: {name} ({bio})" },
     { id: "first_hire", emoji: "👩‍🍳", text: "Thuê người đầu tiên: {name} đứng quầy phụ" },
     { id: "first_contract", emoji: "📋", text: "Xong việc đầu tiên trên bảng việc xóm: {text}" },
+    { id: "first_ride", emoji: "🛵", text: "Chạy cuốc xe ôm đầu tiên: chở {name} tới {place}" },
   ],
 
   achievements: [

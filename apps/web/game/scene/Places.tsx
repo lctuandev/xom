@@ -157,7 +157,9 @@ export function ProximityWatcher() {
                       const spot = shopSpot(g.lotId);
                       return distanceTo(spot.x, spot.z) <= radius;
                     })()
-                  : atStall;
+                  : g?.kind === "point"
+                    ? distanceTo(g.x, g.z) <= radius + 1
+                    : atStall;
     if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
       if ("open" in g && g.open) s.openSheet(g.open);

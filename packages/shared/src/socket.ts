@@ -20,6 +20,7 @@ import type {
   PeerPos,
   RegularView,
   ReviewsView,
+  RideView,
   RosterView,
   SayEvent,
   ShiftView,
@@ -93,6 +94,15 @@ export interface ClientToServerEvents {
   "debug:regulars": Intent<{ visits: number }>;
   /** Sổ khách quen của quầy mình (KIENTRUC §1). */
   "regulars:list": Intent<Record<string, never>, RegularView[]>;
+  /** 🛵 Xe ôm (KIENTRUC §4): xem / thuê xe / chờ khách / trả giá / chọn đường / tới nơi / thu tiền / nghỉ. */
+  "ride:view": Intent<Record<string, never>, RideView>;
+  "ride:rent": Intent<{ pay?: PayMethod }, RideView>;
+  "ride:wait": Intent<Record<string, never>, RideView>;
+  "ride:offer": Intent<{ ratio: number }, RideView>;
+  "ride:go": Intent<{ route: "road" | "alley" }, RideView>;
+  "ride:arrive": Intent<Record<string, never>, RideView>;
+  "ride:pay": Intent<{ change: number | null }, RideView>;
+  "ride:quit": Intent<Record<string, never>, RideView>;
   /** Bảng việc xóm (KIENTRUC §3): xem / nhận / làm hàng / giao / bỏ việc. */
   "contract:list": Intent<Record<string, never>, ContractBoardView>;
   "contract:take": Intent<{ id: string }, ContractBoardView>;
@@ -171,4 +181,6 @@ export interface ServerToClientEvents {
   roster: (r: RosterView) => void;
   peers: (p: PeerPos[]) => void;
   events: (e: EventView[]) => void;
+  /** Xe ôm: khách tới / trạng thái cuốc đổi ngoài intent. */
+  ride: (r: RideView) => void;
 }

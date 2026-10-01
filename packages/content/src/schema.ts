@@ -242,6 +242,58 @@ export const regularsSchema = z.object({
  * Nhân viên thuê đứng quầy thay (KIENTRUC §2): tay nghề (tỉ lệ làm đúng), tốc độ, lương/giờ; ca làm cố định trong ngày.
  * Nhân viên không tự nhập hàng, không tự mở quầy — chủ mở quầy rồi giao lại; hết hàng thì nghỉ bán.
  */
+/** Xe ôm (docs/KIENTRUC.md §4) + kẹt xe (§5). Tốc độ tính bằng mét/giây trong cảnh 3D. */
+export const ridesSchema = z.object({
+  /** Trạm xe ôm (place kind "ride"). */
+  stationPlaceId: id,
+  /** Lưu lượng khu nào quyết định độ kẹt xe (trafficProfiles). */
+  jamProfile: id,
+  /** Thuê xe Wave cũ một ngày. */
+  bikeRentPerDay: vnd,
+  /** Tiền xăng mỗi 100 m (cả lượt đi lẫn quay về trạm), làm tròn 500đ. */
+  fuelPer100m: vnd,
+  /** Giá chuẩn = mở cửa + theo quãng đường, làm tròn nghìn. */
+  baseFare: vnd,
+  farePer100m: vnd,
+  /** Không chở chỗ gần hơn (đi bộ được). */
+  minMeters: z.number().positive(),
+  /** Các mức giá người chơi đưa ra so với giá chuẩn (trả giá). */
+  haggle: z.array(z.object({ ratio: z.number().min(0.5).max(3), label: z.string() })).min(2),
+  /** Khách đồng ý: 1 khi ≤ giá chuẩn, giảm dần theo mức nói thách; mưa bão khách dễ chịu hơn. */
+  acceptSlope: z.number().positive(),
+  rainAcceptBonus: z.number().min(0).max(1),
+  routes: z.object({
+    road: z.object({
+      name: z.string(),
+      /** m/s khi đường vắng. */
+      speed: z.number().positive(),
+      /** Giảm tốc tối đa khi kẹt cứng (congestion = 1). */
+      jamSlow: z.number().min(0).max(0.9),
+    }),
+    alley: z.object({
+      name: z.string(),
+      speed: z.number().positive(),
+      /** Mưa / bão: đường trơn, chạy chậm lại. */
+      rainSlow: z.number().min(0).max(0.9),
+    }),
+  }),
+  /** Khách chờ bao lâu là bình thường: m/s ước của "xe ôm vừa phải". */
+  expectSpeed: z.number().positive(),
+  /** Phút game chờ khách khi ngã tư đông nhất (vắng thì lâu hơn). */
+  waitMinutes: z.number().positive(),
+  /** Tiền boa theo sao (khoảng min–max, làm tròn nghìn). */
+  tip: z.object({
+    five: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+    four: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+  }),
+  lines: z.object({
+    ask: z.array(z.string()).min(1),
+    accept: z.array(z.string()).min(1),
+    refuse: z.array(z.string()).min(1),
+    stars: z.record(z.string(), z.array(z.string()).min(1)),
+  }),
+});
+
 /** Bảng việc xóm + điểm tin cậy (docs/KIENTRUC.md §3). */
 export const contractsSchema = z.object({
   /** Người giữ bảng, ghi sổ, phân xử. */
@@ -482,7 +534,7 @@ const position = z.object({ x: z.number(), z: z.number() });
 export const placeSchema = z.object({
   id,
   name: z.string(),
-  kind: z.enum(["equipment_shop", "market", "job"]),
+  kind: z.enum(["equipment_shop", "market", "job", "ride"]),
   /** Chữ trên biển hiệu. */
   sign: z.string(),
   signColor: z.string().regex(/^#[0-9a-f]{6}$/i),
@@ -965,6 +1017,7 @@ export const contentSchema = z.object({
   regulars: regularsSchema,
   staff: staffSchema,
   contracts: contractsSchema,
+  rides: ridesSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

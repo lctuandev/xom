@@ -10,6 +10,7 @@ import type {
   OrderResultEvent,
   OrderUpdateEvent,
   PayslipView,
+  RideView,
   RosterView,
   SayEvent,
   ShiftView,
@@ -69,7 +70,8 @@ export type SheetId =
   | "recipes"
   | "atm"
   | "board"
-  | "fund";
+  | "fund"
+  | "ride";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -89,7 +91,9 @@ export type Goal =
   /** Tới cây ATM. */
   | { kind: "atm"; id: string; open?: SheetId }
   /** Mang hàng tới chỗ giao của việc trên bảng việc xóm (KIENTRUC §3). */
-  | { kind: "drop"; lotId: string; open?: SheetId };
+  | { kind: "drop"; lotId: string; open?: SheetId }
+  /** Chở khách xe ôm tới một điểm (KIENTRUC §4). */
+  | { kind: "point"; x: number; z: number; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -121,6 +125,8 @@ interface GameState {
   /** Đang ở bên trong nơi làm (id địa điểm) — cảnh nội thất thay cho bản đồ. */
   inside: string | null;
   shift: ShiftView | null;
+  /** 🛵 Cuốc xe ôm hiện tại (KIENTRUC §4). */
+  ride: RideView | null;
   payslip: PayslipView | null;
   /** Địa chỉ giao hàng đang đứng trước cửa. */
   nearAddress: string | null;
@@ -187,6 +193,7 @@ interface GameState {
   setBubble: (key: string, b: Bubble | null) => void;
   setInside: (placeId: string | null) => void;
   setShift: (s: ShiftView | null) => void;
+  setRide: (r: RideView | null) => void;
   setPayslip: (p: PayslipView | null) => void;
   setNearAddress: (id: string | null) => void;
   countServed: () => void;
@@ -242,6 +249,7 @@ export const useGame = create<GameState>((set, get) => ({
   facing: null,
   inside: null,
   shift: null,
+  ride: null,
   payslip: null,
   nearAddress: null,
   servedCount: 0,
@@ -371,6 +379,7 @@ export const useGame = create<GameState>((set, get) => ({
     }),
   setInside: (inside) => set({ inside, sheet: null }),
   setShift: (shift) => set({ shift }),
+  setRide: (ride) => set({ ride }),
   setPayslip: (payslip) => set({ payslip }),
   setNearAddress: (nearAddress) => set({ nearAddress }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),
