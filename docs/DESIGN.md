@@ -95,6 +95,7 @@ Nhà cung cấp → Kho → Định giá → Tiếp thị → Khách → Đánh 
 
 **Rủi ro bắt buộc có**: hàng tồn · hàng hỏng · đối thủ · giá nguyên liệu biến động · khách phàn nàn · trào lưu thay đổi.
 **Luật 7.1** — Không có "mua → bán" một chạm: mỗi khâu là một quyết định hoặc một thao tác của người chơi.
+**Luật 7.2** — **Nhịp khách là để chơi, không phải để chờ**: quầy đang mở giờ cao điểm thì 10–20 giây thật có một khách. Chỉnh bằng `economy.demandScale` (hiện 1,6) — tăng khách thì phải tăng chỗ tiêu tương ứng (tiền chỗ đã ×1,5) và chạy `pnpm balance` (lãi tay vừa ≥ lương làm thuê, tay nhanh ≤ 5× lương, chênh giữa các nghề ≤ 2,5×).
 
 ## 8. 🌦️ Thế giới thay đổi
 

@@ -68,7 +68,7 @@ function Customer({
   const front = lot.facing === 0 ? 1 : -1;
   const side = order.orderId.charCodeAt(0) % 2 ? 1 : -1;
   const lane = lot.position.z + front * 1.6;
-  const walker = useMemo(() => new Walker(lot.position.x + side * 9, lane, 2.2), [lot, side, lane]);
+  const walker = useMemo(() => new Walker(lot.position.x + side * 7, lane, 2.8), [lot, side, lane]);
   const phase = useRef<"come" | "wait" | "linger" | "leave">("come");
   const timer = useRef(0);
   const key = `order:${order.orderId}`;

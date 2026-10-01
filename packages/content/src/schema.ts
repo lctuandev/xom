@@ -554,6 +554,8 @@ export const economySchema = z.object({
   marketPriceSwing: z.number().min(0).max(0.5),
   /** Lựa chọn "không mua ai" trong mô hình chia khách. */
   outsideOption: z.number().positive(),
+  /** Nhân số khách ghé quầy (nhịp chơi): 1 = theo lưu lượng thật; >1 cho quầy đông tay hơn. */
+  demandScale: z.number().positive().default(1),
   /** Tốc độ reputation bám theo độ hài lòng. */
   reputationRate: z.number().positive().max(1),
   startingReputation: z.number().min(0).max(1),

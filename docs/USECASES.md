@@ -679,7 +679,7 @@ Khách mua mang về đi ra cửa; khách ăn tại chỗ ngồi bàn (như quá
 **Đời thật:** tiệm đông thì cần người phụ (UC-H, tuyển NPC/người chơi) — vị trí mình không làm thì người phụ làm;
 tiền điện nước tính vào tiền thuê; bảng hiệu, bàn ghế nâng cấp dần.
 **Luật:** mở tiệm = đứng quầy trong tiệm; ra khỏi tiệm = quầy vắng chủ (như UC-F3); một người một chỗ bán (xe đẩy **hoặc** nhà).
-**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 140k/ngày) trong danh sách Chỗ bán;
+**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 105k/ngày, số 24 cạnh ngã tư đông 210k/ngày) trong danh sách Chỗ bán;
 ngoài phố căn nhà có mái hiên + biển "🏪 BÁNH MÌ <TÊN>"; đứng trước cửa bấm "🏪 Vào tiệm" → cảnh trong tiệm (quầy, đồ bày, bàn ghế,
 camera xoay được), khách đi từ cửa vào xếp hàng, khung thoại gọi món, nhận món xong đi ra; "👨‍🍳 Làm món cho khách" dùng màn làm món,
 "📖 Công thức" ngay trong tiệm. **Chưa:** khách ngồi ăn tại bàn, thuê người phụ. (Bảng quầy dạng lưới cho trà sữa: ✅ 1.11, xem UC-F5.)

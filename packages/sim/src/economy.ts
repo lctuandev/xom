@@ -99,7 +99,9 @@ export function customerArrivals({
     const share = attract / (rivals.reduce((sum, o) => sum + o.attract, 0) + outside);
     // Nhiễu ±20% tất định theo shop/thời điểm để mỗi nhịp không giống hệt nhau.
     const noise = 0.8 + seededRandom("demand", s.id, day, minuteOfDay)() * 0.4;
-    const carry = s.demandCarry + traffic * hours * interest * share * noise * (s.boost ?? 1);
+    const carry =
+      s.demandCarry +
+      traffic * hours * interest * share * noise * (s.boost ?? 1) * content.economy.demandScale;
     const arrivals = Math.floor(carry);
     return { id: s.id, arrivals, demandCarry: carry - arrivals };
   });
