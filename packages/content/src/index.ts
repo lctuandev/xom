@@ -154,6 +154,14 @@ export function loadContent(raw: unknown): Content {
     for (const cat of Object.keys(k.category))
       if (!parsed.products.some((p) => p.category === cat))
         errors.push(`thời tiết ${k.id}: không có danh mục ${cat}`);
+  const seenEvents = new Set<string>();
+  for (const ev of parsed.events) {
+    if (seenEvents.has(ev.id)) errors.push(`sự kiện trùng: ${ev.id}`);
+    seenEvents.add(ev.id);
+    if (ev.trigger.kind === "daily" && ev.trigger.to - ev.trigger.from < ev.minutes)
+      errors.push(`sự kiện ${ev.id}: khung giờ ngắn hơn thời lượng`);
+    if (Object.keys(ev.effects).length === 0) errors.push(`sự kiện ${ev.id}: không có ảnh hưởng`);
+  }
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
@@ -225,6 +233,14 @@ export class Content {
   variant(productId: string, variantId: string) {
     const v = this.product(productId).recipe.variants.find((x) => x.id === variantId);
     return must(v, "variant", variantId);
+  }
+  /** Sự kiện theo id. */
+  event(id: string) {
+    return must(
+      this.data.events.find((e) => e.id === id),
+      "event",
+      id,
+    );
   }
   /** Kiểu trời theo id (luôn có đủ 4 kiểu — đã kiểm khi nạp). */
   weatherKind(id: WeatherId): WeatherKind {

@@ -3,6 +3,7 @@ import { content } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
+  EventView,
   MeView,
   MovePayload,
   NotifyEvent,
@@ -15,8 +16,11 @@ import type {
   WorldView,
 } from "@xom/shared";
 import {
+  canHost,
+  chanceIn,
   customerArrivals,
   fameOf,
+  hostCost,
   levelOf,
   marketPackPrice,
   menuPriceRatio,
@@ -63,6 +67,7 @@ export interface GameEmitter {
   toRoom(roomId: string, event: "say", data: SayEvent): void;
   toRoom(roomId: string, event: "roster", data: RosterView): void;
   toRoom(roomId: string, event: "peers", data: PeerPos[]): void;
+  toRoom(roomId: string, event: "events", data: EventView[]): void;
   toPlayer(playerId: string, event: "me", data: MeView): void;
   toPlayer(playerId: string, event: "dayEnd", data: DayReportView): void;
   toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
@@ -78,6 +83,7 @@ async function rebaseDays(tx: Tx, playerId: string, offset: number) {
   await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -("day" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
   await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -"day" WHERE "playerId" = ${playerId}::uuid`;
   await tx.$executeRaw`UPDATE "Business" SET "rentPaidDay" = "rentPaidDay" + ${offset} WHERE "ownerId" = ${playerId}::uuid AND "rentPaidDay" IS NOT NULL`;
+  await tx.$executeRaw`UPDATE "Business" SET "promoDay" = "promoDay" + ${offset} WHERE "ownerId" = ${playerId}::uuid AND "promoDay" IS NOT NULL`;
   await tx.$executeRaw`UPDATE "NpcRelation" SET "lastGreetDay" = "lastGreetDay" + ${offset} WHERE "playerId" = ${playerId}::uuid`;
 }
 
@@ -498,6 +504,70 @@ export class GameService implements OnModuleDestroy {
     this.emitter?.toRoom(room.id, "say", { who: `vendor:${v.id}`, text: `${line} (${item.name})` });
   }
 
+  /**
+   * Người chơi tự tổ chức sự kiện (DESIGN §9, UC-B5): khai trương — phải đang đứng quầy đang mở; trả tiền pháo, bong bóng,
+   * băng rôn (money sink, Luật 2.2); đổi lại quầy đông khách + giảm giá trong X giờ game, cả xóm thấy tin.
+   */
+  async hostEvent({ room, playerId }: IntentContext, eventId: string) {
+    const def = content.data.events.find((e) => e.id === eventId);
+    if (!def || def.trigger.kind !== "player")
+      throw new GameError("invalid_payload", "Không có sự kiện này");
+    const biz = await this.requireBusiness(playerId);
+    if (biz.status !== "OPEN" || !biz.lotId || !room.attending.has(playerId))
+      throw new GameError("invalid_state", "Mở quầy và đứng ở quầy rồi mới khai trương được");
+    if (room.activeEvents(biz.id).length)
+      throw new GameError("invalid_state", "Quầy đang khai trương rồi mà");
+    const why = canHost(def, biz.promoDay, room.day);
+    if (why) throw new GameError("invalid_state", why);
+    const end = Math.min(content.economy.dayEndMinute, room.minute + def.minutes);
+    if (end - room.minute < 30)
+      throw new GameError("invalid_state", "Sắp hết ngày rồi — mai khai trương cho đông");
+    const cost = hostCost(def);
+    await this.prisma.$transaction(async (tx) => {
+      await this.ledger.transfer(tx, playerWallet(playerId), SYSTEM.market, cost, "event", def.id);
+      await tx.business.update({ where: { id: biz.id }, data: { promoDay: room.day } });
+      await addToReport(tx, playerId, room.day, { stockCost: cost });
+      await this.event(tx, playerId, "event_host", { eventId: def.id, cost, lotId: biz.lotId });
+    });
+    const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
+    room.events.push({
+      key: `${def.id}:${biz.id}:${room.day}`,
+      eventId: def.id,
+      from: room.minute,
+      to: end,
+      ownerId: playerId,
+      ownerName: name,
+      businessId: biz.id,
+      lotId: biz.lotId,
+    });
+    this.emitter?.toRoom(room.id, "events", room.events);
+    this.emitter?.toRoom(room.id, "say", {
+      who: playerId,
+      text: "🎉 Khai trương! Ghé ủng hộ nha!",
+    });
+  }
+
+  /** Hệ số khách + giảm giá từ sự kiện đang diễn ra ở một quầy. */
+  private promoOf(room: RoomRuntime, businessId: string) {
+    let demand = 1;
+    let discount = 0;
+    for (const e of room.activeEvents(businessId)) {
+      const fx = content.event(e.eventId).effects;
+      demand *= fx.demand ?? 1;
+      discount = Math.max(discount, fx.discount ?? 0);
+    }
+    return { demand, discount };
+  }
+
+  /** Dev/test: cộng tiền mặt cho mình (để kịch bản thử tính năng cần vốn); production không cho. */
+  async debugGrant({ playerId }: IntentContext, money: number) {
+    if (process.env.NODE_ENV === "production")
+      throw new GameError("invalid_state", "Không có lệnh này");
+    await this.prisma.$transaction((tx) =>
+      this.ledger.transfer(tx, SYSTEM.bank, playerWallet(playerId), money, "debug"),
+    );
+  }
+
   /** Dev/test (UC-B4): ép thời tiết của xóm mình trong một khoảng; production không cho. */
   async debugWeather(
     { room }: IntentContext,
@@ -679,6 +749,7 @@ export class GameService implements OnModuleDestroy {
         reputation: b.reputation,
         boost:
           ((room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1) *
+          this.promoOf(room, b.id).demand *
           weatherDemand(
             room.sky,
             content.lot(b.lotId ?? "").kind,
@@ -694,8 +765,27 @@ export class GameService implements OnModuleDestroy {
         where: { id: b.id },
         data: { demandCarry: r.demandCarry },
       });
+      const { discount } = this.promoOf(room, b.id);
+      // Khách VIP (sự kiện cá nhân): thỉnh thoảng ghé quầy đang mở.
+      const vip = content.data.events.find((e) => e.effects.vip && e.trigger.kind === "per_hour");
+      if (vip?.trigger.kind === "per_hour" && vip.effects.vip) {
+        const roll = seededRandom("vip", b.id, room.day, room.minute)();
+        if (roll < chanceIn(vip.trigger.perHour, eco.economyTickMinutes)) {
+          const { created } = await this.orders.spawn(room, b, 1, {
+            discount,
+            vip: vip.effects.vip,
+          });
+          if (created) {
+            const shop = content.product(b.productId).name.toLowerCase();
+            this.emitter?.toPlayer(b.ownerId, "notify", {
+              kind: "info",
+              text: vip.news.replace("{shop}", `quầy ${shop}`),
+            });
+          }
+        }
+      }
       if (r.arrivals === 0) continue;
-      const { lost } = await this.orders.spawn(room, b, r.arrivals);
+      const { lost } = await this.orders.spawn(room, b, r.arrivals, { discount });
       if (lost > 0) this.emitter?.toPlayer(b.ownerId, "me", await this.me(room, b.ownerId));
     }
   }
@@ -765,6 +855,7 @@ export class GameService implements OnModuleDestroy {
     room.planWeather();
     await this.persistClock(room);
     this.emitWorld(room);
+    this.emitter?.toRoom(room.id, "events", room.events);
     for (const playerId of room.members.keys()) {
       this.emitter?.toPlayer(playerId, "snapshot", await this.snapshot(room, playerId));
     }
@@ -783,6 +874,7 @@ export class GameService implements OnModuleDestroy {
       world: { lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)) },
       shift: this.work.view(room, playerId),
       roster: this.roster(room),
+      events: room.events,
       orders: [...room.orders.values()]
         .filter((o) => o.event.ownerId === playerId || o.event.buyerId === playerId)
         .map((o) => o.event),
@@ -818,6 +910,7 @@ export class GameService implements OnModuleDestroy {
             open: biz.status === "OPEN",
             reputation: biz.reputation,
             rentPaidToday: biz.rentPaidDay === room.day && biz.rentLotId === biz.lotId,
+            promoDay: biz.promoDay,
           }
         : null,
       inventory,

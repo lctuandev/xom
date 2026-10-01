@@ -67,7 +67,8 @@ const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * Làm món đúng theo lời khách dặn, thao tác từng bước như người chơi.
  * `mistake`: cố tình làm sai một bước (để thử khách phàn nàn).
  */
-export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
+export async function makeDish(page: Page, opts: { mistake?: string; timeout?: number } = {}) {
+  const t = opts.timeout ? { timeout: opts.timeout } : undefined;
   const kitchen = page.getByRole("dialog", { name: "Làm món" });
   await expect(kitchen).toBeVisible();
   const spec = JSON.parse((await kitchen.getAttribute("data-spec")) ?? "{}") as Record<
@@ -82,14 +83,14 @@ export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     if (!step) continue;
-    await kitchen.getByRole("button", { name: `${i + 1}. ${step.label}` }).tap();
+    await kitchen.getByRole("button", { name: `${i + 1}. ${step.label}` }).tap(t);
     const panel = kitchen.getByRole("region", { name: step.label });
     let want = spec[step.id];
     if (opts.mistake === step.id && step.kind === "single") {
       want = step.options.find((o) => o.id !== want)?.id ?? want;
     }
     if (step.kind === "action") {
-      await panel.getByRole("button", { name: step.verb ?? step.label }).tap();
+      await panel.getByRole("button", { name: step.verb ?? step.label }).tap(t);
     } else if (step.kind === "hold") {
       const btn = panel.getByRole("button");
       await btn.dispatchEvent("pointerdown");
@@ -100,16 +101,16 @@ export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
       ).toBeVisible();
     } else if (step.kind === "single") {
       const opt = step.options.find((o) => o.id === want);
-      if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap();
+      if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap(t);
     } else {
       for (const id of Array.isArray(want) ? want : []) {
         const opt = step.options.find((o) => o.id === id);
-        if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap();
+        if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap(t);
       }
-      await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap();
+      await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap(t);
     }
   }
-  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap();
+  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
   return { orderId, spec };
 }
 
@@ -136,6 +137,35 @@ export async function payOrder(page: Page, short = 0) {
   }
   await kitchen.getByRole("button", { name: /^Thối .*✓$/ }).tap();
   return "cash";
+}
+
+/**
+ * Mở màn làm món cho khách kế tiếp, làm đúng món, tính tiền. Quầy đông thì khách đang làm có thể hết kiên nhẫn bỏ đi
+ * (màn làm món tự đóng) — như ngoài đời: phục vụ người tiếp theo. `check` chạy khi màn làm món vừa mở.
+ */
+export async function serveCustomer(page: Page, check?: (kitchen: Locator) => Promise<void>) {
+  const cook = page.getByRole("button", { name: /Làm món cho khách/ });
+  const kitchen = page.getByRole("dialog", { name: "Làm món" });
+  for (let i = 0; i < 4; i++) {
+    await expect(cook).toBeVisible({ timeout: 90_000 });
+    await cook.tap();
+    await expect(kitchen).toBeVisible();
+    if (check) await check(kitchen);
+    const ok = await makeDish(page, { timeout: 4_000 })
+      .then(() => payOrder(page))
+      .then(() => true)
+      .catch(() => false);
+    if (ok) {
+      await expect(kitchen).toHaveCount(0);
+      return;
+    }
+    if (await kitchen.isVisible())
+      await kitchen
+        .getByRole("button", { name: "Để đó, làm sau" })
+        .tap({ timeout: 3_000 })
+        .catch(() => undefined);
+  }
+  throw new Error("Không phục vụ kịp khách nào");
 }
 
 /** Thối tiền bằng bàn tiền lẻ (CashChange) trong `scope`; `short` = cố tình thối thiếu. */
@@ -184,6 +214,19 @@ export async function setWeather(page: Page, kind: string, after = 0, minutes = 
     },
     { kind, after, minutes },
   );
+  expect(ok).toBe(true);
+}
+
+/** Cộng tiền mặt (lệnh thử nghiệm, chỉ bản dev). */
+export async function grantMoney(page: Page, money: number) {
+  const ok = await page.evaluate(async (m) => {
+    const dbg = (
+      window as unknown as {
+        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+      }
+    ).xomDebug;
+    return (await dbg?.send("debug:grant", { money: m }))?.ok ?? false;
+  }, money);
   expect(ok).toBe(true);
 }
 

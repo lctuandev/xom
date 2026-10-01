@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-import { content } from "@xom/content";
+import { content, type GameEventDef } from "@xom/content";
 import type { DishView, OrderEvent, OrderResultEvent, OrderUpdateEvent } from "@xom/shared";
 import {
   customOrder,
@@ -40,6 +40,7 @@ const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 const pick = <T>(list: readonly T[], rand: () => number): T =>
   list[Math.floor(rand() * list.length)] ?? (list[0] as T);
 const round500 = (n: number) => Math.round(n / 500) * 500;
+type VipFx = NonNullable<GameEventDef["effects"]["vip"]>;
 
 export interface OrderEmitter {
   order(roomId: string, e: OrderEvent): void;
@@ -78,6 +79,7 @@ export class OrderService {
     room: RoomRuntime,
     biz: Business,
     arrivals: number,
+    opts: { discount?: number; vip?: VipFx } = {},
   ): Promise<{ created: number; lost: number }> {
     const product = content.product(biz.productId);
     const queueSize = content.equipment(biz.equipmentId).queueSize;
@@ -88,15 +90,22 @@ export class OrderService {
     let lost = 0;
     for (let k = 0; k < arrivals; k++) {
       const rand = seededRandom("order", biz.id, room.day, room.minute, k);
-      const order = waiting < queueSize ? generateOrder(product.recipe, menu, rand, stock) : null;
+      const order =
+        waiting < queueSize
+          ? generateOrder(product.recipe, menu, rand, stock, opts.vip?.minMods ?? 0)
+          : null;
       if (!order) {
         // Hàng chờ đông quá hoặc quầy hết món: khách đi thẳng.
         lost++;
         continue;
       }
-      const archetype = pickArchetype(content, product.category, rand);
+      const archetype = opts.vip ? "vip" : pickArchetype(content, product.category, rand);
       const npc = content.data.npcs.find((n) => n.id === archetype);
-      const patienceMs = (npc?.patienceSec ?? 45) * 1000;
+      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1);
+      // Khai trương giảm giá: làm tròn 500đ, không dưới 1.000đ.
+      const price = opts.discount
+        ? Math.max(1_000, round500(order.price * (1 - opts.discount)))
+        : order.price;
       const now = Date.now();
       const event: OrderEvent = {
         orderId: randomUUID(),
@@ -109,12 +118,14 @@ export class OrderService {
         ask: order.ask,
         dish: order.dish,
         spec: order.spec,
-        price: order.price,
-        pay: pickPayment(order.price, npc?.transferRate ?? 0.2, rand),
+        price,
+        pay: pickPayment(price, npc?.transferRate ?? 0.2, rand),
         createdAt: now,
         expiresAt: now + patienceMs,
+        ...(opts.vip ? { vip: true } : {}),
+        ...(opts.discount ? { promo: true } : {}),
       };
-      room.orders.set(event.orderId, { event, patienceMs, dish: null });
+      room.orders.set(event.orderId, { event, patienceMs, dish: null, vip: opts.vip });
       this.emit?.order(room.id, event);
       waiting++;
       created++;
@@ -252,9 +263,10 @@ export class OrderService {
     const ratio = e.price / variant.refPrice;
     const fast = Date.now() - e.createdAt <= order.patienceMs * 0.6;
     // Khách là người chơi: không có tiền boa tự động (boa là chuyện của họ).
+    const vip = order.vip;
     const tip =
       correct && !discount && fast && !e.buyerId
-        ? Math.max(1_000, round500(price * eco.tipRate))
+        ? Math.max(1_000, round500(price * eco.tipRate * (vip?.tipMult ?? 1)))
         : 0;
     const short = outcome === "short";
     const satisfaction = Math.max(
@@ -288,6 +300,8 @@ export class OrderService {
           let rep = nextReputation(biz.reputation, satisfaction, 1, eco.reputationRate);
           if (correct && fast) rep += eco.serveReputationBonus;
           if (short) rep -= 0.02;
+          // Khách VIP: làm hoàn hảo thì tiếng tốt lan nhanh, làm hỏng thì bị chê khắp xóm.
+          if (vip) rep += correct && fast && !short ? vip.repWin : -vip.repLose;
           await tx.business.update({
             where: { id: biz.id },
             data: { reputation: Math.min(1, Math.max(0, rep)) },
@@ -318,17 +332,21 @@ export class OrderService {
     }
 
     const lines = content.data.customerLines;
-    const line = short
-      ? "Thối thiếu rồi con ơi, đưa đủ đây!"
-      : outcome === "over_returned"
-        ? "Con thối dư nè, trả lại nè."
-        : discount
-          ? "Thôi được, lần sau làm kỹ nha."
-          : ratio > 1.15
-            ? pick(lines.pricey, rand)
-            : ratio < 0.9
-              ? pick(lines.cheap, rand)
-              : pick(lines.thanks, rand);
+    const line = vip
+      ? correct && fast && !short
+        ? `Chuẩn! Lâu lắm mới gặp quầy làm kỹ vậy — boa ${vnd(tip)} nè!`
+        : "Tạm được… lần sau làm kỹ hơn nha."
+      : short
+        ? "Thối thiếu rồi con ơi, đưa đủ đây!"
+        : outcome === "over_returned"
+          ? "Con thối dư nè, trả lại nè."
+          : discount
+            ? "Thôi được, lần sau làm kỹ nha."
+            : ratio > 1.15
+              ? pick(lines.pricey, rand)
+              : ratio < 0.9
+                ? pick(lines.cheap, rand)
+                : pick(lines.thanks, rand);
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
   }
 
@@ -336,7 +354,7 @@ export class OrderService {
   async decline(room: RoomRuntime, playerId: string, orderId: string) {
     const order = this.requireOrder(room, playerId, orderId);
     room.orders.delete(orderId);
-    await this.recordLost(room, playerId, order.event.businessId, 1);
+    await this.recordLost(room, playerId, order.event.businessId, 1, order.vip);
     const line = order.event.buyerId
       ? "🙏 Quầy xin lỗi, không bán được món này"
       : "Vậy thôi, để bữa khác.";
@@ -391,7 +409,7 @@ export class OrderService {
         continue;
       }
       room.orders.delete(id);
-      await this.recordLost(room, e.ownerId, e.businessId, 1);
+      await this.recordLost(room, e.ownerId, e.businessId, 1, order.vip);
       this.emit?.result(room.id, {
         orderId: id,
         served: false,
@@ -429,15 +447,20 @@ export class OrderService {
   }
 
   /** Khách hụt: tính vào báo cáo và kéo uy tín xuống nhẹ. */
-  private async recordLost(room: RoomRuntime, ownerId: string, businessId: string, lost: number) {
+  private async recordLost(
+    room: RoomRuntime,
+    ownerId: string,
+    businessId: string,
+    lost: number,
+    vip?: VipFx,
+  ) {
     await this.prisma.$transaction(async (tx) => {
       const biz = await tx.business.findUnique({ where: { id: businessId } });
       if (biz) {
-        const rep = nextReputation(
-          biz.reputation,
+        const rep = Math.max(
           0,
-          lost * LOST_WEIGHT,
-          content.economy.reputationRate,
+          nextReputation(biz.reputation, 0, lost * LOST_WEIGHT, content.economy.reputationRate) -
+            (vip?.repLose ?? 0),
         );
         await tx.business.update({ where: { id: biz.id }, data: { reputation: rep } });
       }

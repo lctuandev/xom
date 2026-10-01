@@ -81,6 +81,8 @@ export function generateOrder(
   menu: MenuItem[],
   rand: () => number,
   stock?: ReadonlyMap<string, number>,
+  /** Khách khó tính (VIP): dặn ít nhất chừng này yêu cầu riêng (nếu công thức có đủ). */
+  minMods = 0,
 ): GeneratedOrder | null {
   const item = weighted(
     menu,
@@ -111,9 +113,21 @@ export function generateOrder(
 
   // Yêu cầu riêng: mỗi bước single chỉ đổi một lần; bỏ qua yêu cầu không có tác dụng.
   const touched = new Set<string>();
+  let mods = 0;
   for (const mod of recipe.mods) {
     if (rand() >= mod.chance) continue;
-    if (applyMod(recipe, spec, mod, touched, available)) says.push(mod.say);
+    if (applyMod(recipe, spec, mod, touched, available)) {
+      says.push(mod.say);
+      mods++;
+    }
+  }
+  // Khách khó tính (VIP) dặn thêm cho đủ, theo thứ tự ngẫu nhiên.
+  for (const mod of [...recipe.mods].sort(() => rand() - 0.5)) {
+    if (mods >= minMods) break;
+    if (applyMod(recipe, spec, mod, touched, available)) {
+      says.push(mod.say);
+      mods++;
+    }
   }
 
   const dish = [variant.name, ...says].join(", ");

@@ -919,6 +919,15 @@ export const data: ContentInput = {
       likes: { breakfast: 1, drink: 1, accessory: 0.8 },
     },
     {
+      // Khách VIP (sự kiện cá nhân, content.events): không ghé như khách thường.
+      id: "vip",
+      name: "Khách sộp",
+      patienceSec: 40,
+      transferRate: 0.8,
+      model: "character-male-c",
+      likes: { breakfast: 1, drink: 1, accessory: 1 },
+    },
+    {
       id: "reviewer",
       name: "Reviewer",
       patienceSec: 50,
@@ -1565,6 +1574,50 @@ export const data: ContentInput = {
     serveReputationBonus: 0.01,
     interactRadius: 2.5,
   },
+
+  // Sự kiện (docs/USECASES.md UC-B5, nhóm K; DESIGN §9): người chơi tạo (khai trương), cá nhân (khách VIP), toàn xóm (mưa lớn).
+  events: [
+    {
+      id: "khai_truong",
+      name: "Khai trương",
+      emoji: "🎉",
+      scope: "player",
+      minutes: 180,
+      trigger: {
+        kind: "player",
+        cooldownDays: 3,
+        costs: [
+          { id: "phao_giay", label: "Pháo giấy", emoji: "🎊", price: 40_000 },
+          { id: "bong_bong", label: "Chùm bong bóng", emoji: "🎈", price: 25_000 },
+          { id: "bang_ron", label: "Băng rôn", emoji: "🪧", price: 35_000 },
+        ],
+      },
+      effects: { demand: 1.8, discount: 0.1 },
+      news: "🎉 {name} khai trương {shop} — giảm 10%, ghé ủng hộ nha!",
+    },
+    {
+      id: "khach_vip",
+      name: "Khách VIP",
+      emoji: "🕴️",
+      scope: "personal",
+      minutes: 1,
+      trigger: { kind: "per_hour", perHour: 0.35 },
+      effects: {
+        vip: { minMods: 2, patience: 0.8, tipMult: 5, repWin: 0.04, repLose: 0.05 },
+      },
+      news: "🕴️ Có khách sộp ghé {shop} — dặn kỹ lắm, làm chuẩn là được boa đậm",
+    },
+    {
+      id: "mua_lon",
+      name: "Mưa lớn toàn xóm",
+      emoji: "⛈️",
+      scope: "server",
+      minutes: 90,
+      trigger: { kind: "daily", chance: 0.15, from: 13 * 60, to: 19 * 60 },
+      effects: { weather: "storm" },
+      news: "⛈️ Đài báo chiều nay mưa lớn toàn xóm — lo dọn hàng vô trong",
+    },
+  ],
 
   // Thời tiết (docs/USECASES.md UC-B4, DESIGN §8): trời đổi theo khối 2 giờ, chiều hay mưa (kiểu Sài Gòn mùa mưa).
   // Mưa/bão: khách ngoài vỉa hè thưa hẳn, tiệm có mái đông hơn; nắng gắt: đồ uống lạnh bán chạy.

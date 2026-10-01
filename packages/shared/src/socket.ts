@@ -2,6 +2,7 @@ import { z } from "zod";
 import type {
   ClockView,
   DayReportView,
+  EventView,
   MakeResult,
   MeView,
   MovePayload,
@@ -73,6 +74,10 @@ export interface ClientToServerEvents {
   "xom:join": Intent<{ code: string }>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
   "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
+  /** Người chơi tổ chức sự kiện (khai trương). */
+  "event:host": Intent<{ eventId: string }>;
+  /** Dev/test: cộng tiền (production từ chối). */
+  "debug:grant": Intent<{ money: number }>;
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
@@ -99,4 +104,5 @@ export interface ServerToClientEvents {
   payslip: (p: PayslipView) => void;
   roster: (r: RosterView) => void;
   peers: (p: PeerPos[]) => void;
+  events: (e: EventView[]) => void;
 }

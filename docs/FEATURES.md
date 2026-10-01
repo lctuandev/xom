@@ -30,7 +30,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
 | 🌦️ Thế giới thay đổi | ✅ Ngày/đêm, sạp theo giờ, **thời tiết** 4 kiểu (khách, giao hàng, hạt mưa, tiếng mưa/sấm, báo trước) | Giao thông/xe chạy, mái che xe đẩy | 3 |
-| 🎲 Sự kiện | Khách VIP chưa; chuyện trong quán (than, cãi, quỵt) | **Chưa có sự kiện khu phố/toàn server/do người chơi tạo (khai trương)** | 3 |
+| 🎲 Sự kiện | ✅ Sự kiện bằng dữ liệu (`content.events`): **khai trương** do người chơi tạo, **khách VIP**, **mưa lớn toàn xóm**; chuyện trong quán (than, cãi, quỵt) | Hội chợ đêm, tan trường sớm, mất điện, tiệc mời bạn | 3 |
 | 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) + **mưa, sấm** (bus môi trường chỉnh riêng) | Âm theo khoảng cách | 3 |
 | 🏠 Tài sản | Thuê nhà mặt tiền làm tiệm | Nhà ở, trang trí, nội thất sưu tầm | 4 |
 | 🛵 Phương tiện | Xe máy giao hàng (chỉ là tốc độ) | Xe đạp/xe máy sở hữu, xăng, hư hỏng | 4 |
@@ -225,6 +225,7 @@ Mua/thuê nhà, trang trí, nội thất, mời bạn. (Nội thất Kenney đã
 |---|---|---|---|
 | Kịch bản người mới rẽ nhánh | ✅ | 1.5 | UC-C |
 | Sự kiện ngẫu nhiên (mưa ✅, mất điện, tan trường sớm) | 🚧 | 1.9 | UC-K |
+| Sự kiện bằng dữ liệu: khai trương (người chơi tạo, money sink), khách VIP, mưa lớn toàn xóm | ✅ | 1.11 | UC-B5 |
 | Sự kiện chung (chợ đêm) | ⏳ | 3 | UC-K1 |
 | Sự kiện riêng (reviewer, chủ nhà tăng giá) | ⏳ | sau | |
 

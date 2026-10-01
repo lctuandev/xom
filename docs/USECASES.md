@@ -99,8 +99,23 @@ chiều Sài Gòn hay đổ mưa, nhìn trời kéo mây là biết dọn hàng.
 e2e server `weather.e2e-spec.ts` (đồng hồ mang trời, báo trước, lệnh thử chỉ ở dev, phụ phí bão); Playwright `thoi-tiet.spec.ts`.
 **Chưa:** mái che nâng cấp cho xe đẩy, "sau mưa khách túa ra", khách gọi ít đá khi trời mưa.
 
-### UC-B5 · Sự kiện trong xóm ⏳
-Hội chợ đêm cuối tuần · đám cưới trong hẻm (đặt 50 phần bánh mì) · tan trường sớm · mất điện (trà sữa không có đá) · kiểm tra vệ sinh an toàn thực phẩm. Chi tiết ở nhóm K.
+### UC-B5 · Sự kiện trong xóm ✅ (bản đầu: khai trương, khách VIP, mưa lớn)
+**Hệ thống:** 🎲 Sự kiện · **Luật:** 9 (sự kiện là dữ liệu, ưu tiên do người chơi tạo), 2.2 (money sink), 8.1, 15.
+Sự kiện khai báo trong `content.events`: **ai/khi nào gây ra** (`trigger`: `player` người chơi tạo · `daily` mỗi ngày tung xác suất cho cả xóm ·
+`per_hour` cá nhân theo tỉ lệ), **thời lượng**, **ảnh hưởng** (`demand`, `discount`, `weather`, `vip`). Công thức thuần ở `packages/sim/src/events.ts`.
+
+- **🎉 Khai trương (người chơi tạo):** bảng Làm ăn → *🎉 Khai trương · 100.000đ* (pháo giấy 40k, bong bóng 25k, băng rôn 35k — tiền đi qua sổ cái,
+  lý do `event`). Phải đang mở quầy và đứng ở quầy; còn ít nhất 30 phút trước khi hết ngày; 3 ngày mới khai trương lại được.
+  Trong 3 giờ game: khách ×1,8, mọi món giảm 10% (làm tròn 500đ, đơn có nhãn "🎉 giá khai trương"), quầy có chùm bong bóng,
+  **cả xóm thấy tin** trên dải tin + thông báo ("🎉 An khai trương ở Đầu hẻm 12 — giảm 10%, ghé ủng hộ nha!").
+  *Đời thật:* khai trương tốn tiền mà chưa chắc lời — đông khách nhưng phải làm kịp, không thì khách bỏ đi kéo uy tín xuống.
+- **🕴️ Khách VIP (cá nhân):** quầy đang mở thỉnh thoảng (≈0,35 lần/giờ game) có khách sộp: dặn ít nhất 2 yêu cầu riêng, kiên nhẫn ×0,8;
+  làm đúng + nhanh → boa ×5 và uy tín +0,04; làm sai, giảm giá, bỏ khách → uy tín −0,05. Màn làm món có nhãn "VIP · boa đậm".
+- **⛈️ Mưa lớn toàn xóm:** 15% số ngày, trong khung 13:00–19:00, kéo dài 90 phút — đè thời tiết thành bão (UC-B4), nên được **báo trước** trên dải tin.
+
+**Kiểm chứng:** unit `events.test.ts` (tất định, khung giờ, tần suất, thời gian chờ, chi phí, VIP dặn ≥2 món); e2e server `events.e2e-spec.ts`
+(phải mở quầy, trừ đúng tiền, không khai trương chồng, đơn có giá khai trương; VIP boa đậm + uy tín lên/xuống); Playwright `khai-truong.spec.ts`.
+**Chưa:** hội chợ đêm (UC-K1), tan trường sớm, mất điện, kiểm tra VSATTP; tiệc do người chơi mời bạn bè.
 
 ### UC-B6 · Xóm rộng, đường xá ra đường xá ✅ (bản đầu)
 > Người chơi yêu cầu: map chuẩn chỉnh hơn, đường xá phân chia hợp lý, map rộng hơn, nhiều cảnh vật hơn.
@@ -610,7 +625,7 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 
 | Mã | Sự kiện | Ảnh hưởng |
 |---|---|---|
-| UC-K1 | Hội chợ đêm cuối tuần | Gian hàng tạm, khách đông, nhiều hạng mục thắng (doanh thu, món đẹp, phục vụ) |
+| UC-K1 | Hội chợ đêm cuối tuần ⏳ | Gian hàng tạm, khách đông, nhiều hạng mục thắng (doanh thu, món đẹp, phục vụ) |
 | UC-K2 | Mưa ✅ | Xem UC-B4 |
 | UC-K3 | Tan trường sớm | Quầy gần trường đông đột xuất 1 giờ |
 | UC-K4 | Mất điện | Không có đá (trà sữa bán kém), đèn quầy tắt buổi tối |

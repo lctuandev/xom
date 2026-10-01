@@ -434,6 +434,55 @@ export const weatherSchema = z.object({
   forecastMinutes: z.number().int().positive(),
 });
 
+/**
+ * Sự kiện bằng dữ liệu (docs/DESIGN.md §9): ai/khi nào gây ra (trigger), kéo dài bao lâu, ảnh hưởng gì.
+ * - player: người chơi tự tổ chức (khai trương) — trả tiền các khoản, có thời gian chờ giữa hai lần.
+ * - daily: mỗi ngày tung xác suất một lần cho cả xóm (mưa lớn toàn xóm), giờ bắt đầu trong khung giờ.
+ * - per_hour: cá nhân, xảy ra theo tỉ lệ khi điều kiện đúng (khách VIP ghé quầy đang mở).
+ */
+export const gameEventSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  scope: z.enum(["personal", "neighborhood", "server", "player"]),
+  /** Thời lượng (phút game). */
+  minutes: z.number().int().positive(),
+  trigger: z.discriminatedUnion("kind", [
+    z.object({
+      kind: z.literal("player"),
+      costs: z.array(z.object({ id, label: z.string(), emoji: z.string(), price: vnd })).min(1),
+      cooldownDays: z.number().int().min(0),
+    }),
+    z.object({
+      kind: z.literal("daily"),
+      chance: z.number().min(0).max(1),
+      from: z.number().int().min(0).max(1440),
+      to: z.number().int().min(0).max(1440),
+    }),
+    z.object({ kind: z.literal("per_hour"), perHour: z.number().positive() }),
+  ]),
+  effects: z.object({
+    /** Hệ số khách cho quầy của người tổ chức. */
+    demand: z.number().min(0).max(5).optional(),
+    /** Giảm giá mọi món (tỉ lệ) trong lúc diễn ra. */
+    discount: z.number().min(0).max(0.5).optional(),
+    /** Đè thời tiết cả xóm. */
+    weather: weatherIdSchema.optional(),
+    /** Khách VIP: dặn nhiều, ít kiên nhẫn, boa đậm; làm hoàn hảo thì uy tín lên, hỏng thì tụt. */
+    vip: z
+      .object({
+        minMods: z.number().int().min(0).max(4),
+        patience: z.number().positive().max(2),
+        tipMult: z.number().min(1).max(10),
+        repWin: z.number().min(0).max(0.2),
+        repLose: z.number().min(0).max(0.2),
+      })
+      .optional(),
+  }),
+  /** Tin cho cả xóm ({name} = người tổ chức, {shop} = quầy). */
+  news: z.string(),
+});
+
 export const contentSchema = z.object({
   templates: z.array(templateSchema),
   products: z.array(productSchema),
@@ -455,6 +504,7 @@ export const contentSchema = z.object({
   customerLines: customerLinesSchema,
   economy: economySchema,
   weather: weatherSchema,
+  events: z.array(gameEventSchema).default([]),
 });
 
 export type Template = z.infer<typeof templateSchema>;
@@ -479,5 +529,6 @@ export type Condition = z.infer<typeof conditionSchema>;
 export type WeatherId = z.infer<typeof weatherIdSchema>;
 export type WeatherKind = z.infer<typeof weatherKindSchema>;
 export type Weather = z.infer<typeof weatherSchema>;
+export type GameEventDef = z.infer<typeof gameEventSchema>;
 export type ContentData = z.infer<typeof contentSchema>;
 export type ContentInput = z.input<typeof contentSchema>;

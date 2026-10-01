@@ -115,7 +115,8 @@ export interface WorkEmitter {
 }
 
 const strikesOf = (s: Shift) => s.stats.mistakes + Math.floor(s.stats.walked / 2);
-const NAMES = () => content.data.npcs.filter((n) => n.id !== "reviewer").map((n) => n.name);
+const NAMES = () =>
+  content.data.npcs.filter((n) => n.id !== "reviewer" && n.id !== "vip").map((n) => n.name);
 
 function floorCfg(s: Shift): FloorConfig {
   return {

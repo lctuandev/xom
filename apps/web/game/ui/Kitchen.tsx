@@ -64,11 +64,17 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun text-lg"
           aria-hidden
         >
-          🧑
+          {order.vip ? "🕴️" : "🧑"}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-ink/60">
-            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")} nói:
+            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")}
+            {order.vip && (
+              <span className="ml-1 rounded-full bg-sun px-1.5 text-ink" data-vip>
+                VIP · boa đậm
+              </span>
+            )}
+            {order.promo && <span className="ml-1 text-red">🎉 giá khai trương</span>} nói:
           </p>
           <p className="text-[15px] leading-snug font-semibold">“{order.ask}”</p>
         </div>

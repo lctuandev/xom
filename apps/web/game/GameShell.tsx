@@ -56,6 +56,7 @@ export default function GameShell() {
   useTutorial();
   useInvite();
   useNews();
+  useEventNews();
   useSound();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
@@ -211,6 +212,26 @@ function useNews() {
       }
     last.current = { open, day };
   }, [minute, day]);
+}
+
+/**
+ * Tin sự kiện (DESIGN §9): khai trương của hàng xóm (cả xóm thấy, có toast), sự kiện toàn xóm báo trước từ sáng.
+ */
+function useEventNews() {
+  const events = useGame((s) => s.events);
+  const seen = useRef(new Set<string>());
+  useEffect(() => {
+    const st = useGame.getState();
+    for (const e of events) {
+      if (seen.current.has(e.key)) continue;
+      seen.current.add(e.key);
+      const def = content.event(e.eventId);
+      const shop = e.lotId ? `ở ${content.lot(e.lotId).name}` : "";
+      const text = def.news.replace("{name}", e.ownerName ?? "Hàng xóm").replace("{shop}", shop);
+      st.pushNews(text);
+      if (e.ownerId && e.ownerId !== st.me?.playerId) st.toast({ kind: "info", text });
+    }
+  }, [events]);
 }
 
 /**

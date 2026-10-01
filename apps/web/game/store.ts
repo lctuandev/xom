@@ -2,6 +2,7 @@ import { content } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
+  EventView,
   MeView,
   NotifyEvent,
   OrderEvent,
@@ -91,6 +92,9 @@ interface GameState {
   me: MeView | null;
   clock: ClockView | null;
   world: WorldView;
+  /** Sự kiện hôm nay trong xóm (khai trương, mưa lớn…). */
+  events: EventView[];
+  setEvents: (e: EventView[]) => void;
   report: DayReportView | null;
   sheet: SheetId | null;
   toasts: Toast[];
@@ -204,6 +208,8 @@ export const useGame = create<GameState>((set) => ({
   me: null,
   clock: null,
   world: { lots: [] },
+  events: [],
+  setEvents: (events) => set({ events }),
   report: null,
   sheet: null,
   toasts: [],
@@ -251,6 +257,7 @@ export const useGame = create<GameState>((set) => ({
       shift: s.shift,
       clock: s.clock,
       world: s.world,
+      events: s.events,
       orders: s.orders
         .filter((o) => o.ownerId === s.me.playerId)
         .map((o) => ({ ...o, made: "none", mistakes: [] })),

@@ -160,7 +160,8 @@ export function takeFifo<B extends Batch>(batches: B[], qty: number): { batches:
 
 /** Chọn kiểu khách minh họa cho một lượt mua, theo độ ưa thích danh mục. */
 export function pickArchetype(content: Content, category: string, rand: () => number): string {
-  const npcs = content.data.npcs.filter((n) => n.id !== "reviewer");
+  // Reviewer, khách VIP chỉ xuất hiện qua sự kiện.
+  const npcs = content.data.npcs.filter((n) => n.id !== "reviewer" && n.id !== "vip");
   const weights = npcs.map((n) => n.likes[category] ?? 0.5);
   let r = rand() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < npcs.length; i++) {

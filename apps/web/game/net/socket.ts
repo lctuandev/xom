@@ -58,6 +58,7 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
+  s.on("events", (events) => game.setEvents(events));
   // Đơn của khách là người chơi (UC-J3): lời gọi món và kết quả hiện trên đầu chính người đó.
   const buyers = new Map<string, string>();
   s.on("order", (o) => {

@@ -35,6 +35,8 @@ export interface BusinessView {
   reputation: number;
   /** Đã trả tiền thuê chỗ hiện tại cho hôm nay chưa (mở lại trong ngày không mất thêm). */
   rentPaidToday: boolean;
+  /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
+  promoDay: number | null;
 }
 
 export interface InventoryView {
@@ -98,6 +100,21 @@ export interface WorldView {
   lots: LotOccupant[];
 }
 
+/** Một sự kiện đang/sắp diễn ra trong xóm (DESIGN §9). */
+export interface EventView {
+  key: string;
+  /** Id sự kiện trong content.events. */
+  eventId: string;
+  /** Phút game bắt đầu / kết thúc (trong ngày hiện tại). */
+  from: number;
+  to: number;
+  /** Sự kiện của người chơi (khai trương): ai tổ chức, ở quầy nào. */
+  ownerId?: string;
+  ownerName?: string;
+  businessId?: string;
+  lotId?: string;
+}
+
 export interface Snapshot {
   me: MeView;
   clock: ClockView;
@@ -108,6 +125,8 @@ export interface Snapshot {
   shift: ShiftView | null;
   /** Ai đang ở trong xóm (Phase 2). */
   roster: RosterView;
+  /** Sự kiện hôm nay (đang diễn ra hoặc đã báo trước). */
+  events: EventView[];
 }
 
 // ───────── Xóm chung (Phase 2, docs/USECASES.md nhóm J) ─────────
@@ -163,6 +182,10 @@ export interface OrderEvent {
   /** Khách là người chơi thật (UC-J3): trả bằng chuyển khoản từ ví của họ. */
   buyerId?: string;
   buyerName?: string;
+  /** Khách VIP (sự kiện cá nhân): dặn kỹ, ít kiên nhẫn, boa đậm. */
+  vip?: boolean;
+  /** Giá đã giảm do quầy đang khai trương. */
+  promo?: boolean;
 }
 
 /** Món vừa làm xong: đúng hay sai (khách phàn nàn). */
@@ -492,6 +515,9 @@ export const joinRoomSchema = z.object({
     .regex(/^[0-9a-f]{8}$/, "Mã xóm gồm 8 ký tự"),
 });
 export const emptySchema = z.object({}).optional();
+/** Dev/test: cộng tiền mặt (qua sổ cái, lý do "debug") — production từ chối. */
+export const debugGrantSchema = z.object({ money: z.number().int().min(1_000).max(10_000_000) });
+export const hostEventSchema = z.object({ eventId: contentId });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({
   kind: z.enum(["sunny", "cloudy", "rain", "storm"]),
