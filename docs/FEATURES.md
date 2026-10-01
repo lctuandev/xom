@@ -138,7 +138,14 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
-| Dịch vụ: sửa xe (SERVICE) | ⏳ | 1.8 | UC-G |
+| Kế hoạch nghề nghiệp đợt 1 (10 nghề, cơ chế lõi dùng chung, phụ thuộc giữa người chơi) | ✅ | 1.12 | docs/NGHE.md |
+| Dịch vụ: tiệm sửa xe (SERVICE) — triệu chứng → chẩn đoán → báo giá → sửa → chạy thử; Tiệm phụ tùng Chú Chín | 🚧 | 1.12a | UC-G, NGHE §3.1 |
+| Xe ôm: trạm đầu ngõ, trả giá cuốc, chọn đường, thuê xe + xăng | ⏳ | 1.12b | NGHE §3.2 |
+| Bảng việc xóm (hợp đồng + tiền giữ escrow) | ⏳ | 1.13a | NGHE §5 |
+| Thợ chụp ảnh / review quán (hợp đồng, tăng khách cho quầy) | ⏳ | 1.13b | NGHE §3.3 |
+| Phụ hồ công trình quỹ xóm (công nhật từ quỹ) | ⏳ | 1.14a | NGHE §3.4, UC-J5 |
+| Tiệm tạp hoá + sổ ghi nợ | ⏳ | 1.14b | NGHE §3.5 |
+| Tiệm cắt tóc (đi cùng cá nhân hoá) | ⏳ | 1.15 | NGHE §3.6 |
 | Làm thuê quán cơm: đứng quầy múc cơm, thu ngân, bưng bê | ✅ | 1.7 | UC-W2…W4 |
 | Quán sống động: khách vào/ra, ngồi ăn, trả tiền, đánh giá ⭐, than/gây lộn/quỵt; đồng nghiệp NPC; camera + di chuyển riêng từng vai | ✅ | 1.7 | UC-W8 |
 | Giao hàng (DELIVERY) — làm thuê: soạn gói, chạy xe, ký nhận, thu hộ | ✅ | 1.7 | UC-W5 |

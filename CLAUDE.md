@@ -13,6 +13,7 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 - Ưu tiên giải pháp đơn giản, ít thành phần (làm một mình): không thêm service/dashboard nếu script + MCP `postgres` là đủ.
 
 - Bảng theo dõi tính năng: `docs/FEATURES.md` — **cập nhật trạng thái (✅/🚧/⏳/💤) cùng commit với code** mỗi khi xong/bắt đầu một tính năng.
+- Kế hoạch nghề nghiệp: `docs/NGHE.md` (nghề đợt 1, cơ chế lõi dùng chung, lộ trình 1.12–1.15).
 - Use case & kịch bản: `docs/USECASES.md` — tính năng mới phải có use case (luồng, tình huống đời thật, luật game, kiểm chứng) và kịch bản Playwright tương ứng trong `apps/web/e2e`.
 - Tiền chỉ vào ví khi người chơi **làm** (làm món + tính tiền, việc vặt…); không thêm thu nhập tự động.
 - Không dùng `<Html>` của drei (lỗi root với React 19 StrictMode): khung thoại đi qua `BubbleLayer` (DOM) + `BubbleProjector` (canvas).
