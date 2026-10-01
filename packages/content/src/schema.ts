@@ -238,6 +238,38 @@ export const regularsSchema = z.object({
   usual: z.array(z.string()).min(1),
 });
 
+/**
+ * Nhân viên thuê đứng quầy thay (KIENTRUC §2): tay nghề (tỉ lệ làm đúng), tốc độ, lương/giờ; ca làm cố định trong ngày.
+ * Nhân viên không tự nhập hàng, không tự mở quầy — chủ mở quầy rồi giao lại; hết hàng thì nghỉ bán.
+ */
+export const staffSchema = z.object({
+  shifts: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        from: z.number().int().min(0).max(1440),
+        to: z.number().int().min(0).max(1440),
+      }),
+    )
+    .min(1),
+  people: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        bio: z.string(),
+        model: z.string(),
+        /** Tỉ lệ làm đúng món (0–1); sai thì giảm nửa giá cho khách. */
+        accuracy: z.number().min(0).max(1),
+        /** Phút game cho mỗi khách. */
+        serveMinutes: z.number().positive(),
+        wagePerHour: vnd,
+      }),
+    )
+    .min(1),
+});
+
 export const npcArchetypeSchema = z.object({
   id,
   name: z.string(),
@@ -884,6 +916,7 @@ export const contentSchema = z.object({
   story: z.array(storyBeatSchema).min(1),
   residents: z.array(residentSchema).min(1),
   regulars: regularsSchema,
+  staff: staffSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

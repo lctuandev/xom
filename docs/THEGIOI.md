@@ -46,8 +46,8 @@
   - 📈 giá chợ hôm nay của nguyên liệu mình hay mua (lên/xuống bao nhiêu %),
   - 🏗️ công trình quỹ xóm xong / có đề xuất mới chờ bỏ phiếu,
   - 🏪 hàng xóm mở quầy mới cạnh mình, sự kiện đã diễn ra (mưa lớn, chợ đêm).
-- **Doanh thu khi vắng** chỉ có khi đã **thuê nhân viên** (đi cùng hệ thống thuê người, `docs/NGHE.md`): nhân viên
-  bán thay, ăn lương, nhập hàng bằng tiền của chủ — có trần theo kho hàng và giờ làm. Chưa có nhân viên thì
+- **Doanh thu khi vắng** chỉ có khi đã **thuê nhân viên** (✅ UC-M6, `docs/KIENTRUC.md` §2): nhân viên bán thay trong ca,
+  ăn lương, **không tự nhập hàng** — có trần theo kho hàng và giờ làm. Chưa có nhân viên thì
   quầy đóng khi chủ vắng (Luật "tiền chỉ vào khi có người làm").
 
 ## 5. 🚦 Giao thông — kế hoạch (làm sau)

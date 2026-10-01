@@ -2080,6 +2080,45 @@ export const data: ContentInput = {
     usual: ["Như mọi khi nha!", "Món quen nha con!", "Cũ người cũ món nha!"],
   },
 
+  // Nhân viên thuê đứng quầy thay (KIENTRUC §2): bán khi chủ rời quầy / thoát game, tới hết ca; trả lương theo giờ.
+  staff: {
+    shifts: [
+      { id: "sang", name: "Ca sáng 6–11h", from: 6 * 60, to: 11 * 60 },
+      { id: "trua", name: "Ca trưa 11–14h", from: 11 * 60, to: 14 * 60 },
+      { id: "chieu", name: "Ca chiều 14–18h", from: 14 * 60, to: 18 * 60 },
+      { id: "toi", name: "Ca tối 18–22h", from: 18 * 60, to: 22 * 60 },
+    ],
+    people: [
+      {
+        id: "thu",
+        name: "Thu",
+        bio: "sinh viên năm hai, siêng, cẩn thận",
+        model: "character-female-a",
+        accuracy: 0.95,
+        serveMinutes: 6,
+        wagePerHour: 15_000,
+      },
+      {
+        id: "khoa_phu",
+        name: "Khoa",
+        bio: "lanh tay mà hay quên lời khách dặn",
+        model: "character-male-c",
+        accuracy: 0.8,
+        serveMinutes: 4,
+        wagePerHour: 13_000,
+      },
+      {
+        id: "di_sau",
+        name: "Dì Sáu",
+        bio: "chậm mà kỹ, khách lớn tuổi quý",
+        model: "character-female-d",
+        accuracy: 0.98,
+        serveMinutes: 8,
+        wagePerHour: 10_000,
+      },
+    ],
+  },
+
   // Chuyện của tôi (docs/THEGIOI.md §1): mốc đời người chơi, server ghi một lần kèm ngày game.
   story: [
     { id: "join", emoji: "🧳", text: "Dọn về xóm với {money} trong túi" },
@@ -2094,6 +2133,7 @@ export const data: ContentInput = {
       text: "Lần đầu góp {money} vào quỹ xóm làm công trình chung",
     },
     { id: "first_regular", emoji: "❤️", text: "Có khách quen đầu tiên: {name} ({bio})" },
+    { id: "first_hire", emoji: "👩‍🍳", text: "Thuê người đầu tiên: {name} đứng quầy phụ" },
   ],
 
   achievements: [

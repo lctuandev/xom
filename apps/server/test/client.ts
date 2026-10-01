@@ -80,7 +80,7 @@ export const BANH_MI_THIT = [
 
 /** Người mới mua xe bánh mì, nguyên liệu bánh mì thịt, mở quầy ở Đầu hẻm 12 (trời nắng cho chắc khách). */
 export async function openBanhMiStall(url: string) {
-  const { socket, snap } = await join(url);
+  const { socket, snap, token } = await join(url);
   await emit(socket, "debug:weather", { kind: "sunny", minutes: 960 });
   await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
   for (const itemId of BANH_MI_THIT) await emit(socket, "market:buy", { itemId, packs: 1 });
@@ -88,7 +88,7 @@ export async function openBanhMiStall(url: string) {
   await emit(socket, "biz:attend", { on: true });
   const opened = await emit(socket, "biz:open", {});
   if (!opened.ok) throw new Error(`không mở được quầy: ${opened.message}`);
-  return { socket, snap, me: opened.data };
+  return { socket, snap, token, me: opened.data };
 }
 
 export const changeFor = (o: OrderEvent) => (o.pay.kind === "cash" ? o.pay.bill - o.price : null);

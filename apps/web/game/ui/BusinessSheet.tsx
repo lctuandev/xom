@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import type { BusinessView, RegularView } from "@xom/shared";
+import type { BusinessView, RegularView, StaffView } from "@xom/shared";
 import { formatClock, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { districtLikes } from "../districts";
@@ -15,7 +15,7 @@ import { ReviewBook } from "./Reviews";
 import { Section, Sheet, Stepper } from "./Sheet";
 import { Tabs } from "./Tabs";
 
-type BizTab = "sell" | "menu" | "stock" | "lot" | "stats" | "regulars" | "reviews";
+type BizTab = "sell" | "menu" | "stock" | "lot" | "stats" | "regulars" | "staff" | "reviews";
 
 /** Bảng Làm ăn: phần đầu (uy tín, mở quầy) luôn hiện; phần dài chia tab dính (góp ý UX). */
 export function BusinessSheet() {
@@ -118,6 +118,7 @@ export function BusinessSheet() {
           { id: "lot", label: "📍 Chỗ bán" },
           { id: "stats", label: "📊 Số liệu" },
           { id: "regulars", label: "❤️ Khách quen" },
+          { id: "staff", label: "👩‍🍳 Nhân viên" },
           { id: "reviews", label: "📒 Đánh giá" },
         ]}
       />
@@ -144,6 +145,8 @@ export function BusinessSheet() {
       )}
 
       {current === "regulars" && <RegularBook />}
+
+      {current === "staff" && <StaffBoard />}
 
       {current === "lot" && (
         <Section title="Chỗ bán">
@@ -625,6 +628,150 @@ function RegularBook() {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+/**
+ * Bảng tuyển người của Anh Tám (KIENTRUC §2): chọn người + ca. Trong ca, mình rời quầy (hay thoát game) thì nhân viên bán
+ * thay — theo tay nghề, không tự nhập hàng, lương trả theo giờ từ ví mình.
+ */
+function StaffBoard() {
+  const [view, setView] = useState<StaffView | null>(null);
+  const [shift, setShift] = useState(content.data.staff.shifts[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void send("staff:view", {}).then((r) => r.ok && setView(r.data));
+  }, []);
+  useEffect(() => {
+    if (view?.employee) setShift(view.employee.shiftId);
+  }, [view?.employee]);
+  if (!view) return <p className="text-sm text-ink/50">Đang hỏi Anh Tám…</p>;
+  const { people, shifts } = content.data.staff;
+  const emp = view.employee;
+  const person = (id: string) => people.find((p) => p.id === id);
+  const act = async (fn: () => Promise<{ ok: boolean; data?: StaffView }>) => {
+    setBusy(true);
+    const r = await fn();
+    setBusy(false);
+    if (r.ok && r.data) setView(r.data);
+  };
+  const hire = (staffId: string) =>
+    act(
+      () =>
+        send("staff:hire", { staffId, shiftId: shift }) as Promise<{
+          ok: boolean;
+          data?: StaffView;
+        }>,
+    );
+  const fire = () =>
+    act(() => send("staff:fire", {}) as Promise<{ ok: boolean; data?: StaffView }>);
+  const hours = (id: string) => {
+    const s = shifts.find((x) => x.id === id);
+    return s ? (s.to - s.from) / 60 : 0;
+  };
+  return (
+    <section aria-label="Nhân viên" className="mb-3 flex flex-col gap-3">
+      <p className="text-xs text-ink/60">
+        Trong ca, bạn rời quầy hay thoát game thì nhân viên đứng bán thay: tiền bán vào ví bạn,
+        lương trả theo giờ. Họ <b>không tự nhập hàng</b> — hết hàng là dọn quầy về.
+      </p>
+      {emp && (
+        <div
+          className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm"
+          data-employee={emp.staffId}
+        >
+          <span aria-hidden className="text-2xl">
+            👩‍🍳
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold">
+              {person(emp.staffId)?.name} đang làm cho bạn
+            </span>
+            <span className="block text-xs text-ink/60">
+              {shifts.find((s) => s.id === emp.shiftId)?.name} · từ ngày {emp.hiredDay}
+            </span>
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void fire()}
+            className="rounded-full bg-ink/10 px-3 py-1.5 text-xs font-semibold text-ink"
+          >
+            Cho nghỉ
+          </button>
+        </div>
+      )}
+      <fieldset>
+        <legend className="mb-1 text-xs font-semibold text-ink/70">Ca làm</legend>
+        <div className="grid grid-cols-2 gap-1.5">
+          {shifts.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              aria-pressed={shift === s.id}
+              onClick={() => setShift(s.id)}
+              className={`rounded-xl px-2 py-2 text-xs font-semibold ${
+                shift === s.id ? "bg-ink text-cream" : "bg-white shadow-sm"
+              }`}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <ul className="flex flex-col gap-1.5">
+        {people.map((p) => {
+          const mine = emp?.staffId === p.id && emp.shiftId === shift;
+          return (
+            <li key={p.id} className="rounded-xl bg-white px-3 py-2 shadow-sm" data-staff={p.id}>
+              <div className="flex items-center gap-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{p.name}</span>
+                  <span className="block truncate text-xs text-ink/60">{p.bio}</span>
+                </span>
+                <button
+                  type="button"
+                  disabled={busy || mine}
+                  onClick={() => void hire(p.id)}
+                  className="shrink-0 rounded-full bg-red px-3 py-1.5 text-xs font-bold text-cream disabled:opacity-40"
+                >
+                  {mine ? "Đang làm" : emp ? "Đổi người" : "Thuê"}
+                </button>
+              </div>
+              <p className="mt-1 flex gap-3 text-[11px] text-ink/70 tabular-nums">
+                <span>🎯 đúng {Math.round(p.accuracy * 100)}%</span>
+                <span>⏱️ {p.serveMinutes} phút/món</span>
+                <span>
+                  💸 {vndShort(p.wagePerHour)}/giờ · ca {vndShort(p.wagePerHour * hours(shift))}
+                </span>
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+      {view.recent.length > 0 && (
+        <Section title="Phiếu ca gần đây">
+          <ul className="flex flex-col gap-1.5" data-shift-slips>
+            {view.recent.map((r) => (
+              <li
+                key={`${r.day}-${r.fromMinute}-${r.staffId}`}
+                className="rounded-xl bg-white px-3 py-2 text-xs shadow-sm"
+              >
+                <span className="font-semibold">
+                  Ngày {r.day} · {person(r.staffId)?.name} · {formatClock(r.fromMinute)}–
+                  {formatClock(r.toMinute)}
+                </span>
+                <span className="mt-0.5 block text-ink/70 tabular-nums">
+                  Bán {r.served + r.wrong} món ({r.wrong} sai) · thu {vnd(r.revenue)} · lương{" "}
+                  {vnd(r.wages)}
+                  {r.lost > 0 ? ` · ${r.lost} khách hụt` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Section>
       )}
     </section>
   );

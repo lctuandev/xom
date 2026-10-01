@@ -23,6 +23,7 @@ import type {
   SayEvent,
   ShiftView,
   Snapshot,
+  StaffView,
   StoryEntryView,
   TalkResult,
   WorkAct,
@@ -91,6 +92,10 @@ export interface ClientToServerEvents {
   "debug:regulars": Intent<{ visits: number }>;
   /** Sổ khách quen của quầy mình (KIENTRUC §1). */
   "regulars:list": Intent<Record<string, never>, RegularView[]>;
+  /** Nhân viên đứng quầy thay (KIENTRUC §2). */
+  "staff:view": Intent<Record<string, never>, StaffView>;
+  "staff:hire": Intent<{ staffId: string; shiftId: string }, StaffView>;
+  "staff:fire": Intent<Record<string, never>, StaffView>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */

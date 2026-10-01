@@ -899,6 +899,26 @@ Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 gi
 (lệnh dev `debug:regulars`).
 **Sau này:** khách quen giận khi quầy đóng nhiều ngày liền, khách quen giới thiệu bạn bè cụ thể, khách quen dặn món riêng.
 
+### UC-M6 · Thuê nhân viên — bán thay khi vắng ✅ (bản đầu)
+**Nhân vật:** bảng tuyển người của Anh Tám (`content.staff.people`): **Thu** (sinh viên năm hai, đúng 95%, 6 phút/món, 15k/giờ),
+**Khoa** (lanh tay mà hay quên lời dặn, đúng 80%, 4 phút/món, 13k/giờ), **Dì Sáu** (chậm mà kỹ, đúng 98%, 8 phút/món, 10k/giờ).
+**Luồng:** Làm ăn → **👩‍🍳 Nhân viên** → chọn ca (sáng 6–11h, trưa 11–14h, chiều 14–18h, tối 18–22h) → **Thuê** (ghi 📖 "Thuê người
+đầu tiên…"). Trong ca, quầy đang mở mà chủ **rời quầy** (đi chợ, đi làm thuê) → nhân viên bán thay từng nhịp (báo *"👩‍🍳 Thu vừa bán
+2 món thay bạn"*, khách không réo chủ). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy
+*"Trong lúc bạn vắng…"* có dòng **👩‍🍳 Thu bán thay 12 món (1 món sai) · thu … · trả lương …**. Có **phiếu ca** (giờ, bán, sai, thu,
+lương, khách hụt). Đổi người / đổi ca / cho nghỉ bất cứ lúc nào.
+**Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
+viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
+**Luật game (không thu nhập thụ động không trần):** nhân viên **không tự nhập hàng, không tự mở quầy**; doanh thu có trần = kho
+hàng × lãi − lương; lương theo giờ đi qua sổ cái (`staff_wage` → employer), tiền bán (`staff_sale`) vào ví chủ; uy tín quầy thay
+đổi theo tay nghề nhân viên; mỗi quầy một người, một ca/ngày.
+**Dữ liệu:** `Employee` (quầy → người, ca, ngày thuê), `StaffShift` (phiếu ca); sim `staffShift` (lưu lượng như quầy thường,
+sức làm theo phút/món, kho, đúng/sai); báo cáo ngày cộng lương vào dòng phí.
+**Kiểm chứng:** sim `staff.test.ts` (bán + lương, hết hàng về sớm, người kỹ ít sai, nhịp 5 phút vẫn bán); e2e server
+`staff.e2e-spec.ts` (thuê/cho nghỉ/Chuyện, bán thay khi rời quầy, thoát game → "Trong lúc bạn vắng" có doanh thu + lương);
+Playwright `thue-nguoi.spec.ts`.
+**Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
+
 ---
 
 ## L. Hệ thống & lỗi

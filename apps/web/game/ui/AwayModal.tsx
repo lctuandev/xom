@@ -1,6 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
+import { vnd } from "../format";
 import { useGame } from "../store";
 import { Modal } from "./Modal";
 
@@ -12,7 +13,7 @@ function duration(minutes: number): string {
 
 /**
  * "Trong lúc bạn vắng…" (docs/THEGIOI.md §4, UC-M4): vào lại game thì kể chuyện thật đã xảy ra ở xóm — đánh giá mới,
- * hàng xóm mới, quầy đang mở, công trình, giá chợ. Không có tiền tự sinh (chỉ khi có nhân viên bán thay — làm sau).
+ * hàng xóm mới, quầy đang mở, công trình, giá chợ. Không có tiền tự sinh: tiền chỉ có khi nhân viên bán thay (có lương, có trần theo kho — KIENTRUC §2).
  */
 export function AwayModal() {
   const away = useGame((s) => s.away);
@@ -49,6 +50,12 @@ export function AwayModal() {
       text: `Đang mở quầy: ${away.stalls
         .map((s) => `${s.name} (${content.product(s.productId).name.toLowerCase()})`)
         .join(", ")}`,
+    });
+  if (away.staff)
+    rows.push({
+      key: "staff",
+      icon: "👩‍🍳",
+      text: `${away.staff.name} bán thay ${away.staff.served + away.staff.wrong} món (${away.staff.wrong} món sai) · thu ${vnd(away.staff.revenue)} · trả lương ${vnd(away.staff.wages)}`,
     });
   for (const p of away.projects.done)
     rows.push({ key: `done-${p}`, icon: "🏗️", text: `Cả xóm xây xong: ${p}` });

@@ -145,6 +145,8 @@ export interface AwayView {
   projects: { done: string[]; voting: string[] };
   /** Giá chợ đổi (nguyên liệu nghề mình), khi đã sang ngày khác. */
   prices: { itemId: string; change: number }[];
+  /** Nhân viên bán thay trong lúc vắng (KIENTRUC §2) — có người làm thật, có trả lương. */
+  staff: { name: string; served: number; wrong: number; revenue: number; wages: number } | null;
 }
 
 export interface Snapshot {
@@ -575,6 +577,25 @@ export interface RegularView {
   lastDay: number;
 }
 
+/** Một phiếu ca của nhân viên (KIENTRUC §2). */
+export interface StaffShiftView {
+  staffId: string;
+  day: number;
+  fromMinute: number;
+  toMinute: number;
+  served: number;
+  wrong: number;
+  lost: number;
+  revenue: number;
+  wages: number;
+}
+
+/** Nhân viên của quầy mình + vài phiếu ca gần nhất. */
+export interface StaffView {
+  employee: { staffId: string; shiftId: string; hiredDay: number } | null;
+  recent: StaffShiftView[];
+}
+
 /** Một dòng trong "Chuyện của tôi" (docs/THEGIOI.md §1). */
 export interface StoryEntryView {
   day: number;
@@ -740,6 +761,7 @@ export const debugClockSchema = z.object({
 });
 /** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
 /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
 export const debugAwaySchema = z.object({
   minutes: z.number().int().min(1).max(100_000),

@@ -173,8 +173,42 @@ model Business {
   /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
   promoDay    Int?
   createdAt   DateTime       @default(now())
+  /// Nhân viên đang thuê (KIENTRUC §2), mỗi quầy một người ở bản đầu.
+  employee    Employee?
 
   @@index([ownerId])
+}
+
+/// Nhân viên NPC đứng quầy thay khi chủ rời quầy / thoát game (docs/KIENTRUC.md §2).
+model Employee {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @unique @db.Uuid
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Id người trong content.staff.people.
+  staffId    String
+  /// Ca trong content.staff.shifts.
+  shiftId    String
+  hiredDay   Int
+  createdAt  DateTime @default(now())
+}
+
+/// Một phiên bán thay của nhân viên (để báo "Trong lúc bạn vắng" + phiếu ca).
+model StaffShift {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @db.Uuid
+  ownerId    String   @db.Uuid
+  staffId    String
+  day        Int
+  fromMinute Int
+  toMinute   Int
+  served     Int
+  wrong      Int
+  lost       Int
+  revenue    Int
+  wages      Int
+  createdAt  DateTime @default(now())
+
+  @@index([ownerId, createdAt])
 }
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.

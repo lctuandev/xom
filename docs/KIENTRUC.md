@@ -20,7 +20,7 @@
 
 ---
 
-## 1. 🧑‍🤝‍🧑 Khách quen — NPC có trí nhớ (1.19a, làm trước)
+## 1. 🧑‍🤝‍🧑 Khách quen — NPC có trí nhớ (1.19a) ✅
 
 **Vì sao trước:** rẻ, làm uy tín có ý nghĩa ngay, cảm xúc mạnh ("Bà Tư lại ghé nè").
 
@@ -37,7 +37,7 @@
 **Sim:** `pickResident(content, minute, lot, product, rand)`, `regularStage(visits, …)`, `regularEffects(stage)`.
 **Kiểm chứng:** sim test chọn cư dân/ngưỡng; e2e server lên khách quen sau 5 lần; Playwright `khach-quen`.
 
-## 2. 👩‍🍳 Thuê nhân viên — bán thay khi vắng (1.19b)
+## 2. 👩‍🍳 Thuê nhân viên — bán thay khi vắng (1.19b) ✅
 
 **Nhân vật:** người làm thuê NPC ở **bảng tuyển dụng của Anh Tám**: *Thu (siêng, tay vừa)*, *Khoa (nhanh mà hay quên dặn)*,
 *Dì Sáu (chậm, khách quý)* — mỗi người: tay nghề, tính cách, lương/giờ. Sau này: người chơi thật nhận làm (UC-H2…H9).
@@ -49,8 +49,10 @@ thì quầy vẫn mở; "Trong lúc bạn vắng…" có thêm **📈 doanh thu 
 **Luật & trần:** lương trả **theo giờ** từ ví chủ (không đủ tiền → nhân viên nghỉ); nhân viên **không nhập hàng** (hết hàng thì
 dừng bán); tay nghề thấp hơn chủ → uy tín nhích chậm; tối đa 1 ca/ngày/quầy ở bản đầu. → Thu nhập khi vắng có trần
 (kho hàng × lãi − lương), không vô hạn.
-**Dữ liệu:** `Employee { businessId, staffId, hiredDay, shiftFrom, shiftTo, active }`; tiền qua sổ cái `wage:staff`.
-**Sim:** `staffServe(skill, rand)` (đúng/sai, thời gian), `staffShiftPay`.
+**Dữ liệu (đã làm):** `Employee { businessId, staffId, shiftId, hiredDay }` + `StaffShift` (phiếu ca); sổ cái `staff_sale`,
+`staff_wage`. Ca là dữ liệu (`content.staff.shifts`). Hết hàng giữa ca → nhân viên về sớm, lương tính tới lúc đó.
+**Sim (đã làm):** `staffShift` (lưu lượng như quầy thường + sức làm theo phút/món + kho + đúng/sai), `staffWage`, `shiftAt`.
+**Server:** `StaffService` — `tickLive` (chủ online mà không đứng quầy), `finishShift` (chủ thoát game: bán nốt ca rồi dọn quầy).
 **Kiểm chứng:** sim; e2e server (bán thay khi chủ offline, trả lương, hết hàng dừng); Playwright `thue-nguoi`.
 
 ## 3. 📋 Hợp đồng + 🤝 điểm tin cậy + ⚖️ hậu quả (1.20)
@@ -93,8 +95,8 @@ mặt, thối → khách chấm sao (xe ôm uy tín thì khách quen gọi riên
 
 | Phase | Nội dung | Đo (GameEvent) |
 |---|---|---|
-| **1.19a** | Khách quen | `regular_new`, tỉ lệ khách quen quay lại |
-| 1.19b | Thuê nhân viên + doanh thu khi vắng | `staff_shift` (bán, sai, lương) |
+| **1.19a** ✅ | Khách quen | `regular_new`, tỉ lệ khách quen quay lại |
+| **1.19b** ✅ | Thuê nhân viên + doanh thu khi vắng | phiếu ca `StaffShift` (bán, sai, lương) |
 | 1.20 | Hợp đồng + tin cậy + phạt | `contract_*`, phân bố trust |
 | 1.21 | Xe ôm + giao thông | `ride_*`, thời gian giao hàng theo giờ |
 

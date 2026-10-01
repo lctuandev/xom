@@ -75,6 +75,7 @@ import { RegularService } from "./regulars.js";
 import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
+import { StaffService } from "./staff.js";
 import { StatsService } from "./stats.js";
 import { StoryService } from "./story.js";
 import { WorkService } from "./work.js";
@@ -82,7 +83,8 @@ import { WorkService } from "./work.js";
 /** 1 giây thật = 1 phút game (docs/PLAN.md §3.2). */
 const TICK_MS = Number(process.env.GAME_TICK_MS ?? 1000);
 /** Rời game quá thời gian này thì quầy tự đóng. */
-const LEAVE_GRACE_MS = 30_000;
+/** Ân hạn khi mất kết nối trước khi dọn quầy (test được rút ngắn qua env). */
+const leaveGraceMs = () => Number(process.env.LEAVE_GRACE_MS ?? 30_000);
 const EQUIPMENT_RESALE = 0.5;
 /** Người bán ở chợ (thân thiết tăng khi mua hàng). */
 const MARKET_KEEPER = "cho_dau_moi";
@@ -154,6 +156,7 @@ export class GameService implements OnModuleDestroy {
     readonly projects: ProjectService,
     readonly story: StoryService,
     readonly regulars: RegularService,
+    readonly staff: StaffService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -163,6 +166,7 @@ export class GameService implements OnModuleDestroy {
     this.projects.setNotifier((roomId, n) => emitter.toRoom(roomId, "notify", n));
     this.story.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -215,7 +219,7 @@ export class GameService implements OnModuleDestroy {
     const minutes = Math.floor((Date.now() - since.getTime()) / 60_000);
     if (minutes < content.data.away.minMinutes) return null;
     const fromDay = player.lastSeenDay ?? room.day;
-    const [reviews, neighbors, done, voting, biz] = await Promise.all([
+    const [reviews, neighbors, done, voting, biz, shifts] = await Promise.all([
       this.prisma.review.findMany({
         where: { ownerId: player.id, createdAt: { gt: since } },
         orderBy: { createdAt: "desc" },
@@ -235,8 +239,11 @@ export class GameService implements OnModuleDestroy {
         select: { projectId: true },
       }),
       this.businessOf(player.id),
+      this.prisma.staffShift.findMany({ where: { ownerId: player.id, createdAt: { gt: since } } }),
     ]);
     const latest = reviews[0];
+    const staffName = (id: string) =>
+      content.data.staff.people.find((p) => p.id === id)?.name ?? id;
     const items = biz ? recipeIngredients(content.product(biz.productId).recipe) : [];
     const report: AwayView = {
       minutes,
@@ -259,6 +266,15 @@ export class GameService implements OnModuleDestroy {
         ),
       },
       prices: marketMovesSince(content, items, fromDay, room.day),
+      staff: shifts.length
+        ? {
+            name: [...new Set(shifts.map((s) => staffName(s.staffId)))].join(", "),
+            served: shifts.reduce((n, s) => n + s.served, 0),
+            wrong: shifts.reduce((n, s) => n + s.wrong, 0),
+            revenue: shifts.reduce((n, s) => n + s.revenue, 0),
+            wages: shifts.reduce((n, s) => n + s.wages, 0),
+          }
+        : null,
     };
     const nothing =
       report.days === 0 &&
@@ -266,7 +282,8 @@ export class GameService implements OnModuleDestroy {
       report.newNeighbors.length === 0 &&
       report.stalls.length === 0 &&
       report.projects.done.length === 0 &&
-      report.projects.voting.length === 0;
+      report.projects.voting.length === 0 &&
+      !report.staff;
     return nothing ? null : report;
   }
 
@@ -298,6 +315,8 @@ export class GameService implements OnModuleDestroy {
       void room
         .run(async () => {
           if (member.sockets.size > 0) return;
+          // Có nhân viên trong ca thì bán nốt tới hết ca rồi mới dọn quầy (KIENTRUC §2).
+          await this.staff.finishShift(room, playerId);
           await this.closeAllFor(room, playerId);
           await this.work.end(room, playerId, "left");
           await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
@@ -307,7 +326,7 @@ export class GameService implements OnModuleDestroy {
           if (room.members.size === 0) await this.unloadRoom(room);
         })
         .catch((err) => this.logger.warn(`không dọn được người chơi rời xóm: ${err}`));
-    }, LEAVE_GRACE_MS);
+    }, leaveGraceMs());
   }
 
   async onModuleDestroy() {
@@ -538,6 +557,8 @@ export class GameService implements OnModuleDestroy {
     const lines = content.data.needs.callouts;
     for (const b of open) {
       if ((room.calloutAt.get(b.id) ?? -999) > room.minute - 20) continue;
+      // Nhân viên đang trong ca thì khách có người bán, không réo chủ.
+      if (await this.staff.onDuty(b.id, room.minute)) continue;
       const rand = seededRandom("callout", b.id, room.day, room.minute);
       if (rand() > 0.6) continue;
       room.calloutAt.set(b.id, room.minute);
@@ -1358,6 +1379,8 @@ export class GameService implements OnModuleDestroy {
       } else {
         if (room.minute % eco.economyTickMinutes === 0) {
           await this.customerTick(room);
+          for (const owner of await this.staff.tickLive(room))
+            this.emitter?.toPlayer(owner, "me", await this.me(room, owner));
           await this.calloutTick(room);
           await this.projects.tick(room);
         }

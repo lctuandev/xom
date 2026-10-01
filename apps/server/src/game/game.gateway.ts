@@ -51,6 +51,7 @@ import {
   SOCKET_OPTIONS,
   saySchema,
   shopOrderSchema,
+  staffHireSchema,
   type TalkResult,
   talkSchema,
   tutorialSchema,
@@ -348,6 +349,23 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("regulars:list")
   regularsList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.regulars.list(ctx.playerId));
+  }
+
+  @SubscribeMessage("staff:view")
+  staffView(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.staff.view(ctx.playerId));
+  }
+
+  @SubscribeMessage("staff:hire")
+  staffHire(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, staffHireSchema, body, (ctx, p) =>
+      this.game.staff.hire(ctx.room, ctx.playerId, p.staffId, p.shiftId),
+    );
+  }
+
+  @SubscribeMessage("staff:fire")
+  staffFire(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.staff.fire(ctx.playerId));
   }
 
   @SubscribeMessage("debug:regulars")
