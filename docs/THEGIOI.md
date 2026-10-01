@@ -78,9 +78,9 @@
 
 | Phase | Nội dung | Kiểm chứng |
 |---|---|---|
-| **1.16a** | 📖 Chuyện của tôi | e2e server mốc; Playwright `chuyen-cua-toi` |
-| **1.16b** | 📅 Thứ trong tuần + chợ đêm thứ Bảy | sim test; Playwright `cho-dem` |
-| **1.16c** | 🏙️ Khu phố + tiếng khu (emergent) | sim test, `pnpm balance` |
-| **1.16d** | 🌆 Trong lúc bạn vắng | e2e server; Playwright |
+| **1.16a** ✅ | 📖 Chuyện của tôi | e2e server mốc; Playwright `chuyen-cua-toi` |
+| **1.16b** ✅ | 📅 Thứ trong tuần + chợ đêm thứ Bảy | sim test; Playwright `cho-dem` |
+| **1.16c** ✅ | 🏙️ Khu phố + tiếng khu (emergent) | sim test, `pnpm balance` |
+| **1.16d** ✅ | 🌆 Trong lúc bạn vắng | e2e server; Playwright |
 | 1.17 | 🚦 Giao thông có xe + ảnh hưởng giao hàng | trace hiệu năng, Playwright |
 | 1.18 | ⚖️ Hợp đồng + điểm tin cậy + phạt | e2e escrow |
