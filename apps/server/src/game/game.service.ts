@@ -57,6 +57,7 @@ import { OrderService } from "./orders.js";
 import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
+import { StatsService } from "./stats.js";
 import { WorkService } from "./work.js";
 
 /** 1 giây thật = 1 phút game (docs/PLAN.md §3.2). */
@@ -125,11 +126,13 @@ export class GameService implements OnModuleDestroy {
     readonly orders: OrderService,
     readonly work: WorkService,
     readonly reviews: ReviewService,
+    readonly stats: StatsService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
     this.emitter = emitter;
     this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -176,16 +179,18 @@ export class GameService implements OnModuleDestroy {
     });
     this.emitRoster(room);
     member.leaveTimer = setTimeout(() => {
-      void room.run(async () => {
-        if (member.sockets.size > 0) return;
-        await this.closeAllFor(room, playerId);
-        await this.work.end(room, playerId, "left");
-        await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
-        room.members.delete(playerId);
-        this.roomOfPlayer.delete(playerId);
-        this.emitWorld(room);
-        if (room.members.size === 0) await this.unloadRoom(room);
-      });
+      void room
+        .run(async () => {
+          if (member.sockets.size > 0) return;
+          await this.closeAllFor(room, playerId);
+          await this.work.end(room, playerId, "left");
+          await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
+          room.members.delete(playerId);
+          this.roomOfPlayer.delete(playerId);
+          this.emitWorld(room);
+          if (room.members.size === 0) await this.unloadRoom(room);
+        })
+        .catch((err) => this.logger.warn(`không dọn được người chơi rời xóm: ${err}`));
     }, LEAVE_GRACE_MS);
   }
 
@@ -605,6 +610,16 @@ export class GameService implements OnModuleDestroy {
     );
   }
 
+  /** Bảng giải + thị phần + đang hot của xóm (UC-P2). */
+  statsXom({ room }: IntentContext) {
+    return this.stats.board(room);
+  }
+
+  /** Số liệu 7 ngày của mình + thành tựu. */
+  statsMe({ room, playerId }: IntentContext) {
+    return this.stats.mine(room, playerId);
+  }
+
   /** Sổ đánh giá của một chủ quầy cùng xóm (hoặc của mình). */
   reviewList({ room, playerId }: IntentContext, ownerId: string) {
     return this.reviews.list(room, playerId, ownerId);
@@ -621,7 +636,7 @@ export class GameService implements OnModuleDestroy {
 
   async reviewReply({ room, playerId }: IntentContext, reviewId: string, text: string) {
     await this.reviews.reply(playerId, reviewId, text);
-    void this.emitMe(playerId);
+    void this.emitMe(playerId).catch(() => undefined);
     return this.reviews.list(room, playerId, playerId);
   }
 
@@ -925,7 +940,7 @@ export class GameService implements OnModuleDestroy {
           return this.addFriendship(tx, playerId, npcId, 2, room.day);
         });
         // Kỹ năng ăn nói vừa nhích lên: gửi lại hồ sơ.
-        void this.emitMe(playerId);
+        void this.emitMe(playerId).catch(() => undefined);
         line =
           friendship >= content.economy.friendDiscountAt
             ? `Con đó hả! ${place.keeper.greeting}`
@@ -1135,6 +1150,8 @@ export class GameService implements OnModuleDestroy {
           report.fees,
         moneyEnd: Number(report.moneyEnd),
       });
+      // Thành tựu (UC-P2): cuối ngày xem có cái nào vừa đủ.
+      await this.stats.checkAchievements(playerId, day).catch(() => undefined);
     }
     room.day += 1;
     room.minute = content.economy.dayStartMinute;
@@ -1251,9 +1268,9 @@ export class GameService implements OnModuleDestroy {
   }
 
   private emitWorld(room: RoomRuntime) {
-    void this.refreshOccupants(room).then((lots) =>
-      this.emitter?.toRoom(room.id, "world", { lots }),
-    );
+    void this.refreshOccupants(room)
+      .then((lots) => this.emitter?.toRoom(room.id, "world", { lots }))
+      .catch((err) => this.logger.warn(`không cập nhật được quầy: ${err}`));
   }
 
   private async closeAllFor(room: RoomRuntime, playerId: string) {

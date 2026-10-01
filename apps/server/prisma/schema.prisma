@@ -50,6 +50,8 @@ model Player {
   xp          Int      @default(0)
   /// Điểm kỹ năng (DESIGN §4): { tay_nhanh, nho_mon, an_noi } — tăng nhờ làm thật.
   skills      Json     @default("{}")
+  /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
+  achievements Json    @default("{}")
   createdAt   DateTime @default(now())
 
   businesses Business[]

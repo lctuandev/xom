@@ -138,8 +138,11 @@ export class RoomRuntime {
   runTick(fn: () => Promise<void>) {
     if (this.tickPending) return;
     this.tickPending = true;
-    void this.run(fn).finally(() => {
-      this.tickPending = false;
-    });
+    // Lỗi trong một nhịp (vd. tắt server giữa chừng) không được thành unhandled rejection; nhịp sau chạy tiếp.
+    void this.run(fn)
+      .catch((err) => console.error(`[xóm ${this.id}] tick lỗi:`, err))
+      .finally(() => {
+        this.tickPending = false;
+      });
   }
 }

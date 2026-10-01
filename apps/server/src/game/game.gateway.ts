@@ -286,6 +286,16 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handleWith(c, talkSchema, body, (ctx, p) => this.game.talk(ctx, p.npcId, p.topic));
   }
 
+  @SubscribeMessage("stats:xom")
+  statsXom(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsXom(ctx));
+  }
+
+  @SubscribeMessage("stats:me")
+  statsMe(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsMe(ctx));
+  }
+
   @SubscribeMessage("review:list")
   reviewList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, reviewListSchema, body, (ctx, p) =>

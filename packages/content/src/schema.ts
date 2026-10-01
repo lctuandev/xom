@@ -416,6 +416,50 @@ export const reviewsSchema = z.object({
   banned: z.array(z.string()),
 });
 
+/** Bảng giải của xóm (DESIGN §4, §13): nhiều con đường thành công, không chỉ "giàu nhất". */
+export const awardMetric = z.enum([
+  "revenue",
+  "profit",
+  "served",
+  "rating",
+  "growth",
+  "wages",
+  "friendly",
+]);
+export type AwardMetric = z.infer<typeof awardMetric>;
+export const awardSchema = z.object({
+  id,
+  emoji: z.string(),
+  name: z.string(),
+  description: z.string(),
+  metric: awardMetric,
+  /** Ngưỡng tối thiểu để được xếp (vd. ít nhất 3 đánh giá). */
+  min: z.number().nonnegative().default(0),
+});
+export type Award = z.infer<typeof awardSchema>;
+
+/** Thành tựu: mở bằng làm thật, có tiến độ thấy được (DESIGN §4). */
+export const achievementMetric = z.enum([
+  "served",
+  "revenue",
+  "wages",
+  "five_stars",
+  "replies",
+  "events",
+  "level",
+  "friends",
+]);
+export type AchievementMetric = z.infer<typeof achievementMetric>;
+export const achievementSchema = z.object({
+  id,
+  emoji: z.string(),
+  name: z.string(),
+  description: z.string(),
+  metric: achievementMetric,
+  goal: z.number().int().positive(),
+});
+export type Achievement = z.infer<typeof achievementSchema>;
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -640,6 +684,8 @@ export const contentSchema = z.object({
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
   reviews: reviewsSchema,
+  awards: z.array(awardSchema).min(1),
+  achievements: z.array(achievementSchema).min(1),
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

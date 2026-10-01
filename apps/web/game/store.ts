@@ -66,7 +66,8 @@ export type SheetId =
   | "profile"
   | "settings"
   | "recipes"
-  | "atm";
+  | "atm"
+  | "board";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {

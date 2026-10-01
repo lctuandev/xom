@@ -6,6 +6,7 @@ import type {
   MakeResult,
   MeView,
   MovePayload,
+  MyStatsView,
   NotifyEvent,
   OrderEvent,
   OrderResultEvent,
@@ -22,6 +23,7 @@ import type {
   WorkAct,
   WorkResult,
   WorldView,
+  XomBoardView,
 } from "./game.js";
 
 // Hợp đồng socket dùng chung cho web và server.
@@ -96,6 +98,10 @@ export interface ClientToServerEvents {
   "review:list": Intent<{ ownerId: string }, ReviewsView>;
   "review:write": Intent<{ ownerId: string; stars: number; text: string }, ReviewsView>;
   "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;
+  /** Bảng giải + thị phần + đang hot của xóm (UC-P2). */
+  "stats:xom": Intent<Record<string, never>, XomBoardView>;
+  /** Số liệu 7 ngày của mình + thành tựu. */
+  "stats:me": Intent<Record<string, never>, MyStatsView>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
   "shop:order": Intent<{
     businessId: string;

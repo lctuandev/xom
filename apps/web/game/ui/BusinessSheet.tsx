@@ -8,6 +8,7 @@ import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { baseCost, ingredientsOfProduct, makeableCount } from "../recipes";
 import { useGame } from "../store";
+import { useMyStats, WeekChart } from "./BoardSheet";
 import { usePayMethod } from "./PayPicker";
 import { ReviewBook } from "./Reviews";
 import { Section, Sheet, Stepper } from "./Sheet";
@@ -17,6 +18,7 @@ export function BusinessSheet() {
   const close = useGame((s) => s.openSheet);
   const setGoal = useGame((s) => s.setGoal);
   const [changing, setChanging] = useState(false);
+  const stats = useMyStats();
   const biz = me?.business;
 
   if (!biz || changing) {
@@ -135,6 +137,10 @@ export function BusinessSheet() {
           <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
           <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
         </div>
+      </Section>
+
+      <Section title="📊 7 ngày qua">
+        <WeekChart stats={stats} />
       </Section>
 
       <Section title="📒 Sổ đánh giá">

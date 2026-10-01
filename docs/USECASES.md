@@ -190,6 +190,27 @@ Người mới chưa ai cho thuê mặt bằng — phải bán được một th
 
 ---
 
+### UC-P2 · Bảng xóm: giải tuần nhiều hạng mục, thị phần, đang hot, số liệu 7 ngày, thành tựu ✅ (bản đầu)
+**Hệ thống:** 📈 Tiến trình · 🏪 Làm ăn · 🤝 Xã hội · 📊 Đo lường · **Luật:** 4 (tiến trình thấy được), 13 (nhiều người chơi),
+17 (giữ chân lành mạnh — không điểm danh, không streak).
+**Đời thật:** cả xóm biết quán nào đông, quán nào ngon, ai siêng; người mới mở quầy đúng chỗ đang thiếu vẫn nổi được.
+Không ai thắng mãi chỉ vì chơi lâu — thiên hạ nhớ chuyện tuần này.
+**Luồng:**
+- *Hàng xóm* → *🏆 Bảng xóm*: tab **Giải tuần** — 7 hạng mục, mỗi hạng mục top 3, tính 7 ngày gần nhất trong xóm:
+  💰 doanh thu · 🧮 lãi · 👥 đông khách · ⭐ được tin nhất (≥ 3 đánh giá) · 📈 lên như diều (3 ngày gần so 3 ngày trước) ·
+  💼 chăm làm (tiền công làm thuê) · 🤝 thân thiện (kỹ năng Ăn nói). Tab **Thị phần**: % số món bán ra theo từng món.
+  Tab **Đang hot**: trời bây giờ + dự báo, giá chợ nhích ≥ 8% so hôm qua, ai đang khai trương, món bán chạy nhất hôm nay.
+- *Làm ăn* → *📊 7 ngày qua*: cột doanh thu + lãi từng ngày; có ≥ 2 quầy cùng món thì so "Bạn / TB n quầy" (doanh thu,
+  số món mỗi ngày có bán) — chỉ đưa số, người chơi tự rút ra chiến lược.
+- *Hồ sơ* → *🏅 Thành tựu*: 11 thành tựu (content.achievements) có thanh tiến độ; mở xong báo "🏅 Thành tựu mới".
+**Luật game:** hạng mục và thành tựu là dữ liệu (`content.awards`, `content.achievements`), công thức ở `packages/sim/src/stats.ts`;
+server tính từ DailyReport + sổ đánh giá + kỹ năng; thành tựu kiểm cuối ngày và khi mở số liệu, đã mở thì giữ.
+**Kiểm chứng:** unit `stats.test.ts`; e2e server `stats.e2e-spec.ts`; Playwright `bang-xom.spec.ts`.
+**Để sau (đã lọc từ đề xuất):** team/công ty, chuỗi cung ứng, followers/content, mùa giải + huy hiệu mùa, đấu giá mặt bằng,
+thi trang trí "quán đẹp tuần", xếp hạng quận/thành phố. **Không làm:** streak điểm danh (trái Luật 17).
+
+---
+
 ## C. Kịch bản người mới (Chú Bảy)
 
 ### UC-C1 · Gặp Chú Bảy, chọn hướng đi ✅

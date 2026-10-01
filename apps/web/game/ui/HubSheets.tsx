@@ -10,6 +10,7 @@ import { vnd } from "../format";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
 import { nearestAtm } from "../world";
+import { Achievements, useMyStats } from "./BoardSheet";
 import { Sheet } from "./Sheet";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
@@ -88,6 +89,7 @@ export function QuestsSheet() {
 export function ProfileSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
+  const stats = useMyStats();
   if (!me) return null;
   const friends = Object.entries(me.friendship)
     .filter(([, v]) => v > 0)
@@ -128,6 +130,7 @@ export function ProfileSheet() {
         </p>
       </div>
       <Skills points={me.progress.skills} level={me.progress.level} />
+      <Achievements stats={stats} />
       <div className="rounded-2xl bg-white p-3 shadow-sm">
         {row("💵 Tiền mặt", vnd(me.money))}
         {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}

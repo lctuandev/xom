@@ -257,6 +257,49 @@ export interface ReviewsView {
   items: ReviewView[];
 }
 
+/** Bảng giải của xóm (UC-P2): nhiều hạng mục, 7 ngày gần nhất. */
+export interface AwardView {
+  id: string;
+  emoji: string;
+  name: string;
+  description: string;
+  metric: "revenue" | "profit" | "served" | "rating" | "growth" | "wages" | "friendly";
+  entries: { playerId: string; name: string; value: number }[];
+}
+
+export interface ShareView {
+  productId: string;
+  total: number;
+  entries: { playerId: string; name: string; served: number; share: number }[];
+}
+
+export interface XomBoardView {
+  day: number;
+  /** Số người trong xóm được tính. */
+  players: number;
+  awards: AwardView[];
+  shares: ShareView[];
+  /** Tin "đang hot": thời tiết, giá chợ, khai trương, món bán chạy. */
+  trends: { emoji: string; text: string }[];
+}
+
+export interface AchievementView {
+  id: string;
+  emoji: string;
+  name: string;
+  description: string;
+  goal: number;
+  value: number;
+  done: boolean;
+}
+
+/** Số liệu của mình: 7 ngày gần nhất + trung bình quầy cùng món trong xóm + thành tựu. */
+export interface MyStatsView {
+  days: { day: number; revenue: number; profit: number; served: number; wages: number }[];
+  avg: { stalls: number; revenue: number; served: number; rating: number } | null;
+  achievements: AchievementView[];
+}
+
 export interface TalkResult {
   line: string;
   friendship: number;
