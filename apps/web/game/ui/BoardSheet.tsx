@@ -6,10 +6,8 @@ import { useEffect, useState } from "react";
 import { vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
-import { Sheet } from "./Sheet";
+import { Modal } from "./Modal";
 import { Tabs } from "./Tabs";
-
-const MEDAL = ["🥇", "🥈", "🥉"];
 
 /** Hiện giá trị theo kiểu hạng mục: tiền, số món, sao, phần trăm, điểm. */
 function valueText(metric: AwardView["metric"], v: number): string {
@@ -52,7 +50,7 @@ export function BoardSheet() {
   }, []);
 
   return (
-    <Sheet title="Bảng xóm" onClose={() => close(null)}>
+    <Modal title="Bảng xóm" onClose={() => close(null)}>
       <Tabs label="Bảng xóm" value={tab} onChange={setTab} tabs={TABS} />
       {!board && <p className="text-sm text-ink/50">Đang tổng hợp…</p>}
       {board && tab === "awards" && (
@@ -63,30 +61,16 @@ export function BoardSheet() {
           </p>
           <ul className="flex flex-col gap-2">
             {board.awards.map((a) => (
-              <li key={a.id} className="rounded-2xl bg-white p-3 shadow-sm" data-award={a.id}>
-                <p className="font-extrabold">
+              <li
+                key={a.id}
+                className="overflow-hidden rounded-2xl bg-gradient-to-b from-[#fff6dc] to-white p-3 shadow-sm"
+                data-award={a.id}
+              >
+                <p className="text-center font-extrabold">
                   {a.emoji} {a.name}
                 </p>
-                <p className="mb-1.5 text-xs text-ink/60">{a.description}</p>
-                {a.entries.length === 0 ? (
-                  <p className="text-sm text-ink/50">Chưa ai — cơ hội cho bạn!</p>
-                ) : (
-                  <ol className="flex flex-col gap-0.5">
-                    {a.entries.map((e, i) => (
-                      <li
-                        key={e.playerId}
-                        className={`flex items-center gap-2 text-sm ${e.playerId === myId ? "font-extrabold text-red" : ""}`}
-                      >
-                        <span aria-hidden>{MEDAL[i]}</span>
-                        <span className="min-w-0 flex-1 truncate">
-                          {e.name}
-                          {e.playerId === myId && " (bạn)"}
-                        </span>
-                        <span className="tabular-nums">{valueText(a.metric, e.value)}</span>
-                      </li>
-                    ))}
-                  </ol>
-                )}
+                <p className="mb-2 text-center text-xs text-ink/60">{a.description}</p>
+                <Podium award={a} myId={myId} />
               </li>
             ))}
           </ul>
@@ -148,7 +132,100 @@ export function BoardSheet() {
           ))}
         </ul>
       )}
-    </Sheet>
+    </Modal>
+  );
+}
+
+/** Khung từng hạng: vàng (vương miện, viền sáng xoay), bạc, đồng; bục cao thấp theo hạng. */
+const RANKS = [
+  {
+    ring: "from-[#fff7c2] via-[#f5c542] to-[#b8780a]",
+    avatar: "size-16 text-2xl",
+    block: "h-20 from-[#ffe08a] to-[#d99a1e]",
+    label: "text-[#8a5a00]",
+  },
+  {
+    ring: "from-white via-[#cfd8e2] to-[#7d8b99]",
+    avatar: "size-13 text-xl",
+    block: "h-14 from-[#eef2f6] to-[#a9b6c3]",
+    label: "text-[#4f5b66]",
+  },
+  {
+    ring: "from-[#ffe1c2] via-[#d4894a] to-[#7c4318]",
+    avatar: "size-12 text-lg",
+    block: "h-10 from-[#f5c49a] to-[#b8682e]",
+    label: "text-[#6e3a12]",
+  },
+] as const;
+
+/** Bục vinh danh 2 – 1 – 3 (hạng 1 ở giữa, cao nhất). */
+function Podium({ award, myId }: { award: AwardView; myId: string | undefined }) {
+  if (award.entries.length === 0)
+    return <p className="text-center text-sm text-ink/50">Chưa ai — cơ hội cho bạn!</p>;
+  return (
+    <ol className="grid grid-cols-3 items-end gap-1.5" aria-label={`Top ${award.name}`}>
+      {[1, 0, 2].map((rank) => {
+        const e = award.entries[rank];
+        const r = RANKS[rank];
+        if (!r) return null;
+        const me = e?.playerId === myId;
+        return (
+          <li key={rank} className="flex min-w-0 flex-col items-center" data-rank={rank + 1}>
+            {e ? (
+              <>
+                <div className="relative mb-1 flex flex-col items-center">
+                  {rank === 0 && (
+                    <span className="-mb-1.5 text-2xl drop-shadow" aria-hidden>
+                      👑
+                    </span>
+                  )}
+                  <div className="relative">
+                    {rank === 0 && (
+                      <span
+                        aria-hidden
+                        className="motion-safe-only absolute -inset-1.5 animate-[spin-slow_6s_linear_infinite] rounded-full bg-[conic-gradient(from_0deg,#fff3b0,#f5c542,#fff,#e0a020,#fff3b0)] opacity-80"
+                      />
+                    )}
+                    <div
+                      className={`relative rounded-full bg-gradient-to-br p-[3px] shadow-md ${r.ring} ${rank === 0 ? "motion-safe-only animate-[glow_2.4s_ease-in-out_infinite]" : ""}`}
+                    >
+                      <div
+                        className={`flex items-center justify-center rounded-full bg-cream font-extrabold ${r.avatar} ${me ? "text-red" : "text-ink"}`}
+                      >
+                        {e.name.trim().charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+                    {rank === 0 && (
+                      <span className="absolute -top-1 -right-2 text-sm" aria-hidden>
+                        ✨
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p
+                  className={`w-full truncate text-center text-xs font-extrabold ${me ? "text-red" : ""}`}
+                >
+                  {e.name}
+                  {me && " (bạn)"}
+                </p>
+                <p className="mb-1 text-center text-[11px] tabular-nums text-ink/70">
+                  {valueText(award.metric, e.value)}
+                </p>
+              </>
+            ) : (
+              <div className="mb-1 flex size-12 items-center justify-center rounded-full border-2 border-dashed border-ink/15 text-ink/30">
+                ?
+              </div>
+            )}
+            <div
+              className={`flex w-full items-start justify-center rounded-t-xl bg-gradient-to-b pt-1 shadow-inner ${r.block}`}
+            >
+              <span className={`text-lg font-black ${r.label}`}>{rank + 1}</span>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

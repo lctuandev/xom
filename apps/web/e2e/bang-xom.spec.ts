@@ -33,7 +33,10 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   // Bảng xóm là icon cúp neo bên trái màn hình chính.
   await page.getByRole("button", { name: "Bảng xóm", exact: true }).tap();
   const board = page.getByRole("dialog", { name: "Bảng xóm" });
-  await expect(board.locator('[data-award="doanh_nhan"]').getByText("Hạng (bạn)")).toBeVisible();
+  // Bục vinh danh: mình đứng hạng 1 (giữa, khung vàng, vương miện).
+  await expect(
+    board.locator('[data-award="doanh_nhan"] [data-rank="1"]').getByText("Hạng (bạn)"),
+  ).toBeVisible();
   await shot(page, "92-bang-xom");
   await board.getByRole("tab", { name: "📊 Thị phần" }).tap();
   await expect(board.locator('[data-share="banh_mi"]').getByText("100%")).toBeVisible();
