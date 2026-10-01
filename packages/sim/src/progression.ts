@@ -186,7 +186,8 @@ export function voiceAsk(
 ): string | null {
   const list = c.data.voice.voices.find((v) => v.archetype === archetype)?.ask;
   if (!list?.length) return null;
-  return (list[Math.floor(rand() * list.length)] ?? "").replace("{dish}", dish);
+  const line = (list[Math.floor(rand() * list.length)] ?? "").replace("{dish}", dish);
+  return line.charAt(0).toUpperCase() + line.slice(1);
 }
 
 /** Tắt "thoại mặn": đổi từ mặn sang từ hiền (không phân biệt hoa thường, giữ phần còn lại của câu). */

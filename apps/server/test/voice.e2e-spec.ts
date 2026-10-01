@@ -21,7 +21,10 @@ describe("Giọng thoại (e2e)", () => {
       const o: OrderEvent = await next(a.socket, "order");
       const voice = content.data.voice.voices.find((v) => v.archetype === o.archetype);
       const allowed = voice
-        ? voice.ask.map((t) => t.replace("{dish}", o.dish))
+        ? voice.ask.map((t) => {
+            const l = t.replace("{dish}", o.dish);
+            return l.charAt(0).toUpperCase() + l.slice(1);
+          })
         : [content.product("banh_mi").recipe.ask.replace("{dish}", o.dish)];
       expect(allowed).toContain(o.ask);
     }

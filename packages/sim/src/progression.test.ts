@@ -121,6 +121,10 @@ describe("giọng thoại theo kiểu khách", () => {
       "Shop ơi cho em bánh mì thịt nha 🥺",
     );
     expect(voiceAsk(content, "vip", "bánh mì thịt", rand)).toBeNull();
+    // Câu mở đầu bằng tên món vẫn viết hoa chữ đầu.
+    expect(voiceAsk(content, "khach_vang_lai", "bánh mì thịt", () => 0.5)).toBe(
+      "Bánh mì thịt một phần, bạn ơi",
+    );
     expect(voiceLine(content, "vip", "thanks", rand)).toBe(content.data.customerLines.thanks[0]);
     // Khách vãng lai không có câu "rẻ" riêng → câu chung.
     expect(voiceLine(content, "khach_vang_lai", "cheap", rand)).toBe(

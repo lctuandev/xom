@@ -119,7 +119,8 @@ describe("Vòng chơi làm thật (e2e)", () => {
     const { socket } = await openBanhMiStall(url);
     const order = await nextOrder(socket);
     expect(order.variantId).toBe("banh_mi_thit"); // chỉ đủ nguyên liệu bánh mì thịt
-    expect(order.ask).toMatch(/^Cho con ổ bánh mì thịt/);
+    // Lời gọi món theo giọng kiểu khách (UC-D6) — luôn nhắc đúng món.
+    expect(order.ask.toLowerCase()).toContain("bánh mì thịt");
 
     // Chưa làm món mà tính tiền → từ chối.
     const early = await emit(socket, "order:pay", { orderId: order.orderId, change: 0 });
