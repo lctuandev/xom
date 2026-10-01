@@ -1,14 +1,18 @@
 "use client";
 
 import { content } from "@xom/content";
-import { baseSpec, FAME_LABEL } from "@xom/sim";
+import { baseSpec, FAME_LABEL, skillLevel } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { audioLevels, setAudioLevels } from "../audio";
 import { logout } from "../auth/store";
 import { vnd } from "../format";
+import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
+import { nearestAtm } from "../world";
+import { Achievements, useMyStats } from "./BoardSheet";
 import { Sheet } from "./Sheet";
+import { Tabs } from "./Tabs";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
 
@@ -86,6 +90,8 @@ export function QuestsSheet() {
 export function ProfileSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
+  const stats = useMyStats();
+  const [tab, setTab] = useState<"me" | "skills" | "badges" | "friends">("me");
   if (!me) return null;
   const friends = Object.entries(me.friendship)
     .filter(([, v]) => v > 0)
@@ -103,55 +109,91 @@ export function ProfileSheet() {
   );
   return (
     <Sheet title={me.displayName} onClose={() => close(null)}>
-      <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
-        <div className="flex items-baseline justify-between">
-          <p className="font-extrabold">Cấp {me.progress.level}</p>
-          <p className="text-xs text-ink/60 tabular-nums">
-            {me.progress.into}/{me.progress.need} KN
-          </p>
-        </div>
-        <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
-          <div
-            className="h-full rounded-full bg-leaf"
-            style={{
-              width: `${Math.round((me.progress.into / Math.max(1, me.progress.need)) * 100)}%`,
+      <Tabs
+        label="Hồ sơ"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "me", label: "🧑 Tôi" },
+          { id: "skills", label: "📈 Kỹ năng" },
+          {
+            id: "badges",
+            label: "🏅 Thành tựu",
+            badge: stats?.achievements.filter((a) => a.done).length,
+          },
+          { id: "friends", label: "🫶 Người quen" },
+        ]}
+      />
+      {tab === "me" && (
+        <>
+          <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex items-baseline justify-between">
+              <p className="font-extrabold">Cấp {me.progress.level}</p>
+              <p className="text-xs text-ink/60 tabular-nums">
+                {me.progress.into}/{me.progress.need} KN
+              </p>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+              <div
+                className="h-full rounded-full bg-leaf"
+                style={{
+                  width: `${Math.round((me.progress.into / Math.max(1, me.progress.need)) * 100)}%`,
+                }}
+              />
+            </div>
+            <p className="mt-2 text-sm">
+              Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served}{" "}
+              khách
+            </p>
+            <p className="text-xs text-ink/60">
+              KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white p-3 shadow-sm">
+            {row("💵 Tiền mặt", vnd(me.money))}
+            {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}
+            {me.business &&
+              row(
+                "Uy tín quầy",
+                `${"★".repeat(Math.round(me.business.reputation * 5))} (${Math.round(me.business.reputation * 100)}%)`,
+              )}
+            {row("Hôm nay bán", `${me.today.sold} món · ${vnd(me.today.revenue)}`)}
+            {row("Tiền boa", vnd(me.today.tips))}
+            {row("Làm thuê", vnd(me.today.wages))}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const p = getPlayer().position;
+              const atm = nearestAtm(p.x, p.z);
+              if (!atm) return;
+              close(null);
+              useGame.getState().setGoal({ kind: "atm", id: atm.id, open: "atm" });
             }}
-          />
-        </div>
-        <p className="mt-2 text-sm">
-          Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served} khách
-        </p>
-        <p className="text-xs text-ink/60">
-          KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
-        </p>
-      </div>
-      <div className="rounded-2xl bg-white p-3 shadow-sm">
-        {row("Tiền mặt", vnd(me.money))}
-        {me.business &&
-          row(
-            "Uy tín quầy",
-            `${"★".repeat(Math.round(me.business.reputation * 5))} (${Math.round(me.business.reputation * 100)}%)`,
-          )}
-        {row("Hôm nay bán", `${me.today.sold} món · ${vnd(me.today.revenue)}`)}
-        {row("Tiền boa", vnd(me.today.tips))}
-        {row("Làm thuê", vnd(me.today.wages))}
-      </div>
-      <p className="mt-4 mb-1.5 text-sm font-extrabold">Thân thiết</p>
-      {friends.length === 0 ? (
-        <p className="text-sm text-ink/60">Chưa thân ai — nói chuyện, mua hàng nhiều sẽ thân.</p>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {friends.map(([id, v]) => (
-            <li
-              key={id}
-              className="flex justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
-            >
-              <span className="font-semibold">{nameOf(id)}</span>
-              <span>{"❤️".repeat(Math.min(5, Math.ceil(v / 4)))}</span>
-            </li>
-          ))}
-        </ul>
+            className="mt-2 h-11 w-full rounded-xl bg-[#2c5aa0] font-semibold text-cream"
+          >
+            🚶 Tới cây ATM gần nhất
+          </button>
+        </>
       )}
+      {tab === "skills" && <Skills points={me.progress.skills} level={me.progress.level} />}
+      {tab === "badges" && <Achievements stats={stats} />}
+      {tab === "friends" &&
+        (friends.length === 0 ? (
+          <p className="text-sm text-ink/60">Chưa thân ai — nói chuyện, mua hàng nhiều sẽ thân.</p>
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {friends.map(([id, v]) => (
+              <li
+                key={id}
+                className="flex justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
+              >
+                <span className="font-semibold">{nameOf(id)}</span>
+                <span>{"❤️".repeat(Math.min(5, Math.ceil(v / 4)))}</span>
+              </li>
+            ))}
+          </ul>
+        ))}
     </Sheet>
   );
 }
@@ -163,7 +205,7 @@ function AudioSettings() {
     setAudioLevels(patch);
     setLv(audioLevels());
   };
-  const slider = (label: string, key: "music" | "sfx" | "voice") => (
+  const slider = (label: string, key: "music" | "sfx" | "voice" | "ambient") => (
     <label className="flex items-center gap-2 text-sm font-semibold">
       <span className="w-24 shrink-0">{label}</span>
       <input
@@ -193,6 +235,7 @@ function AudioSettings() {
       {slider("🎵 Nhạc nền", "music")}
       {slider("🔔 Hiệu ứng", "sfx")}
       {slider("🗣️ Giọng nói", "voice")}
+      {slider("🌧️ Môi trường", "ambient")}
     </div>
   );
 }
@@ -317,5 +360,48 @@ export function RecipeSheet() {
         )}
       </div>
     </Sheet>
+  );
+}
+
+/** Kỹ năng (DESIGN §4) + những thứ mở khoá theo cấp (Luật 4.2). */
+function Skills({ points, level }: { points: Record<string, number | undefined>; level: number }) {
+  return (
+    <section aria-label="Kỹ năng" className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
+      <p className="mb-1.5 text-sm font-extrabold">Kỹ năng</p>
+      <ul className="flex flex-col gap-2">
+        {content.data.skills.map((s) => {
+          const p = points[s.id] ?? 0;
+          const lv = skillLevel(s, p);
+          const into = lv >= s.max ? s.per : p - lv * s.per;
+          return (
+            <li key={s.id} data-skill={s.id} data-level={lv}>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="font-semibold">
+                  {s.emoji} {s.name}
+                </span>
+                <span className="text-xs text-ink/60">
+                  Bậc {lv}/{s.max}
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
+                <div
+                  className="h-full rounded-full bg-sun"
+                  style={{ width: `${Math.round((into / s.per) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-ink/60">{s.description}</p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 mb-1 text-sm font-extrabold">Mở khoá theo cấp</p>
+      <ul className="flex flex-col gap-1 text-sm">
+        {content.data.unlocks.map((u) => (
+          <li key={u.id} className={level >= u.level ? "" : "text-ink/50"}>
+            {level >= u.level ? "✅" : "🔒"} Cấp {u.level}: {u.label}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -6,12 +6,15 @@ import {
   payOrder,
   readDialogue,
   register,
+  serveCustomer,
   shot,
   walkToObjective,
 } from "./helpers";
 
 // Kịch bản UC-C2 + UC-E1 + UC-F1…F7: người mới buôn bán bánh mì, tự tay làm món, thối tiền.
 test("người mới: bán bánh mì — mua nguyên liệu, làm đúng món, thối đúng tiền", async ({ page }) => {
+  // Quầy đông lúc chiều: có khách hết kiên nhẫn phải phục vụ người sau → cần thêm thời gian.
+  test.setTimeout(300_000);
   await register(page);
 
   // 1. Chú Bảy bắt chuyện (khung thoại trên đầu), chọn nhánh buôn bán.
@@ -52,14 +55,10 @@ test("người mới: bán bánh mì — mua nguyên liệu, làm đúng món, t
   box = await readDialogue(page);
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
   for (let i = 0; i < 3; i++) {
-    const cook = page.getByRole("button", { name: /Làm món cho khách/ });
-    await expect(cook).toBeVisible({ timeout: 90_000 });
-    await cook.tap();
-    if (i === 0) await shot(page, "03-lam-mon");
-    await makeDish(page);
-    if (i === 0) await shot(page, "04-tinh-tien");
-    await payOrder(page);
-    await expect(page.getByRole("dialog", { name: "Làm món" })).toHaveCount(0);
+    await serveCustomer(page, async () => {
+      if (i === 0) await shot(page, "03-lam-mon");
+    });
+    if (i === 0) await shot(page, "04-da-tinh-tien");
   }
 
   // 7. Chú Bảy dặn dò, kịch bản kết thúc.

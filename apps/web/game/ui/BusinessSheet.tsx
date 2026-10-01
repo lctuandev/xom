@@ -2,19 +2,28 @@
 
 import { content } from "@xom/content";
 import type { BusinessView } from "@xom/shared";
-import { priceScore } from "@xom/sim";
+import { formatClock, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { baseCost, ingredientsOfProduct, makeableCount } from "../recipes";
 import { useGame } from "../store";
+import { useMyStats, WeekChart } from "./BoardSheet";
+import { usePayMethod } from "./PayPicker";
+import { ReviewBook } from "./Reviews";
 import { Section, Sheet, Stepper } from "./Sheet";
+import { Tabs } from "./Tabs";
 
+type BizTab = "sell" | "menu" | "stock" | "lot" | "stats" | "reviews";
+
+/** Bảng Làm ăn: phần đầu (uy tín, mở quầy) luôn hiện; phần dài chia tab dính (góp ý UX). */
 export function BusinessSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
   const setGoal = useGame((s) => s.setGoal);
   const [changing, setChanging] = useState(false);
+  const [tab, setTab] = useState<BizTab | null>(null);
+  const stats = useMyStats();
   const biz = me?.business;
 
   if (!biz || changing) {
@@ -31,7 +40,8 @@ export function BusinessSheet() {
           </button>
         )}
         <p className="mb-3 text-sm text-ink/70">
-          Xe đẩy mua ở vựa xe Ông Sáu, đầu phố phía tây. Đổi nghề thì xe cũ được bán lại nửa giá.
+          Xe đẩy mua ở vựa xe Ông Sáu, đầu phố phía tây. Đổi nghề thì xe cũ được bán lại nửa giá;
+          hàng tồn của nghề cũ đem ra chợ Bà Năm thanh lý (♻️ trong bảng chợ).
         </p>
         <button
           type="button"
@@ -47,6 +57,8 @@ export function BusinessSheet() {
     );
   }
 
+  // Chưa chọn chỗ thì mở thẳng tab Chỗ bán (người mới đi theo kịch bản).
+  const current: BizTab = tab ?? (biz.lotId ? "sell" : "lot");
   const product = content.product(biz.productId);
   const equipment = content.equipment(biz.equipmentId);
   // Số phần còn làm được của các món đang bán (theo nguyên liệu trong kho).
@@ -94,41 +106,79 @@ export function BusinessSheet() {
         </button>
       </div>
 
-      <Section title="Thực đơn & giá">
-        <MenuEditor biz={biz} />
-      </Section>
+      <Tabs
+        label="Bảng làm ăn"
+        value={current}
+        onChange={setTab}
+        tabs={[
+          { id: "sell", label: "🏪 Bán" },
+          { id: "menu", label: "🍽️ Thực đơn" },
+          { id: "stock", label: "📦 Kho" },
+          { id: "lot", label: "📍 Chỗ bán" },
+          { id: "stats", label: "📊 Số liệu" },
+          { id: "reviews", label: "📒 Đánh giá" },
+        ]}
+      />
 
-      <Section title="Chỗ bán">
-        <LotPicker biz={biz} />
-      </Section>
+      {current === "sell" && (
+        <>
+          <WearBar biz={biz} />
+          <PromoSection biz={biz} money={me.money} />
+          <Section title="Hôm nay">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {/* Khách hụt hiện trong báo cáo cuối ngày. */}
+              <Stat label="Đã bán" value={String(me.today.sold)} />
+              <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
+              <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
+            </div>
+          </Section>
+        </>
+      )}
 
-      <Section title="Nguyên liệu trong kho">
-        <StockList productId={biz.productId} />
-        <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
-          <p className="text-sm">
-            Làm được khoảng <b className="tabular-nums">{stock}</b> phần
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
-              close(null);
-            }}
-            className="h-10 rounded-xl bg-sun px-4 font-semibold"
-          >
-            🚶 Ra chợ
-          </button>
-        </div>
-      </Section>
+      {current === "menu" && (
+        <Section title="Thực đơn & giá">
+          <MenuEditor biz={biz} />
+        </Section>
+      )}
 
-      <Section title="Hôm nay">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {/* Khách hụt hiện trong báo cáo cuối ngày. */}
-          <Stat label="Đã bán" value={String(me.today.sold)} />
-          <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
-          <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
-        </div>
-      </Section>
+      {current === "lot" && (
+        <Section title="Chỗ bán">
+          <LotPicker biz={biz} />
+        </Section>
+      )}
+
+      {current === "stock" && (
+        <Section title="Nguyên liệu trong kho">
+          <StockList productId={biz.productId} />
+          <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
+            <p className="text-sm">
+              Làm được khoảng <b className="tabular-nums">{stock}</b> phần
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+                close(null);
+              }}
+              className="h-10 rounded-xl bg-sun px-4 font-semibold"
+            >
+              🚶 Ra chợ
+            </button>
+          </div>
+        </Section>
+      )}
+
+      {current === "stats" && (
+        <Section title="📊 7 ngày qua">
+          <WeekChart stats={stats} />
+        </Section>
+      )}
+
+      {current === "reviews" && (
+        <Section title="📒 Sổ đánh giá">
+          <ReviewBook ownerId={me.playerId} owner />
+        </Section>
+      )}
 
       <button
         type="button"
@@ -157,19 +207,25 @@ function OpenButton({
   const setGoal = useGame((s) => s.setGoal);
   const close = useGame((s) => s.openSheet);
   const lot = biz.lotId ? content.lot(biz.lotId) : null;
-  const rentDue = !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay : 0;
+  const eco = content.economy;
+  // Tiền thuê chỗ + phí chợ/thuế trả một lần mỗi ngày (Luật 2.2).
+  const rentDue =
+    !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay + eco.fees.daily[lot.kind] : 0;
+  const broken = wearState(biz.wear, eco.maintenance) === "broken";
   const cantPay = rentDue > money;
-  const hint = working
-    ? "Đang đi làm thuê — nghỉ việc để mở quầy"
-    : !lot
-      ? "Chọn chỗ bán bên dưới trước"
-      : stock === 0
-        ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
-        : cantPay
-          ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
-          : rentDue
-            ? `Tiền thuê chỗ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
-            : null;
+  const hint = broken
+    ? "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã"
+    : working
+      ? "Đang đi làm thuê — nghỉ việc để mở quầy"
+      : !lot
+        ? "Chọn chỗ bán bên dưới trước"
+        : stock === 0
+          ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
+          : cantPay
+            ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
+            : rentDue
+              ? `Thuê chỗ + phí chợ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
+              : null;
   // Phải đẩy xe tới chỗ bán, đứng sau quầy mới mở được.
   if (!biz.open && lot && !atStall) {
     return (
@@ -192,7 +248,7 @@ function OpenButton({
     <div className="mb-4">
       <button
         type="button"
-        disabled={busy || (!biz.open && (working || !lot || stock === 0 || cantPay))}
+        disabled={busy || (!biz.open && (broken || working || !lot || stock === 0 || cantPay))}
         onClick={async () => {
           setBusy(true);
           await send(biz.open ? "biz:close" : "biz:open", {});
@@ -206,6 +262,119 @@ function OpenButton({
       </button>
       {hint && <p className="mt-2 text-center text-sm text-ink/60">{hint}</p>}
     </div>
+  );
+}
+
+/** Độ bền xe/quầy (Luật 2.2): bán nhiều thì mòn; ọp ẹp khách bớt ghé, làm món chậm; hư thì không mở được. */
+function WearBar({ biz }: { biz: BusinessView }) {
+  const setGoal = useGame((s) => s.setGoal);
+  const close = useGame((s) => s.openSheet);
+  const m = content.economy.maintenance;
+  const state = wearState(biz.wear, m);
+  const cost = repairCost(content.equipment(biz.equipmentId).price, biz.wear, m);
+  const left = Math.round((1 - biz.wear) * 100);
+  return (
+    <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm" data-wear={state}>
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="font-semibold">🔧 Độ bền xe</span>
+        <span className={state === "ok" ? "text-ink/60" : "font-semibold text-red"}>
+          {state === "broken" ? "Hư rồi" : state === "worn" ? `Ọp ẹp · ${left}%` : `${left}%`}
+        </span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+        <div
+          className={`h-full rounded-full ${state === "ok" ? "bg-leaf" : "bg-red"}`}
+          style={{ width: `${left}%` }}
+        />
+      </div>
+      {state !== "ok" && (
+        <p className="mt-1 text-xs text-ink/60">
+          Xe ọp ẹp: khách ngại ghé, làm món chậm hơn. Sửa ở vựa xe Ông Sáu.
+        </p>
+      )}
+      {cost > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setGoal({ kind: "place", id: "vua_xe", open: "equipment" });
+            close(null);
+          }}
+          className="mt-2 h-10 w-full rounded-xl bg-sun text-sm font-semibold"
+        >
+          🚶 Tới vựa xe sửa · {vnd(cost)}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Khai trương (sự kiện người chơi tạo, DESIGN §9): trả tiền pháo giấy, bong bóng, băng rôn → quầy đông khách + giảm giá
+ * vài giờ game, cả xóm thấy tin. Mỗi lần cách nhau vài ngày.
+ */
+function PromoSection({ biz, money }: { biz: BusinessView; money: number }) {
+  const def = content.data.events.find((e) => e.trigger.kind === "player");
+  const atStall = useGame((s) => s.atStall);
+  const day = useGame((s) => s.clock?.day ?? 1);
+  const minute = useGame((s) => s.clock?.minute ?? 0);
+  const active = useGame((s) =>
+    s.events.find((e) => e.businessId === biz.id && minute >= e.from && minute < e.to),
+  );
+  const [busy, setBusy] = useState(false);
+  const level = useGame((s) => s.me?.progress.level ?? 1);
+  if (!def || def.trigger.kind !== "player") return null;
+  const cost = def.trigger.costs.reduce((sum, c) => sum + c.price, 0);
+  const wait = biz.promoDay === null ? 0 : def.trigger.cooldownDays - (day - biz.promoDay);
+  const need = unlockLevel(content, "event_host");
+  const hint = active
+    ? null
+    : level < need
+      ? `🔒 Cấp ${need} mới tổ chức khai trương được`
+      : wait > 0
+        ? `Mới khai trương — ${wait} ngày nữa mới làm lại được`
+        : !biz.open || !atStall
+          ? "Mở quầy và đứng ở quầy rồi mới khai trương được"
+          : cost > money
+            ? "Không đủ tiền mặt"
+            : null;
+  return (
+    <Section title={`${def.emoji} ${def.name}`}>
+      <div className="rounded-2xl bg-white p-3 shadow-sm" data-promo={active ? "on" : "off"}>
+        {active ? (
+          <p className="text-sm font-semibold text-leaf">
+            🎉 Đang khai trương tới {formatClock(active.to)} — khách đông, giảm{" "}
+            {Math.round((def.effects.discount ?? 0) * 100)}%
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-ink/70">
+              Khách ghé ×{def.effects.demand ?? 1} trong {def.minutes / 60} giờ, giảm{" "}
+              {Math.round((def.effects.discount ?? 0) * 100)}% mọi món; cả xóm được báo tin.
+            </p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+              {def.trigger.costs.map((c) => (
+                <li key={c.id} className="rounded-full bg-ink/5 px-2 py-1">
+                  {c.emoji} {c.label} {vndShort(c.price)}
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              disabled={busy || hint !== null}
+              onClick={async () => {
+                setBusy(true);
+                await send("event:host", { eventId: def.id, pay: usePayMethod.getState().method });
+                setBusy(false);
+              }}
+              className="mt-2 h-11 w-full rounded-xl bg-red font-semibold text-cream disabled:opacity-40"
+            >
+              {busy ? "…" : `🎉 Khai trương · ${vnd(cost)}`}
+            </button>
+            {hint && <p className="mt-1 text-center text-xs text-ink/60">{hint}</p>}
+          </>
+        )}
+      </div>
+    </Section>
   );
 }
 
@@ -318,6 +487,7 @@ function StockList({ productId }: { productId: string }) {
 }
 
 function LotPicker({ biz }: { biz: BusinessView }) {
+  const level = useGame((s) => s.me?.progress.level ?? 1);
   const world = useGame((s) => s.world);
   const [open, setOpen] = useState(biz.lotId === null);
   const current = biz.lotId ? content.lot(biz.lotId) : null;
@@ -348,11 +518,14 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       {content.data.lots.map((lot) => {
         const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
         const selected = biz.lotId === lot.id;
+        // Nhà mặt tiền mở khoá theo cấp (Luật 4.2).
+        const need = lot.kind === "house" ? unlockLevel(content, "lot_house") : 1;
+        const locked = level < need;
         return (
           <li key={lot.id}>
             <button
               type="button"
-              disabled={!!taken}
+              disabled={!!taken || locked}
               aria-pressed={selected}
               onClick={async () => {
                 const res = await send("biz:update", { lotId: lot.id });
@@ -363,7 +536,11 @@ function LotPicker({ biz }: { biz: BusinessView }) {
               <span className="min-w-0">
                 <span className="block font-extrabold">{lot.name}</span>
                 <span className="block text-sm text-ink/60">
-                  {taken ? `${taken.ownerName} đang dùng` : lot.hint}
+                  {locked
+                    ? `🔒 Cấp ${need} mới thuê được`
+                    : taken
+                      ? `${taken.ownerName} đang dùng`
+                      : lot.hint}
                 </span>
               </span>
               <span className="shrink-0 font-semibold tabular-nums">

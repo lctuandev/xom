@@ -22,8 +22,38 @@ export function Stalls() {
   );
 }
 
+/** Chùm bong bóng khi quầy đang khai trương (vài mesh nhỏ, chỉ hiện trong lúc khai trương). */
+function Balloons({ x, z }: { x: number; z: number }) {
+  const colors = ["#e4432d", "#f5b82e", "#2f7d4f", "#3a7bd5", "#e86fb0"];
+  return (
+    <group position={[x, 0, z]}>
+      {colors.map((c, i) => {
+        const a = (i / colors.length) * Math.PI * 2;
+        const px = Math.cos(a) * 0.35 + 0.9;
+        const pz = Math.sin(a) * 0.35;
+        return (
+          <group key={c}>
+            <mesh position={[px, 3.6 + (i % 2) * 0.3, pz]}>
+              <sphereGeometry args={[0.28, 10, 8]} />
+              <meshLambertMaterial color={c} />
+            </mesh>
+            <mesh position={[(px + 0.9) / 2, 1.8 + (i % 2) * 0.15, pz / 2]}>
+              <cylinderGeometry args={[0.01, 0.01, 3.4, 3]} />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 function Stall({ occupant }: { occupant: LotOccupant }) {
   const lot = content.lot(occupant.lotId);
+  const minute = useGame((s) => s.clock?.minute ?? 0);
+  const promo = useGame((s) =>
+    s.events.some((e) => e.businessId === occupant.businessId && minute >= e.from && minute < e.to),
+  );
   const product = content.product(occupant.productId);
   const model = content.equipment(occupant.equipmentId).model as CityModel;
   const at = useMemo(() => [{ x: lot.position.x, z: lot.position.z, rot: lot.facing }], [lot]);
@@ -44,6 +74,7 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
           bg={occupant.open ? product.signColor : CLOSED_SIGN}
           size={[3.2, 0.7]}
         />
+        {promo && <Balloons x={lot.position.x} z={lot.position.z + out * 1.3} />}
       </group>
     );
   }
@@ -57,6 +88,7 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
         rotationY={Math.PI / 2}
         bg={occupant.open ? product.signColor : CLOSED_SIGN}
       />
+      {promo && <Balloons x={lot.position.x} z={lot.position.z} />}
     </group>
   );
 }

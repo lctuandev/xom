@@ -81,6 +81,8 @@ export function generateOrder(
   menu: MenuItem[],
   rand: () => number,
   stock?: ReadonlyMap<string, number>,
+  /** Khách khó tính (VIP): dặn ít nhất chừng này yêu cầu riêng (nếu công thức có đủ). */
+  minMods = 0,
 ): GeneratedOrder | null {
   const item = weighted(
     menu,
@@ -111,9 +113,21 @@ export function generateOrder(
 
   // Yêu cầu riêng: mỗi bước single chỉ đổi một lần; bỏ qua yêu cầu không có tác dụng.
   const touched = new Set<string>();
+  let mods = 0;
   for (const mod of recipe.mods) {
     if (rand() >= mod.chance) continue;
-    if (applyMod(recipe, spec, mod, touched, available)) says.push(mod.say);
+    if (applyMod(recipe, spec, mod, touched, available)) {
+      says.push(mod.say);
+      mods++;
+    }
+  }
+  // Khách khó tính (VIP) dặn thêm cho đủ, theo thứ tự ngẫu nhiên.
+  for (const mod of [...recipe.mods].sort(() => rand() - 0.5)) {
+    if (mods >= minMods) break;
+    if (applyMod(recipe, spec, mod, touched, available)) {
+      says.push(mod.say);
+      mods++;
+    }
   }
 
   const dish = [variant.name, ...says].join(", ");
@@ -301,6 +315,11 @@ export function marketPackPrice(
 export type Payment = { kind: "transfer" } | { kind: "cash"; bill: number };
 
 const BILLS = [10_000, 20_000, 50_000, 100_000, 200_000];
+
+/** Tờ tiền nhỏ nhất đủ trả (người chơi đưa tiền mặt cho quầy hàng xóm). */
+export function billFor(price: number): number {
+  return BILLS.find((b) => b >= price) ?? Math.ceil(price / 100_000) * 100_000;
+}
 
 /** Khách trả thế nào: chuyển khoản, đưa đúng tiền, hay đưa tờ lớn cần thối. */
 export function pickPayment(price: number, transferRate: number, rand: () => number): Payment {

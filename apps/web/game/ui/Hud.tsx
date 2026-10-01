@@ -1,5 +1,6 @@
 "use client";
 
+import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { vnd } from "../format";
@@ -131,6 +132,11 @@ function ResourceBar() {
   const clock = useGame((s) => s.clock);
   const minute = clock?.minute ?? 0;
   const night = minute >= 1080 || minute < 330;
+  const sky = clock?.weather.now ?? "sunny";
+  // Trời quang ban đêm thì là trăng; còn lại hiện kiểu trời (UC-B4) — không thêm nút mới (Luật 12.1).
+  const icon = night && sky === "sunny" ? "🌙" : content.weatherKind(sky).emoji;
+  const next = clock?.weather.next;
+  const skyLabel = `${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
   const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
     <div className="flex items-center gap-2 rounded-full bg-ink/80 py-1 pr-3 pl-1 text-cream shadow-md">
@@ -146,8 +152,17 @@ function ResourceBar() {
       <span
         className="ml-auto text-xs font-semibold tabular-nums"
         data-clock={clock ? minute : undefined}
+        data-weather={clock ? sky : undefined}
+        title={skyLabel}
       >
-        N{clock?.day ?? 1} {night ? "🌙" : "☀️"} {clock ? formatClock(minute) : "…"}
+        N{clock?.day ?? 1} <span aria-hidden>{icon}</span>
+        <span className="sr-only">{skyLabel}</span>
+        {next && (
+          <span aria-hidden className="opacity-80">
+            →{content.weatherKind(next.kind).emoji}
+          </span>
+        )}{" "}
+        {clock ? formatClock(minute) : "…"}
       </span>
     </div>
   );

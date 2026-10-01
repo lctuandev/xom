@@ -24,19 +24,19 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Hệ thống | Đã có | Lệch luật / còn thiếu → việc làm tiếp | Ưu tiên |
 |---|---|---|---|
 | 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
-| 💰 Kinh tế | Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k | **Chưa tách 🏦 ngân hàng** (chuyển khoản đang vào thẳng tiền mặt) | 3 |
-| 💸 Money sink | Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp | Thiếu **bảo trì xe/quầy, phí chợ/thuế, lương nhân viên, trang trí, xăng** | 3 |
-| 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
+| 💰 Kinh tế | ✅ Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k, **tách 💵 tiền mặt / 🏦 ngân hàng**, cây ATM, lãi có trần | Chuyển tiền tự do giữa người chơi, phí ATM | 3 |
+| 💸 Money sink | ✅ Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp, **phí chợ/thuế khoán, điện nước tiệm, hao mòn + sửa xe, khai trương**, thanh lý hàng lỗ vốn | Lương nhân viên, trang trí, xăng; quỹ xóm cho công trình chung | 3 |
+| 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc; **kỹ năng** (tay nhanh, nhớ món, ăn nói); **mở khoá theo cấp** (khai trương cấp 2, nhà mặt tiền cấp 3) | Kỹ năng theo nghề, mở khoá món/nghề | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
-| 🌦️ Thế giới thay đổi | Ngày/đêm, sạp theo giờ | **Chưa có thời tiết, giao thông/xe chạy** | 3 |
-| 🎲 Sự kiện | Khách VIP chưa; chuyện trong quán (than, cãi, quỵt) | **Chưa có sự kiện khu phố/toàn server/do người chơi tạo (khai trương)** | 3 |
-| 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) | Tiếng mưa (chờ thời tiết), âm theo khoảng cách | 3 |
+| 🌦️ Thế giới thay đổi | ✅ Ngày/đêm, sạp theo giờ, **thời tiết** 4 kiểu (khách, giao hàng, hạt mưa, tiếng mưa/sấm, báo trước) | Giao thông/xe chạy, mái che xe đẩy | 3 |
+| 🎲 Sự kiện | ✅ Sự kiện bằng dữ liệu (`content.events`): **khai trương** do người chơi tạo, **khách VIP**, **mưa lớn toàn xóm**; chuyện trong quán (than, cãi, quỵt) | Hội chợ đêm, tan trường sớm, mất điện, tiệc mời bạn | 3 |
+| 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) + **mưa, sấm** (bus môi trường chỉnh riêng) | Âm theo khoảng cách | 3 |
 | 🏠 Tài sản | Thuê nhà mặt tiền làm tiệm | Nhà ở, trang trí, nội thất sưu tầm | 4 |
 | 🛵 Phương tiện | Xe máy giao hàng (chỉ là tốc độ) | Xe đạp/xe máy sở hữu, xăng, hư hỏng | 4 |
 | 🏪 Làm ăn | Kho, giá, rao hàng, khách, đánh giá, hỏng hàng | Nhà cung cấp/giá biến động, đối thủ, trào lưu | 3 |
 | 🧠 Hành vi NPC | Khách quán, NPC ghé sạp/vào quán | Lịch sinh hoạt theo dữ liệu, nhớ quầy quen | 3 |
-| 📱 Giao diện | HUD mới tối giản, menu Làm ăn/Nhiệm vụ/Hàng xóm | Túi đồ 🎒 riêng | 4 |
+| 📱 Giao diện | HUD mới tối giản, menu Làm ăn/Nhiệm vụ/Hàng xóm; list dài chia tab dính (chợ, Làm ăn, Hồ sơ, Bảng xóm — Luật 12.3) | Túi đồ 🎒 riêng | 4 |
 | ♻️ Giữ chân | Nhiệm vụ hôm nay (không thưởng tiền) | Chợ phiên tuần, mùa, sưu tầm | 4 |
 
 ## 1. 🌐 Online / Multiplayer core
@@ -69,6 +69,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Sổ công thức (📖): mỗi món gồm bước nào, bỏ gì; khách hay dặn gì | ✅ | 1.10 | Làm ăn → Công thức |
 | Hướng dẫn vào ca từng vai (❓ Cách làm) | ✅ | 1.10 | UC-W1 |
 | Trang chủ, đăng nhập, màn hình tải có tranh minh hoạ con hẻm (SVG động: đèn lồng, nồi phở, xe máy) + mẹo chơi | ✅ | 1.10 | |
+| Logo mới: icon app (mái đình cong, tre làng, đèn lồng, nắng chiều) + chữ XÓM có dấu nón lá — trang chủ, đăng nhập, màn tải, favicon/PWA | ✅ | 1.11 | Góp ý chủ dự án |
 
 ## 2. 🧍 Nhân vật
 
@@ -78,8 +79,10 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tạo nhân vật: tóc, mặt, áo, giày, phụ kiện | ⏳ | 3 | Hệ nhân vật modular (PLAN §5) |
 | Biểu cảm / emote (👋 😄 🙏…) | ✅ cơ bản | 1.6 | Câu nói nhanh, UC-D3 |
 | Cử chỉ (vẫy tay, bắt tay, high-five) có animation | ⏳ | 2 | |
-| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ⏳ | 🚧 | 1.10 | Không có "năng lượng" ép giờ chơi |
-| Kỹ năng theo nghề (tay nhanh, nhớ món…) | 💤 | | |
+| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ✅ | ✅ | 1.11 | Không có "năng lượng" ép giờ chơi |
+| Kỹ năng (tay nhanh, nhớ món, ăn nói) tăng nhờ làm thật + mở khoá theo cấp | ✅ | 1.11 | UC-P1 |
+| Thành tựu (dữ liệu, có tiến độ) | ✅ | 1.11 | UC-P2 |
+| Bảng xóm: giải tuần 7 hạng mục, thị phần theo món, đang hot; số liệu quầy 7 ngày + so TB xóm | ✅ | 1.11 | UC-P2 |
 
 ## 3. 🏘️ Thế giới / khu phố
 
@@ -95,16 +98,18 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ✅ | 1.10 | UC-B9 · 8 sạp, mua ăn tại chỗ |
 | Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | 🚧 | 1.10 | UC-B10 · NPC ghé sạp/vào quán ✅, xe cộ ⏳ |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
-| Thời tiết (mưa, nắng) | ⏳ | 1.9 | UC-B4 |
+| Thời tiết (nắng, âm u, mưa, bão): khách, giao hàng, hạt mưa GPU, tiếng mưa/sấm, báo trước trên dải tin | ✅ | 1.11 | UC-B4 |
 | Tương tác vật thể: ngồi, nhặt, đặt, mở cửa | ⏳ | 2–3 | |
-| Nhà riêng, trang trí | 💤 | 3 | Mục 14 |
+| Xóm quê: nhà tranh/cấp 4/nhà ống theo **cấp nhà bằng dữ liệu** (content.housing), tiệm tạp hoá, UBND xã, trường làng, rào tre, dừa, chuối, tre — model Blender tự dựng | ✅ | 1.11 | UC-B6 |
+| Nhà riêng, trang trí, nâng cấp nhà (dùng cấp nhà ở trên) | 💤 | 3 | Mục 14 |
 
 ## 4. 💰 Kinh tế
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Tiền mặt, sổ cái kép, ví không âm | ✅ | 1 | |
-| Ngân hàng (tiền mặt vs tài khoản), chuyển khoản | ⏳ | 2 | Khách đã có trả chuyển khoản |
+| Ngân hàng (tiền mặt vs tài khoản), chuyển khoản vào 🏦, cây ATM rút/gửi, lãi rất nhỏ có trần | ✅ | 1.11 | UC-I6 |
+| Chọn cách trả khi mua: tự chọn / 💵 / 🏦; sạp nhỏ chỉ nhận tiền mặt; hàng xóm trả tiền mặt thì chủ quầy thối | ✅ | 1.11 | UC-I8 |
 | Mua bán với NPC | ✅ | 1.6 | Chợ, vựa xe, khách |
 | Mua bán / chuyển tiền giữa người chơi | 🚧 | 2 | Mua món ở quầy nhau ✅ (UC-J3); tặng/chuyển tiền tự do ⏳ |
 | Thuê chỗ bán theo ngày | ✅ | 1 | |
@@ -112,7 +117,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Trả lương người chơi / NPC làm cho mình | ⏳ | 1.9 | UC-H2…H9 (ký quỹ) |
 | Đặt hàng trước | ⏳ | 1.9 | UC-F10 |
 | Công cụ cân bằng kinh tế | ✅ | 1 | `pnpm balance` |
-| Chống lạm phát (money sink) | ✅ cơ bản | 1 | Thuê chỗ, hàng hỏng, nguyên liệu |
+| Giá theo thị trường thật: món, nguyên liệu sỉ, xe đẩy cũ, chỗ vỉa hè, nhà mặt tiền, vốn tích góp | ✅ | 1.11 | DESIGN Luật 2.4 (bảng đối chiếu) |
+| Chống lạm phát (money sink): phí chợ/thuế, điện nước, hao mòn + sửa xe, thanh lý hàng tồn | ✅ | 1.11 | UC-I7 |
 
 ## 5. 🏪 Kinh doanh (data-driven)
 
@@ -121,6 +127,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Business = loại + vị trí + sản phẩm + kho + giá + uy tín + doanh thu/chi phí | ✅ | 1–1.6 | Template FOOD / RETAIL |
 | Thêm nghề bằng dữ liệu (công thức từng bước) | ✅ | 1.6 | `packages/content` |
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
+| Sổ đánh giá quầy: khách NPC/hàng xóm chấm sao + viết, chủ quầy trả lời, che từ tục | ✅ | 1.11 | UC-F11 |
+| Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
 | Dịch vụ: sửa xe (SERVICE) | ⏳ | 1.8 | UC-G |
@@ -196,7 +204,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Uy tín quầy (sao) theo món đúng, nhanh, giá, thối tiền | ✅ | 1.6 | |
-| Review có lời ("ngon nhưng chờ lâu") | ⏳ | 2 | |
+| Review có lời ("ngon nhưng chờ lâu"): sổ đánh giá quầy, chủ quầy trả lời | ✅ | 1.11 | UC-F11 |
 | Reviewer ghé, viral | ⏳ | sau | UC-I2 |
 | Phiếu lương ca ✅ · uy tín người làm thuê ⏳ | 🚧 | 1.7–1.9 | UC-W7 |
 
@@ -224,7 +232,8 @@ Mua/thuê nhà, trang trí, nội thất, mời bạn. (Nội thất Kenney đã
 | Tính năng | Trạng thái | Phase | Ghi chú |
 |---|---|---|---|
 | Kịch bản người mới rẽ nhánh | ✅ | 1.5 | UC-C |
-| Sự kiện ngẫu nhiên (mưa, mất điện, tan trường sớm) | ⏳ | 1.9 | UC-K |
+| Sự kiện ngẫu nhiên (mưa ✅, mất điện, tan trường sớm) | 🚧 | 1.9 | UC-K |
+| Sự kiện bằng dữ liệu: khai trương (người chơi tạo, money sink), khách VIP, mưa lớn toàn xóm | ✅ | 1.11 | UC-B5 |
 | Sự kiện chung (chợ đêm) | ⏳ | 3 | UC-K1 |
 | Sự kiện riêng (reviewer, chủ nhà tăng giá) | ⏳ | sau | |
 

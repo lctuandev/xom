@@ -48,12 +48,17 @@ model Player {
   tutorial    String   @default("gap_chu_bay")
   /// Kinh nghiệm tích luỹ từ làm thật (docs/DESIGN.md §4) — cấp độ suy ra từ đây.
   xp          Int      @default(0)
+  /// Điểm kỹ năng (DESIGN §4): { tay_nhanh, nho_mon, an_noi } — tăng nhờ làm thật.
+  skills      Json     @default("{}")
+  /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
+  achievements Json    @default("{}")
   createdAt   DateTime @default(now())
 
   businesses Business[]
   relations  NpcRelation[]
   inventory  InventoryItem[]
   reports    DailyReport[]
+  reviews    Review[]       @relation("ReviewsReceived")
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -68,7 +73,10 @@ model Room {
 }
 
 enum WalletKind {
+  /// 💵 Tiền mặt của người chơi ("player:<id>") — ví có từ trước, số dư giữ nguyên.
   PLAYER
+  /// 🏦 Tài khoản ngân hàng của người chơi ("bank:<id>"): nhận chuyển khoản, rút/gửi ở ATM (DESIGN §2).
+  PLAYER_BANK
   SYSTEM
 }
 
@@ -76,7 +84,7 @@ enum WalletKind {
 model Wallet {
   id      String        @id @default(uuid(7)) @db.Uuid
   kind    WalletKind
-  /// "player:<playerId>" hoặc "system:<tên>".
+  /// "player:<playerId>" (tiền mặt), "bank:<playerId>" (ngân hàng) hoặc "system:<tên>".
   key     String        @unique
   balance BigInt        @default(0)
   entries LedgerEntry[]
@@ -117,6 +125,10 @@ model Business {
   /// Tiền thuê chỗ trả trước khi mở hàng: ngày và lô đã trả gần nhất.
   rentPaidDay Int?
   rentLotId   String?
+  /// Độ mòn xe đẩy/quầy 0–1 (Luật 2.2): bán càng nhiều càng mòn, sửa ở vựa xe Ông Sáu.
+  wear        Float          @default(0)
+  /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
+  promoDay    Int?
   createdAt   DateTime       @default(now())
 
   @@index([ownerId])
@@ -143,6 +155,10 @@ model DailyReport {
   revenue      Int
   /// Tiền boa khi phục vụ khách kịp.
   tips         Int      @default(0)
+  /// Lãi ngân hàng nhận cuối ngày (rất nhỏ, có trần).
+  interest     Int      @default(0)
+  /// Phí chợ/thuế, điện nước, sửa xe, khai trương… (chỗ tiêu ngoài nhập hàng và thuê chỗ).
+  fees         Int      @default(0)
   stockCost    Int
   rent         Int
   wages        Int
@@ -158,6 +174,28 @@ model DailyReport {
   createdAt    DateTime @default(now())
 
   @@unique([playerId, day])
+}
+
+/// Sổ đánh giá quầy (docs/USECASES.md UC-F11): khách NPC hoặc người chơi chấm sao + vài chữ; chủ quầy trả lời một lần.
+/// Gắn với chủ quầy (không xoá khi đổi nghề — tiếng tăm đi theo người).
+model Review {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  ownerId    String    @db.Uuid
+  owner      Player    @relation("ReviewsReceived", fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Món của quầy nào (productId) lúc được đánh giá.
+  productId  String
+  /// Người chơi viết (null = khách NPC).
+  authorId   String?   @db.Uuid
+  authorName String
+  stars      Int
+  text       String
+  day        Int
+  reply      String?
+  repliedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([authorId, ownerId, day])
+  @@index([ownerId, createdAt])
 }
 
 /// Thay cho analytics: ghi sự kiện để query khi cần (docs/PLAN.md, nguyên tắc làm một mình).

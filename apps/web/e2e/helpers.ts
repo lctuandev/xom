@@ -11,6 +11,9 @@ export async function register(page: Page, name = "Tuấn", start = "/play") {
   await page.getByLabel("Mật khẩu").fill("matkhau123");
   await page.getByRole("button", { name: /Tạo tài khoản & vào xóm/ }).tap();
   await page.waitForURL(`**${start}`);
+  // Trời ngẫu nhiên (UC-B4) làm khách lúc đông lúc vắng — kịch bản mặc định chạy với trời nắng cho ổn định.
+  await expect(page.locator("[data-clock]")).toBeVisible();
+  await setWeather(page, "sunny");
 }
 
 /**
@@ -49,7 +52,10 @@ export async function walkToObjective(page: Page, arrivedButton: RegExp) {
 export async function buyIngredients(page: Page, ids: string[]) {
   for (const id of ids) {
     const row = page.locator(`[data-item="${id}"]`);
-    if (!(await row.isVisible())) await page.getByText(/Hàng khác/).tap();
+    // Chợ chia tab theo nghề: chưa thấy hàng thì lật lần lượt từng tab.
+    const tabs = page.getByRole("tablist", { name: "Quầy hàng ở chợ" }).getByRole("tab");
+    for (let i = 0; i < (await tabs.count()) && !(await row.isVisible()); i++)
+      await tabs.nth(i).tap();
     await row.getByRole("button", { name: /^Mua/ }).tap();
     // Mua đủ món cuối thì Chú Bảy có thể bắt chuyện (bảng chợ tự đóng) — cũng là mua xong.
     await expect(
@@ -64,7 +70,9 @@ const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  * Làm món đúng theo lời khách dặn, thao tác từng bước như người chơi.
  * `mistake`: cố tình làm sai một bước (để thử khách phàn nàn).
  */
-export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
+export async function makeDish(page: Page, opts: { mistake?: string; timeout?: number } = {}) {
+  const t = opts.timeout ? { timeout: opts.timeout } : undefined;
+  if (await page.locator("[data-counter]").isVisible()) return makeAtCounter(page, t);
   const kitchen = page.getByRole("dialog", { name: "Làm món" });
   await expect(kitchen).toBeVisible();
   const spec = JSON.parse((await kitchen.getAttribute("data-spec")) ?? "{}") as Record<
@@ -79,14 +87,14 @@ export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
     if (!step) continue;
-    await kitchen.getByRole("button", { name: `${i + 1}. ${step.label}` }).tap();
+    await kitchen.getByRole("button", { name: `${i + 1}. ${step.label}` }).tap(t);
     const panel = kitchen.getByRole("region", { name: step.label });
     let want = spec[step.id];
     if (opts.mistake === step.id && step.kind === "single") {
       want = step.options.find((o) => o.id !== want)?.id ?? want;
     }
     if (step.kind === "action") {
-      await panel.getByRole("button", { name: step.verb ?? step.label }).tap();
+      await panel.getByRole("button", { name: step.verb ?? step.label }).tap(t);
     } else if (step.kind === "hold") {
       const btn = panel.getByRole("button");
       await btn.dispatchEvent("pointerdown");
@@ -97,17 +105,102 @@ export async function makeDish(page: Page, opts: { mistake?: string } = {}) {
       ).toBeVisible();
     } else if (step.kind === "single") {
       const opt = step.options.find((o) => o.id === want);
-      if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap();
+      if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap(t);
     } else {
       for (const id of Array.isArray(want) ? want : []) {
         const opt = step.options.find((o) => o.id === id);
-        if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap();
+        if (opt) await panel.getByRole("button", { name: new RegExp(esc(opt.label)) }).tap(t);
       }
-      await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap();
+      await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap(t);
     }
   }
-  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap();
+  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
   return { orderId, spec };
+}
+
+/**
+ * Làm món ở quầy dạng lưới (UC-F5, product.counter): lấy ly, rót trà, chọn đường/đá, thêm topping, lắc, dán miệng ly.
+ */
+async function makeAtCounter(page: Page, t?: { timeout: number }) {
+  const kitchen = page.getByRole("dialog", { name: "Làm món" });
+  const spec = JSON.parse((await kitchen.getAttribute("data-spec")) ?? "{}") as Record<
+    string,
+    string | string[] | true
+  >;
+  const orderId = await kitchen.getAttribute("data-order");
+  const product = content.data.products.find(
+    (p) => p.counter && p.recipe.steps.every((s) => s.id in spec),
+  );
+  if (!product?.counter) throw new Error("Không nhận ra quầy");
+  const short = (label: string) => label.split(" · ")[0] ?? label;
+  for (const z of product.counter.zones) {
+    const step = product.recipe.steps.find((s) => s.id === z.step);
+    if (!step) continue;
+    const want = spec[step.id];
+    const opt = (id: string) => step.options.find((o) => o.id === id);
+    const panel = kitchen.getByRole("region", { name: step.label });
+    if (z.zone === "cups" && typeof want === "string")
+      await panel.getByRole("button", { name: `Lấy ly ${short(opt(want)?.label ?? "")}` }).tap(t);
+    else if (z.zone === "jars" && typeof want === "string")
+      await panel.getByRole("button", { name: `Rót ${opt(want)?.label}` }).tap(t);
+    else if (z.zone === "chips" && typeof want === "string")
+      await panel.getByRole("button", { name: opt(want)?.label ?? "", exact: true }).tap(t);
+    else if (z.zone === "grid") {
+      const ids = Array.isArray(want) ? want : [];
+      if (ids.length === 0) await panel.getByRole("button", { name: "Không topping" }).tap(t);
+      for (const id of ids)
+        await panel.getByRole("button", { name: `Thêm ${opt(id)?.label}` }).tap(t);
+    } else if (z.zone === "shaker") {
+      const btn = panel.getByRole("button");
+      await btn.dispatchEvent("pointerdown");
+      await page.waitForTimeout(1300);
+      await btn.dispatchEvent("pointerup");
+      await expect(
+        panel.getByRole("button", { name: new RegExp(`✓ ${esc(step.label)}`) }),
+      ).toBeVisible();
+    } else if (z.zone === "sealer") await panel.getByRole("button").tap(t);
+  }
+  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
+  return { orderId, spec };
+}
+
+/** Nguyên liệu trà sữa truyền thống, trà xanh, size M/L, đá, trân châu, màng dán. */
+export const TRA_SUA = [
+  "ly_m",
+  "ly_l",
+  "cot_tra_sua",
+  "cot_tra_xanh",
+  "da",
+  "tran_chau_den",
+  "tran_chau_trang",
+  "mang_nap",
+];
+
+/** Người mới mở xe trà sữa (theo kịch bản Chú Bảy) ở chỗ `lot`; trà sữa vốn nhiều nên cộng sẵn vốn. */
+export async function openTeaStall(page: Page, lot: RegExp = /Đầu hẻm 12/) {
+  await grantMoney(page, 300_000);
+  let box = await readDialogue(page);
+  await box.getByRole("button", { name: "Con muốn buôn bán" }).tap();
+  await walkToObjective(page, /Xem xe đẩy · Ông Sáu/);
+  await page.getByRole("button", { name: /Xem xe đẩy · Ông Sáu/ }).tap();
+  await page
+    .locator("li", { hasText: "Xe đẩy trà sữa" })
+    .getByRole("button", { name: /Mua ·/ })
+    .tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await walkToObjective(page, /Vào chợ · Bà Năm/);
+  await page.getByRole("button", { name: /Vào chợ · Bà Năm/ }).tap();
+  await buyIngredients(page, TRA_SUA);
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await page.getByRole("button", { name: "Mở", exact: true }).tap();
+  await page.getByRole("button", { name: lot }).tap();
+  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
+  await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
 }
 
 /** Tính tiền: chuyển khoản/đưa đủ thì xác nhận; tiền mặt thì ghép tờ tiền thối (thiếu `short` đồng). */
@@ -133,6 +226,38 @@ export async function payOrder(page: Page, short = 0) {
   }
   await kitchen.getByRole("button", { name: /^Thối .*✓$/ }).tap();
   return "cash";
+}
+
+/**
+ * Mở màn làm món cho khách kế tiếp, làm đúng món, tính tiền. Quầy đông thì khách đang làm có thể hết kiên nhẫn bỏ đi
+ * (màn làm món tự đóng) — như ngoài đời: phục vụ người tiếp theo. `check` chạy khi màn làm món vừa mở.
+ */
+export async function serveCustomer(page: Page, check?: (kitchen: Locator) => Promise<void>) {
+  const cook = page.getByRole("button", { name: /Làm món cho khách/ });
+  const kitchen = page.getByRole("dialog", { name: "Làm món" });
+  for (let i = 0; i < 6; i++) {
+    await expect(cook).toBeVisible({ timeout: 90_000 });
+    await cook.tap();
+    await expect(kitchen).toBeVisible();
+    if (check) await check(kitchen);
+    const ok = await makeDish(page, { timeout: 15_000 })
+      .then(() => payOrder(page))
+      .then(() => true)
+      .catch((e) => {
+        console.log(`serveCustomer: thử lại (${String(e).split("\n")[0]})`);
+        return false;
+      });
+    if (ok) {
+      await expect(kitchen).toHaveCount(0);
+      return;
+    }
+    if (await kitchen.isVisible())
+      await kitchen
+        .getByRole("button", { name: "Để đó, làm sau" })
+        .tap({ timeout: 3_000 })
+        .catch(() => undefined);
+  }
+  throw new Error("Không phục vụ kịp khách nào");
 }
 
 /** Thối tiền bằng bàn tiền lẻ (CashChange) trong `scope`; `short` = cố tình thối thiếu. */
@@ -167,6 +292,57 @@ export const BANH_MI_THIT = [
   "sot",
   "giay_goi",
 ];
+
+/** Ép thời tiết xóm mình (lệnh thử nghiệm, chỉ bản dev): `after`/`minutes` tính bằng phút game. */
+export async function setWeather(page: Page, kind: string, after = 0, minutes = 960) {
+  // Vừa vào game socket có thể đang nối lại — thử lại vài lần.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          async (p) => {
+            const dbg = (
+              window as unknown as {
+                xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+              }
+            ).xomDebug;
+            return (await dbg?.send("debug:weather", p))?.ok ?? false;
+          },
+          { kind, after, minutes },
+        ),
+      { timeout: 15_000 },
+    )
+    .toBe(true);
+}
+
+/** Đặt giờ của xóm (lệnh thử nghiệm, chỉ bản dev): kịch bản dài khỏi bị hết ngày giữa chừng. */
+export async function setClock(page: Page, minute: number) {
+  const ok = await page.evaluate(async (m) => {
+    const dbg = (
+      window as unknown as {
+        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+      }
+    ).xomDebug;
+    return (await dbg?.send("debug:clock", { minute: m }))?.ok ?? false;
+  }, minute);
+  expect(ok).toBe(true);
+}
+
+/** Cộng tiền mặt / KN (lệnh thử nghiệm, chỉ bản dev). */
+export async function grantMoney(page: Page, money: number, xp?: number) {
+  const ok = await page.evaluate(
+    async (p) => {
+      const dbg = (
+        window as unknown as {
+          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+        }
+      ).xomDebug;
+      return (await dbg?.send("debug:grant", p))?.ok ?? false;
+    },
+    { money, xp },
+  );
+  expect(ok).toBe(true);
+}
 
 /** Người mới đi theo kịch bản tới lúc mở quầy bánh mì ở Đầu hẻm 12 (xe, nguyên liệu, chỗ bán). */
 export async function openBanhMiStall(page: Page, lot: RegExp = /Đầu hẻm 12/) {

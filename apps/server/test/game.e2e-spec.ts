@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import { content } from "@xom/content";
 import type {
   Ack,
   ClientToServerEvents,
@@ -72,6 +73,8 @@ const BANH_MI_THIT = [
 async function openBanhMiStall(url: string) {
   const { body } = await register(url);
   const { socket, snapshot } = await connect(url, body.accessToken);
+  // Trời mưa bão thì xe đẩy vắng khách (UC-B4) — test vòng bán cần trời nắng cho chắc.
+  await emit(socket, "debug:weather", { kind: "sunny", minutes: 960 });
   await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
   for (const itemId of BANH_MI_THIT) {
     const r = await emit(socket, "market:buy", { itemId, packs: 1 });
@@ -100,7 +103,7 @@ describe("Vòng chơi làm thật (e2e)", () => {
   it("mua nguyên liệu theo gói; thiếu tiền thì không mua được", async () => {
     const { body } = await register(url);
     const { socket, snapshot } = await connect(url, body.accessToken);
-    expect(snapshot.me.money).toBe(500_000);
+    expect(snapshot.me.money).toBe(content.economy.startingMoney);
     const bought = await emit(socket, "market:buy", { itemId: "banh_mi_phoi", packs: 2 });
     expect(bought.ok && bought.data.inventory).toEqual([
       { itemId: "banh_mi_phoi", qty: 20, expiring: 20 },

@@ -80,6 +80,14 @@ export function XomSheet() {
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => close("board")}
+        className="mt-3 h-11 w-full rounded-xl bg-sun font-semibold"
+      >
+        🏆 Bảng xóm · giải tuần, thị phần, đang hot
+      </button>
+
       <p className="mt-4 mb-1.5 text-sm font-extrabold">
         Đang online ({roster.peers.length}/{roster.max})
       </p>

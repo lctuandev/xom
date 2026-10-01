@@ -7,6 +7,7 @@ export interface ReportAdd {
   stockCost?: number;
   rent?: number;
   wages?: number;
+  fees?: number;
   served?: number;
   lost?: number;
   wrong?: number;
@@ -21,6 +22,7 @@ export function emptyReport() {
     stockCost: 0,
     rent: 0,
     wages: 0,
+    fees: 0,
     spoiledQty: 0,
     spoiledValue: 0,
     served: 0,
@@ -48,6 +50,7 @@ export async function addToReport(tx: Tx, playerId: string, day: number, add: Re
     stockCost: add.stockCost ?? 0,
     rent: add.rent ?? 0,
     wages: add.wages ?? 0,
+    fees: add.fees ?? 0,
     served: add.served ?? 0,
     lost: add.lost ?? 0,
     wrong: add.wrong ?? 0,
@@ -61,6 +64,7 @@ export async function addToReport(tx: Tx, playerId: string, day: number, add: Re
       stockCost: { increment: inc.stockCost },
       rent: { increment: inc.rent },
       wages: { increment: inc.wages },
+      fees: { increment: inc.fees },
       served: { increment: inc.served },
       lost: { increment: inc.lost },
       wrong: { increment: inc.wrong },

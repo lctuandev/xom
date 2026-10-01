@@ -10,11 +10,13 @@ interface Levels {
   music: number;
   sfx: number;
   voice: number;
+  /** Môi trường: tiếng phố, quán, mưa, sấm. */
+  ambient: number;
   muted: boolean;
 }
 
 const KEY = "xom:audio";
-const DEFAULTS: Levels = { music: 0.35, sfx: 0.7, voice: 0.6, muted: false };
+const DEFAULTS: Levels = { music: 0.35, sfx: 0.7, voice: 0.6, ambient: 0.7, muted: false };
 
 function load(): Levels {
   try {
@@ -29,6 +31,7 @@ let ctx: AudioContext | null = null;
 let busMusic: GainNode | null = null;
 let busSfx: GainNode | null = null;
 let busVoice: GainNode | null = null;
+let busAmbient: GainNode | null = null;
 
 export function audioLevels(): Levels {
   return levels;
@@ -48,6 +51,7 @@ function applyLevels() {
   busMusic?.gain.setTargetAtTime(levels.music * m, ctx.currentTime, 0.1);
   busSfx?.gain.setTargetAtTime(levels.sfx * m, ctx.currentTime, 0.05);
   busVoice?.gain.setTargetAtTime(levels.voice * m, ctx.currentTime, 0.05);
+  busAmbient?.gain.setTargetAtTime(levels.ambient * m, ctx.currentTime, 0.1);
 }
 
 /** Gọi trong một cú chạm của người chơi (chính sách tự phát của trình duyệt). */
@@ -65,7 +69,8 @@ export function unlockAudio() {
     busMusic = ctx.createGain();
     busSfx = ctx.createGain();
     busVoice = ctx.createGain();
-    for (const b of [busMusic, busSfx, busVoice]) b.connect(master);
+    busAmbient = ctx.createGain();
+    for (const b of [busMusic, busSfx, busVoice, busAmbient]) b.connect(master);
     applyLevels();
   }
   if (ctx.state === "suspended") void ctx.resume();
@@ -240,12 +245,13 @@ export function stopMusic() {
 // tiếng rao lầm bầm. Trong quán: tiếng người nói chuyện, chén dĩa lách cách. Giờ cao điểm thì dày hơn.
 
 let ambientKind: "street" | "inside" | "off" = "off";
+let rainLevel = 0;
 let busy = 0.5;
 let hum: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
 let ambientTimer: ReturnType<typeof setTimeout> | null = null;
 
 function startHum() {
-  if (!ctx || !busSfx || hum) return;
+  if (!ctx || !busAmbient || hum) return;
   const len = ctx.sampleRate * 2;
   const buf = ctx.createBuffer(1, len, ctx.sampleRate);
   const d = buf.getChannelData(0);
@@ -263,13 +269,13 @@ function startHum() {
   lp.frequency.value = 380;
   const gain = ctx.createGain();
   gain.gain.value = 0;
-  src.connect(lp).connect(gain).connect(busSfx);
+  src.connect(lp).connect(gain).connect(busAmbient);
   src.start();
   hum = { src, gain };
 }
 
 function motorbike(at: number) {
-  if (!ctx || !busSfx) return;
+  if (!ctx || !busAmbient) return;
   const o = ctx.createOscillator();
   const lp = ctx.createBiquadFilter();
   const g = ctx.createGain();
@@ -282,14 +288,14 @@ function motorbike(at: number) {
   g.gain.setValueAtTime(0.0001, at);
   g.gain.exponentialRampToValueAtTime(0.09, at + 0.9);
   g.gain.exponentialRampToValueAtTime(0.0001, at + 2.4);
-  o.connect(lp).connect(g).connect(busSfx);
+  o.connect(lp).connect(g).connect(busAmbient);
   o.start(at);
   o.stop(at + 2.5);
 }
 
 function horn(at: number) {
-  tone(busSfx, 440, at, 0.12, "square", 0.05);
-  tone(busSfx, 415, at + 0.18, 0.16, "square", 0.05);
+  tone(busAmbient, 440, at, 0.12, "square", 0.05);
+  tone(busAmbient, 415, at + 0.18, 0.16, "square", 0.05);
 }
 
 function scheduleAmbient() {
@@ -297,7 +303,9 @@ function scheduleAmbient() {
   if (ambientKind === "off") return;
   const wait = (ambientKind === "street" ? 4200 : 3000) / (0.5 + busy) + Math.random() * 2500;
   ambientTimer = setTimeout(() => {
-    if (ctx && !levels.muted) {
+    // Mưa to thì ít xe chạy, ít người rao — nhiều lượt chỉ còn tiếng mưa.
+    const quiet = rainLevel > 0.5 && Math.random() < 0.6;
+    if (ctx && !levels.muted && !quiet) {
       const t = ctx.currentTime + 0.05;
       const r = Math.random();
       if (ambientKind === "street") {
@@ -307,7 +315,7 @@ function scheduleAmbient() {
       } else {
         if (r < 0.6)
           voice(`khach-${Math.floor(Math.random() * 6)}`, "nói chuyện rôm rả nè", "calm");
-        else tone(busSfx, 2000 + Math.random() * 800, t, 0.15, "sine", 0.05);
+        else tone(busAmbient, 2000 + Math.random() * 800, t, 0.15, "sine", 0.05);
       }
     }
     scheduleAmbient();
@@ -326,4 +334,68 @@ export function setAmbient(kind: "street" | "inside" | "off", crowd: number) {
     ambientKind = kind;
     scheduleAmbient();
   }
+}
+
+// ───────────────────────── Mưa, sấm (UC-B4) ─────────────────────────
+// Mưa: nhiễu trắng lọc cao ("rào rào") lặp vòng, to nhỏ theo mật độ mưa; trong nhà nghe nhỏ, đục hơn.
+// Sấm: tiếng nổ trầm (nhiễu lọc thấp) vang dài, đến sau tia chớp một chút.
+
+let rainNode: { gain: GainNode; lp: BiquadFilterNode } | null = null;
+
+function startRain() {
+  if (!ctx || !busAmbient || rainNode) return;
+  const len = ctx.sampleRate * 2;
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = 900;
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 6000;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  src.connect(hp).connect(lp).connect(gain).connect(busAmbient);
+  src.start();
+  rainNode = { gain, lp };
+}
+
+/** Độ to tiếng mưa 0–1 (theo mật độ mưa); `inside`: đang trong nhà (nghe đục, nhỏ). */
+export function setRain(level: number, inside: boolean) {
+  rainLevel = level;
+  if (!ctx) return;
+  if (level > 0) startRain();
+  if (!rainNode) return;
+  const vol = level * (inside ? 0.05 : 0.14);
+  rainNode.gain.gain.setTargetAtTime(vol, ctx.currentTime, 1.2);
+  rainNode.lp.frequency.setTargetAtTime(inside ? 1800 : 6000, ctx.currentTime, 0.5);
+}
+
+/** Tiếng sấm sau `delay` giây. */
+export function thunder(delay = 0.6) {
+  if (!ctx || !busAmbient || levels.muted) return;
+  const at = ctx.currentTime + delay;
+  const dur = 2.8;
+  const len = Math.floor(ctx.sampleRate * dur);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < len; i++) {
+    last = (last + 0.05 * (Math.random() * 2 - 1)) / 1.05;
+    // Nổ mạnh đầu rồi rền dài.
+    d[i] = last * 6 * (i < len * 0.08 ? 1 : (1 - i / len) ** 1.5);
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = "lowpass";
+  lp.frequency.value = 220;
+  const g = ctx.createGain();
+  g.gain.value = 0.5;
+  src.connect(lp).connect(g).connect(busAmbient);
+  src.start(at);
 }

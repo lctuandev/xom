@@ -14,7 +14,10 @@ export const SYSTEM = {
   supplier: "system:supplier",
 } as const;
 
+/** 💵 Tiền mặt của người chơi. */
 export const playerWallet = (playerId: string) => `player:${playerId}`;
+/** 🏦 Tài khoản ngân hàng của người chơi (nhận chuyển khoản, rút/gửi ở ATM). */
+export const bankWallet = (playerId: string) => `bank:${playerId}`;
 
 export class InsufficientFundsError extends Error {}
 
@@ -36,7 +39,7 @@ export class LedgerService {
       throw new Error(`Số tiền không hợp lệ: ${amount}`);
     const [src, dst] = await Promise.all([this.wallet(tx, from), this.wallet(tx, to)]);
     const value = BigInt(amount);
-    if (src.kind === "PLAYER") {
+    if (src.kind !== "SYSTEM") {
       // Trừ có điều kiện trong một câu lệnh để hai giao dịch đồng thời không làm âm ví.
       const updated = await tx.wallet.updateMany({
         where: { id: src.id, balance: { gte: value } },
@@ -64,7 +67,14 @@ export class LedgerService {
   private wallet(tx: Tx, key: string) {
     return tx.wallet.upsert({
       where: { key },
-      create: { key, kind: key.startsWith("system:") ? "SYSTEM" : "PLAYER" },
+      create: {
+        key,
+        kind: key.startsWith("system:")
+          ? "SYSTEM"
+          : key.startsWith("bank:")
+            ? "PLAYER_BANK"
+            : "PLAYER",
+      },
       update: {},
     });
   }

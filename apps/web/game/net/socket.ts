@@ -58,6 +58,7 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("me", (me) => game.setMe(me));
   s.on("clock", (clock) => game.setClock(clock));
   s.on("world", (world) => game.setWorld(world));
+  s.on("events", (events) => game.setEvents(events));
   // Đơn của khách là người chơi (UC-J3): lời gọi món và kết quả hiện trên đầu chính người đó.
   const buyers = new Map<string, string>();
   s.on("order", (o) => {
@@ -70,8 +71,10 @@ export function connectGame(onSignedOut: () => void): () => void {
     if (o.buyerId === st.me?.playerId) game.setPurchase(purchaseOf(o, st.world));
   });
   s.on("orderUpdate", (u) => {
-    orderUpdateBus.emit(u);
     game.updateOrder(u);
+    // "making" chỉ là khách chờ thêm (không có lời nói, không đổi trạng thái món).
+    if (u.stage === "making") return;
+    orderUpdateBus.emit(u);
     const buyer = buyers.get(u.orderId);
     if (!buyer) return;
     game.say({ who: buyer, text: u.line }, 4000);
@@ -110,6 +113,9 @@ export function connectGame(onSignedOut: () => void): () => void {
   };
   document.addEventListener("visibilitychange", onVisible);
   const stopPresence = startPresence(s);
+  // Bản dev: kịch bản Playwright gọi lệnh thử nghiệm (ép thời tiết…) qua đây; server production từ chối.
+  if (process.env.NODE_ENV !== "production")
+    (window as unknown as { xomDebug: unknown }).xomDebug = { send };
 
   return () => {
     stopPresence();

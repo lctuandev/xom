@@ -12,21 +12,31 @@ import {
 import { content } from "@xom/content";
 import {
   type Ack,
+  atmSchema,
   attendSchema,
   buyEquipmentSchema,
   type ClientToServerEvents,
+  debugClockSchema,
+  debugGrantSchema,
+  debugWeatherSchema,
   emptySchema,
+  hostEventSchema,
   joinRoomSchema,
   type MakeResult,
   type MeView,
   makeOrderSchema,
   marketBuySchema,
+  marketSellSchema,
   menuSchema,
   moveSchema,
   orderIdSchema,
   type PongPayload,
   payOrderSchema,
   pingSchema,
+  repairSchema,
+  reviewListSchema,
+  reviewReplySchema,
+  reviewWriteSchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
@@ -127,15 +137,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("equipment:buy")
   buyEquipment(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, buyEquipmentSchema, body, (ctx, p) =>
-      this.game.buyEquipment(ctx, p.equipmentId),
+      this.game.buyEquipment(ctx, p.equipmentId, p.pay),
     );
   }
 
   @SubscribeMessage("market:buy")
   marketBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, marketBuySchema, body, (ctx, p) =>
-      this.game.marketBuy(ctx, p.itemId, p.packs),
+      this.game.marketBuy(ctx, p.itemId, p.packs, p.pay),
     );
+  }
+
+  @SubscribeMessage("market:sell")
+  marketSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, marketSellSchema, body, (ctx, p) => this.game.marketSell(ctx, p.itemId));
   }
 
   @SubscribeMessage("biz:update")
@@ -153,6 +168,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("biz:close")
   close(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, emptySchema, body, (ctx) => this.game.closeBusiness(ctx));
+  }
+
+  @SubscribeMessage("biz:repair")
+  repair(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, repairSchema, body, (ctx, p) => this.game.repair(ctx, p.pay));
   }
 
   @SubscribeMessage("work:start")
@@ -238,13 +258,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("vendor:buy")
   vendorBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, vendorBuySchema, body, (ctx, p) =>
-      this.game.vendorBuy(ctx, p.vendorId, p.itemId),
+      this.game.vendorBuy(ctx, p.vendorId, p.itemId, p.pay),
     );
   }
 
   @SubscribeMessage("shop:order")
   shopOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, shopOrderSchema, body, (ctx, p) => this.game.shopOrder(ctx, p));
+  }
+
+  @SubscribeMessage("order:start")
+  startOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, orderIdSchema, body, (ctx, p) =>
+      this.game.orders.start(ctx.room, ctx.playerId, p.orderId),
+    );
   }
 
   @SubscribeMessage("order:decline")
@@ -257,6 +284,35 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("npc:talk")
   talk(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<TalkResult>> {
     return this.handleWith(c, talkSchema, body, (ctx, p) => this.game.talk(ctx, p.npcId, p.topic));
+  }
+
+  @SubscribeMessage("stats:xom")
+  statsXom(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsXom(ctx));
+  }
+
+  @SubscribeMessage("stats:me")
+  statsMe(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsMe(ctx));
+  }
+
+  @SubscribeMessage("review:list")
+  reviewList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewListSchema, body, (ctx, p) =>
+      this.game.reviewList(ctx, p.ownerId),
+    );
+  }
+
+  @SubscribeMessage("review:write")
+  reviewWrite(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewWriteSchema, body, (ctx, p) => this.game.reviewWrite(ctx, p));
+  }
+
+  @SubscribeMessage("review:reply")
+  reviewReply(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, reviewReplySchema, body, (ctx, p) =>
+      this.game.reviewReply(ctx, p.reviewId, p.text),
+    );
   }
 
   @SubscribeMessage("chat:say")
@@ -309,6 +365,33 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       this.logger.error("chuyển xóm lỗi", err as Error);
       return { ok: false, error: "internal", message: "Có lỗi, thử lại sau" };
     }
+  }
+
+  @SubscribeMessage("atm:use")
+  atm(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, atmSchema, body, (ctx, p) => this.game.useAtm(ctx, p));
+  }
+
+  @SubscribeMessage("event:host")
+  hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, hostEventSchema, body, (ctx, p) =>
+      this.game.hostEvent(ctx, p.eventId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("debug:clock")
+  debugClock(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugClockSchema, body, (ctx, p) => this.game.debugClock(ctx, p.minute));
+  }
+
+  @SubscribeMessage("debug:grant")
+  debugGrant(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugGrantSchema, body, (ctx, p) => this.game.debugGrant(ctx, p));
+  }
+
+  @SubscribeMessage("debug:weather")
+  debugWeather(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugWeatherSchema, body, (ctx, p) => this.game.debugWeather(ctx, p));
   }
 
   @SubscribeMessage("tutorial:set")

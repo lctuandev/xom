@@ -1,5 +1,6 @@
 "use client";
 
+import { content } from "@xom/content";
 import { useEffect } from "react";
 import { walkTo } from "./nav";
 import { send } from "./net/socket";
@@ -24,8 +25,10 @@ export function useWorldEffects() {
         void send("biz:attend", { on: attending });
       }
 
-      // Chạy xe giao hàng nhanh hơn đi bộ; chạy nhanh thì nhanh nữa.
-      const speed = s.shift?.role === "giao_hang" ? (s.shift.fast ? 7 : 4.5) : 4;
+      // Chạy xe giao hàng nhanh hơn đi bộ; chạy nhanh thì nhanh nữa; mưa bão đường trơn phải chạy chậm (UC-B4).
+      const sky = content.weatherKind(s.clock?.weather.now ?? "sunny");
+      const speed =
+        s.shift?.role === "giao_hang" ? (s.shift.fast ? 7 : 4.5) * sky.delivery.speed : 4;
       if (getPlayer().speed !== speed) getPlayer().speed = speed;
 
       // Goal mới → đi tới đó.

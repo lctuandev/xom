@@ -2,15 +2,19 @@ import { z } from "zod";
 import type {
   ClockView,
   DayReportView,
+  EventView,
   MakeResult,
   MeView,
   MovePayload,
+  MyStatsView,
   NotifyEvent,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
+  PayMethod,
   PayslipView,
   PeerPos,
+  ReviewsView,
   RosterView,
   SayEvent,
   ShiftView,
@@ -19,6 +23,7 @@ import type {
   WorkAct,
   WorkResult,
   WorldView,
+  XomBoardView,
 } from "./game.js";
 
 // Hợp đồng socket dùng chung cho web và server.
@@ -49,12 +54,16 @@ type Intent<P, R = MeView> = (payload: P, ack: (res: Ack<R>) => void) => void;
 
 export interface ClientToServerEvents {
   ping: (payload: PingPayload, ack: (res: Ack<PongPayload>) => void) => void;
-  "equipment:buy": Intent<{ equipmentId: string }>;
-  "market:buy": Intent<{ itemId: string; packs: number }>;
+  "equipment:buy": Intent<{ equipmentId: string; pay?: PayMethod }>;
+  "market:buy": Intent<{ itemId: string; packs: number; pay?: PayMethod }>;
+  /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
+  "market:sell": Intent<{ itemId: string }>;
   "biz:update": Intent<{ lotId: string }>;
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;
+  /** Sửa xe/quầy ở vựa xe Ông Sáu (Luật 2.2). */
+  "biz:repair": Intent<{ pay?: PayMethod }>;
   "work:start": Intent<{ jobId: string; role: string }, WorkResult>;
   "work:act": Intent<WorkAct, WorkResult>;
   "work:stop": Intent<Record<string, never>, WorkResult>;
@@ -65,6 +74,8 @@ export interface ClientToServerEvents {
   >;
   "order:pay": Intent<{ orderId: string; change: number | null; discount?: boolean }>;
   "order:decline": Intent<{ orderId: string }>;
+  /** Chủ quầy bắt tay làm món cho khách này (khách thấy thì chờ thêm). */
+  "order:start": Intent<{ orderId: string }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   "tutorial:set": Intent<{ step: string }>;
@@ -72,13 +83,32 @@ export interface ClientToServerEvents {
   move: (payload: MovePayload) => void;
   "xom:join": Intent<{ code: string }>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
-  "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
+  "vendor:buy": Intent<{ vendorId: string; itemId: string; pay?: PayMethod }>;
+  /** Rút / gửi tiền ở cây ATM (UC-I6). */
+  "atm:use": Intent<{ atmId: string; action: "deposit" | "withdraw"; amount: number }>;
+  /** Người chơi tổ chức sự kiện (khai trương). */
+  "event:host": Intent<{ eventId: string; pay?: PayMethod }>;
+  /** Dev/test: đặt giờ của xóm (production từ chối). */
+  "debug:clock": Intent<{ minute: number }>;
+  /** Dev/test: cộng tiền (production từ chối). */
+  "debug:grant": Intent<{ money?: number; xp?: number }>;
+  /** Dev/test: ép thời tiết xóm mình (production từ chối). */
+  "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
+  /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */
+  "review:list": Intent<{ ownerId: string }, ReviewsView>;
+  "review:write": Intent<{ ownerId: string; stars: number; text: string }, ReviewsView>;
+  "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;
+  /** Bảng giải + thị phần + đang hot của xóm (UC-P2). */
+  "stats:xom": Intent<Record<string, never>, XomBoardView>;
+  /** Số liệu 7 ngày của mình + thành tựu. */
+  "stats:me": Intent<Record<string, never>, MyStatsView>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
   "shop:order": Intent<{
     businessId: string;
     variantId: string;
     picks?: Record<string, string>;
     mods?: string[];
+    pay?: PayMethod;
   }>;
 }
 
@@ -97,4 +127,5 @@ export interface ServerToClientEvents {
   payslip: (p: PayslipView) => void;
   roster: (r: RosterView) => void;
   peers: (p: PeerPos[]) => void;
+  events: (e: EventView[]) => void;
 }

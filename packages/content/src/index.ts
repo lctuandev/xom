@@ -1,5 +1,12 @@
 import { data } from "./data.js";
-import { type ContentData, contentSchema, MAP_WALKABLE, type Recipe } from "./schema.js";
+import {
+  type ContentData,
+  contentSchema,
+  MAP_WALKABLE,
+  type Recipe,
+  type WeatherId,
+  type WeatherKind,
+} from "./schema.js";
 
 export * from "./schema.js";
 
@@ -77,6 +84,29 @@ export function loadContent(raw: unknown): Content {
     if (!templates.has(p.template)) errors.push(`${p.id}: template ${p.template} không tồn tại`);
     if (Object.keys(p.interestByHour).length === 0) errors.push(`${p.id}: thiếu interestByHour`);
     errors.push(...checkRecipe(p.id, p.recipe, ingredients));
+    if (p.counter) {
+      const used = new Set<string>();
+      const kinds: Record<string, string[]> = {
+        cups: ["single"],
+        jars: ["single"],
+        chips: ["single"],
+        grid: ["multi"],
+        shaker: ["hold"],
+        sealer: ["action"],
+      };
+      for (const z of p.counter.zones) {
+        const st = p.recipe.steps.find((s) => s.id === z.step);
+        if (!st) errors.push(`${p.id} quầy: không có bước ${z.step}`);
+        else if (!kinds[z.zone]?.includes(st.kind))
+          errors.push(`${p.id} quầy: khu ${z.zone} không hợp bước ${z.step} (${st.kind})`);
+        if (used.has(z.step)) errors.push(`${p.id} quầy: bước ${z.step} xếp hai khu`);
+        used.add(z.step);
+        if (z.zone === "grid" && st && (z.slots ?? 12) < st.options.length)
+          errors.push(`${p.id} quầy: lưới ${z.step} ít ô hơn số lựa chọn`);
+      }
+      for (const st of p.recipe.steps)
+        if (!used.has(st.id)) errors.push(`${p.id} quầy: bước ${st.id} chưa có chỗ trên quầy`);
+    }
   }
   for (const e of parsed.equipment) {
     for (const pid of e.products)
@@ -141,6 +171,22 @@ export function loadContent(raw: unknown): Content {
     if (!parsed.places.some((pl) => pl.jobs.includes(j.id)))
       errors.push(`việc ${j.id}: không có địa điểm nhận việc`);
   }
+  const weatherIds = new Set(parsed.weather.kinds.map((k) => k.id));
+  if (weatherIds.size !== parsed.weather.kinds.length) errors.push("thời tiết: kiểu trời bị trùng");
+  for (const k of parsed.weather.kinds)
+    for (const cat of Object.keys(k.category))
+      if (!parsed.products.some((p) => p.category === cat))
+        errors.push(`thời tiết ${k.id}: không có danh mục ${cat}`);
+  const startSum = parsed.housing.tiers.reduce((s, t) => s + t.start, 0);
+  if (Math.abs(startSum - 1) > 1e-6) errors.push("cấp nhà: tổng tỉ lệ lúc lập xóm phải bằng 1");
+  const seenEvents = new Set<string>();
+  for (const ev of parsed.events) {
+    if (seenEvents.has(ev.id)) errors.push(`sự kiện trùng: ${ev.id}`);
+    seenEvents.add(ev.id);
+    if (ev.trigger.kind === "daily" && ev.trigger.to - ev.trigger.from < ev.minutes)
+      errors.push(`sự kiện ${ev.id}: khung giờ ngắn hơn thời lượng`);
+    if (Object.keys(ev.effects).length === 0) errors.push(`sự kiện ${ev.id}: không có ảnh hưởng`);
+  }
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
@@ -160,6 +206,8 @@ export class Content {
   readonly speakerById: ReadonlyMap<string, ContentData["speakers"][number]>;
   readonly stepById: ReadonlyMap<string, ContentData["tutorial"][number]>;
   readonly ingredientById: ReadonlyMap<string, ContentData["ingredients"][number]>;
+  /** Cây ATM suy ra từ ô "N" trên bản đồ: vị trí giữa ô, mặt quay ra đường. */
+  readonly atms: { id: string; x: number; z: number; facing: number }[];
 
   constructor(readonly data: ContentData) {
     this.productById = new Map(data.products.map((x) => [x.id, x]));
@@ -172,6 +220,22 @@ export class Content {
     this.speakerById = new Map(data.speakers.map((x) => [x.id, x]));
     this.stepById = new Map(data.tutorial.map((x) => [x.id, x]));
     this.ingredientById = new Map(data.ingredients.map((x) => [x.id, x]));
+    const m = data.map;
+    const road = (r: number, c: number) => "=|+c".includes(m.rows[r]?.[c] ?? ".");
+    this.atms = m.rows.flatMap((row, r) =>
+      [...row].flatMap((ch, c) =>
+        ch === "N"
+          ? [
+              {
+                id: `atm_${r}_${c}`,
+                x: m.origin.x + c * m.tile,
+                z: m.origin.z + r * m.tile,
+                facing: road(r + 1, c) ? 0 : road(r - 1, c) ? Math.PI : 0,
+              },
+            ]
+          : [],
+      ),
+    );
   }
 
   get economy() {
@@ -212,6 +276,22 @@ export class Content {
   variant(productId: string, variantId: string) {
     const v = this.product(productId).recipe.variants.find((x) => x.id === variantId);
     return must(v, "variant", variantId);
+  }
+  /** Sự kiện theo id. */
+  event(id: string) {
+    return must(
+      this.data.events.find((e) => e.id === id),
+      "event",
+      id,
+    );
+  }
+  /** Kiểu trời theo id (luôn có đủ 4 kiểu — đã kiểm khi nạp). */
+  weatherKind(id: WeatherId): WeatherKind {
+    return must(
+      this.data.weather.kinds.find((k) => k.id === id),
+      "weather",
+      id,
+    );
   }
   /** Địa điểm nhận việc làm thuê này. */
   placeForJob(jobId: string) {

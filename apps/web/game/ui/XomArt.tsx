@@ -1,3 +1,5 @@
+import { Logo } from "./Logo";
+
 // Tranh minh hoạ con hẻm Sài Gòn (SVG thuần, không tải ảnh): dãy nhà ống có ban công, bảng hiệu,
 // dây đèn lồng đung đưa, xe bánh mì dưới dù, nồi phở bốc khói, ghế nhựa, xe máy chạy ngang, mây trôi.
 // Dùng cho trang đăng nhập và màn hình đang tải (docs/PLAN.md — ấn tượng đầu tiên).
@@ -240,7 +242,7 @@ export function LoadingScreen({ text = "Đang vào xóm" }: { text?: string }) {
     <div className="relative flex h-full flex-col overflow-hidden bg-cream">
       <XomArt className="h-[62dvh] w-full" />
       <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-        <p className="text-4xl font-extrabold tracking-tight text-red">XÓM</p>
+        <Logo className="h-16" />
         <p className="text-base font-semibold">
           {text}
           <span className="inline-block w-6 animate-pulse text-left">…</span>

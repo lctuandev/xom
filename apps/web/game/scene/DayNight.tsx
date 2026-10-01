@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
+import { content } from "@xom/content";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   AdditiveBlending,
@@ -14,14 +15,17 @@ import {
   Quaternion,
   Vector3,
 } from "three";
+import { thunder } from "../audio";
 import { useGame } from "../store";
 
 // Ngày và đêm (docs/USECASES.md UC-B8): trời, nắng, ánh sáng môi trường chạy theo phút game của xóm;
 // tối thì đèn đường, cửa sổ, sạp hàng sáng lên. Không dùng đèn thật (tốn GPU trên điện thoại):
 // bóng đèn là vật tự phát sáng, vầng sáng dưới đất là tấm mờ cộng màu.
 
-/** 0 = ban ngày, 1 = tối hẳn. Các vật phát sáng đọc mỗi khung hình (không qua React). */
-export const env = { night: 0 };
+/** 0 = ban ngày, 1 = tối hẳn; dim = trời u ám do mây/mưa (0–1). Các vật phát sáng đọc mỗi khung hình (không qua React). */
+export const env = { night: 0, dim: 0 };
+
+const GLOOM = new Color("#6f7a86");
 
 type Key = [minute: number, sky: string, ambient: number, sun: number, sunColor: string];
 const KEYS: Key[] = [
@@ -65,6 +69,7 @@ const skyA = new Color();
 const skyB = new Color();
 const sunA = new Color();
 const sunB = new Color();
+const FLASH = new Color("#e8ecff");
 
 export function DayNight() {
   const scene = useThree((s) => s.scene);
@@ -73,6 +78,7 @@ export function DayNight() {
   const bg = useMemo(() => new Color("#bfe3f2"), []);
   // Đồng hồ server nhảy từng phút: nội suy mượt giữa hai lần cập nhật.
   const smooth = useRef<number | null>(null);
+  const flash = useRef(0);
 
   useFrame((_, dt) => {
     const clock = useGame.getState().clock;
@@ -83,14 +89,27 @@ export function DayNight() {
         ? target
         : smooth.current + (target - smooth.current) * Math.min(1, dt * 2);
     const m = smooth.current;
+    // Mây/mưa làm trời tối và xám lại (UC-B4); đổi trời thì chuyển dần.
+    const sky = content.weatherKind(clock.weather.now);
+    env.dim += (sky.dim - env.dim) * Math.min(1, dt * 0.6);
+    // Giông: thỉnh thoảng chớp loé rồi sấm.
+    if (clock.weather.now === "storm" && Math.random() < dt / 9) {
+      flash.current = 1;
+      thunder(0.4 + Math.random() * 1.2);
+    }
+    flash.current = Math.max(0, flash.current - dt * 4);
     const { a, b, t } = sample(m);
     skyA.set(a[1]);
     skyB.set(b[1]);
-    bg.copy(skyA).lerp(skyB, t);
+    bg.copy(skyA)
+      .lerp(skyB, t)
+      .lerp(GLOOM, env.dim * 0.7);
+    if (flash.current > 0) bg.lerp(FLASH, flash.current * 0.6);
     scene.background = bg;
-    if (hemi.current) hemi.current.intensity = a[2] + (b[2] - a[2]) * t;
+    const light = 1 - env.dim * 0.45 + flash.current;
+    if (hemi.current) hemi.current.intensity = (a[2] + (b[2] - a[2]) * t) * light;
     if (sun.current) {
-      sun.current.intensity = a[3] + (b[3] - a[3]) * t;
+      sun.current.intensity = (a[3] + (b[3] - a[3]) * t) * (1 - env.dim * 0.8);
       sunA.set(a[4]);
       sunB.set(b[4]);
       sun.current.color.copy(sunA).lerp(sunB, t);
@@ -98,7 +117,8 @@ export function DayNight() {
       const k = Math.min(1, Math.max(0, (m - 360) / 720));
       sun.current.position.set(30 - 60 * k, 12 + 18 * Math.sin(Math.PI * k), 8);
     }
-    env.night = nightAt(m);
+    // Trời tối sầm vì giông thì đèn đường cũng bật.
+    env.night = Math.max(nightAt(m), env.dim > 0.4 ? (env.dim - 0.4) * 2 : 0);
   });
 
   return (

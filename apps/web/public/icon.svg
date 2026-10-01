@@ -1,7 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#e4432d"/>
-  <path d="M96 236 256 116l160 120v36H96z" fill="#f6b93b"/>
-  <rect x="136" y="272" width="240" height="140" rx="16" fill="#fff6e5"/>
-  <rect x="224" y="320" width="64" height="92" rx="8" fill="#2f7d4f"/>
-  <text x="256" y="470" font-family="system-ui, sans-serif" font-size="64" font-weight="800" fill="#fff6e5" text-anchor="middle">XÓM</text>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffcf6b"/>
+      <stop offset="0.55" stop-color="#f58a3c"/>
+      <stop offset="1" stop-color="#d9412b"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff6d8"/>
+      <stop offset="0.7" stop-color="#ffe08a"/>
+      <stop offset="1" stop-color="#ffe08a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c8452f"/>
+      <stop offset="1" stop-color="#8f2f20"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff2b0"/>
+      <stop offset="1" stop-color="#f7b13b"/>
+    </radialGradient>
+    <clipPath id="tile"><rect width="512" height="512" rx="116"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="url(#sky)"/>
+    <!-- Mặt trời lặn sau mái nhà. -->
+    <circle cx="330" cy="200" r="120" fill="url(#sun)"/>
+    <circle cx="330" cy="200" r="62" fill="#fff1c4"/>
+    <!-- Bụi tre làng bên trái: thân có đốt, lá thon. -->
+    <g fill="#2f6b3f">
+      <path d="M70 430 C72 340 78 250 92 150 L101 151 C88 251 83 341 82 430Z"/>
+      <path d="M104 430 C110 350 120 280 138 200 L146 202 C129 282 119 352 115 430Z"/>
+      <path d="M44 430 C46 360 50 300 58 236 L66 237 C59 301 55 361 55 430Z"/>
+    </g>
+    <g stroke="#1f4d2c" stroke-width="4" stroke-linecap="round">
+      <path d="M76 380h10M79 320h10M83 260h10M88 200h10M108 380h10M113 320h10M120 260h10M48 380h9M51 320h9"/>
+    </g>
+    <g fill="#3f8a4f">
+      <ellipse cx="112" cy="150" rx="34" ry="8" transform="rotate(-24 112 150)"/>
+      <ellipse cx="76" cy="160" rx="32" ry="7" transform="rotate(28 76 160)"/>
+      <ellipse cx="120" cy="176" rx="30" ry="7" transform="rotate(12 120 176)"/>
+      <ellipse cx="158" cy="206" rx="30" ry="7" transform="rotate(-18 158 206)"/>
+      <ellipse cx="126" cy="222" rx="28" ry="6" transform="rotate(32 126 222)"/>
+      <ellipse cx="62" cy="236" rx="26" ry="6" transform="rotate(-30 62 236)"/>
+      <ellipse cx="40" cy="252" rx="22" ry="6" transform="rotate(24 40 252)"/>
+    </g>
+    <!-- Mặt đất / sân gạch. -->
+    <path d="M0 418 Q256 392 512 418 V512 H0Z" fill="#7a3a22"/>
+    <path d="M0 436 Q256 414 512 436 V512 H0Z" fill="#5c2b19"/>
+    <!-- Tường vôi vàng. -->
+    <rect x="150" y="286" width="250" height="140" rx="6" fill="#fde7b0"/>
+    <rect x="150" y="286" width="250" height="16" fill="#e9c98a"/>
+    <!-- Cửa gỗ + cửa sổ hắt đèn. -->
+    <rect x="248" y="330" width="56" height="96" rx="6" fill="#7a4a2a"/>
+    <rect x="274" y="330" width="4" height="96" fill="#5e371e"/>
+    <rect x="178" y="328" width="48" height="44" rx="6" fill="url(#glow)"/>
+    <path d="M202 328v44M178 350h48" stroke="#a5652f" stroke-width="5"/>
+    <rect x="326" y="328" width="48" height="44" rx="6" fill="url(#glow)"/>
+    <path d="M350 328v44M326 350h48" stroke="#a5652f" stroke-width="5"/>
+    <!-- Mái ngói cong vút kiểu đình làng (khối đặc, có hàng ngói). -->
+    <path d="M108 304 C140 300 158 288 172 268 L198 210 H352 L378 268 C392 288 410 300 442 304 C400 300 380 298 360 298 H190 C170 298 150 300 108 304Z" fill="url(#roof)"/>
+    <path d="M176 262 H374 M188 238 H362" stroke="#7e281b" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+    <path d="M150 296 H400" stroke="#6b2216" stroke-width="6" stroke-linecap="round"/>
+    <!-- Bờ nóc + hai đầu đao. -->
+    <path d="M184 208 H366" stroke="#6b2216" stroke-width="14" stroke-linecap="round"/>
+    <path d="M182 208 C170 202 166 192 170 180" stroke="#6b2216" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path d="M368 208 C380 202 384 192 380 180" stroke="#6b2216" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <!-- Đèn lồng đỏ treo hiên. -->
+    <path d="M410 296 V318" stroke="#3a1d10" stroke-width="4"/>
+    <ellipse cx="410" cy="346" rx="26" ry="30" fill="#e4432d"/>
+    <path d="M394 346 h32 M410 318 v56" stroke="#b52a1c" stroke-width="3"/>
+    <rect x="398" y="314" width="24" height="7" rx="3" fill="#f5c542"/>
+    <rect x="398" y="372" width="24" height="7" rx="3" fill="#f5c542"/>
+    <path d="M410 379 v18" stroke="#f5c542" stroke-width="4"/>
+    <circle cx="410" cy="346" r="34" fill="#ffd27a" opacity="0.18"/>
+  </g>
 </svg>

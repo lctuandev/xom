@@ -170,6 +170,31 @@
           ]
         }
       ]
+    },
+    "village": {
+      "sources": [
+        {
+          "dir": "art/export",
+          "scale": 1,
+          "models": [
+            "nha-tranh",
+            "nha-cap4",
+            "nha-cap4-xanh",
+            "nha-ong-1-lau",
+            "nha-ong-2-lau",
+            "tiem-tap-hoa",
+            "tiem-tap-hoa-trang",
+            "truong-lang",
+            "uy-ban",
+            "cay-dua",
+            "cay-chuoi",
+            "bui-tre",
+            "hang-rao-tre",
+            "lu-nuoc",
+            "dong-rom"
+          ]
+        }
+      ]
     }
   },
   "singles": {

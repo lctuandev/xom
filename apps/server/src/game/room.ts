@@ -1,4 +1,13 @@
-import type { DishView, MovePayload, OrderEvent } from "@xom/shared";
+import { content } from "@xom/content";
+import type { DishView, EventView, MovePayload, OrderEvent, WeatherView } from "@xom/shared";
+import {
+  dailyEvents,
+  overrideWeather,
+  upcomingWeather,
+  type WeatherSpan,
+  weatherAt,
+  weatherPlan,
+} from "@xom/sim";
 import type { Shift } from "./work.js";
 
 /** Lỗi nghiệp vụ trả về client qua Ack; message tiếng Việt hiển thị thẳng. */
@@ -30,6 +39,10 @@ export interface PendingOrder {
   patienceMs: number;
   /** Món đã làm (lần gần nhất) và kết quả chấm. */
   dish: { build: DishView; score: number; mistakes: string[] } | null;
+  /** Chủ quầy đã bắt tay làm món (chỉ cộng thêm kiên nhẫn một lần). */
+  started?: boolean;
+  /** Khách VIP: hệ số boa, uy tín được/mất (từ content.events). */
+  vip?: { minMods: number; patience: number; tipMult: number; repWin: number; repLose: number };
 }
 
 /** Trạng thái chạy của một xóm trong bộ nhớ; nguồn sự thật vẫn là DB. */
@@ -38,6 +51,8 @@ export class RoomRuntime {
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
   readonly attending = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
+  /** Hàng xóm đã mua ở quầy ai hôm nay (`buyer:owner:day`) — mới được viết đánh giá (UC-F11). */
+  readonly purchases = new Set<string>();
   /** Rao hàng: businessId → hết hiệu lực ở phút game này (trong ngày). */
   readonly boostUntil = new Map<string, number>();
   /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */
@@ -46,6 +61,10 @@ export class RoomRuntime {
   readonly shifts = new Map<string, Shift>();
   /** Người chơi vừa đổi vị trí, chờ phát cho cả xóm ở nhịp 10 Hz. */
   readonly dirtyPeers = new Set<string>();
+  /** Thời tiết cả ngày hôm nay (tất định theo xóm + ngày; sự kiện có thể đè). */
+  weather: WeatherSpan[] = [];
+  /** Sự kiện hôm nay (theo ngày; khai trương do người chơi thêm vào). Sang ngày mới thì xoá. */
+  events: EventView[] = [];
   timer?: NodeJS.Timeout;
   peerTimer?: NodeJS.Timeout;
   private queue: Promise<unknown> = Promise.resolve();
@@ -56,7 +75,53 @@ export class RoomRuntime {
     readonly code: string,
     public day: number,
     public minute: number,
-  ) {}
+  ) {
+    this.planWeather();
+  }
+
+  /**
+   * Lập thời tiết + sự kiện ngẫu nhiên cho ngày hiện tại (gọi khi nạp xóm và khi sang ngày mới).
+   * Sự kiện đè thời tiết (mưa lớn toàn xóm) được chèn vào kế hoạch trời để dự báo báo trước được.
+   */
+  planWeather() {
+    const eco = content.economy;
+    this.weather = weatherPlan(
+      content.data.weather,
+      eco.dayStartMinute,
+      eco.dayEndMinute,
+      this.id,
+      this.day,
+    );
+    this.events = [];
+    for (const e of dailyEvents(content.data.events, this.id, this.day)) {
+      const sky = content.event(e.eventId).effects.weather;
+      if (sky) this.weather = overrideWeather(this.weather, { from: e.from, to: e.to, kind: sky });
+      this.events.push({ key: `${e.eventId}:${this.day}`, ...e });
+    }
+  }
+
+  /** Sự kiện đang diễn ra (lọc theo loại / quầy). */
+  activeEvents(businessId?: string): EventView[] {
+    return this.events.filter(
+      (e) =>
+        this.minute >= e.from &&
+        this.minute < e.to &&
+        (businessId === undefined || e.businessId === businessId),
+    );
+  }
+
+  /** Kiểu trời đang có (content). */
+  get sky() {
+    return content.weatherKind(weatherAt(this.weather, this.minute).kind);
+  }
+
+  weatherView(): WeatherView {
+    const next = upcomingWeather(this.weather, this.minute, content.data.weather.forecastMinutes);
+    return {
+      now: weatherAt(this.weather, this.minute).kind,
+      next: next ? { kind: next.kind, at: next.from } : null,
+    };
+  }
 
   get channel() {
     return `room:${this.id}`;
@@ -73,8 +138,11 @@ export class RoomRuntime {
   runTick(fn: () => Promise<void>) {
     if (this.tickPending) return;
     this.tickPending = true;
-    void this.run(fn).finally(() => {
-      this.tickPending = false;
-    });
+    // Lỗi trong một nhịp (vd. tắt server giữa chừng) không được thành unhandled rejection; nhịp sau chạy tiếp.
+    void this.run(fn)
+      .catch((err) => console.error(`[xóm ${this.id}] tick lỗi:`, err))
+      .finally(() => {
+        this.tickPending = false;
+      });
   }
 }

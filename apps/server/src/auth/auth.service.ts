@@ -60,7 +60,7 @@ export class AuthService {
       });
       const player = created.player;
       if (!player) throw new Error("Không tạo được player");
-      // Vốn khởi nghiệp 500.000đ đi qua sổ cái như mọi khoản tiền khác.
+      // Vốn khởi nghiệp (content.economy.startingMoney) đi qua sổ cái như mọi khoản tiền khác.
       await this.ledger.transfer(
         tx,
         SYSTEM.bank,

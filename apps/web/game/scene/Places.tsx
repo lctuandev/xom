@@ -5,7 +5,7 @@ import { content, type Place } from "@xom/content";
 import { useMemo, useRef } from "react";
 import type { CharacterModel, CityModel } from "../assets";
 import { useGame } from "../store";
-import { addressSpot, placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
+import { addressSpot, atmSpot, placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
 import { Character, Walker } from "./Character";
 import { Instances, type Placement } from "./CityKit";
 import { speakerWalker } from "./guide";
@@ -124,6 +124,13 @@ export function ProximityWatcher() {
       if (spot && vendorOpen(v.id, minute) && distanceTo(spot.x, spot.z) <= radius) vendor = v.id;
     }
     if (vendor !== s.nearVendor) s.setNearVendor(vendor);
+    // Cây ATM (UC-I6).
+    let atm: string | null = null;
+    for (const a of content.atms) {
+      const spot = atmSpot(a.id);
+      if (spot && distanceTo(spot.x, spot.z) <= radius) atm = a.id;
+    }
+    if (atm !== s.nearAtm) s.setNearAtm(atm);
 
     const g = s.goal;
     const arrived =
@@ -135,7 +142,9 @@ export function ProximityWatcher() {
             ? shop === g.id
             : g?.kind === "vendor"
               ? vendor === g.id
-              : atStall;
+              : g?.kind === "atm"
+                ? atm === g.id
+                : atStall;
     if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
       if ("open" in g && g.open) s.openSheet(g.open);

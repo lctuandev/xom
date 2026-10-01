@@ -1,38 +1,57 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-import { content } from "@xom/content";
-import type { DishView, OrderEvent, OrderResultEvent, OrderUpdateEvent } from "@xom/shared";
+import { content, type GameEventDef } from "@xom/content";
+import type {
+  DishView,
+  OrderEvent,
+  OrderResultEvent,
+  OrderUpdateEvent,
+  PayMethod,
+} from "@xom/shared";
 import {
+  addSkill,
+  billFor,
+  choosePayment,
   customOrder,
   generateOrder,
   hasIngredients,
   ingredientsFor,
   LOST_WEIGHT,
   nextReputation,
+  patienceFactor,
   pickArchetype,
   pickPayment,
   priceScore,
+  reviewStars,
+  reviewTagOf,
+  type SkillPoints,
   scoreDish,
   seededRandom,
   settleCash,
   validateBuild,
+  wearAfter,
   XP,
 } from "@xom/sim";
 import {
+  bankWallet,
   InsufficientFundsError,
   LedgerService,
   playerWallet,
   SYSTEM,
+  type Tx,
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
 import { addToReport } from "./report.js";
+import { purchaseKey, ReviewService } from "./reviews.js";
 import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
 const PAY_WAIT_MS = 20_000;
+/** Chủ quầy bắt tay làm món thì khách chờ thêm ít nhất chừng này (ms). */
+const MAKING_WAIT_MS = 45_000;
 /** Người chơi thật chờ món lâu hơn khách NPC (họ còn đứng nhìn chủ quầy làm). */
 const PLAYER_PATIENCE_MS = 180_000;
 const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
@@ -40,6 +59,7 @@ const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 const pick = <T>(list: readonly T[], rand: () => number): T =>
   list[Math.floor(rand() * list.length)] ?? (list[0] as T);
 const round500 = (n: number) => Math.round(n / 500) * 500;
+type VipFx = NonNullable<GameEventDef["effects"]["vip"]>;
 
 export interface OrderEmitter {
   order(roomId: string, e: OrderEvent): void;
@@ -61,6 +81,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
+    private readonly reviews: ReviewService,
   ) {}
 
   setEmitter(emit: OrderEmitter) {
@@ -78,25 +99,36 @@ export class OrderService {
     room: RoomRuntime,
     biz: Business,
     arrivals: number,
+    opts: { discount?: number; vip?: VipFx } = {},
   ): Promise<{ created: number; lost: number }> {
     const product = content.product(biz.productId);
     const queueSize = content.equipment(biz.equipmentId).queueSize;
     const stock = await stockMap(this.prisma, biz.ownerId);
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     let waiting = this.waitingAt(room, biz.id);
+    // Ăn nói khéo (kỹ năng) thì khách kiên nhẫn hơn.
+    const owner = await this.prisma.player.findUnique({ where: { id: biz.ownerId } });
+    const patienceMul = patienceFactor(content, (owner?.skills ?? {}) as SkillPoints);
     let created = 0;
     let lost = 0;
     for (let k = 0; k < arrivals; k++) {
       const rand = seededRandom("order", biz.id, room.day, room.minute, k);
-      const order = waiting < queueSize ? generateOrder(product.recipe, menu, rand, stock) : null;
+      const order =
+        waiting < queueSize
+          ? generateOrder(product.recipe, menu, rand, stock, opts.vip?.minMods ?? 0)
+          : null;
       if (!order) {
         // Hàng chờ đông quá hoặc quầy hết món: khách đi thẳng.
         lost++;
         continue;
       }
-      const archetype = pickArchetype(content, product.category, rand);
+      const archetype = opts.vip ? "vip" : pickArchetype(content, product.category, rand);
       const npc = content.data.npcs.find((n) => n.id === archetype);
-      const patienceMs = (npc?.patienceSec ?? 45) * 1000;
+      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1) * patienceMul;
+      // Khai trương giảm giá: làm tròn 500đ, không dưới 1.000đ.
+      const price = opts.discount
+        ? Math.max(1_000, round500(order.price * (1 - opts.discount)))
+        : order.price;
       const now = Date.now();
       const event: OrderEvent = {
         orderId: randomUUID(),
@@ -109,12 +141,14 @@ export class OrderService {
         ask: order.ask,
         dish: order.dish,
         spec: order.spec,
-        price: order.price,
-        pay: pickPayment(order.price, npc?.transferRate ?? 0.2, rand),
+        price,
+        pay: pickPayment(price, npc?.transferRate ?? 0.2, rand),
         createdAt: now,
         expiresAt: now + patienceMs,
+        ...(opts.vip ? { vip: true } : {}),
+        ...(opts.discount ? { promo: true } : {}),
       };
-      room.orders.set(event.orderId, { event, patienceMs, dish: null });
+      room.orders.set(event.orderId, { event, patienceMs, dish: null, vip: opts.vip });
       this.emit?.order(room.id, event);
       waiting++;
       created++;
@@ -131,7 +165,12 @@ export class OrderService {
     room: RoomRuntime,
     buyer: { id: string; name: string },
     biz: Business,
-    choice: { variantId: string; picks: Record<string, string>; mods: string[] },
+    choice: {
+      variantId: string;
+      picks: Record<string, string>;
+      mods: string[];
+      pay?: PayMethod;
+    },
   ) {
     if (biz.ownerId === buyer.id) throw new GameError("invalid_state", "Quầy của mình mà");
     if (biz.status !== "OPEN" || !biz.lotId)
@@ -148,8 +187,19 @@ export class OrderService {
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     const order = customOrder(product.recipe, menu, choice.variantId, choice.picks, choice.mods);
     if (typeof order === "string") throw new GameError("invalid_state", order);
-    const money = await this.ledger.balance(this.prisma, playerWallet(buyer.id));
-    if (money < order.price) throw new GameError("insufficient_funds", "Không đủ tiền");
+    // Hàng xóm chọn 💵 / 🏦 (hoặc tự chọn: món lặt vặt thì đưa tiền mặt). Tiền mặt thì đưa một tờ, chủ quầy thối lại.
+    const [cash, bank] = await Promise.all([
+      this.ledger.balance(this.prisma, playerWallet(buyer.id)),
+      this.ledger.balance(this.prisma, bankWallet(buyer.id)),
+    ]);
+    const src = choosePayment({
+      amount: order.price,
+      cash,
+      bank,
+      method: choice.pay ?? "auto",
+      cashFirstBelow: content.economy.bank.cashFirstBelow,
+    });
+    if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
     const now = Date.now();
     const event: OrderEvent = {
       orderId: randomUUID(),
@@ -163,7 +213,7 @@ export class OrderService {
       dish: order.dish,
       spec: order.spec,
       price: order.price,
-      pay: { kind: "transfer" },
+      pay: src === "bank" ? { kind: "transfer" } : { kind: "cash", bill: billFor(order.price) },
       createdAt: now,
       expiresAt: now + PLAYER_PATIENCE_MS,
       buyerId: buyer.id,
@@ -171,6 +221,24 @@ export class OrderService {
     };
     room.orders.set(event.orderId, { event, patienceMs: PLAYER_PATIENCE_MS, dish: null });
     this.emit?.order(room.id, event);
+  }
+
+  /**
+   * Chủ quầy bắt tay làm món: khách thấy người ta đang làm cho mình thì chờ thêm một lúc (một lần) — như ngoài đời,
+   * không bỏ đi giữa chừng khi món sắp xong (góp ý chơi thử).
+   */
+  async start(room: RoomRuntime, playerId: string, orderId: string) {
+    const order = this.requireOrder(room, playerId, orderId);
+    if (order.started) return;
+    order.started = true;
+    order.event.expiresAt = Math.max(order.event.expiresAt, Date.now() + MAKING_WAIT_MS);
+    this.emit?.update(room.id, {
+      orderId,
+      stage: "making",
+      line: "",
+      mistakes: [],
+      expiresAt: order.event.expiresAt,
+    });
   }
 
   /** Người chơi làm xong một món: kiểm tra, trừ nguyên liệu, chấm điểm; sai thì khách phàn nàn. */
@@ -252,9 +320,10 @@ export class OrderService {
     const ratio = e.price / variant.refPrice;
     const fast = Date.now() - e.createdAt <= order.patienceMs * 0.6;
     // Khách là người chơi: không có tiền boa tự động (boa là chuyện của họ).
+    const vip = order.vip;
     const tip =
       correct && !discount && fast && !e.buyerId
-        ? Math.max(1_000, round500(price * eco.tipRate))
+        ? Math.max(1_000, round500(price * eco.tipRate * (vip?.tipMult ?? 1)))
         : 0;
     const short = outcome === "short";
     const satisfaction = Math.max(
@@ -264,16 +333,7 @@ export class OrderService {
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        if (received > 0) {
-          await this.ledger.transfer(
-            tx,
-            e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
-            playerWallet(playerId),
-            received,
-            "sale",
-            e.businessId,
-          );
-        }
+        if (received > 0) await this.collect(tx, e, received);
         if (tip > 0)
           await this.ledger.transfer(
             tx,
@@ -288,14 +348,25 @@ export class OrderService {
           let rep = nextReputation(biz.reputation, satisfaction, 1, eco.reputationRate);
           if (correct && fast) rep += eco.serveReputationBonus;
           if (short) rep -= 0.02;
+          // Khách VIP: làm hoàn hảo thì tiếng tốt lan nhanh, làm hỏng thì bị chê khắp xóm.
+          if (vip) rep += correct && fast && !short ? vip.repWin : -vip.repLose;
           await tx.business.update({
             where: { id: biz.id },
-            data: { reputation: Math.min(1, Math.max(0, rep)) },
+            data: {
+              reputation: Math.min(1, Math.max(0, rep)),
+              wear: wearAfter(biz.wear, 1, eco.maintenance),
+            },
           });
         }
+        // Kỹ năng (DESIGN §4): kịp giờ → tay nhanh; đúng lời dặn → nhớ món; khách vui → ăn nói.
+        const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
+        let skills = (player.skills ?? {}) as SkillPoints;
+        if (correct && fast) skills = addSkill(content, skills, "tay_nhanh");
+        if (correct && e.dish.includes(",")) skills = addSkill(content, skills, "nho_mon");
+        if (satisfaction >= 0.8) skills = addSkill(content, skills, "an_noi");
         await tx.player.update({
           where: { id: playerId },
-          data: { xp: { increment: discount ? XP.serveDiscount : XP.serve } },
+          data: { xp: { increment: discount ? XP.serveDiscount : XP.serve }, skills },
         });
         await addToReport(tx, playerId, room.day, {
           revenue: received,
@@ -307,36 +378,79 @@ export class OrderService {
       });
     } catch (err) {
       if (!(err instanceof InsufficientFundsError)) throw err;
-      throw new GameError("invalid_state", "Khách không đủ tiền chuyển khoản — xin lỗi khách thôi");
+      throw new GameError("invalid_state", "Khách không đủ tiền — xin lỗi khách thôi");
     }
     room.orders.delete(orderId);
     if (e.buyerId) {
+      room.purchases.add(purchaseKey(e.buyerId, e.ownerId, room.day));
       this.emit?.charged(e.buyerId);
-      const line = `📱 Chuyển ${vnd(received)} cho quầy — nhận ${e.dish}`;
+      const line =
+        e.pay.kind === "transfer"
+          ? `📱 Chuyển ${vnd(received)} cho quầy — nhận ${e.dish}`
+          : `💵 Đưa ${vnd(e.pay.bill)}, trả ${vnd(received)} — nhận ${e.dish}`;
       this.emit?.result(room.id, { orderId, served: true, tip: 0, line, outcome, received });
       return;
     }
 
+    // Sổ đánh giá (UC-F11): khách viết theo đúng chuyện vừa xảy ra.
+    const tag = reviewTagOf({ served: true, correct, fast, short, priceRatio: ratio, vip: !!vip });
+    void this.reviews
+      .npc(e, room.day, reviewStars(satisfaction), tag, {
+        force: !!vip || e.archetype === "reviewer",
+      })
+      .catch(() => undefined);
+
     const lines = content.data.customerLines;
-    const line = short
-      ? "Thối thiếu rồi con ơi, đưa đủ đây!"
-      : outcome === "over_returned"
-        ? "Con thối dư nè, trả lại nè."
-        : discount
-          ? "Thôi được, lần sau làm kỹ nha."
-          : ratio > 1.15
-            ? pick(lines.pricey, rand)
-            : ratio < 0.9
-              ? pick(lines.cheap, rand)
-              : pick(lines.thanks, rand);
+    const line = vip
+      ? correct && fast && !short
+        ? `Chuẩn! Lâu lắm mới gặp quầy làm kỹ vậy — boa ${vnd(tip)} nè!`
+        : "Tạm được… lần sau làm kỹ hơn nha."
+      : short
+        ? "Thối thiếu rồi con ơi, đưa đủ đây!"
+        : outcome === "over_returned"
+          ? "Con thối dư nè, trả lại nè."
+          : discount
+            ? "Thôi được, lần sau làm kỹ nha."
+            : ratio > 1.15
+              ? pick(lines.pricey, rand)
+              : ratio < 0.9
+                ? pick(lines.cheap, rand)
+                : pick(lines.thanks, rand);
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
+  }
+
+  /**
+   * Thu tiền một đơn (DESIGN §2): khách trả chuyển khoản → vào 🏦 tài khoản chủ quầy; tiền mặt → 💵 ví.
+   * Khách là hàng xóm: chuyển khoản nếu tài khoản đủ, không thì trả tiền mặt.
+   */
+  private async collect(tx: Tx, e: OrderEvent, amount: number) {
+    if (e.buyerId) {
+      const viaBank = e.pay.kind === "transfer";
+      await this.ledger.transfer(
+        tx,
+        viaBank ? bankWallet(e.buyerId) : playerWallet(e.buyerId),
+        viaBank ? bankWallet(e.ownerId) : playerWallet(e.ownerId),
+        amount,
+        "sale",
+        e.businessId,
+      );
+      return;
+    }
+    await this.ledger.transfer(
+      tx,
+      SYSTEM.customers,
+      e.pay.kind === "transfer" ? bankWallet(e.ownerId) : playerWallet(e.ownerId),
+      amount,
+      "sale",
+      e.businessId,
+    );
   }
 
   /** "Xin lỗi, hết rồi": khách đi, không mất tiền nhưng hơi buồn. */
   async decline(room: RoomRuntime, playerId: string, orderId: string) {
     const order = this.requireOrder(room, playerId, orderId);
     room.orders.delete(orderId);
-    await this.recordLost(room, playerId, order.event.businessId, 1);
+    await this.recordLost(room, playerId, order.event.businessId, 1, order.vip);
     const line = order.event.buyerId
       ? "🙏 Quầy xin lỗi, không bán được món này"
       : "Vậy thôi, để bữa khác.";
@@ -353,14 +467,7 @@ export class OrderService {
         room.orders.delete(id);
         try {
           await this.prisma.$transaction(async (tx) => {
-            await this.ledger.transfer(
-              tx,
-              e.buyerId ? playerWallet(e.buyerId) : SYSTEM.customers,
-              playerWallet(e.ownerId),
-              e.price,
-              "sale",
-              e.businessId,
-            );
+            await this.collect(tx, e, e.price);
             await addToReport(tx, e.ownerId, room.day, {
               revenue: e.price,
               served: 1,
@@ -391,7 +498,13 @@ export class OrderService {
         continue;
       }
       room.orders.delete(id);
-      await this.recordLost(room, e.ownerId, e.businessId, 1);
+      await this.recordLost(room, e.ownerId, e.businessId, 1, order.vip);
+      if (!e.buyerId)
+        void this.reviews
+          .npc(e, room.day, 1 + Math.round(seededRandom("lost", id)()), "lost", {
+            chance: content.data.reviews.lostChance,
+          })
+          .catch(() => undefined);
       this.emit?.result(room.id, {
         orderId: id,
         served: false,
@@ -429,15 +542,20 @@ export class OrderService {
   }
 
   /** Khách hụt: tính vào báo cáo và kéo uy tín xuống nhẹ. */
-  private async recordLost(room: RoomRuntime, ownerId: string, businessId: string, lost: number) {
+  private async recordLost(
+    room: RoomRuntime,
+    ownerId: string,
+    businessId: string,
+    lost: number,
+    vip?: VipFx,
+  ) {
     await this.prisma.$transaction(async (tx) => {
       const biz = await tx.business.findUnique({ where: { id: businessId } });
       if (biz) {
-        const rep = nextReputation(
-          biz.reputation,
+        const rep = Math.max(
           0,
-          lost * LOST_WEIGHT,
-          content.economy.reputationRate,
+          nextReputation(biz.reputation, 0, lost * LOST_WEIGHT, content.economy.reputationRate) -
+            (vip?.repLose ?? 0),
         );
         await tx.business.update({ where: { id: biz.id }, data: { reputation: rep } });
       }

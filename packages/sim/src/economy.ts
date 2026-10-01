@@ -160,7 +160,8 @@ export function takeFifo<B extends Batch>(batches: B[], qty: number): { batches:
 
 /** Chọn kiểu khách minh họa cho một lượt mua, theo độ ưa thích danh mục. */
 export function pickArchetype(content: Content, category: string, rand: () => number): string {
-  const npcs = content.data.npcs.filter((n) => n.id !== "reviewer");
+  // Reviewer, khách VIP chỉ xuất hiện qua sự kiện.
+  const npcs = content.data.npcs.filter((n) => n.id !== "reviewer" && n.id !== "vip");
   const weights = npcs.map((n) => n.likes[category] ?? 0.5);
   let r = rand() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < npcs.length; i++) {
@@ -168,4 +169,97 @@ export function pickArchetype(content: Content, category: string, rand: () => nu
     if (r <= 0) return npcs[i]?.id ?? "khach_vang_lai";
   }
   return npcs[npcs.length - 1]?.id ?? "khach_vang_lai";
+}
+
+/**
+ * Lãi ngân hàng một ngày (DESIGN §2, Luật 2.3): tỉ lệ rất nhỏ, chỉ cho số dư từ mức tối thiểu, có trần,
+ * làm tròn xuống 500đ (không có tiền lẻ). Không bao giờ thành nguồn sống.
+ */
+export function bankInterest(
+  balance: number,
+  bank: { interestRate: number; interestCap: number; interestMin: number },
+): number {
+  if (balance < bank.interestMin) return 0;
+  const raw = Math.min(bank.interestCap, balance * bank.interestRate);
+  return Math.floor(raw / 500) * 500;
+}
+
+/** Tiền thanh lý `qty` phần hàng tồn cho chợ: rẻ hơn giá gốc nhiều, tròn 500đ (không lẻ). */
+export function resaleValue(costPerUnit: number, qty: number, rate: number): number {
+  return Math.floor((costPerUnit * qty * rate) / 500) * 500;
+}
+
+/** Số tiền rút/gửi ở ATM phải là bội số của `step` và dương. Trả về lý do nếu không hợp lệ. */
+export function atmAmountError(amount: number, step: number): string | null {
+  if (!Number.isInteger(amount) || amount <= 0) return "Số tiền không hợp lệ";
+  if (amount % step !== 0) return `ATM chỉ nhận bội số ${step.toLocaleString("vi-VN")}đ`;
+  return null;
+}
+
+export interface Maintenance {
+  wearPerServe: number;
+  slowAt: number;
+  slowDemand: number;
+  slowHold: number;
+  repairRate: number;
+}
+
+/** Độ mòn sau khi bán thêm `served` món (0–1). */
+export function wearAfter(wear: number, served: number, m: Maintenance): number {
+  return Math.min(1, wear + served * m.wearPerServe);
+}
+
+/** Tình trạng xe/quầy theo độ mòn: tốt · ọp ẹp (khách bớt ghé, làm món chậm) · hư (không mở được). */
+export function wearState(wear: number, m: Maintenance): "ok" | "worn" | "broken" {
+  if (wear >= 1) return "broken";
+  return wear >= m.slowAt ? "worn" : "ok";
+}
+
+/** Hệ số khách do tình trạng xe/quầy. */
+export function wearDemand(wear: number, m: Maintenance): number {
+  return wearState(wear, m) === "ok" ? 1 : m.slowDemand;
+}
+
+/** Tiền sửa ở vựa xe: giá thiết bị × độ mòn × tỉ lệ, tròn 1.000đ (mòn chút ít thì miễn phí). */
+export function repairCost(price: number, wear: number, m: Maintenance): number {
+  return Math.round((price * wear * m.repairRate) / 1000) * 1000;
+}
+
+export type PayMethod = "auto" | "cash" | "bank";
+export type PaySource = "cash" | "bank";
+
+/**
+ * Trả bằng gì (DESIGN §2): người chơi chọn 💵 tiền mặt / 🏦 chuyển khoản, hoặc "tự chọn" — món lặt vặt móc tiền mặt trước,
+ * khoản lớn chuyển khoản trước; ví nào thiếu thì dùng ví kia. Sạp chỉ nhận tiền mặt thì không chuyển khoản được.
+ * Trả về nguồn tiền, hoặc câu báo lỗi cho người chơi.
+ */
+export function choosePayment(o: {
+  amount: number;
+  cash: number;
+  bank: number;
+  method: PayMethod;
+  cashOnly?: boolean;
+  cashFirstBelow: number;
+}): PaySource | { error: string } {
+  const has = (src: PaySource) => (src === "cash" ? o.cash : o.bank) >= o.amount;
+  if (o.method === "bank" && o.cashOnly) return { error: "Sạp này chỉ nhận tiền mặt thôi con" };
+  if (o.method !== "auto") {
+    if (has(o.method)) return o.method;
+    if (o.method === "bank") return { error: "Tài khoản không đủ số dư" };
+    return {
+      error:
+        !o.cashOnly && has("bank")
+          ? "Không đủ tiền mặt — chọn chuyển khoản hoặc ra cây ATM rút"
+          : "Không đủ tiền mặt — ra cây ATM rút thêm",
+    };
+  }
+  const order: PaySource[] = o.cashOnly
+    ? ["cash"]
+    : o.amount < o.cashFirstBelow
+      ? ["cash", "bank"]
+      : ["bank", "cash"];
+  const src = order.find(has);
+  if (src) return src;
+  if (o.cashOnly && has("bank")) return { error: "Sạp chỉ nhận tiền mặt — ra cây ATM rút đã" };
+  return { error: "Không đủ tiền" };
 }

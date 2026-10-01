@@ -1,9 +1,18 @@
 "use client";
 
 import { content } from "@xom/content";
+import { formatClock } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { setAmbient, setMusicMood, sfx, startMusic, stopMusic, unlockAudio } from "./audio";
+import {
+  setAmbient,
+  setMusicMood,
+  setRain,
+  sfx,
+  startMusic,
+  stopMusic,
+  unlockAudio,
+} from "./audio";
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
 import ShopInterior from "./interior/ShopInterior";
@@ -12,6 +21,8 @@ import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
+import { AtmSheet } from "./ui/AtmSheet";
+import { BoardSheet } from "./ui/BoardSheet";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
@@ -47,6 +58,7 @@ export default function GameShell() {
   useTutorial();
   useInvite();
   useNews();
+  useEventNews();
   useSound();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
@@ -116,6 +128,8 @@ export default function GameShell() {
       {sheet === "profile" && <ProfileSheet />}
       {sheet === "settings" && <SettingsSheet />}
       {sheet === "recipes" && <RecipeSheet />}
+      {sheet === "atm" && <AtmSheet />}
+      {sheet === "board" && <BoardSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />
@@ -156,11 +170,37 @@ function useInvite() {
   }, [invite, roster, dialogue, sheet]);
 }
 
-/** Dải tin chuyện trong xóm: sạp bày hàng, sang ngày mới (tin hàng xóm vào/ra đẩy từ socket). */
+/**
+ * Dải tin chuyện trong xóm: sạp bày hàng, sang ngày mới, trời đổi + báo trước trời sắp đổi (UC-B4)
+ * để người chơi kịp thích nghi (tin hàng xóm vào/ra đẩy từ socket).
+ */
 function useNews() {
   const minute = useGame((s) => s.clock?.minute ?? -1);
   const day = useGame((s) => s.clock?.day ?? 0);
+  const sky = useGame((s) => s.clock?.weather.now ?? null);
+  const nextSky = useGame((s) => s.clock?.weather.next?.kind ?? null);
+  const nextAt = useGame((s) => s.clock?.weather.next?.at ?? null);
   const last = useRef<{ open: Set<string>; day: number } | null>(null);
+  const lastSky = useRef<string | null>(null);
+  const warned = useRef<string | null>(null);
+  useEffect(() => {
+    if (!sky) return;
+    const push = useGame.getState().pushNews;
+    if (lastSky.current && lastSky.current !== sky) {
+      const k = content.weatherKind(sky);
+      push(k.news);
+      useGame.getState().toast({ kind: "info", text: k.news });
+    }
+    lastSky.current = sky;
+  }, [sky]);
+  useEffect(() => {
+    if (!nextSky || nextAt === null) return;
+    const key = `${day}:${nextSky}:${nextAt}`;
+    if (warned.current === key) return;
+    warned.current = key;
+    const k = content.weatherKind(nextSky);
+    useGame.getState().pushNews(k.forecast.replace("{time}", formatClock(nextAt)));
+  }, [nextSky, nextAt, day]);
   useEffect(() => {
     if (minute < 0) return;
     const push = useGame.getState().pushNews;
@@ -176,6 +216,26 @@ function useNews() {
       }
     last.current = { open, day };
   }, [minute, day]);
+}
+
+/**
+ * Tin sự kiện (DESIGN §9): khai trương của hàng xóm (cả xóm thấy, có toast), sự kiện toàn xóm báo trước từ sáng.
+ */
+function useEventNews() {
+  const events = useGame((s) => s.events);
+  const seen = useRef(new Set<string>());
+  useEffect(() => {
+    const st = useGame.getState();
+    for (const e of events) {
+      if (seen.current.has(e.key)) continue;
+      seen.current.add(e.key);
+      const def = content.event(e.eventId);
+      const shop = e.lotId ? `ở ${content.lot(e.lotId).name}` : "";
+      const text = def.news.replace("{name}", e.ownerName ?? "Hàng xóm").replace("{shop}", shop);
+      st.pushNews(text);
+      if (e.ownerId && e.ownerId !== st.me?.playerId) st.toast({ kind: "info", text });
+    }
+  }, [events]);
 }
 
 /**
@@ -205,4 +265,8 @@ function useSound() {
     const crowd = rush ? 1 : h >= 21 || h < 6 ? 0.25 : 0.55;
     setAmbient(inside ? "inside" : "street", crowd);
   }, [minute, inside]);
+  const sky = useGame((s) => s.clock?.weather.now ?? "sunny");
+  useEffect(() => {
+    setRain(content.weatherKind(sky).rain, !!inside);
+  }, [sky, inside]);
 }

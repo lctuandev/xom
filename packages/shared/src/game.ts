@@ -2,10 +2,20 @@ import { z } from "zod";
 
 // View (server → client) và intent (client → server) của vòng chơi (docs/PLAN.md §3.9).
 
+/** Kiểu trời (khớp content.weather.kinds). */
+export type WeatherIdView = "sunny" | "cloudy" | "rain" | "storm";
+
+export interface WeatherView {
+  now: WeatherIdView;
+  /** Trời sắp đổi (trong khoảng dự báo) — để báo trước "chiều nay có mưa". */
+  next: { kind: WeatherIdView; at: number } | null;
+}
+
 export interface ClockView {
   day: number;
   /** Phút trong ngày (game). */
   minute: number;
+  weather: WeatherView;
 }
 
 export interface MenuItemView {
@@ -25,6 +35,10 @@ export interface BusinessView {
   reputation: number;
   /** Đã trả tiền thuê chỗ hiện tại cho hôm nay chưa (mở lại trong ngày không mất thêm). */
   rentPaidToday: boolean;
+  /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
+  promoDay: number | null;
+  /** Độ mòn xe/quầy 0–1 (sửa ở vựa xe). */
+  wear: number;
 }
 
 export interface InventoryView {
@@ -43,12 +57,16 @@ export interface TodayView {
   lost: number;
   stockCost: number;
   wages: number;
+  fees: number;
 }
 
 export interface MeView {
   playerId: string;
   displayName: string;
+  /** 💵 Tiền mặt (hiện trên HUD). */
   money: number;
+  /** 🏦 Số dư tài khoản ngân hàng (xem trong Hồ sơ / ATM). */
+  bank: number;
   jobId: string | null;
   /** Bước kịch bản người mới hiện tại. */
   tutorial: string;
@@ -67,6 +85,8 @@ export interface MeView {
     need: number;
     fame: "unknown" | "local" | "popular" | "famous";
     served: number;
+    /** Điểm kỹ năng (bậc suy ra từ content.skills). */
+    skills: Partial<Record<"tay_nhanh" | "nho_mon" | "an_noi", number>>;
   };
 }
 
@@ -88,6 +108,21 @@ export interface WorldView {
   lots: LotOccupant[];
 }
 
+/** Một sự kiện đang/sắp diễn ra trong xóm (DESIGN §9). */
+export interface EventView {
+  key: string;
+  /** Id sự kiện trong content.events. */
+  eventId: string;
+  /** Phút game bắt đầu / kết thúc (trong ngày hiện tại). */
+  from: number;
+  to: number;
+  /** Sự kiện của người chơi (khai trương): ai tổ chức, ở quầy nào. */
+  ownerId?: string;
+  ownerName?: string;
+  businessId?: string;
+  lotId?: string;
+}
+
 export interface Snapshot {
   me: MeView;
   clock: ClockView;
@@ -98,6 +133,8 @@ export interface Snapshot {
   shift: ShiftView | null;
   /** Ai đang ở trong xóm (Phase 2). */
   roster: RosterView;
+  /** Sự kiện hôm nay (đang diễn ra hoặc đã báo trước). */
+  events: EventView[];
 }
 
 // ───────── Xóm chung (Phase 2, docs/USECASES.md nhóm J) ─────────
@@ -153,12 +190,17 @@ export interface OrderEvent {
   /** Khách là người chơi thật (UC-J3): trả bằng chuyển khoản từ ví của họ. */
   buyerId?: string;
   buyerName?: string;
+  /** Khách VIP (sự kiện cá nhân): dặn kỹ, ít kiên nhẫn, boa đậm. */
+  vip?: boolean;
+  /** Giá đã giảm do quầy đang khai trương. */
+  promo?: boolean;
 }
 
 /** Món vừa làm xong: đúng hay sai (khách phàn nàn). */
 export interface OrderUpdateEvent {
   orderId: string;
-  stage: "correct" | "wrong";
+  /** making = chủ quầy bắt tay làm món (khách chờ thêm). */
+  stage: "making" | "correct" | "wrong";
   line: string;
   mistakes: string[];
   /** Hạn chờ mới (khách đợi tính tiền). */
@@ -189,6 +231,73 @@ export interface SayEvent {
   /** playerId hoặc id NPC. */
   who: string;
   text: string;
+}
+
+/** Một đánh giá trong sổ đánh giá quầy (UC-F11). */
+export interface ReviewView {
+  id: string;
+  authorName: string;
+  /** Người chơi viết (khác khách NPC). */
+  fromPlayer: boolean;
+  stars: number;
+  text: string;
+  day: number;
+  reply: string | null;
+}
+
+export interface ReviewsView {
+  ownerId: string;
+  ownerName: string;
+  avg: number;
+  count: number;
+  /** Số đánh giá 1★…5★. */
+  dist: number[];
+  /** Người xem đã mua ở quầy hôm nay và chưa đánh giá. */
+  canWrite: boolean;
+  items: ReviewView[];
+}
+
+/** Bảng giải của xóm (UC-P2): nhiều hạng mục, 7 ngày gần nhất. */
+export interface AwardView {
+  id: string;
+  emoji: string;
+  name: string;
+  description: string;
+  metric: "revenue" | "profit" | "served" | "rating" | "growth" | "wages" | "friendly";
+  entries: { playerId: string; name: string; value: number }[];
+}
+
+export interface ShareView {
+  productId: string;
+  total: number;
+  entries: { playerId: string; name: string; served: number; share: number }[];
+}
+
+export interface XomBoardView {
+  day: number;
+  /** Số người trong xóm được tính. */
+  players: number;
+  awards: AwardView[];
+  shares: ShareView[];
+  /** Tin "đang hot": thời tiết, giá chợ, khai trương, món bán chạy. */
+  trends: { emoji: string; text: string }[];
+}
+
+export interface AchievementView {
+  id: string;
+  emoji: string;
+  name: string;
+  description: string;
+  goal: number;
+  value: number;
+  done: boolean;
+}
+
+/** Số liệu của mình: 7 ngày gần nhất + trung bình quầy cùng món trong xóm + thành tựu. */
+export interface MyStatsView {
+  days: { day: number; revenue: number; profit: number; served: number; wages: number }[];
+  avg: { stalls: number; revenue: number; served: number; rating: number } | null;
+  achievements: AchievementView[];
 }
 
 export interface TalkResult {
@@ -380,7 +489,11 @@ export interface DayReportView {
   wrong: number;
   satisfaction: number;
   reputation: number;
-  /** Lãi/lỗ tiền mặt trong ngày. */
+  /** Lãi ngân hàng nhận cuối ngày. */
+  interest: number;
+  /** Phí chợ/thuế, điện nước, sửa xe, khai trương. */
+  fees: number;
+  /** Lãi/lỗ trong ngày (gồm cả tiền vào tài khoản). */
   profit: number;
   moneyEnd: number;
 }
@@ -392,11 +505,19 @@ export interface NotifyEvent {
 
 const contentId = z.string().regex(/^[a-z0-9_]+$/);
 
-export const buyEquipmentSchema = z.object({ equipmentId: contentId });
+/** Trả bằng gì: tự chọn (mặc định) · 💵 tiền mặt · 🏦 chuyển khoản. */
+export const payMethodSchema = z.enum(["auto", "cash", "bank"]).default("auto");
+export type PayMethod = "auto" | "cash" | "bank";
+
+export const buyEquipmentSchema = z.object({ equipmentId: contentId, pay: payMethodSchema });
 export const marketBuySchema = z.object({
   itemId: contentId,
   packs: z.number().int().min(1).max(50),
+  pay: payMethodSchema,
 });
+export const repairSchema = z.object({ pay: payMethodSchema });
+/** Thanh lý hết một loại hàng tồn cho chợ. */
+export const marketSellSchema = z.object({ itemId: contentId });
 export const updateBusinessSchema = z.object({ lotId: contentId });
 export const menuSchema = z
   .object({
@@ -472,8 +593,13 @@ export const shopOrderSchema = z.object({
   variantId: contentId,
   picks: z.record(contentId, contentId).default({}),
   mods: z.array(contentId).max(8).default([]),
+  pay: payMethodSchema,
 });
-export const vendorBuySchema = z.object({ vendorId: contentId, itemId: contentId });
+export const vendorBuySchema = z.object({
+  vendorId: contentId,
+  itemId: contentId,
+  pay: payMethodSchema,
+});
 export const joinRoomSchema = z.object({
   code: z
     .string()
@@ -482,3 +608,33 @@ export const joinRoomSchema = z.object({
     .regex(/^[0-9a-f]{8}$/, "Mã xóm gồm 8 ký tự"),
 });
 export const emptySchema = z.object({}).optional();
+/** Dev/test: cộng tiền mặt (qua sổ cái, lý do "debug") — production từ chối. */
+export const debugGrantSchema = z.object({
+  money: z.number().int().min(1_000).max(10_000_000).optional(),
+  xp: z.number().int().min(1).max(100_000).optional(),
+});
+/** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
+export const atmSchema = z.object({
+  atmId: z.string().regex(/^atm_[0-9]+_[0-9]+$/),
+  action: z.enum(["deposit", "withdraw"]),
+  amount: z.number().int().min(1_000).max(100_000_000),
+});
+/** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
+export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
+export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
+/** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
+export const debugWeatherSchema = z.object({
+  kind: z.enum(["sunny", "cloudy", "rain", "storm"]),
+  /** Bắt đầu sau bao nhiêu phút game kể từ bây giờ. */
+  after: z.number().int().min(0).max(600).default(0),
+  minutes: z.number().int().min(1).max(960),
+});
+
+const reviewText = z.string().trim().min(1).max(140);
+export const reviewListSchema = z.object({ ownerId: z.string().uuid() });
+export const reviewWriteSchema = z.object({
+  ownerId: z.string().uuid(),
+  stars: z.number().int().min(1).max(5),
+  text: reviewText,
+});
+export const reviewReplySchema = z.object({ reviewId: z.string().uuid(), text: reviewText });

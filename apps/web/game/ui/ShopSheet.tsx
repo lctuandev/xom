@@ -6,6 +6,8 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
+import { RatingLine, ReviewBook, useReviews } from "./Reviews";
 import { Sheet } from "./Sheet";
 
 /**
@@ -14,12 +16,17 @@ import { Sheet } from "./Sheet";
  */
 export function ShopSheet() {
   const lot = useGame((s) => s.world.lots.find((l) => l.businessId === s.nearShop));
-  const money = useGame((s) => s.me?.money ?? 0);
+  // Trả 💵 / 🏦 theo lựa chọn; tiền mặt thì đưa một tờ, chủ quầy thối lại (UC-I6).
+  const check = usePayCheck();
+  const pay = usePayMethod((s) => s.method);
   const close = useGame((s) => s.openSheet);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [mods, setMods] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const { view: rating, setView: setRating } = useReviews(lot?.ownerId);
+  // Vừa mua thì mở sẵn sổ để chấm sao; viết xong vẫn để mở cho thấy đánh giá của mình.
+  const [bookOpen, setBookOpen] = useState(false);
   if (!lot) return null;
 
   const recipe = content.product(lot.productId).recipe;
@@ -30,6 +37,7 @@ export function ShopSheet() {
   const variant = recipe.variants.find((v) => v.id === variantId);
   const order = variant ? customOrder(recipe, menu, variant.id, picks, mods) : null;
   const priced = order && typeof order !== "string" ? order : null;
+  const src = priced ? check(priced.price) : null;
 
   const place = async () => {
     if (!variant) return;
@@ -39,6 +47,7 @@ export function ShopSheet() {
       variantId: variant.id,
       picks,
       mods,
+      pay,
     });
     setBusy(false);
     if (res.ok) close(null);
@@ -49,6 +58,18 @@ export function ShopSheet() {
       <p className="mb-2 text-sm text-ink/60">
         {content.product(lot.productId).name} · người thật đứng quầy, làm tay theo lời bạn dặn.
       </p>
+      <details
+        className="mb-3"
+        open={bookOpen || !!rating?.canWrite}
+        onToggle={(e) => setBookOpen(e.currentTarget.open)}
+      >
+        <summary className="cursor-pointer text-sm">
+          <RatingLine view={rating} /> · 📒 Sổ đánh giá
+        </summary>
+        <div className="mt-2">
+          <ReviewBook ownerId={lot.ownerId} owner={false} onChange={setRating} />
+        </div>
+      </details>
       <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0" aria-label="Thực đơn">
         {menu.map((m) => {
           const v = recipe.variants.find((x) => x.id === m.variantId);
@@ -144,14 +165,15 @@ export function ShopSheet() {
             {typeof order === "string" && (
               <p className="mb-1.5 text-center text-sm text-red">{order}</p>
             )}
+            <PayPicker />
             <button
               type="button"
-              disabled={busy || !priced || priced.price > money}
+              disabled={busy || !priced || typeof src !== "string"}
               onClick={place}
               className="h-12 w-full rounded-2xl bg-red font-semibold text-cream disabled:opacity-40"
             >
-              {priced && priced.price > money
-                ? "Không đủ tiền"
+              {src && typeof src !== "string"
+                ? src.error
                 : `🛒 Gọi món · ${priced ? vnd(priced.price) : ""}`}
             </button>
           </div>

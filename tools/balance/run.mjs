@@ -1,10 +1,20 @@
 // Mô phỏng headless N ngày cho mọi chiến lược để cân bằng kinh tế (docs/PLAN.md, docs/USECASES.md).
 // Mô hình "làm thật": khách tới theo customerArrivals; người chơi làm món mất `serveSec` giây thật / đơn
 // (1 giây thật = 1 phút game), hàng chờ tối đa queueSize; khách không được phục vụ thì bỏ đi.
+// Thời tiết tính theo kế hoạch trời tất định mỗi ngày (như server).
 // Chạy: pnpm balance [số ngày]   → bảng tóm tắt + out/strategies.csv
 import { mkdirSync, writeFileSync } from "node:fs";
 import { content } from "@xom/content";
-import { baseSpec, customerArrivals, dishCost, LOST_WEIGHT, nextReputation } from "@xom/sim";
+import {
+  baseSpec,
+  customerArrivals,
+  dishCost,
+  LOST_WEIGHT,
+  nextReputation,
+  weatherAt,
+  weatherDemand,
+  weatherPlan,
+} from "@xom/sim";
 
 const DAYS = Number(process.argv[2] ?? 30);
 const eco = content.economy;
@@ -34,7 +44,18 @@ function runStrategy(equipment, lot, mult, serveSec) {
   const tick = eco.economyTickMinutes;
   const perTick = tick / serveSec; // số đơn làm được mỗi nhịp (1 phút game = 1 giây thật)
   for (let day = 1; day <= DAYS; day++) {
-    money -= lot.rentPerDay;
+    // Chỗ tiêu cố định mỗi ngày (Luật 2.2): thuê chỗ + phí chợ/thuế; tiệm còn trả điện nước theo giờ mở cửa.
+    money -= lot.rentPerDay + eco.fees.daily[lot.kind];
+    if (lot.kind === "house")
+      money -= (eco.fees.utilitiesPerHour * (eco.dayEndMinute - eco.dayStartMinute)) / 60;
+    // Thời tiết thật của ngày (UC-B4): mưa bão xe đẩy vắng khách, tiệm có mái đông hơn.
+    const sky = weatherPlan(
+      content.data.weather,
+      eco.dayStartMinute,
+      eco.dayEndMinute,
+      "balance",
+      day,
+    );
     let queue = 0;
     let work = 0;
     for (let m = eco.dayStartMinute; m < eco.dayEndMinute; m += tick) {
@@ -50,6 +71,11 @@ function runStrategy(equipment, lot, mult, serveSec) {
             lotId: lot.id,
             priceRatio: mult,
             reputation,
+            boost: weatherDemand(
+              content.weatherKind(weatherAt(sky, m).kind),
+              lot.kind,
+              product.category,
+            ),
             demandCarry: carry,
           },
         ],
@@ -66,7 +92,10 @@ function runStrategy(equipment, lot, mult, serveSec) {
       queue -= done;
       served += done;
       lost += walked;
-      money += done * (price - avgCost * (1 + WASTE));
+      // Mỗi món bán làm xe mòn: tiền sửa chia đều theo món.
+      const repairPerServe =
+        equipment.price * eco.maintenance.wearPerServe * eco.maintenance.repairRate;
+      money += done * (price - avgCost * (1 + WASTE) - repairPerServe);
       // Khách được phục vụ hài lòng theo giá; khách bỏ đi kéo uy tín xuống.
       const sat = Math.max(0, Math.min(1, 1 - (mult - 1) * 1.2)) * 0.4 + 0.6;
       reputation = nextReputation(

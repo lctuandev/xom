@@ -2,10 +2,12 @@
 
 import { content, type RecipeStep } from "@xom/content";
 import type { DishSelection, DishView } from "@xom/shared";
+import { holdFactor, remembersOrders, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { type OrderState, useGame } from "../store";
+import { Counter } from "./Counter";
 
 /**
  * Màn hình làm món theo đơn (docs/USECASES.md UC-F4…F7): làm từng bước → giao món →
@@ -20,6 +22,10 @@ export function Kitchen() {
     // Khách đã đi (hết kiên nhẫn / đã tính tiền) thì đóng màn hình.
     if (orderId && !order) close(null);
   }, [orderId, order, close]);
+  useEffect(() => {
+    // Bắt tay làm món: báo server để khách thấy mà chờ thêm (một lần mỗi khách).
+    if (orderId) void send("order:start", { orderId });
+  }, [orderId]);
 
   if (!order) return null;
   return (
@@ -36,6 +42,8 @@ export function Kitchen() {
           <Payment key="pay" order={order} discount={false} />
         ) : order.made === "wrong" ? (
           <Wrong key="wrong" order={order} />
+        ) : content.product(order.productId).counter ? (
+          <Counter key="counter" order={order} />
         ) : (
           <Build key="build" order={order} />
         )}
@@ -64,13 +72,20 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
           className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun text-lg"
           aria-hidden
         >
-          🧑
+          {order.vip ? "🕴️" : "🧑"}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-ink/60">
-            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")} nói:
+            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")}
+            {order.vip && (
+              <span className="ml-1 rounded-full bg-sun px-1.5 text-ink" data-vip>
+                VIP · boa đậm
+              </span>
+            )}
+            {order.promo && <span className="ml-1 text-red">🎉 giá khai trương</span>} nói:
           </p>
           <p className="text-[15px] leading-snug font-semibold">“{order.ask}”</p>
+          <OrderNotes dish={order.dish} />
         </div>
         <button
           type="button"
@@ -291,7 +306,14 @@ function HoldStep({
     if (done) return onDone(false);
     const t0 = performance.now();
     timer.current = setInterval(() => {
-      const p = Math.min(1, (performance.now() - t0) / 1000);
+      // Xe ọp ẹp (Luật 2.2) thì giữ lâu hơn mới xong.
+      const biz = useGame.getState().me?.business;
+      const m = content.economy.maintenance;
+      const skills = useGame.getState().me?.progress.skills ?? {};
+      // Xe ọp ẹp thì chậm hơn; tay nhanh (kỹ năng) thì nhanh hơn.
+      const slow =
+        (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) * holdFactor(content, skills);
+      const p = Math.min(1, (performance.now() - t0) / (1000 * slow));
       setProgress(p);
       if (p >= 1) {
         clearInterval(timer.current);
@@ -481,5 +503,22 @@ function Payment({ order, discount }: { order: OrderState; discount: boolean }) 
         {hint ? `Cần thối ${vnd(bill - price)}` : "💡 Tính giúp"}
       </button>
     </div>
+  );
+}
+
+/** Kỹ năng "Nhớ món" (DESIGN §4): nhắc lại lời dặn của khách thành từng mục để khỏi quên. */
+function OrderNotes({ dish }: { dish: string }) {
+  const skills = useGame((s) => s.me?.progress.skills);
+  const notes = dish.split(", ").slice(1);
+  if (!skills || notes.length === 0 || !remembersOrders(content, skills)) return null;
+  return (
+    <ul className="mt-1 flex flex-wrap gap-1" aria-label="Lời dặn" data-notes>
+      <li className="text-[11px] font-semibold text-ink/50">🧠 Nhớ nè:</li>
+      {notes.map((n) => (
+        <li key={n} className="rounded-full bg-sun/40 px-2 py-0.5 text-[11px] font-bold">
+          {n}
+        </li>
+      ))}
+    </ul>
   );
 }

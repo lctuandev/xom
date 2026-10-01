@@ -91,8 +91,9 @@ export function restaurantArrivals(
   minuteOfDay: number,
   minutes: number,
   carry: number,
+  crowd = 1,
 ) {
-  const next = carry + (valueAt(r.customersPerHour, minuteOfDay) * minutes) / 60;
+  const next = carry + (valueAt(r.customersPerHour, minuteOfDay) * minutes * crowd) / 60;
   const arrivals = Math.floor(next);
   return { arrivals, carry: next - arrivals };
 }

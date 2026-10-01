@@ -2,6 +2,7 @@ import { content } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
+  EventView,
   MeView,
   NotifyEvent,
   OrderEvent,
@@ -64,7 +65,9 @@ export type SheetId =
   | "quests"
   | "profile"
   | "settings"
-  | "recipes";
+  | "recipes"
+  | "atm"
+  | "board";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -80,7 +83,9 @@ export type Goal =
   /** Tới quầy hàng xóm (businessId) để gọi món. */
   | { kind: "shop"; id: string; lotId: string; open?: SheetId }
   /** Tới sạp đồ ăn NPC. */
-  | { kind: "vendor"; id: string; open?: SheetId };
+  | { kind: "vendor"; id: string; open?: SheetId }
+  /** Tới cây ATM. */
+  | { kind: "atm"; id: string; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -91,6 +96,9 @@ interface GameState {
   me: MeView | null;
   clock: ClockView | null;
   world: WorldView;
+  /** Sự kiện hôm nay trong xóm (khai trương, mưa lớn…). */
+  events: EventView[];
+  setEvents: (e: EventView[]) => void;
   report: DayReportView | null;
   sheet: SheetId | null;
   toasts: Toast[];
@@ -130,6 +138,9 @@ interface GameState {
   /** Món mình đã gọi ở quầy hàng xóm, đang chờ. */
   purchase: Purchase | null;
   setNearShop: (id: string | null) => void;
+  /** Cây ATM đang đứng gần (UC-I6). */
+  nearAtm: string | null;
+  setNearAtm: (id: string | null) => void;
   /** Sạp đồ ăn NPC đang đứng gần (UC-B9). */
   nearVendor: string | null;
   setNearVendor: (id: string | null) => void;
@@ -204,6 +215,8 @@ export const useGame = create<GameState>((set) => ({
   me: null,
   clock: null,
   world: { lots: [] },
+  events: [],
+  setEvents: (events) => set({ events }),
   report: null,
   sheet: null,
   toasts: [],
@@ -230,6 +243,8 @@ export const useGame = create<GameState>((set) => ({
   nearShop: null,
   purchase: null,
   setNearShop: (nearShop) => set({ nearShop }),
+  nearAtm: null,
+  setNearAtm: (nearAtm) => set({ nearAtm }),
   nearVendor: null,
   setNearVendor: (nearVendor) => set({ nearVendor }),
   eating: null,
@@ -251,6 +266,7 @@ export const useGame = create<GameState>((set) => ({
       shift: s.shift,
       clock: s.clock,
       world: s.world,
+      events: s.events,
       orders: s.orders
         .filter((o) => o.ownerId === s.me.playerId)
         .map((o) => ({ ...o, made: "none", mistakes: [] })),
@@ -295,7 +311,9 @@ export const useGame = create<GameState>((set) => ({
     set((s) => ({
       orders: s.orders.map((o) =>
         o.orderId === u.orderId
-          ? { ...o, made: u.stage, mistakes: u.mistakes, expiresAt: u.expiresAt }
+          ? u.stage === "making"
+            ? { ...o, expiresAt: u.expiresAt }
+            : { ...o, made: u.stage, mistakes: u.mistakes, expiresAt: u.expiresAt }
           : o,
       ),
     })),
