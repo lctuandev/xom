@@ -69,6 +69,7 @@ const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  */
 export async function makeDish(page: Page, opts: { mistake?: string; timeout?: number } = {}) {
   const t = opts.timeout ? { timeout: opts.timeout } : undefined;
+  if (await page.locator("[data-counter]").isVisible()) return makeAtCounter(page, t);
   const kitchen = page.getByRole("dialog", { name: "Làm món" });
   await expect(kitchen).toBeVisible();
   const spec = JSON.parse((await kitchen.getAttribute("data-spec")) ?? "{}") as Record<
@@ -112,6 +113,91 @@ export async function makeDish(page: Page, opts: { mistake?: string; timeout?: n
   }
   await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
   return { orderId, spec };
+}
+
+/**
+ * Làm món ở quầy dạng lưới (UC-F5, product.counter): lấy ly, rót trà, chọn đường/đá, thêm topping, lắc, dán miệng ly.
+ */
+async function makeAtCounter(page: Page, t?: { timeout: number }) {
+  const kitchen = page.getByRole("dialog", { name: "Làm món" });
+  const spec = JSON.parse((await kitchen.getAttribute("data-spec")) ?? "{}") as Record<
+    string,
+    string | string[] | true
+  >;
+  const orderId = await kitchen.getAttribute("data-order");
+  const product = content.data.products.find(
+    (p) => p.counter && p.recipe.steps.every((s) => s.id in spec),
+  );
+  if (!product?.counter) throw new Error("Không nhận ra quầy");
+  const short = (label: string) => label.split(" · ")[0] ?? label;
+  for (const z of product.counter.zones) {
+    const step = product.recipe.steps.find((s) => s.id === z.step);
+    if (!step) continue;
+    const want = spec[step.id];
+    const opt = (id: string) => step.options.find((o) => o.id === id);
+    const panel = kitchen.getByRole("region", { name: step.label });
+    if (z.zone === "cups" && typeof want === "string")
+      await panel.getByRole("button", { name: `Lấy ly ${short(opt(want)?.label ?? "")}` }).tap(t);
+    else if (z.zone === "jars" && typeof want === "string")
+      await panel.getByRole("button", { name: `Rót ${opt(want)?.label}` }).tap(t);
+    else if (z.zone === "chips" && typeof want === "string")
+      await panel.getByRole("button", { name: opt(want)?.label ?? "", exact: true }).tap(t);
+    else if (z.zone === "grid") {
+      const ids = Array.isArray(want) ? want : [];
+      if (ids.length === 0) await panel.getByRole("button", { name: "Không topping" }).tap(t);
+      for (const id of ids)
+        await panel.getByRole("button", { name: `Thêm ${opt(id)?.label}` }).tap(t);
+    } else if (z.zone === "shaker") {
+      const btn = panel.getByRole("button");
+      await btn.dispatchEvent("pointerdown");
+      await page.waitForTimeout(1300);
+      await btn.dispatchEvent("pointerup");
+      await expect(
+        panel.getByRole("button", { name: new RegExp(`✓ ${esc(step.label)}`) }),
+      ).toBeVisible();
+    } else if (z.zone === "sealer") await panel.getByRole("button").tap(t);
+  }
+  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
+  return { orderId, spec };
+}
+
+/** Nguyên liệu trà sữa truyền thống, trà xanh, size M/L, đá, trân châu, màng dán. */
+export const TRA_SUA = [
+  "ly_m",
+  "ly_l",
+  "cot_tra_sua",
+  "cot_tra_xanh",
+  "da",
+  "tran_chau_den",
+  "tran_chau_trang",
+  "mang_nap",
+];
+
+/** Người mới mở xe trà sữa (theo kịch bản Chú Bảy) ở chỗ `lot`; trà sữa vốn nhiều nên cộng sẵn vốn. */
+export async function openTeaStall(page: Page, lot: RegExp = /Đầu hẻm 12/) {
+  await grantMoney(page, 300_000);
+  let box = await readDialogue(page);
+  await box.getByRole("button", { name: "Con muốn buôn bán" }).tap();
+  await walkToObjective(page, /Xem xe đẩy · Ông Sáu/);
+  await page.getByRole("button", { name: /Xem xe đẩy · Ông Sáu/ }).tap();
+  await page
+    .locator("li", { hasText: "Xe đẩy trà sữa" })
+    .getByRole("button", { name: /Mua ·/ })
+    .tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await walkToObjective(page, /Vào chợ · Bà Năm/);
+  await page.getByRole("button", { name: /Vào chợ · Bà Năm/ }).tap();
+  await buyIngredients(page, TRA_SUA);
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
+  await page.getByRole("button", { name: "Mở", exact: true }).tap();
+  await page.getByRole("button", { name: lot }).tap();
+  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
+  await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
+  box = await readDialogue(page);
+  await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
 }
 
 /** Tính tiền: chuyển khoản/đưa đủ thì xác nhận; tiền mặt thì ghép tờ tiền thối (thiếu `short` đồng). */

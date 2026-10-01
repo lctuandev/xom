@@ -142,6 +142,20 @@ export const data: ContentInput = {
     },
     {
       id: "tra_sua",
+      // Quầy trà theo góc nhìn người bán (ảnh tham khảo của chủ dự án): ly M/L · bình trà có vòi · máy dán miệng ly ·
+      // ô pha ly + dải đường/đá · lưới khay topping 4×3 · giữ để lắc.
+      counter: {
+        title: "QUẦY TRÀ",
+        zones: [
+          { zone: "cups", step: "ly" },
+          { zone: "jars", step: "tra" },
+          { zone: "sealer", step: "nap" },
+          { zone: "chips", step: "duong" },
+          { zone: "chips", step: "da" },
+          { zone: "grid", step: "topping", slots: 12 },
+          { zone: "shaker", step: "lac" },
+        ],
+      },
       template: "FOOD",
       category: "drink",
       name: "Trà sữa",

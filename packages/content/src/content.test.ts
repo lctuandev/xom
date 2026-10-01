@@ -13,6 +13,17 @@ describe("content", () => {
     expect(() => loadContent(broken)).toThrow(/pho/);
   });
 
+  it("quầy dạng lưới phải phủ mọi bước công thức, đúng loại khu", () => {
+    const broken = structuredClone(content.data) as typeof content.data;
+    const tea = broken.products.find((p) => p.id === "tra_sua");
+    tea?.counter?.zones.pop();
+    expect(() => loadContent(broken)).toThrow(/bước lac chưa có chỗ/);
+    const wrong = structuredClone(content.data) as typeof content.data;
+    const z = wrong.products.find((p) => p.id === "tra_sua")?.counter?.zones[0];
+    if (z) z.zone = "grid";
+    expect(() => loadContent(wrong)).toThrow(/không hợp bước ly/);
+  });
+
   it("báo lỗi tham chiếu sai", () => {
     const broken = structuredClone(content.data) as typeof content.data;
     broken.equipment[0]?.products.push("khong_ton_tai");

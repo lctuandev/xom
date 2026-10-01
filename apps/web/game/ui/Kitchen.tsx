@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { type OrderState, useGame } from "../store";
+import { Counter } from "./Counter";
 
 /**
  * Màn hình làm món theo đơn (docs/USECASES.md UC-F4…F7): làm từng bước → giao món →
@@ -41,6 +42,8 @@ export function Kitchen() {
           <Payment key="pay" order={order} discount={false} />
         ) : order.made === "wrong" ? (
           <Wrong key="wrong" order={order} />
+        ) : content.product(order.productId).counter ? (
+          <Counter key="counter" order={order} />
         ) : (
           <Build key="build" order={order} />
         )}

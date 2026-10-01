@@ -304,7 +304,10 @@ Thanh trên cùng luôn hiện yêu cầu của khách để đối chiếu.
 **Kiểm chứng (đã chạy):** unit chấm món; e2e server (thiếu nguyên liệu bị từ chối, làm sai phải làm lại/giảm giá); Playwright làm đúng 3 món + làm sai 1 món trên iPhone 16 Pro & Pixel 7.
 ### UC-F5 · Pha trà sữa theo đơn ✅
 > Góp ý chơi thử (10/2026): mức đường ghi bằng chữ như khách nói — *Không đường · 0%, Ít đường · 30%, Nửa đường · 50%, Bình thường · 70%, Ngọt nhiều · 100%*.
-> (UI chung với bánh mì; chưa có kịch bản Playwright riêng)
+> **Quầy dạng lưới ✅ (1.11):** theo góc nhìn người bán (ảnh tham khảo của chủ dự án) — chồng ly **M/L** (số còn lại), dãy **bình trà có vòi**
+> (Trà sữa / Trà xanh / Hồng trà), **máy dán miệng ly**, ô **PHA LY** hiện các lớp đã cho vào, dải **Đường/Đá** bằng chữ, **lưới khay topping 4×3**
+> (ô chưa có hàng mờ, ô chưa mở 🔒), **giữ để lắc**, **giao món**. Bố trí là dữ liệu (`product.counter`: mỗi khu gắn một bước công thức, content kiểm
+> khu đúng loại bước và phủ đủ mọi bước) → nghề khác (cà phê, nước mía…) dùng lại được. Kiểm chứng: Playwright `tra-sua.spec.ts`.
 **Luồng:** chọn **ly** (M/L) → **trà nền** (trà sữa truyền thống / trà xanh / hồng trà) → **đường** (0 / 30 / 50 / 70 / 100%) → **đá** (không / ít / bình thường) → **topping** (trân châu đen, trân châu trắng, thạch, pudding — có thể nhiều) → **lắc** (giữ nút 1 giây) → **dán nắp** → đưa khách.
 **Đời thật:** "ít ngọt, nhiều đá, thêm pudding" · hết đá khi mất điện (UC-K4) · khách đổi ý sau khi gọi ("thôi cho ít đường") — khung thoại cập nhật, món đang pha phải chỉnh theo.
 **Luật:** topping tính thêm tiền theo bảng giá của quầy; sai mức đường/đá là lỗi nhẹ (trừ ít điểm), sai topping là lỗi nặng.
@@ -563,7 +566,7 @@ tiền điện nước tính vào tiền thuê; bảng hiệu, bàn ghế nâng 
 **Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 120k/ngày) trong danh sách Chỗ bán;
 ngoài phố căn nhà có mái hiên + biển "🏪 BÁNH MÌ <TÊN>"; đứng trước cửa bấm "🏪 Vào tiệm" → cảnh trong tiệm (quầy, đồ bày, bàn ghế,
 camera xoay được), khách đi từ cửa vào xếp hàng, khung thoại gọi món, nhận món xong đi ra; "👨‍🍳 Làm món cho khách" dùng màn làm món,
-"📖 Công thức" ngay trong tiệm. **Chưa:** bảng quầy dạng lưới riêng cho trà sữa (như ảnh tham khảo), khách ngồi ăn tại bàn, thuê người phụ.
+"📖 Công thức" ngay trong tiệm. **Chưa:** khách ngồi ăn tại bàn, thuê người phụ. (Bảng quầy dạng lưới cho trà sữa: ✅ 1.11, xem UC-F5.)
 **Kiểm chứng:** Playwright `tiem-rieng.spec.ts`.
 
 ### UC-W7 · Phiếu lương & uy tín người làm ⏳

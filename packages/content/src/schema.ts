@@ -94,6 +94,24 @@ export const recipeSchema = z.object({
   ask: z.string(),
 });
 
+/**
+ * Bố trí quầy theo góc nhìn người bán (UC-F5): mỗi khu gắn với một bước công thức.
+ * cups = chồng ly · jars = dãy bình có vòi · chips = dải chọn một · grid = lưới khay · shaker = giữ để lắc · sealer = máy dán.
+ */
+export const counterSchema = z.object({
+  title: z.string(),
+  zones: z
+    .array(
+      z.object({
+        zone: z.enum(["cups", "jars", "chips", "grid", "shaker", "sealer"]),
+        step: id,
+        /** Số ô của lưới khay (ô trống hiện khoá). */
+        slots: z.number().int().min(1).max(24).optional(),
+      }),
+    )
+    .min(1),
+});
+
 export const productSchema = z.object({
   id,
   template: z.enum(["FOOD", "RETAIL"]),
@@ -109,6 +127,8 @@ export const productSchema = z.object({
   /** Tỉ lệ người qua đường quan tâm, theo giờ. */
   interestByHour: byHour,
   recipe: recipeSchema,
+  /** Quầy dạng lưới thay cho danh sách bước (bỏ trống = làm theo từng bước). */
+  counter: counterSchema.optional(),
 });
 
 export const equipmentSchema = z.object({

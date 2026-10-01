@@ -84,6 +84,29 @@ export function loadContent(raw: unknown): Content {
     if (!templates.has(p.template)) errors.push(`${p.id}: template ${p.template} không tồn tại`);
     if (Object.keys(p.interestByHour).length === 0) errors.push(`${p.id}: thiếu interestByHour`);
     errors.push(...checkRecipe(p.id, p.recipe, ingredients));
+    if (p.counter) {
+      const used = new Set<string>();
+      const kinds: Record<string, string[]> = {
+        cups: ["single"],
+        jars: ["single"],
+        chips: ["single"],
+        grid: ["multi"],
+        shaker: ["hold"],
+        sealer: ["action"],
+      };
+      for (const z of p.counter.zones) {
+        const st = p.recipe.steps.find((s) => s.id === z.step);
+        if (!st) errors.push(`${p.id} quầy: không có bước ${z.step}`);
+        else if (!kinds[z.zone]?.includes(st.kind))
+          errors.push(`${p.id} quầy: khu ${z.zone} không hợp bước ${z.step} (${st.kind})`);
+        if (used.has(z.step)) errors.push(`${p.id} quầy: bước ${z.step} xếp hai khu`);
+        used.add(z.step);
+        if (z.zone === "grid" && st && (z.slots ?? 12) < st.options.length)
+          errors.push(`${p.id} quầy: lưới ${z.step} ít ô hơn số lựa chọn`);
+      }
+      for (const st of p.recipe.steps)
+        if (!used.has(st.id)) errors.push(`${p.id} quầy: bước ${st.id} chưa có chỗ trên quầy`);
+    }
   }
   for (const e of parsed.equipment) {
     for (const pid of e.products)
