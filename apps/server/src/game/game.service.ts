@@ -19,6 +19,7 @@ import type {
   WorldView,
 } from "@xom/shared";
 import {
+  absMinute,
   addSkill,
   atmAmountError,
   bankInterest,
@@ -26,6 +27,7 @@ import {
   chanceIn,
   choosePayment,
   customerArrivals,
+  eat,
   fameOf,
   feeToFund,
   hostCost,
@@ -33,6 +35,9 @@ import {
   marketPackPrice,
   maskText,
   menuPriceRatio,
+  needsAlert,
+  needsAt,
+  needsFrom,
   overrideWeather,
   type PaySource,
   pinError,
@@ -376,6 +381,80 @@ export class GameService implements OnModuleDestroy {
     const from = src === "cash" ? playerWallet(playerId) : bankWallet(playerId);
     await this.ledger.transfer(tx, from, to, amount, reason, refId);
     return src;
+  }
+
+  /** Ăn / uống (UC-B11): cộng vào mức no / khát hiện tại. */
+  async feed(tx: Tx, room: RoomRuntime, playerId: string, add: { food?: number; drink?: number }) {
+    const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
+    const now = absMinute(room.day, room.minute);
+    const next = eat(content, needsFrom(player.needs), now, add);
+    await tx.player.update({ where: { id: playerId }, data: { needs: { ...next } } });
+    room.needsAlert.delete(playerId);
+  }
+
+  /**
+   * Mỗi giờ game: ai vừa đói / khát thì nhắc một lần (không khoá gì — chỉ tay chậm đi chút).
+   * Người mới (chưa có mốc) được tính là vừa ăn sáng.
+   */
+  private async needsTick(room: RoomRuntime) {
+    const now = absMinute(room.day, room.minute);
+    const players = await this.prisma.player.findMany({
+      where: { id: { in: [...room.members.keys()] } },
+    });
+    for (const p of players) {
+      const n = needsFrom(p.needs);
+      if (!n.at) {
+        await this.prisma.player.update({
+          where: { id: p.id },
+          data: { needs: { food: n.food, drink: n.drink, at: now } },
+        });
+        continue;
+      }
+      const a = needsAlert(content, needsAt(content, n, now));
+      const key = `${a.food}:${a.drink}`;
+      if (key === "ok:ok" || room.needsAlert.get(p.id) === key) continue;
+      room.needsAlert.set(p.id, key);
+      const text =
+        a.food !== "ok" && a.drink !== "ok"
+          ? "🍚💧 Vừa đói vừa khát — ghé 🍜 Ăn uống làm tô phở, ly nước mía đi (tay đang chậm hẳn)"
+          : a.food !== "ok"
+            ? a.food === "empty"
+              ? "🍚 Đói lả rồi! Ghé 🍜 Ăn uống kiếm gì bỏ bụng (tay đang chậm)"
+              : "🍚 Bụng réo rồi — ghé 🍜 Ăn uống kiếm gì bỏ bụng"
+            : a.drink === "empty"
+              ? "💧 Khô cổ quá! Làm ly cà phê đá, nước mía đi (tay đang chậm)"
+              : "💧 Khát nước rồi — ghé 🍜 Ăn uống làm ly gì mát mát";
+      this.emitter?.toPlayer(p.id, "notify", { kind: "warn", text });
+      void this.emitMe(p.id).catch(() => undefined);
+    }
+  }
+
+  /**
+   * Quầy đang mở mà chủ đi vắng (đi ăn, đi chợ…): khách tới réo "có ai bán không" — chủ được báo để chạy về
+   * (UC-B11). Mỗi quầy réo tối đa một lần mỗi 20 phút game.
+   */
+  private async calloutTick(room: RoomRuntime) {
+    const away = [...room.members.keys()].filter((id) => !room.attending.has(id));
+    if (!away.length) return;
+    const open = await this.prisma.business.findMany({
+      where: { ownerId: { in: away }, status: "OPEN", lotId: { not: null } },
+    });
+    const lines = content.data.needs.callouts;
+    for (const b of open) {
+      if ((room.calloutAt.get(b.id) ?? -999) > room.minute - 20) continue;
+      const rand = seededRandom("callout", b.id, room.day, room.minute);
+      if (rand() > 0.6) continue;
+      room.calloutAt.set(b.id, room.minute);
+      const lot = content.lot(b.lotId ?? "");
+      this.emitter?.toRoom(room.id, "say", {
+        who: `lot:${lot.id}`,
+        text: lines[Math.floor(rand() * lines.length)] ?? "Có ai bán không?",
+      });
+      this.emitter?.toPlayer(b.ownerId, "notify", {
+        kind: "warn",
+        text: `🔔 Khách đang réo ở quầy ${lot.name} — chạy về bán thôi!`,
+      });
+    }
   }
 
   /** Báo cho người chơi khoản vừa trả đi bằng ví nào (chuyển khoản thì có "ting ting"). */
@@ -795,6 +874,7 @@ export class GameService implements OnModuleDestroy {
         v.cashOnly,
       );
       await this.addFriendship(tx, playerId, v.id, 1);
+      await this.feed(tx, room, playerId, { food: item.food, drink: item.drink });
     });
     this.paidBy(playerId, src, item.price);
     void this.log(playerId, "vendor_buy", { vendorId: v.id, itemId: item.id, price: item.price });
@@ -869,7 +949,10 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Dev/test: cộng tiền mặt cho mình (để kịch bản thử tính năng cần vốn); production không cho. */
-  async debugGrant({ playerId }: IntentContext, p: { money?: number; xp?: number }) {
+  async debugGrant(
+    { room, playerId }: IntentContext,
+    p: { money?: number; xp?: number; food?: number; drink?: number },
+  ) {
     if (process.env.NODE_ENV === "production")
       throw new GameError("invalid_state", "Không có lệnh này");
     const { money, xp } = p;
@@ -879,6 +962,15 @@ export class GameService implements OnModuleDestroy {
       );
     if (xp)
       await this.prisma.player.update({ where: { id: playerId }, data: { xp: { increment: xp } } });
+    if (p.food !== undefined || p.drink !== undefined) {
+      const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
+      const now = absMinute(room.day, room.minute);
+      const cur = needsAt(content, needsFrom(player.needs), now);
+      await this.prisma.player.update({
+        where: { id: playerId },
+        data: { needs: { food: p.food ?? cur.food, drink: p.drink ?? cur.drink, at: now } },
+      });
+    }
   }
 
   /** Cấp hiện tại của người chơi (mở khoá theo cấp, Luật 4.2). */
@@ -1133,9 +1225,13 @@ export class GameService implements OnModuleDestroy {
       } else {
         if (room.minute % eco.economyTickMinutes === 0) {
           await this.customerTick(room);
+          await this.calloutTick(room);
           await this.projects.tick(room);
         }
-        if (room.minute % 60 === 0) await this.chargeUtilities(room);
+        if (room.minute % 60 === 0) {
+          await this.chargeUtilities(room);
+          await this.needsTick(room);
+        }
         await this.work.tick(room);
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
@@ -1223,6 +1319,7 @@ export class GameService implements OnModuleDestroy {
     room.shoutReadyAt.clear();
     room.purchases.clear();
     room.atmTries.clear();
+    room.calloutAt.clear();
     for (const playerId of room.members.keys()) {
       await this.closeAllFor(room, playerId);
       const report = await this.prisma.$transaction(async (tx) => {
@@ -1351,6 +1448,7 @@ export class GameService implements OnModuleDestroy {
       displayName: player.displayName,
       money,
       bank,
+      needs: needsAt(content, needsFrom(player.needs), absMinute(room.day, room.minute)),
       atm: {
         hasPin: player.atmPin !== null,
         locked: player.atmLockDay !== null && player.atmLockDay >= room.day,

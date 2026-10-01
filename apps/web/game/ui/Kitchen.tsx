@@ -2,7 +2,7 @@
 
 import { content, type RecipeStep } from "@xom/content";
 import type { DishSelection, DishView } from "@xom/shared";
-import { holdFactor, remembersOrders, wearState } from "@xom/sim";
+import { holdFactor, needsHold, remembersOrders, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
@@ -312,7 +312,9 @@ function HoldStep({
       const skills = useGame.getState().me?.progress.skills ?? {};
       // Xe ọp ẹp thì chậm hơn; tay nhanh (kỹ năng) thì nhanh hơn.
       const slow =
-        (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) * holdFactor(content, skills);
+        (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) *
+        holdFactor(content, skills) *
+        needsHold(content, useGame.getState().me?.needs ?? { food: 100, drink: 100 });
       const p = Math.min(1, (performance.now() - t0) / (1000 * slow));
       setProgress(p);
       if (p >= 1) {

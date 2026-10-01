@@ -69,6 +69,8 @@ export interface MeView {
   bank: number;
   /** Thẻ ATM: đã tạo PIN chưa, có đang bị máy giữ thẻ không. */
   atm: { hasPin: boolean; locked: boolean };
+  /** 🍚 No / 💧 khát (0–100, UC-B11). */
+  needs: { food: number; drink: number };
   jobId: string | null;
   /** Bước kịch bản người mới hiện tại. */
   tutorial: string;
@@ -641,6 +643,9 @@ export const emptySchema = z.object({}).optional();
 export const debugGrantSchema = z.object({
   money: z.number().int().min(1_000).max(10_000_000).optional(),
   xp: z.number().int().min(1).max(100_000).optional(),
+  /** Đặt mức no / khát (UC-B11). */
+  food: z.number().int().min(0).max(100).optional(),
+  drink: z.number().int().min(0).max(100).optional(),
 });
 /** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
 const atmId = z.string().regex(/^atm_[0-9]+_[0-9]+$/);

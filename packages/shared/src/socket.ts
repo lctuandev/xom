@@ -102,7 +102,7 @@ export interface ClientToServerEvents {
   /** Dev/test: đặt giờ của xóm (production từ chối). */
   "debug:clock": Intent<{ minute: number }>;
   /** Dev/test: cộng tiền (production từ chối). */
-  "debug:grant": Intent<{ money?: number; xp?: number }>;
+  "debug:grant": Intent<{ money?: number; xp?: number; food?: number; drink?: number }>;
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
   /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */

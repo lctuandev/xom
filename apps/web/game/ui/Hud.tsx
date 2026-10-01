@@ -151,6 +151,7 @@ function ResourceBar() {
       {rep !== null && (
         <span className="text-xs font-semibold tabular-nums">⭐ {rep.toFixed(1)}</span>
       )}
+      <NeedsChip />
       <span
         className="ml-auto text-xs font-semibold tabular-nums"
         data-clock={clock ? minute : undefined}
@@ -236,6 +237,39 @@ function SideRail() {
         <IconTrophy className={icon} />
       </button>
     </div>
+  );
+}
+
+/**
+ * Đói / khát (UC-B11): chỉ hiện khi dưới 50% — HUD gọn (Luật 12.1). Dưới mức đói thì đỏ, nhấp nháy; chạm để mở
+ * danh sách quán ăn.
+ */
+function NeedsChip() {
+  const needs = useGame((s) => s.me?.needs);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!needs || (needs.food >= 50 && needs.drink >= 50)) return null;
+  const low = content.data.needs.lowAt;
+  const item = (icon: string, v: number, label: string) =>
+    v < 50 ? (
+      <span
+        className={`tabular-nums ${v < low ? "animate-pulse text-[#ff9b8a]" : ""}`}
+        title={`${label} ${v}%`}
+      >
+        {icon}
+        {v}%
+      </span>
+    ) : null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("food")}
+      aria-label={`No ${needs.food}%, khát ${needs.drink}% — mở quán ăn`}
+      data-needs={`${needs.food}:${needs.drink}`}
+      className="flex items-center gap-1 rounded-full bg-cream/15 px-1.5 py-0.5 text-xs font-semibold"
+    >
+      {item("🍚", needs.food, "No")}
+      {item("💧", needs.drink, "Đỡ khát")}
+    </button>
   );
 }
 

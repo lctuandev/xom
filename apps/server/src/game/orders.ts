@@ -9,15 +9,18 @@ import type {
   PayMethod,
 } from "@xom/shared";
 import {
+  absMinute,
   addSkill,
   billFor,
   choosePayment,
   customOrder,
+  eat,
   generateOrder,
   hasIngredients,
   ingredientsFor,
   type LineKind,
   LOST_WEIGHT,
+  needsFrom,
   nextReputation,
   patienceFactor,
   pickArchetype,
@@ -413,6 +416,18 @@ export class OrderService {
     room.orders.delete(orderId);
     if (e.buyerId) {
       room.purchases.add(purchaseKey(e.buyerId, e.ownerId, room.day));
+      // Hàng xóm ăn / uống món vừa mua (UC-B11).
+      const add = content.data.needs.byCategory[content.product(e.productId).category];
+      if (add) {
+        const buyer = await this.prisma.player.findUnique({ where: { id: e.buyerId } });
+        if (buyer) {
+          const next = eat(content, needsFrom(buyer.needs), absMinute(room.day, room.minute), add);
+          await this.prisma.player.update({
+            where: { id: buyer.id },
+            data: { needs: { ...next } },
+          });
+        }
+      }
       this.emit?.charged(e.buyerId);
       const line =
         e.pay.kind === "transfer"

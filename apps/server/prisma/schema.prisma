@@ -56,6 +56,8 @@ model Player {
   atmPin       String?
   /// Sai PIN quá số lần cho phép: máy giữ thẻ tới hết ngày game này.
   atmLockDay   Int?
+  /// Đói / khát (UC-B11): { food, drink, at } — giảm theo giờ game, tính lại khi đọc (sim needsAt).
+  needs        Json     @default("{}")
   createdAt   DateTime @default(now())
 
   businesses Business[]

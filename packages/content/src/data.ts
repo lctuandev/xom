@@ -1157,8 +1157,8 @@ export const data: ContentInput = {
       cashOnly: true,
       lines: ["Xôi nóng đây con!", "Ăn xôi cho chắc bụng đi học!"],
       items: [
-        { id: "xoi_ga", name: "Xôi gà", emoji: "🍗", price: 20_000 },
-        { id: "xoi_xeo", name: "Xôi xéo", emoji: "🍚", price: 15_000 },
+        { id: "xoi_ga", name: "Xôi gà", emoji: "🍗", price: 20_000, food: 55 },
+        { id: "xoi_xeo", name: "Xôi xéo", emoji: "🍚", price: 15_000, food: 45 },
       ],
     },
     {
@@ -1174,8 +1174,8 @@ export const data: ContentInput = {
       seats: 3,
       lines: ["Phở bò tái nạm đây!", "Nước lèo ninh từ khuya đó."],
       items: [
-        { id: "pho_tai", name: "Phở tái", emoji: "🍜", price: 40_000 },
-        { id: "pho_ga", name: "Phở gà", emoji: "🍲", price: 35_000 },
+        { id: "pho_tai", name: "Phở tái", emoji: "🍜", price: 40_000, food: 70, drink: 15 },
+        { id: "pho_ga", name: "Phở gà", emoji: "🍲", price: 35_000, food: 65, drink: 15 },
       ],
     },
     {
@@ -1192,8 +1192,8 @@ export const data: ContentInput = {
       cashOnly: true,
       lines: ["Cà phê sữa đá hông con?", "Ngồi đây coi người qua lại nè."],
       items: [
-        { id: "cf_sua_da", name: "Cà phê sữa đá", emoji: "🧋", price: 18_000 },
-        { id: "bac_xiu", name: "Bạc xỉu", emoji: "🥛", price: 20_000 },
+        { id: "cf_sua_da", name: "Cà phê sữa đá", emoji: "🧋", price: 18_000, food: 5, drink: 45 },
+        { id: "bac_xiu", name: "Bạc xỉu", emoji: "🥛", price: 20_000, food: 10, drink: 45 },
       ],
     },
     {
@@ -1208,7 +1208,9 @@ export const data: ContentInput = {
       close: 1020,
       seats: 2,
       lines: ["Nước mía tắc đây, mát lạnh!", "Trưa nắng uống ly nước mía đi em."],
-      items: [{ id: "nuoc_mia_ly", name: "Nước mía", emoji: "🥤", price: 12_000 }],
+      items: [
+        { id: "nuoc_mia_ly", name: "Nước mía", emoji: "🥤", price: 12_000, food: 5, drink: 60 },
+      ],
     },
     {
       id: "banh_trang_tron",
@@ -1223,8 +1225,8 @@ export const data: ContentInput = {
       seats: 2,
       lines: ["Bánh tráng trộn nè mấy đứa!", "Tan học ghé chị nha!"],
       items: [
-        { id: "banh_trang", name: "Bánh tráng trộn", emoji: "🥗", price: 15_000 },
-        { id: "banh_trang_nuong", name: "Bánh tráng nướng", emoji: "🫓", price: 18_000 },
+        { id: "banh_trang", name: "Bánh tráng trộn", emoji: "🥗", price: 15_000, food: 30 },
+        { id: "banh_trang_nuong", name: "Bánh tráng nướng", emoji: "🫓", price: 18_000, food: 30 },
       ],
     },
     {
@@ -1240,8 +1242,8 @@ export const data: ContentInput = {
       seats: 3,
       lines: ["Chè thái, chè đậu đây!", "Ăn chè cho mát nha con."],
       items: [
-        { id: "che_thai", name: "Chè thái", emoji: "🍧", price: 20_000 },
-        { id: "che_dau", name: "Chè đậu", emoji: "🍨", price: 15_000 },
+        { id: "che_thai", name: "Chè thái", emoji: "🍧", price: 20_000, food: 20, drink: 35 },
+        { id: "che_dau", name: "Chè đậu", emoji: "🍨", price: 15_000, food: 20, drink: 30 },
       ],
     },
     {
@@ -1257,8 +1259,8 @@ export const data: ContentInput = {
       seats: 4,
       lines: ["Ốc hương xào bơ tỏi đây!", "Tối rồi, làm dĩa ốc đi anh em!"],
       items: [
-        { id: "oc_huong", name: "Ốc hương xào bơ", emoji: "🐚", price: 50_000 },
-        { id: "so_diep", name: "Sò điệp nướng", emoji: "🦪", price: 45_000 },
+        { id: "oc_huong", name: "Ốc hương xào bơ", emoji: "🐚", price: 50_000, food: 40 },
+        { id: "so_diep", name: "Sò điệp nướng", emoji: "🦪", price: 45_000, food: 35 },
       ],
     },
     {
@@ -1274,8 +1276,8 @@ export const data: ContentInput = {
       seats: 4,
       lines: ["Thịt nướng thơm lừng đây!", "Nướng tới đâu ăn tới đó!"],
       items: [
-        { id: "xien_nuong", name: "Xiên nướng", emoji: "🍢", price: 10_000 },
-        { id: "bap_nuong", name: "Bắp nướng", emoji: "🌽", price: 12_000 },
+        { id: "xien_nuong", name: "Xiên nướng", emoji: "🍢", price: 10_000, food: 20 },
+        { id: "bap_nuong", name: "Bắp nướng", emoji: "🌽", price: 12_000, food: 25 },
       ],
     },
   ],
@@ -1561,6 +1563,22 @@ export const data: ContentInput = {
     { id: "vui", text: "😄" },
     { id: "vay_tay", text: "👋" },
   ],
+
+  // Đói / khát (UC-B11): no tụt từ 100 xuống 0 trong ~10 giờ game, khát ~7 giờ; ngủ đêm chỉ tính 4 giờ.
+  needs: {
+    foodPerHour: 10,
+    drinkPerHour: 14,
+    nightMinutes: 240,
+    lowAt: 30,
+    slowHold: 1.25,
+    byCategory: { breakfast: { food: 45, drink: 0 }, drink: { food: 10, drink: 55 } },
+    callouts: [
+      "Ơi có ai bán không dạ?",
+      "Chủ quán đâu rồi ta?",
+      "Bán cho con với… có ai không?",
+      "Quầy mở mà không thấy ai, thôi đi chỗ khác",
+    ],
+  },
 
   // Quỹ xóm + công trình chung (UC-J5). Giá tham khảo công trình nông thôn (đã nén như mọi số tiền trong game).
   fund: { feeShare: 0.6, voteMinutes: 240, donateStep: 10_000 },

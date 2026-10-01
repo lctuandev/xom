@@ -329,7 +329,12 @@ export async function setClock(page: Page, minute: number) {
 }
 
 /** Cộng tiền mặt / KN (lệnh thử nghiệm, chỉ bản dev). */
-export async function grantMoney(page: Page, money: number, xp?: number) {
+export async function grantMoney(
+  page: Page,
+  money: number | undefined,
+  xp?: number,
+  needs?: { food?: number; drink?: number },
+) {
   const ok = await page.evaluate(
     async (p) => {
       const dbg = (
@@ -339,7 +344,7 @@ export async function grantMoney(page: Page, money: number, xp?: number) {
       ).xomDebug;
       return (await dbg?.send("debug:grant", p))?.ok ?? false;
     },
-    { money, xp },
+    { money, xp, ...needs },
   );
   expect(ok).toBe(true);
 }

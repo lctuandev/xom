@@ -150,6 +150,27 @@ export function ProfileSheet() {
               KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
             </p>
           </div>
+          <div className="mb-3 grid grid-cols-2 gap-2" data-needs-bars>
+            {(
+              [
+                ["🍚 No", me.needs.food, "bg-sun"],
+                ["💧 Đỡ khát", me.needs.drink, "bg-[#5aa9e6]"],
+              ] as const
+            ).map(([label, v, color]) => (
+              <div key={label} className="rounded-2xl bg-white p-2.5 shadow-sm">
+                <p className="flex justify-between text-xs font-semibold">
+                  <span>{label}</span>
+                  <span className="tabular-nums">{v}%</span>
+                </p>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+                  <div
+                    className={`h-full rounded-full ${v < content.data.needs.lowAt ? "bg-red" : color}`}
+                    style={{ width: `${v}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
           <div className="rounded-2xl bg-white p-3 shadow-sm">
             {row("💵 Tiền mặt", vnd(me.money))}
             {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}

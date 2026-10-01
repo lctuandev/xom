@@ -239,7 +239,19 @@ export const vendorSchema = z.object({
   /** Sạp nhỏ không có mã QR — chỉ nhận tiền mặt. */
   cashOnly: z.boolean().default(false),
   lines: z.array(z.string()).min(1),
-  items: z.array(z.object({ id, name: z.string(), emoji: z.string(), price: vnd })).min(1),
+  items: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        emoji: z.string(),
+        price: vnd,
+        /** Ăn xong no thêm / đỡ khát thêm bao nhiêu (0–100, UC-B11). */
+        food: z.number().min(0).max(100).default(0),
+        drink: z.number().min(0).max(100).default(0),
+      }),
+    )
+    .min(1),
 });
 export type Vendor = z.infer<typeof vendorSchema>;
 
@@ -511,6 +523,24 @@ export const fundSchema = z.object({
   donateStep: vnd,
 });
 
+/**
+ * Đói / khát (UC-B11): giảm dần theo giờ game, ăn uống thì hồi. Chỉ làm tay chậm đi chút + nhắc — KHÔNG khoá việc
+ * chơi (DESIGN Luật 17: không ép giờ chơi).
+ */
+export const needsSchema = z.object({
+  foodPerHour: z.number().min(0).max(50),
+  drinkPerHour: z.number().min(0).max(50),
+  /** Ban đêm (ngủ) chỉ tính bấy nhiêu phút game cho mỗi đêm. */
+  nightMinutes: z.number().int().min(0).max(600),
+  /** Dưới mức này là đói / khát: giữ nút lâu hơn hệ số `slowHold`. */
+  lowAt: z.number().min(0).max(100),
+  slowHold: z.number().min(1).max(2),
+  /** Mua món ở quầy hàng xóm: no / đỡ khát theo loại hàng. */
+  byCategory: z.record(z.string(), z.object({ food: z.number(), drink: z.number() })),
+  /** Khách réo khi quầy mở mà chủ vắng. */
+  callouts: z.array(z.string()).min(2),
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -742,6 +772,7 @@ export const contentSchema = z.object({
   reviews: reviewsSchema,
   awards: z.array(awardSchema).min(1),
   projects: z.array(projectSchema).min(1),
+  needs: needsSchema,
   fund: fundSchema,
   achievements: z.array(achievementSchema).min(1),
   economy: economySchema,

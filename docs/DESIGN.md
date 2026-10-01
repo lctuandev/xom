@@ -157,6 +157,8 @@ Ngay từ đầu ghi sự kiện (bảng `GameEvent`): DAU/MAU · thời lượn
 
 Lý do quay lại: sự kiện ngày · chợ phiên tuần · mục tiêu làm ăn · bạn bè đang làm gì · trang trí nhà · sưu tầm · mùa · nghề mới.
 **Luật 17.1** — **Không** ép đăng nhập bằng phần thưởng điểm danh dồn dập, không thông báo dồn dập, không cơ chế "mất trắng nếu không vào".
+**Luật 17.2** — Nhu cầu cơ thể (đói / khát, UC-B11) chỉ là **gia vị đời sống**: tay chậm đi chút + nhắc một lần mỗi lần đổi mức;
+**không** khoá việc chơi, không trừ tiền, không chết đói; ngủ đêm chỉ tính 4 giờ, offline không bị phạt thêm.
 
 ## Khung hệ thống
 

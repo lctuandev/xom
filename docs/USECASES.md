@@ -185,6 +185,23 @@ mình ra ghế nhựa ngồi ăn (có muỗng) vài giây; NPC có việc để 
 
 ---
 
+
+### UC-B11 · Đói / khát + quầy hàng xóm trong mục Ăn uống + khách réo khi chủ vắng ✅ (bản đầu)
+**Hệ thống:** 🧍 Nhân vật · 🍜 Ăn uống · 🏪 Làm ăn · **Luật:** 17.2 (không khoá việc chơi), 12.1 (HUD gọn), 15 (dữ liệu).
+**Đời thật:** đứng bán cả buổi quên ăn, bụng réo, tay chậm; tranh thủ chạy đi làm tô phở, ly nước mía. Quầy bỏ trống thì khách
+tới gọi "ơi có ai bán không", hàng xóm nhắn "khách đứng chờ kìa" — chạy về bán.
+**Luật game (`content.needs`, `packages/sim/src/needs.ts`):**
+- 🍚 No / 💧 Đỡ khát 0–100: no tụt ~10/giờ game, khát ~14/giờ; đêm ngủ chỉ tính 4 giờ; người mới 80/80.
+- Món ở sạp có `food`/`drink` (phở +70 no, nước mía +60 đỡ khát…); mua ở quầy hàng xóm theo loại hàng (đồ ăn sáng +45 no, đồ uống +55 khát).
+- Dưới 30%: tay giữ nút chậm ×1,25 + nhắc một lần ("🍚 Bụng réo rồi — ghé 🍜 Ăn uống…"). **Không khoá gì.**
+- HUD: chip 🍚/💧 chỉ hiện khi dưới 50% (đỏ nhấp nháy khi dưới 30%), chạm mở *Quán ăn quanh xóm*; Hồ sơ → Tôi có 2 thanh.
+- *Quán ăn quanh xóm* có thêm **Quầy hàng xóm đang bán** (đồ ăn/uống, người thật đứng quầy) → *🛒 Tới quầy*.
+- Quầy mở mà chủ đi vắng: mỗi ≤ 20 phút game khách réo ở quầy (khung thoại tại quầy) + chủ được báo
+  "🔔 Khách đang réo ở quầy … — chạy về bán thôi!".
+**Kiểm chứng:** unit `needs.test.ts`; e2e server `needs.e2e-spec.ts` (nhắc đói, ăn phở no lại, khách réo); Playwright `an-sang.spec.ts`
+(chip đói → mở quán ăn → ăn xôi → chip biến mất).
+**Chưa:** NPC hàng xóm nhắn hộ, uống nước ở nhà, món tự nấu.
+
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.

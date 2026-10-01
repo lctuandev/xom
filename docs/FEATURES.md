@@ -132,6 +132,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
 | Sổ đánh giá quầy: khách NPC/hàng xóm chấm sao + viết, chủ quầy trả lời, che từ tục | ✅ | 1.11 | UC-F11 |
 | Chat tự gõ (80 ký tự, che từ tục, chống spam) + khung chat có lịch sử; icon neo vẽ tay không nền (Ăn uống, Chợ, Bảng xóm, Cài đặt, Chat) | ✅ | 1.11 | UC-D4, Luật 12.4 |
+| Đói / khát (không khoá việc chơi), mục Ăn uống có quầy hàng xóm, khách réo khi chủ vắng quầy | ✅ | 1.11 | UC-B11, Luật 17.2 |
 | Quỹ xóm + công trình chung: đề xuất, bỏ phiếu, góp quỹ, thi công, nghiệm thu → khách tăng ở chỗ bán liên quan | ✅ | 1.11 | UC-J5 |
 | Giọng thoại theo kiểu khách (Gen Z/teencode/cô chú) + công tắc "thoại mặn" + AI tuỳ chọn (ANTHROPIC_API_KEY) | ✅ | 1.11 | UC-D6 |
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |

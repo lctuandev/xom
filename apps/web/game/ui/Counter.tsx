@@ -2,7 +2,7 @@
 
 import { content, type Product, type RecipeStep } from "@xom/content";
 import type { DishSelection, DishView } from "@xom/shared";
-import { holdFactor, wearState } from "@xom/sim";
+import { holdFactor, needsHold, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { send } from "../net/socket";
 import { type OrderState, useGame } from "../store";
@@ -373,7 +373,9 @@ function Shaker({
     const m = content.economy.maintenance;
     const skills = useGame.getState().me?.progress.skills ?? {};
     const slow =
-      (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) * holdFactor(content, skills);
+      (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) *
+      holdFactor(content, skills) *
+      needsHold(content, useGame.getState().me?.needs ?? { food: 100, drink: 100 });
     timer.current = setInterval(() => {
       const p = Math.min(1, (performance.now() - t0) / (1000 * slow));
       setProgress(p);

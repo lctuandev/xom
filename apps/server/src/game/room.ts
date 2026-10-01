@@ -57,6 +57,10 @@ export class RoomRuntime {
   readonly chatAt = new Map<string, number>();
   /** Số lần nhập sai PIN ATM trong ngày (reset khi đúng / sang ngày). */
   readonly atmTries = new Map<string, number>();
+  /** Mức đói/khát đã nhắc gần nhất của từng người ("low:ok"…) — nhắc một lần mỗi lần đổi mức. */
+  readonly needsAlert = new Map<string, string>();
+  /** Lần khách réo gần nhất ở từng quầy (phút game). */
+  readonly calloutAt = new Map<string, number>();
   /** Rao hàng: businessId → hết hiệu lực ở phút game này (trong ngày). */
   readonly boostUntil = new Map<string, number>();
   /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */
