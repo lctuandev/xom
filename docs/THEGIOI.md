@@ -83,4 +83,4 @@
 | **1.16c** ✅ | 🏙️ Khu phố + tiếng khu (emergent) | sim test, `pnpm balance` |
 | **1.16d** ✅ | 🌆 Trong lúc bạn vắng | e2e server; Playwright |
 | 1.17 | 🚦 Giao thông có xe + ảnh hưởng giao hàng | trace hiệu năng, Playwright |
-| 1.18 | ⚖️ Hợp đồng + điểm tin cậy + phạt | e2e escrow |
+| **1.18** ✅ | ⚖️ Hợp đồng + điểm tin cậy + phạt (bản đầu, UC-M7) | e2e escrow; Playwright `bang-viec` |

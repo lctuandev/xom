@@ -242,6 +242,53 @@ export const regularsSchema = z.object({
  * Nhân viên thuê đứng quầy thay (KIENTRUC §2): tay nghề (tỉ lệ làm đúng), tốc độ, lương/giờ; ca làm cố định trong ngày.
  * Nhân viên không tự nhập hàng, không tự mở quầy — chủ mở quầy rồi giao lại; hết hàng thì nghỉ bán.
  */
+/** Bảng việc xóm + điểm tin cậy (docs/KIENTRUC.md §3). */
+export const contractsSchema = z.object({
+  /** Người giữ bảng, ghi sổ, phân xử. */
+  keeper: z.string(),
+  /** Số việc NPC đăng mỗi ngày ở mỗi xóm. */
+  perDay: z.number().int().min(1).max(10),
+  /** Cọc người nhận đặt (tỉ lệ tiền thưởng) — mất nếu bỏ ngang / trễ hạn. */
+  depositRate: z.number().min(0).max(1),
+  trust: z.object({
+    start: z.number().int().min(0).max(100),
+    /** Giao đúng hạn. */
+    done: z.number().int().min(0),
+    /** Trễ hạn / bỏ ngang. */
+    fail: z.number().int().min(0),
+    /** Bị khách bắt thối thiếu. */
+    short: z.number().int().min(0),
+    /** Dưới mức này: Chú Hai nhắc, chỉ nhận việc nhỏ. */
+    lowAt: z.number().int().min(0).max(100),
+    /** Dưới mức này: khoá nhận việc `lockDays` ngày. */
+    lockAt: z.number().int().min(0).max(100),
+    lockDays: z.number().int().min(1),
+  }),
+  templates: z
+    .array(
+      z.object({
+        id,
+        /** Người đăng (NPC) — ai đặt hàng. */
+        poster: z.string(),
+        productId: id,
+        /** Món phải giao (công thức chuẩn). */
+        variantId: id,
+        qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+        /** Nơi giao (chỗ bán trên bản đồ). */
+        lotId: id,
+        /** Hạn giao (phút trong ngày). */
+        deadline: z.number().int().min(360).max(1320),
+        /** Thưởng = số phần × giá chuẩn × hệ số (đặt số lượng + giao tận nơi nên cao hơn bán lẻ). */
+        priceMul: z.number().min(1).max(3),
+        /** Tin cậy tối thiểu để nhận. */
+        minTrust: z.number().int().min(0).max(100),
+        /** Câu ghi trên bảng: {qty} {dish} {place} {deadline}. */
+        text: z.string(),
+      }),
+    )
+    .min(1),
+});
+
 export const staffSchema = z.object({
   shifts: z
     .array(
@@ -917,6 +964,7 @@ export const contentSchema = z.object({
   residents: z.array(residentSchema).min(1),
   regulars: regularsSchema,
   staff: staffSchema,
+  contracts: contractsSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

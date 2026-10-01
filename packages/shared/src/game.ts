@@ -67,6 +67,8 @@ export interface MeView {
   money: number;
   /** 🏦 Số dư tài khoản ngân hàng (xem trong Hồ sơ / ATM). */
   bank: number;
+  /** 🤝 Điểm tin cậy 0–100 (bảng việc xóm, KIENTRUC §3) — không phải tiền. */
+  trust: number;
   /** Thẻ ATM: đã tạo PIN chưa, có đang bị máy giữ thẻ không. */
   atm: { hasPin: boolean; locked: boolean };
   /** 🍚 No / 💧 khát (0–100, UC-B11). */
@@ -577,6 +579,39 @@ export interface RegularView {
   lastDay: number;
 }
 
+/** Một việc trên bảng việc xóm (KIENTRUC §3). */
+export interface ContractView {
+  id: string;
+  templateId: string;
+  /** Người đặt (NPC). */
+  poster: string;
+  /** Câu ghi trên bảng (đã điền số, món, chỗ, giờ). */
+  text: string;
+  productId: string;
+  variantId: string;
+  /** Chỗ giao. */
+  lotId: string;
+  qty: number;
+  reward: number;
+  deposit: number;
+  /** Hạn giao (phút trong ngày). */
+  deadline: number;
+  minTrust: number;
+  status: "OPEN" | "TAKEN" | "READY" | "DONE" | "FAILED" | "EXPIRED";
+  /** Ai đã nhận (người khác thì chỉ thấy tên). */
+  takerName: string | null;
+  mine: boolean;
+}
+
+export interface ContractBoardView {
+  day: number;
+  /** 🤝 Điểm tin cậy của mình (0–100). */
+  trust: number;
+  /** Đang bị khoá nhận việc tới hết ngày này. */
+  lockedUntil: number | null;
+  offers: ContractView[];
+}
+
 /** Một phiếu ca của nhân viên (KIENTRUC §2). */
 export interface StaffShiftView {
   staffId: string;
@@ -761,6 +796,9 @@ export const debugClockSchema = z.object({
 });
 /** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
 /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const contractIdSchema = z.object({ id: z.string().uuid() });
+/** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
+export const debugContractSchema = z.object({ templateId: contentId });
 export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
 export const debugAwaySchema = z.object({

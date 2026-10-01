@@ -1,15 +1,48 @@
 "use client";
 
 import { content } from "@xom/content";
+import { useState } from "react";
 import { vnd } from "../format";
 import { useGame } from "../store";
+import { ContractBoard } from "./ContractBoard";
 import { Sheet } from "./Sheet";
+import { Tabs } from "./Tabs";
+
+type JobsTab = "jobs" | "board";
+/** Mở lại sheet thì về tab lần trước (đang làm việc trên bảng xóm thì khỏi chọn lại). */
+let lastTab: JobsTab = "jobs";
 
 /**
  * Việc làm thuê (docs/USECASES.md nhóm W): mỗi việc ở một nơi có không gian riêng —
  * phải tới tận nơi, bước vào, chọn vai rồi vào ca.
  */
 export function JobsSheet() {
+  const me = useGame((s) => s.me);
+  const close = useGame((s) => s.openSheet);
+  const [tab, setTabState] = useState<JobsTab>(lastTab);
+  const setTab = (t: JobsTab) => {
+    lastTab = t;
+    setTabState(t);
+  };
+  if (!me) return null;
+
+  return (
+    <Sheet title="Việc làm" onClose={() => close(null)}>
+      <Tabs
+        label="Việc làm"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "jobs", label: "💼 Làm thuê" },
+          { id: "board", label: "📋 Việc xóm" },
+        ]}
+      />
+      {tab === "board" ? <ContractBoard /> : <JobList />}
+    </Sheet>
+  );
+}
+
+function JobList() {
   const me = useGame((s) => s.me);
   const shift = useGame((s) => s.shift);
   const nearPlace = useGame((s) => s.nearPlace);
@@ -18,9 +51,8 @@ export function JobsSheet() {
   const setInside = useGame((s) => s.setInside);
   if (!me) return null;
   const shopOpen = me.business?.open ?? false;
-
   return (
-    <Sheet title="Việc làm thuê" onClose={() => close(null)}>
+    <>
       <p className="mb-3 text-sm text-ink/60">
         Tiền = lương cứng giờ nào có làm + tiền từng việc làm đúng. Đứng không thì không có tiền.
         {me.today.wages > 0 && ` Hôm nay đã nhận ${vnd(me.today.wages)}.`}
@@ -70,6 +102,6 @@ export function JobsSheet() {
           Đang mở quầy — đóng quầy rồi mới đi làm thuê được.
         </p>
       )}
-    </Sheet>
+    </>
   );
 }

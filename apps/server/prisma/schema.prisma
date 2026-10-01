@@ -61,6 +61,10 @@ model Player {
   /// Lần cuối rời xóm (thời gian thật + ngày game) — để tóm tắt "Trong lúc bạn vắng" (THEGIOI §4).
   lastSeenAt   DateTime?
   lastSeenDay  Int?
+  /// 🤝 Điểm tin cậy 0–100 (KIENTRUC §3) — tách khỏi uy tín quầy; lên khi giữ lời, xuống khi bỏ việc / thối thiếu.
+  trust        Int      @default(50)
+  /// Tin cậy quá thấp: khoá nhận việc trên bảng việc xóm tới hết ngày game này.
+  trustLockDay Int?
   createdAt   DateTime @default(now())
 
   businesses Business[]
@@ -120,6 +124,8 @@ enum WalletKind {
   PLAYER_BANK
   /// 🏗️ Quỹ xóm ("fund:<roomId>"): phí chợ một phần + hàng xóm góp, chi cho công trình chung (UC-J5).
   ROOM_FUND
+  /// 🔒 Tiền giữ hộ của một hợp đồng ("escrow:<contractId>"): thưởng + cọc, nghiệm thu xong mới chi (KIENTRUC §3).
+  ESCROW
   SYSTEM
 }
 
@@ -209,6 +215,40 @@ model StaffShift {
   createdAt  DateTime @default(now())
 
   @@index([ownerId, createdAt])
+}
+
+enum ContractStatus {
+  /// Đang treo trên bảng, chưa ai nhận.
+  OPEN
+  /// Đã nhận (tiền thưởng + cọc nằm trong escrow), chưa chuẩn bị hàng.
+  TAKEN
+  /// Đã làm đủ hàng, đang mang đi giao.
+  READY
+  DONE
+  /// Trễ hạn / bỏ ngang: hoàn thưởng cho người đăng, mất cọc, trừ tin cậy.
+  FAILED
+  /// Hết hạn mà không ai nhận.
+  EXPIRED
+}
+
+/// Việc trên bảng việc xóm (KIENTRUC §3): NPC đăng mỗi ngày, người chơi nhận → làm → giao tận nơi trước hạn.
+model Contract {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  roomId     String         @db.Uuid
+  day        Int
+  /// Mẫu việc trong content.contracts.templates.
+  templateId String
+  qty        Int
+  reward     Int
+  deposit    Int
+  deadline   Int
+  takerId    String?        @db.Uuid
+  status     ContractStatus @default(OPEN)
+  createdAt  DateTime       @default(now())
+  doneAt     DateTime?
+
+  @@index([roomId, day])
+  @@index([takerId, status])
 }
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.

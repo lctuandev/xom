@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module.js";
+import { ContractService } from "./contracts.js";
 import { GameGateway } from "./game.gateway.js";
 import { GameService } from "./game.service.js";
 import { OrderService } from "./orders.js";
@@ -23,6 +24,7 @@ import { WorkService } from "./work.js";
     StoryService,
     RegularService,
     StaffService,
+    ContractService,
     ProjectService,
     VoiceAiService,
     WorkService,

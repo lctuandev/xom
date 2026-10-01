@@ -207,6 +207,15 @@ export function loadContent(raw: unknown): Content {
     for (const a of v.ask)
       if (!a.includes("{dish}")) errors.push(`giọng thoại ${v.archetype}: câu "${a}" thiếu {dish}`);
   }
+  // Bảng việc xóm: món, chỗ giao phải có thật; số lượng hợp lệ.
+  for (const t of parsed.contracts.templates) {
+    const prod = parsed.products.find((p) => p.id === t.productId);
+    if (!prod) errors.push(`việc ${t.id}: không có sản phẩm ${t.productId}`);
+    else if (!prod.recipe.variants.some((v) => v.id === t.variantId))
+      errors.push(`việc ${t.id}: ${t.productId} không có món ${t.variantId}`);
+    if (!lotIds.has(t.lotId)) errors.push(`việc ${t.id}: không có chỗ ${t.lotId}`);
+    if (t.qty[0] > t.qty[1]) errors.push(`việc ${t.id}: số lượng ${t.qty.join("–")} ngược`);
+  }
   if (errors.length) throw new Error(`Nội dung game không hợp lệ:\n- ${errors.join("\n- ")}`);
   return new Content(parsed);
 }

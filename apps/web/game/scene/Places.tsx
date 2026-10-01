@@ -5,7 +5,15 @@ import { content, type Place } from "@xom/content";
 import { useMemo, useRef } from "react";
 import type { CharacterModel, CityModel } from "../assets";
 import { useGame } from "../store";
-import { addressSpot, atmSpot, placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
+import {
+  addressSpot,
+  atmSpot,
+  placeSpot,
+  shopSpot,
+  standBehind,
+  vendorOpen,
+  vendorSpot,
+} from "../world";
 import { Character, Walker } from "./Character";
 import { Instances, type Placement } from "./CityKit";
 import { speakerWalker } from "./guide";
@@ -144,7 +152,12 @@ export function ProximityWatcher() {
               ? vendor === g.id
               : g?.kind === "atm"
                 ? atm === g.id
-                : atStall;
+                : g?.kind === "drop"
+                  ? (() => {
+                      const spot = shopSpot(g.lotId);
+                      return distanceTo(spot.x, spot.z) <= radius;
+                    })()
+                  : atStall;
     if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
       if ("open" in g && g.open) s.openSheet(g.open);

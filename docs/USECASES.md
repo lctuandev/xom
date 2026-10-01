@@ -919,6 +919,29 @@ sức làm theo phút/món, kho, đúng/sai); báo cáo ngày cộng lương và
 Playwright `thue-nguoi.spec.ts`.
 **Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
 
+### UC-M7 · Bảng việc xóm + 🤝 điểm tin cậy ✅ (bản đầu: việc NPC đặt)
+**Nhân vật:** **Chú Hai tổ trưởng** giữ bảng, ghi sổ; người đặt việc là cư dân: *Cô Hạnh giáo viên* (bánh mì cho đội bóng),
+*Chú tài xế tuyến 19*, *Chị Thảo kế toán* (trà sữa họp chiều), *Bà Năm chợ đầu mối*, *Bé Su lớp 5* (quà sinh nhật), và việc lớn
+*họp tổ dân phố* của Chú Hai (cần tin cậy ≥ 60).
+**Luồng:** Việc làm → **📋 Việc xóm**: mỗi ngày 3 việc (dữ liệu `content.contracts`), mỗi việc ghi *"Giao 6 bánh mì thịt cho đội
+bóng lớp 5 ở Cổng trường trước 11:00"*, 💰 thưởng (đặt số lượng + giao tận nơi nên cao hơn bán lẻ ~20–35%), 🔒 cọc 20%, ⏰ hạn.
+**Nhận việc** → tiền thưởng của người đặt + cọc của mình vào **ví giữ hộ (escrow)** → **🔪 Làm N phần** ở quầy mình (trừ nguyên
+liệu thật, thiếu thì báo thiếu gì) → **🚶 Tới nơi** (đi bộ thật) → **📦 Giao hàng** (server kiểm đứng đúng chỗ, còn hạn) → nhận
+thưởng + lại cọc, 🤝 +5, ghi 📖 "Xong việc đầu tiên trên bảng việc xóm…".
+**Tình huống đời thật:** trễ giờ hẹn → người đặt lấy lại tiền, mình **mất cọc** + 🤝 −15 (đã làm hàng thì mất luôn nguyên liệu);
+bỏ ngang cũng vậy; bị khách bắt **thối thiếu** → 🤝 −2; người khác nhận trước thì bảng ghi *"🙋 Lan đã nhận"*; không có đồ nghề
+đúng nghề thì không nhận được; tin cậy < 30 Chú Hai nhắc, **< 15 bị khoá nhận việc 3 ngày**.
+**Luật game:** tiền chỉ vào khi **làm thật** (làm hàng + đi giao); mỗi người một việc một lúc; việc có hạn trong ngày; cọc mất là
+money sink (`penalty:contract`); mọi đồng tiền qua sổ cái (`contract_escrow`, `contract_deposit`, `contract_reward`,
+`contract_deposit_back`, `contract_refund`); đo lường `contract_take` / `contract_done` / `contract_fail` trong `GameEvent`.
+**Dữ liệu:** `Contract` (xóm, ngày, mẫu, số lượng, thưởng, cọc, hạn, người nhận, trạng thái), `Player.trust` / `trustLockDay`,
+ví `escrow:<id>` (WalletKind ESCROW); sim `contractOffers`, `contractPay`, `contractIngredients`, `contractText`, `trustAfter`.
+**Kiểm chứng:** sim `contracts.test.ts`; e2e server `contracts.e2e-spec.ts` (nhận → làm → giao xa bị từ chối → giao đúng chỗ, tiền
++ cọc + tin cậy + Chuyện; vượt tin cậy / khác nghề bị từ chối; trễ hạn mất cọc; bỏ ngang mãi bị khoá); Playwright `bang-viec.spec.ts`
+(lệnh dev `debug:contract`).
+**Sau này:** người chơi đăng việc cho nhau (escrow giữa hai người, nghiệm thu, Chú Hai phân xử), việc chụp ảnh / phụ hồ / sửa xe
+tận nhà, chấm sao người nhận, tin cậy mở chợ người chơi.
+
 ---
 
 ## L. Hệ thống & lỗi

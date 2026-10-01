@@ -53,6 +53,7 @@ import {
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { ContractService } from "./contracts.js";
 import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
 import { RegularService } from "./regulars.js";
@@ -110,6 +111,7 @@ export class OrderService {
     private readonly reviews: ReviewService,
     private readonly ai: VoiceAiService,
     private readonly regulars: RegularService,
+    private readonly contracts: ContractService,
   ) {}
 
   /** Câu khách nói theo giọng kiểu khách; có AI (tuỳ chọn) thì đôi khi là câu AI đã sinh sẵn. */
@@ -542,6 +544,8 @@ export class OrderService {
             .update({ where: { id: e.businessId }, data: { demandCarry: { increment: 1 } } })
             .catch(() => undefined);
       } else if (short) await this.regulars.disappointed(e).catch(() => undefined); // làm sai đã tính lúc làm
+      // Bị bắt thối thiếu: mất chút tin cậy (KIENTRUC §3).
+      if (short) await this.contracts.trustEvent(e.ownerId, "short").catch(() => undefined);
     }
   }
 

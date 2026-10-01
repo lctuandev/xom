@@ -55,7 +55,7 @@ dừng bán); tay nghề thấp hơn chủ → uy tín nhích chậm; tối đa 
 **Server:** `StaffService` — `tickLive` (chủ online mà không đứng quầy), `finishShift` (chủ thoát game: bán nốt ca rồi dọn quầy).
 **Kiểm chứng:** sim; e2e server (bán thay khi chủ offline, trả lương, hết hàng dừng); Playwright `thue-nguoi`.
 
-## 3. 📋 Hợp đồng + 🤝 điểm tin cậy + ⚖️ hậu quả (1.20)
+## 3. 📋 Hợp đồng + 🤝 điểm tin cậy + ⚖️ hậu quả (1.20) ✅ bản đầu (việc NPC đặt)
 
 **Nhân vật:** *Bảng việc xóm* ở nhà văn hoá do **Chú Hai tổ trưởng** quản lý — người ghi sổ, phân xử khi hai bên cãi nhau.
 
@@ -70,6 +70,11 @@ escrow sang người nhận. Trễ hạn / bỏ ngang → hoàn tiền cho ngư�
 **Dữ liệu:** `Contract { id, roomId, posterId?, npcPoster?, takerId?, kind, spec Json, reward, deadlineDay/minute, status }`,
 `Player.trust Int`. **Sim:** `trustAfter(trust, event)`, `contractCheck(kind, spec, evidence)`.
 **Kiểm chứng:** e2e escrow (giữ, trả, hoàn), trust lên/xuống, khoá; Playwright `bang-viec`.
+**Đã làm (UC-M7):** việc NPC đặt kiểu *giao N phần món tới một chỗ trước giờ hẹn* (`content.contracts.templates`, 3 việc/ngày/xóm);
+cọc 20% của người nhận + thưởng của người đặt vào ví `escrow:<id>`; làm hàng ở quầy (trừ nguyên liệu thật) → đi giao (server
+kiểm vị trí + hạn); trễ / bỏ: hoàn thưởng, mất cọc (`penalty:contract`), 🤝 −15; thối thiếu 🤝 −2; < 15 khoá 3 ngày.
+`ContractService` (board, take, prepare, deliver, drop, tick, trustEvent). **Còn lại (1.20b):** người chơi đăng việc, nghiệm
+thu, phân xử, chấm sao.
 
 ## 4. 🛵 Xe ôm (1.21)
 
@@ -97,7 +102,7 @@ mặt, thối → khách chấm sao (xe ôm uy tín thì khách quen gọi riên
 |---|---|---|
 | **1.19a** ✅ | Khách quen | `regular_new`, tỉ lệ khách quen quay lại |
 | **1.19b** ✅ | Thuê nhân viên + doanh thu khi vắng | phiếu ca `StaffShift` (bán, sai, lương) |
-| 1.20 | Hợp đồng + tin cậy + phạt | `contract_*`, phân bố trust |
+| **1.20** ✅ | Hợp đồng (NPC) + tin cậy + phạt | `contract_take/done/fail`, phân bố trust |
 | 1.21 | Xe ôm + giao thông | `ride_*`, thời gian giao hàng theo giờ |
 
 Mỗi phase: use case trong `docs/USECASES.md` (nhóm M/N), dòng FEATURES, `pnpm balance` nếu đụng tiền, Playwright iPhone + Pixel.

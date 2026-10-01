@@ -2,6 +2,7 @@ import { z } from "zod";
 import type {
   AtmReceipt,
   ClockView,
+  ContractBoardView,
   DayReportView,
   EventView,
   FundView,
@@ -92,6 +93,14 @@ export interface ClientToServerEvents {
   "debug:regulars": Intent<{ visits: number }>;
   /** Sổ khách quen của quầy mình (KIENTRUC §1). */
   "regulars:list": Intent<Record<string, never>, RegularView[]>;
+  /** Bảng việc xóm (KIENTRUC §3): xem / nhận / làm hàng / giao / bỏ việc. */
+  "contract:list": Intent<Record<string, never>, ContractBoardView>;
+  "contract:take": Intent<{ id: string }, ContractBoardView>;
+  "contract:prepare": Intent<{ id: string }, ContractBoardView>;
+  "contract:deliver": Intent<{ id: string }, ContractBoardView>;
+  "contract:drop": Intent<{ id: string }, ContractBoardView>;
+  /** Dev/test: đăng ngay một việc theo mẫu. */
+  "debug:contract": Intent<{ templateId: string }>;
   /** Nhân viên đứng quầy thay (KIENTRUC §2). */
   "staff:view": Intent<Record<string, never>, StaffView>;
   "staff:hire": Intent<{ staffId: string; shiftId: string }, StaffView>;

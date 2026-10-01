@@ -142,6 +142,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |
+| 📋 Bảng việc xóm (việc NPC đặt: làm hàng + giao tận nơi trước hạn), escrow thưởng + cọc, 🤝 điểm tin cậy, mất cọc / khoá khi bỏ việc | ✅ | 1.20 | UC-M7, KIENTRUC §3 |
+| 📋 Người chơi đăng việc cho nhau, nghiệm thu, Chú Hai phân xử | ⏳ | 1.20b | KIENTRUC §3 |
 | Kế hoạch thế giới sống (Chuyện của tôi, lịch tuần, khu phố, khi vắng mặt, giao thông, luật & hậu quả) | ✅ | 1.16 | docs/THEGIOI.md |
 | 📖 Chuyện của tôi: mốc đời người chơi (dữ liệu), tab Chuyện trong hồ sơ | ✅ | 1.16a | UC-M1, THEGIOI §1 |
 | 📅 Thứ trong tuần, cuối tuần, chợ đêm thứ Bảy, 📅 Hôm nay trong bảng Xóm | ✅ | 1.16b | UC-M2, THEGIOI §2 |

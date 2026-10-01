@@ -67,6 +67,7 @@ import {
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { ContractService } from "./contracts.js";
 import { addItems, inventoryView, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
@@ -157,6 +158,7 @@ export class GameService implements OnModuleDestroy {
     readonly story: StoryService,
     readonly regulars: RegularService,
     readonly staff: StaffService,
+    readonly contracts: ContractService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -167,6 +169,7 @@ export class GameService implements OnModuleDestroy {
     this.story.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.contracts.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -1382,6 +1385,7 @@ export class GameService implements OnModuleDestroy {
           for (const owner of await this.staff.tickLive(room))
             this.emitter?.toPlayer(owner, "me", await this.me(room, owner));
           await this.calloutTick(room);
+          await this.contracts.tick(room);
           await this.projects.tick(room);
         }
         if (room.minute % 60 === 0) {
@@ -1610,6 +1614,7 @@ export class GameService implements OnModuleDestroy {
       displayName: player.displayName,
       money,
       bank,
+      trust: player.trust,
       needs: needsAt(content, needsFrom(player.needs), absMinute(room.day, room.minute)),
       atm: {
         hasPin: player.atmPin !== null,
@@ -1739,6 +1744,11 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Ghi sự kiện đo lường (DESIGN §16), không chặn luồng chơi nếu lỗi. */
+  /** Gửi MeView mới cho người chơi (sau intent không trả MeView mà đổi tiền / kho). */
+  async pushMe(room: RoomRuntime, playerId: string) {
+    this.emitter?.toPlayer(playerId, "me", await this.me(room, playerId));
+  }
+
   log(playerId: string, type: string, payload: Record<string, unknown>) {
     return this.prisma.gameEvent
       .create({ data: { playerId, type, payload: payload as object } })

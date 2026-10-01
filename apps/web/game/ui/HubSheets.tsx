@@ -147,7 +147,7 @@ export function ProfileSheet() {
             </div>
             <p className="mt-2 text-sm">
               Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served}{" "}
-              khách
+              khách · 🤝 tin cậy <b data-trust={me.trust}>{me.trust}</b>
             </p>
             <p className="text-xs text-ink/60">
               KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.

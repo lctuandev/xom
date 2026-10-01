@@ -87,7 +87,9 @@ export type Goal =
   /** Tới sạp đồ ăn NPC. */
   | { kind: "vendor"; id: string; open?: SheetId }
   /** Tới cây ATM. */
-  | { kind: "atm"; id: string; open?: SheetId };
+  | { kind: "atm"; id: string; open?: SheetId }
+  /** Mang hàng tới chỗ giao của việc trên bảng việc xóm (KIENTRUC §3). */
+  | { kind: "drop"; lotId: string; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;

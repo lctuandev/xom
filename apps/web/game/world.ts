@@ -93,7 +93,8 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
     return lotId ? standBehind(lotId) : null;
   }
   if (typeof target !== "string" && target.kind === "address") return addressSpot(target.id);
-  if (typeof target !== "string" && target.kind === "shop") return shopSpot(target.lotId);
+  if (typeof target !== "string" && (target.kind === "shop" || target.kind === "drop"))
+    return shopSpot(target.lotId);
   if (typeof target !== "string" && target.kind === "vendor") return vendorSpot(target.id);
   if (typeof target !== "string" && target.kind === "atm") return atmSpot(target.id);
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";

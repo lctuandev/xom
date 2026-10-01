@@ -24,6 +24,13 @@ describe("content", () => {
     expect(() => loadContent(wrong)).toThrow(/không hợp bước ly/);
   });
 
+  it("việc trên bảng xóm phải giao món / chỗ có thật", () => {
+    const broken = structuredClone(content.data) as typeof content.data;
+    const t = broken.contracts.templates[0];
+    if (t) t.variantId = "pho_bo";
+    expect(() => loadContent(broken)).toThrow(/pho_bo/);
+  });
+
   it("báo lỗi tham chiếu sai", () => {
     const broken = structuredClone(content.data) as typeof content.data;
     broken.equipment[0]?.products.push("khong_ton_tai");

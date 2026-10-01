@@ -19,8 +19,10 @@ import {
   buyEquipmentSchema,
   type ClientToServerEvents,
   chatTextSchema,
+  contractIdSchema,
   debugAwaySchema,
   debugClockSchema,
+  debugContractSchema,
   debugGrantSchema,
   debugRegularsSchema,
   debugWeatherSchema,
@@ -349,6 +351,58 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("regulars:list")
   regularsList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.regulars.list(ctx.playerId));
+  }
+
+  @SubscribeMessage("contract:list")
+  contractList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.contracts.board(ctx.room, ctx.playerId),
+    );
+  }
+
+  @SubscribeMessage("contract:take")
+  contractTake(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const board = await this.game.contracts.take(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return board;
+    });
+  }
+
+  @SubscribeMessage("contract:prepare")
+  contractPrepare(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const board = await this.game.contracts.prepare(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return board;
+    });
+  }
+
+  @SubscribeMessage("contract:deliver")
+  contractDeliver(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const board = await this.game.contracts.deliver(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return board;
+    });
+  }
+
+  @SubscribeMessage("contract:drop")
+  contractDrop(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const board = await this.game.contracts.drop(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return board;
+    });
+  }
+
+  @SubscribeMessage("debug:contract")
+  debugContract(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugContractSchema, body, async (ctx, p) => {
+      if (process.env.NODE_ENV === "production")
+        throw new GameError("invalid_state", "Không có lệnh này");
+      await this.game.contracts.debugPost(ctx.room, p.templateId);
+    });
   }
 
   @SubscribeMessage("staff:view")

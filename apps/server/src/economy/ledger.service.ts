@@ -77,7 +77,9 @@ export class LedgerService {
             ? "PLAYER_BANK"
             : key.startsWith("fund:")
               ? "ROOM_FUND"
-              : "PLAYER",
+              : key.startsWith("escrow:")
+                ? "ESCROW"
+                : "PLAYER",
       },
       update: {},
     });
