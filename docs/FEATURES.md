@@ -139,6 +139,13 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
+| Kế hoạch thế giới sống (Chuyện của tôi, lịch tuần, khu phố, khi vắng mặt, giao thông, luật & hậu quả) | ✅ | 1.16 | docs/THEGIOI.md |
+| 📖 Chuyện của tôi: mốc đời người chơi (dữ liệu), tab Chuyện trong hồ sơ | 🚧 | 1.16a | THEGIOI §1 |
+| 📅 Thứ trong tuần, cuối tuần, chợ đêm thứ Bảy | ⏳ | 1.16b | THEGIOI §2 |
+| 🏙️ Bản sắc khu phố + khu có tiếng nhờ người chơi (emergent) | ⏳ | 1.16c | THEGIOI §3 |
+| 🌆 "Trong lúc bạn vắng…" (đánh giá, giá chợ, công trình, sự kiện — không tiền tự sinh) | ⏳ | 1.16d | THEGIOI §4 |
+| 🚦 Xe cộ trên đường, kẹt xe giờ cao điểm ảnh hưởng giao hàng | ⏳ | 1.17 | THEGIOI §5 |
+| ⚖️ Luật & hậu quả: điểm tin cậy, phạt, hoàn tiền, cấm hợp đồng | ⏳ | 1.18 | THEGIOI §6 |
 | Kế hoạch nghề nghiệp đợt 1 (10 nghề, cơ chế lõi dùng chung, phụ thuộc giữa người chơi) | ✅ | 1.12 | docs/NGHE.md |
 | Dịch vụ: tiệm sửa xe (SERVICE) — khách kể triệu chứng → kiểm tra bộ phận (server trả kết quả) → sửa bằng phụ tùng → chạy thử (sai bệnh thì vẫn hư) | ✅ | 1.12a | UC-G1…G4, NGHE §3.1 |
 | Sửa xe nâng cao: báo giá & trả giá, bảo hành, Tiệm phụ tùng Chú Chín, model xe đồ nghề | ⏳ | 1.12a+ | UC-G4 |
