@@ -37,6 +37,7 @@ import {
   settleCash,
   tableStates,
   waiterCanReach,
+  XP,
 } from "@xom/sim";
 import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -271,6 +272,9 @@ export class WorkService {
     };
     room.shifts.set(playerId, shift);
     await this.prisma.player.update({ where: { id: playerId }, data: { jobId } });
+    await this.prisma.gameEvent.create({
+      data: { playerId, type: "job_start", payload: { jobId, role } },
+    });
     await this.floorStep(room, shift);
     this.push(room, shift);
     this.emit?.say(room.id, place.id, place.keeper.greeting);
@@ -407,6 +411,10 @@ export class WorkService {
     if (out.ok && out.pay > 0) {
       s.stats.done++;
       s.lastDoneMinute = room.minute;
+      await this.prisma.player.update({
+        where: { id: playerId },
+        data: { xp: { increment: a.kind === "settle" ? XP.delivery : XP.jobTask } },
+      });
     }
     if (room.shifts.has(playerId)) this.push(room, s);
     return out;

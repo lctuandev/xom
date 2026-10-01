@@ -9,6 +9,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from "@nestjs/websockets";
+import { content } from "@xom/content";
 import {
   type Ack,
   attendSchema,
@@ -34,6 +35,7 @@ import {
   talkSchema,
   tutorialSchema,
   updateBusinessSchema,
+  vendorBuySchema,
   type WorkResult,
   workActSchema,
   workStartSchema,
@@ -159,6 +161,14 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     @MessageBody() body: unknown,
   ): Promise<Ack<WorkResult>> {
     return this.handleWith(c, workStartSchema, body, async (ctx, p) => {
+      const place = content.placeForJob(p.jobId);
+      if (place)
+        this.game.requireAt(
+          ctx.room,
+          ctx.playerId,
+          place.id,
+          `Tới ${place.name} mới nhận việc được`,
+        );
       await this.game.work.start(ctx.room, ctx.playerId, p.jobId, p.role);
       return this.workResult(ctx, { ok: true, line: "Vào ca!", pay: 0 });
     });
@@ -222,6 +232,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   pay(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, payOrderSchema, body, (ctx, p) =>
       this.game.orders.pay(ctx.room, ctx.playerId, p.orderId, p.change, p.discount),
+    );
+  }
+
+  @SubscribeMessage("vendor:buy")
+  vendorBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, vendorBuySchema, body, (ctx, p) =>
+      this.game.vendorBuy(ctx, p.vendorId, p.itemId),
     );
   }
 

@@ -1,3 +1,4 @@
+import { content } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
@@ -14,6 +15,25 @@ import type {
   WorldView,
 } from "@xom/shared";
 import { create } from "zustand";
+import { sfx, voice } from "./audio";
+
+/** Đoán tâm trạng của câu nói để chọn giọng (bực thì gắt, vui thì cao). */
+function moodOf(text: string, tone?: Bubble["tone"]): "calm" | "happy" | "angry" {
+  if (tone === "bad") return "angry";
+  if (tone === "good") return "happy";
+  if (/sao lâu|bực|trời đất|ồn|giành|thiếu|đâu phải|không quay lại|chậm|kỳ vậy|đói/i.test(text))
+    return "angry";
+  if (/cảm ơn|ngon|giỏi|thơm|tuyệt|⭐⭐⭐⭐/i.test(text)) return "happy";
+  return "calm";
+}
+
+/** Giọng cho câu thoại kịch bản đang hiện (người dẫn đường nói). */
+function speakDialogue(step: string | null, page: number) {
+  if (!step) return;
+  const st = content.stepById.get(step);
+  const line = st?.lines[page];
+  if (st?.speaker && line) voice(st.speaker, line);
+}
 
 export interface PerfStats {
   fps: number;
@@ -31,7 +51,20 @@ export interface Bubble {
   until?: number;
 }
 
-export type SheetId = "business" | "market" | "jobs" | "equipment" | "talk" | "xom" | "shop";
+export type SheetId =
+  | "business"
+  | "market"
+  | "jobs"
+  | "equipment"
+  | "talk"
+  | "xom"
+  | "shop"
+  | "vendor"
+  | "food"
+  | "quests"
+  | "profile"
+  | "settings"
+  | "recipes";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -45,7 +78,9 @@ export type Goal =
   | { kind: "stall"; open?: SheetId }
   | { kind: "address"; id: string }
   /** Tới quầy hàng xóm (businessId) để gọi món. */
-  | { kind: "shop"; id: string; lotId: string; open?: SheetId };
+  | { kind: "shop"; id: string; lotId: string; open?: SheetId }
+  /** Tới sạp đồ ăn NPC. */
+  | { kind: "vendor"; id: string; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -95,6 +130,17 @@ interface GameState {
   /** Món mình đã gọi ở quầy hàng xóm, đang chờ. */
   purchase: Purchase | null;
   setNearShop: (id: string | null) => void;
+  /** Sạp đồ ăn NPC đang đứng gần (UC-B9). */
+  nearVendor: string | null;
+  setNearVendor: (id: string | null) => void;
+  /** Đang ngồi ăn ở sạp (tới lúc nào). */
+  eating: { vendorId: string; until: number } | null;
+  setEating: (e: { vendorId: string; until: number } | null) => void;
+  /** Chuyện trong xóm cho dải tin chạy trên HUD (mới nhất cuối). */
+  news: { id: number; text: string }[];
+  pushNews: (text: string) => void;
+  showPerf: boolean;
+  setShowPerf: (v: boolean) => void;
   setPurchase: (p: Purchase | null) => void;
   setRoster: (r: RosterView) => void;
   setInvite: (code: string | null) => void;
@@ -184,6 +230,17 @@ export const useGame = create<GameState>((set) => ({
   nearShop: null,
   purchase: null,
   setNearShop: (nearShop) => set({ nearShop }),
+  nearVendor: null,
+  setNearVendor: (nearVendor) => set({ nearVendor }),
+  eating: null,
+  setEating: (eating) => set({ eating }),
+  news: [],
+  pushNews: (text) =>
+    set((s) =>
+      s.news.at(-1)?.text === text ? s : { news: [...s.news, { id: ++toastId, text }].slice(-6) },
+    ),
+  showPerf: false,
+  setShowPerf: (showPerf) => set({ showPerf }),
   setPurchase: (purchase) => set({ purchase }),
   setRoster: (roster) => set({ roster }),
   setInvite: (invite) => set({ invite }),
@@ -202,7 +259,23 @@ export const useGame = create<GameState>((set) => ({
         s.world,
       ),
     }),
-  setMe: (me) => set({ me }),
+  setMe: (me) =>
+    set((s) => {
+      // Lên cấp (DESIGN §4): chúc mừng ngay khi KN qua ngưỡng.
+      if (s.me && me.progress.level > s.me.progress.level) {
+        sfx("bell");
+        const id = ++toastId;
+        setTimeout(() => set((x) => ({ toasts: x.toasts.filter((t) => t.id !== id) })), 4000);
+        return {
+          me,
+          toasts: [
+            ...s.toasts.slice(-2),
+            { id, kind: "good", text: `🎉 Lên cấp ${me.progress.level}!` },
+          ],
+        };
+      }
+      return { me };
+    }),
   setClock: (clock) => set({ clock }),
   setWorld: (world) => set({ world }),
   setReport: (report) => set({ report }),
@@ -211,6 +284,7 @@ export const useGame = create<GameState>((set) => ({
   toast: (n) => {
     const id = ++toastId;
     set((s) => ({ toasts: [...s.toasts.slice(-2), { ...n, id }] }));
+    sfx(n.kind === "warn" ? "error" : n.kind === "good" && n.text.startsWith("+") ? "coin" : "pop");
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
@@ -237,12 +311,16 @@ export const useGame = create<GameState>((set) => ({
       ),
     })),
   openKitchen: (kitchen) => set({ kitchen, sheet: null }),
-  say: (e, ms = 4000) =>
+  say: (e, ms = 4000) => {
+    voice(e.who, e.text, moodOf(e.text));
     set((s) => ({
       bubbles: { ...s.bubbles, [e.who]: { text: e.text, tone: "say", until: Date.now() + ms } },
-    })),
+    }));
+  },
   setBubble: (key, b) =>
     set((s) => {
+      if (b && b.tone !== "tag" && s.bubbles[key]?.text !== b.text)
+        voice(key, b.text, moodOf(b.text, b.tone));
       const bubbles = { ...s.bubbles };
       if (b) bubbles[key] = b;
       else delete bubbles[key];
@@ -254,16 +332,23 @@ export const useGame = create<GameState>((set) => ({
   setNearAddress: (nearAddress) => set({ nearAddress }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),
   countJobTask: () => set((s) => ({ jobTasksDone: s.jobTasksDone + 1 })),
-  setDialoguePage: (dialoguePage) => set({ dialoguePage }),
+  setDialoguePage: (dialoguePage) =>
+    set((s) => {
+      speakDialogue(s.dialogue, dialoguePage);
+      return { dialoguePage };
+    }),
   showDialogue: (dialogue) =>
-    set((s) => ({
-      dialogue,
-      dialoguePage: 0,
-      seenDialogues:
-        dialogue && !s.seenDialogues.includes(dialogue)
-          ? [...s.seenDialogues, dialogue]
-          : s.seenDialogues,
-    })),
+    set((s) => {
+      speakDialogue(dialogue, 0);
+      return {
+        dialogue,
+        dialoguePage: 0,
+        seenDialogues:
+          dialogue && !s.seenDialogues.includes(dialogue)
+            ? [...s.seenDialogues, dialogue]
+            : s.seenDialogues,
+      };
+    }),
   setPerf: (perf) => set({ perf }),
   setPing: (pingMs) => set({ pingMs }),
   setContextLost: (contextLost) => set({ contextLost }),

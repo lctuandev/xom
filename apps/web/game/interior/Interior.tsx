@@ -13,6 +13,7 @@ import { BubbleLayer } from "../ui/BubbleLayer";
 import { Toasts } from "../ui/Hud";
 import { DeliveryDesk } from "../ui/work/DeliveryDesk";
 import { FloorAlerts } from "../ui/work/FloorAlerts";
+import { JobGuide } from "../ui/work/JobGuide";
 import { PlatePanel, RegisterPanel, WaiterPanel } from "../ui/work/QuanComPanels";
 import { RolePicker } from "../ui/work/RolePicker";
 import { BuuCucScene } from "./BuuCuc";
@@ -43,6 +44,7 @@ export default function Interior({ placeId }: { placeId: string }) {
   const clock = useGame((s) => s.clock);
   const setInside = useGame((s) => s.setInside);
   const [plate, setPlate] = useState<string[] | null>(null);
+  const [guide, setGuide] = useState(false);
   const place = content.place(placeId);
   const here = shift && shift.placeId === placeId ? shift : null;
   const role = here?.role;
@@ -116,6 +118,15 @@ export default function Interior({ placeId }: { placeId: string }) {
           {clock ? formatClock(clock.minute) : "…"}
         </div>
         <div className="flex-1" />
+        {here && (
+          <button
+            type="button"
+            onClick={() => setGuide(true)}
+            className="h-9 rounded-full bg-cream/95 px-3 text-sm font-semibold shadow-sm"
+          >
+            ❓ Cách làm
+          </button>
+        )}
         <button
           type="button"
           onClick={leave}
@@ -137,6 +148,14 @@ export default function Interior({ placeId }: { placeId: string }) {
         </div>
       )}
       <Toasts />
+      {here && (
+        <JobGuide
+          jobId={here.jobId}
+          role={here.role}
+          open={guide}
+          onClose={() => setGuide(false)}
+        />
+      )}
 
       <section
         aria-label="Làm việc"

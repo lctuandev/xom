@@ -37,7 +37,10 @@ export function Objective() {
   const arrived = target === "stall" ? atStall : !!target && nearPlace === target;
 
   return (
-    <div className="pointer-events-auto mx-3 mt-2 flex items-center gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg">
+    <div
+      data-objective
+      className="pointer-events-auto mx-3 mt-2 flex items-center gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg"
+    >
       <span aria-hidden>🎯</span>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] leading-tight font-semibold">{step.objective}</p>

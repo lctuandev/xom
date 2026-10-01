@@ -19,12 +19,50 @@ export function ActionBar() {
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
       <DoorButton />
       <PurchaseChip />
+      <EatingChip />
+      <VendorButton />
       <ShopButton />
       <KitchenButton />
       <AwayChip />
       <OpenStallButton />
+      <EnterShopButton />
       <PlaceButton />
     </div>
+  );
+}
+
+/** Đứng trước sạp đồ ăn NPC đang bày: mua ăn (UC-B9). */
+function VendorButton() {
+  const id = useGame((s) => s.nearVendor);
+  const eating = useGame((s) => s.eating);
+  const openSheet = useGame((s) => s.openSheet);
+  const v = content.data.vendors.find((x) => x.id === id);
+  if (!v || eating) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("vendor")}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-red px-4 font-semibold text-cream shadow-lg active:scale-[0.97]"
+    >
+      🍜 Mua ở {v.sign}
+    </button>
+  );
+}
+
+/** Đang ngồi ăn ở sạp: đếm ngược rồi tự đứng dậy. */
+function EatingChip() {
+  const eating = useGame((s) => s.eating);
+  const setEating = useGame((s) => s.setEating);
+  useEffect(() => {
+    if (!eating) return;
+    const id = setTimeout(() => setEating(null), Math.max(0, eating.until - Date.now()));
+    return () => clearTimeout(id);
+  }, [eating, setEating]);
+  if (!eating) return null;
+  return (
+    <output className="pointer-events-auto block w-full max-w-xs rounded-2xl bg-ink/85 px-3 py-2 text-center text-xs font-semibold text-cream shadow-lg">
+      😋 Đang ăn… ngon quá!
+    </output>
   );
 }
 
@@ -170,7 +208,25 @@ function OpenStallButton() {
       }}
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
-      🔓 Mở quầy{rent ? ` · thuê chỗ ${Math.round(rent / 1000)}k` : ""}
+      🔓 {biz.lotId && content.lotById.get(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
+      {rent ? ` · thuê chỗ ${Math.round(rent / 1000)}k` : ""}
+    </button>
+  );
+}
+
+/** Tiệm trong nhà (UC-W6): đứng trước cửa tiệm của mình → vào tiệm (vào là đứng quầy). */
+function EnterShopButton() {
+  const atStall = useGame((s) => s.atStall);
+  const lotId = useGame((s) => s.me?.business?.lotId);
+  const setInside = useGame((s) => s.setInside);
+  if (!atStall || !lotId || content.lotById.get(lotId)?.kind !== "house") return null;
+  return (
+    <button
+      type="button"
+      onClick={() => setInside(`shop:${lotId}`)}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-red px-4 font-semibold text-cream shadow-lg active:scale-[0.97]"
+    >
+      🏪 Vào tiệm
     </button>
   );
 }

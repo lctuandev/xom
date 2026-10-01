@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { giveChange, readDialogue, register, shot, waitForMorning } from "./helpers";
+import { giveChange, readDialogue, register, shot, skipGuide, waitForMorning } from "./helpers";
 
 // Giao hàng bưu cục Anh Tám (docs/USECASES.md UC-W5): nhận đơn → soạn đúng gói trên kệ → ra xe
 // → tới đúng nhà → gọi khách → đưa điện thoại ký nhận, kiểm người ký → thu hộ, thối tiền → về nộp tiền.
@@ -66,6 +66,7 @@ test("giao hàng: soạn gói, chạy tới nhà, ký nhận, thu hộ rồi v�
   });
   await enterPostOffice(page);
   await page.getByRole("button", { name: /^📦 Giao hàng/ }).tap();
+  await skipGuide(page);
   await page.getByRole("button", { name: "📋 Nhận đơn giao" }).tap();
 
   // Soạn từng gói: đọc mã trên phiếu, tìm đúng gói trên kệ.

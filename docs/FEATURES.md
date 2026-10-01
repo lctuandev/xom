@@ -19,6 +19,26 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 
 ---
 
+## Khung hệ thống — rà soát theo docs/DESIGN.md (10/2026)
+
+| Hệ thống | Đã có | Lệch luật / còn thiếu → việc làm tiếp | Ưu tiên |
+|---|---|---|---|
+| 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
+| 💰 Kinh tế | Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k | **Chưa tách 🏦 ngân hàng** (chuyển khoản đang vào thẳng tiền mặt) | 3 |
+| 💸 Money sink | Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp | Thiếu **bảo trì xe/quầy, phí chợ/thuế, lương nhân viên, trang trí, xăng** | 3 |
+| 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
+| 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
+| 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
+| 🌦️ Thế giới thay đổi | Ngày/đêm, sạp theo giờ | **Chưa có thời tiết, giao thông/xe chạy** | 3 |
+| 🎲 Sự kiện | Khách VIP chưa; chuyện trong quán (than, cãi, quỵt) | **Chưa có sự kiện khu phố/toàn server/do người chơi tạo (khai trương)** | 3 |
+| 🔊 Âm thanh | ✅ BGM, SFX, giọng, **ambient phố** (xe chạy, xe máy vù qua, còi, tiếng rao; dày hơn giờ cao điểm) + trong quán (nói chuyện, chén dĩa) | Tiếng mưa (chờ thời tiết), âm theo khoảng cách | 3 |
+| 🏠 Tài sản | Thuê nhà mặt tiền làm tiệm | Nhà ở, trang trí, nội thất sưu tầm | 4 |
+| 🛵 Phương tiện | Xe máy giao hàng (chỉ là tốc độ) | Xe đạp/xe máy sở hữu, xăng, hư hỏng | 4 |
+| 🏪 Làm ăn | Kho, giá, rao hàng, khách, đánh giá, hỏng hàng | Nhà cung cấp/giá biến động, đối thủ, trào lưu | 3 |
+| 🧠 Hành vi NPC | Khách quán, NPC ghé sạp/vào quán | Lịch sinh hoạt theo dữ liệu, nhớ quầy quen | 3 |
+| 📱 Giao diện | HUD mới tối giản, menu Làm ăn/Nhiệm vụ/Hàng xóm | Túi đồ 🎒 riêng | 4 |
+| ♻️ Giữ chân | Nhiệm vụ hôm nay (không thưởng tiền) | Chợ phiên tuần, mùa, sưu tầm | 4 |
+
 ## 1. 🌐 Online / Multiplayer core
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
@@ -38,6 +58,18 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Đồng bộ vị trí người chơi | ✅ | 2 | 10 Hz khi có thay đổi, nội suy phía client; server chưa kiểm vị trí |
 | Hai tab/hai máy cùng lúc | ⏳ | 2 | UC-A4 |
 
+## 1b. 🧭 Giao diện chính (HUD & điều hướng)
+
+| Tính năng | Trạng thái | Phase | Ghi chú |
+|---|---|---|---|
+| Trên: ảnh đại diện (Hồ sơ), thanh chỉ số 💵 ⭐ 🕒☀️/🌙, dải tin "chuyện trong xóm", nút ⚙️ Cài đặt | ✅ | 1.10 | Tham khảo game nông trại người chơi gửi |
+| Dưới: Xóm · Làm ăn · 🎯 Nhiệm vụ (giữa, nổi) · Việc làm · Hàng xóm — chừa chỗ cho tính năng sau (tuyển dụng, bạn bè, chat) | ✅ | 1.10 | |
+| Thanh bên trái: 🍜 Ăn uống, 🧺 Chợ | ✅ | 1.10 | Bỏ nút xoay (dùng cử chỉ) |
+| Nhiệm vụ: việc đang làm + "Cách buôn bán" tự tích theo tiến độ + mục tiêu hôm nay (không thưởng tiền) | ✅ | 1.10 | |
+| Sổ công thức (📖): mỗi món gồm bước nào, bỏ gì; khách hay dặn gì | ✅ | 1.10 | Làm ăn → Công thức |
+| Hướng dẫn vào ca từng vai (❓ Cách làm) | ✅ | 1.10 | UC-W1 |
+| Trang chủ, đăng nhập, màn hình tải có tranh minh hoạ con hẻm (SVG động: đèn lồng, nồi phở, xe máy) + mẹo chơi | ✅ | 1.10 | |
+
 ## 2. 🧍 Nhân vật
 
 | Tính năng | Trạng thái | Phase | Ghi chú |
@@ -46,7 +78,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tạo nhân vật: tóc, mặt, áo, giày, phụ kiện | ⏳ | 3 | Hệ nhân vật modular (PLAN §5) |
 | Biểu cảm / emote (👋 😄 🙏…) | ✅ cơ bản | 1.6 | Câu nói nhanh, UC-D3 |
 | Cử chỉ (vẫy tay, bắt tay, high-five) có animation | ⏳ | 2 | |
-| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ⏳ | 🚧 | | Không có "năng lượng" ép giờ chơi (nguyên tắc 7) |
+| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ⏳ | 🚧 | 1.10 | Không có "năng lượng" ép giờ chơi |
 | Kỹ năng theo nghề (tay nhanh, nhớ món…) | 💤 | | |
 
 ## 3. 🏘️ Thế giới / khu phố
@@ -60,8 +92,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Xóm rộng: đường lớn, ngã tư đèn giao thông, đường nhánh, hẻm, chợ, công viên, trường, văn phòng, bãi xe | ✅ | 1.10 | UC-B6 · bản đồ trong content, tìm đường A* |
 | Góc nhìn tự do: zoom, xoay, nghiêng, đổi kiểu nhìn | ✅ | 1.10 | UC-B7 · chưa làm mờ nhà che |
 | Ngày/đêm: trời theo giờ, đèn đường, cửa sổ sáng, bảng hiệu sáng | ✅ | 1.10 | UC-B8 · đèn giả, không tốn GPU |
-| Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ⏳ | 1.10 | UC-B9 |
-| Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | ⏳ | 1.10 | UC-B10 |
+| Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ✅ | 1.10 | UC-B9 · 8 sạp, mua ăn tại chỗ |
+| Cảnh sinh hoạt NPC (mua đồ ăn, ngồi ăn, vào quán, xe máy, đèn đỏ) + người chơi làm khách | 🚧 | 1.10 | UC-B10 · NPC ghé sạp/vào quán ✅, xe cộ ⏳ |
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
 | Thời tiết (mưa, nắng) | ⏳ | 1.9 | UC-B4 |
 | Tương tác vật thể: ngồi, nhặt, đặt, mở cửa | ⏳ | 2–3 | |
@@ -90,7 +122,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Thêm nghề bằng dữ liệu (công thức từng bước) | ✅ | 1.6 | `packages/content` |
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
-| Quầy riêng có không gian 3D khi đứng bán | ⏳ | 1.8 | UC-W6 |
+| Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
 | Dịch vụ: sửa xe (SERVICE) | ⏳ | 1.8 | UC-G |
 | Làm thuê quán cơm: đứng quầy múc cơm, thu ngân, bưng bê | ✅ | 1.7 | UC-W2…W4 |
 | Quán sống động: khách vào/ra, ngồi ăn, trả tiền, đánh giá ⭐, than/gây lộn/quỵt; đồng nghiệp NPC; camera + di chuyển riêng từng vai | ✅ | 1.7 | UC-W8 |
@@ -136,6 +168,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Chat gần (local), chat nhóm, tin nhắn riêng | ⏳ | 2 | UC-D4 |
 | Chat toàn server | 💤 | | Cần kiểm duyệt |
 | Voice chat theo khoảng cách | 💤 | 4 | |
+| Âm thanh: nhạc nền ngày/đêm, tiếng thao tác, giọng lầm bầm theo nhân vật (giận thì gắt), chỉnh âm lượng | ✅ | 1.10 | UC-D5 · WebAudio, không file |
 
 ## 10. 🤝 Tương tác người chơi
 

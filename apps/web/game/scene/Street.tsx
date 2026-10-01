@@ -88,9 +88,10 @@ function layout() {
       const ch = grid.charAt(c, r);
       const { x, z } = grid.center(c, r);
       const h = hash(c, r);
-      if (ch === "=") put(out, "road-straight", { x, z, rot: Math.PI / 2 });
-      else if (ch === "|") put(out, "road-straight", { x, z, rot: 0 });
-      else if (ch === "c") put(out, "road-crossing", { x, z, rot: Math.PI / 2 });
+      // Tấm "road-straight" của Kenney mặc định chạy theo trục X (vạch giữa đường dọc theo X).
+      if (ch === "=") put(out, "road-straight", { x, z, rot: 0 });
+      else if (ch === "|") put(out, "road-straight", { x, z, rot: Math.PI / 2 });
+      else if (ch === "c") put(out, "road-crossing", { x, z, rot: 0 });
       else if (ch === "+") {
         const n = [isRoad(c, r - 1), isRoad(c + 1, r), isRoad(c, r + 1), isRoad(c - 1, r)];
         const count = n.filter(Boolean).length;

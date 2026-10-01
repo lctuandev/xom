@@ -149,8 +149,22 @@ export interface FloorConfig {
   newId: () => string;
 }
 
-const COMPLAINTS = ["Sao lâu quá vậy!", "Còn lâu không em?", "Đói muốn xỉu rồi nè!"];
-const ARGUES = ["Ê, nói nhỏ nhỏ thôi!", "Bàn kia ồn quá vậy!", "Ai cho giành ghế tui!"];
+const COMPLAINTS = [
+  "Sao lâu quá vậy!",
+  "Còn lâu không em?",
+  "Đói muốn xỉu rồi nè!",
+  "Trời đất ơi, chờ mỏi cổ luôn!",
+  "Làm ăn kiểu gì chậm như rùa vậy!",
+  "Bực mình ghê á, nhanh lên coi!",
+];
+const ARGUES = [
+  "Ê, nói nhỏ nhỏ thôi!",
+  "Bàn kia ồn quá vậy!",
+  "Ai cho giành ghế tui!",
+  "Mấy người có biết điều không vậy hả?!",
+  "Nhìn cái gì mà nhìn, muốn gây hả?",
+  "Trời ơi, ăn uống gì mà la om sòm!",
+];
 
 /** Khoảng thời gian theo đồng hồ của xóm. */
 export const ms = (cfg: Pick<FloorConfig, "scale">, v: number) => v * cfg.scale;

@@ -75,8 +75,10 @@ export function CameraRig({ follow }: { follow: Walker }) {
       const t = two();
       return t ? (t.a.y + t.b.y) / 2 : 0;
     };
+    let dragMoved = 0;
     const down = (e: PointerEvent) => {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      dragMoved = 0;
       if (pointers.size === 2) {
         pinchState.active = true;
         startDist = dist();
@@ -86,8 +88,21 @@ export function CameraRig({ follow }: { follow: Walker }) {
       }
     };
     const move = (e: PointerEvent) => {
-      if (!pointers.has(e.pointerId)) return;
+      const prev = pointers.get(e.pointerId);
+      if (!prev) return;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      // Một ngón kéo: xoay (ngang) và nghiêng (dọc) quanh nhân vật — luật camera docs/DESIGN.md §1.
+      if (pointers.size === 1) {
+        const dx = e.clientX - prev.x;
+        const dy = e.clientY - prev.y;
+        dragMoved += Math.abs(dx) + Math.abs(dy);
+        if (dragMoved > 10) {
+          pinchState.active = true; // để chạm-đi-tới bỏ qua cú kéo này
+          camView.targetYaw -= dx * 0.008;
+          tiltView(dy * -0.004);
+        }
+        return;
+      }
       if (pointers.size === 2 && startDist > 0) {
         // Chụm: zoom. Vặn: xoay quanh nhân vật. Hai ngón cùng kéo lên/xuống: nghiêng.
         viewWidth.current = MathUtils.clamp((startView * startDist) / dist(), MIN_VIEW, MAX_VIEW);

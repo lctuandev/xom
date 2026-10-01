@@ -2,13 +2,15 @@
 
 import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { content } from "@xom/content";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { MathUtils, type Mesh } from "three";
+import { type Group, MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
 import { MAP_BOUNDS, randomSpotNear, walkTo } from "../nav";
 import { useGame } from "../store";
-import { standBehind } from "../world";
+import { placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
 import { AddressSigns, DeliveryPins, DoorPeople } from "./Addresses";
+import { registerAnchor } from "./anchors";
 import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
 import { Character, useWanderer, Walker } from "./Character";
@@ -21,6 +23,7 @@ import { getPlayer } from "./player";
 import { Stalls } from "./Stalls";
 import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
+import { Spoon, Vendors } from "./Vendors";
 
 const NPC_MODELS: CharacterModel[] = [
   "character-male-c",
@@ -120,12 +123,13 @@ function World() {
       <Peers />
       <NightLights />
       <Stalls />
+      <Vendors />
       <Customers />
       <ProximityWatcher />
       <BubbleProjector />
       <TargetArrow />
       <TargetMarker walker={player} />
-      <Character model="character-male-a" walker={player} />
+      <PlayerCharacter walker={player} />
       {npcs.map((npc, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: danh sách NPC cố định
         <Npc key={i} model={npc.model} walker={npc.walker} />
@@ -135,12 +139,79 @@ function World() {
   );
 }
 
+/** Nhân vật của mình: ngồi xuống ăn khi đang ăn ở sạp (tới ghế rồi mới ngồi). */
+function PlayerCharacter({ walker }: { walker: Walker }) {
+  const eating = useGame((s) => s.eating);
+  const sit = !!eating && !walker.target;
+  return (
+    <group>
+      <Character model="character-male-a" walker={walker} pose={sit ? "sit" : "auto"} />
+      {sit && <Spoon at={walker.position} />}
+    </group>
+  );
+}
+
+/** Nơi NPC hay vào (biến mất vào trong một lúc rồi ra). */
+const ENTERABLE = ["quan_com", "cho_dau_moi", "buu_cuc"];
+
+/**
+ * Người trong xóm có việc để làm (docs/USECASES.md UC-B10): ghé sạp đang bày mua đồ ăn, vào quán cơm / chợ /
+ * bưu cục một lúc rồi đi ra, hoặc đi dạo. Chỉ diễn phía client (không ảnh hưởng kinh tế).
+ */
 function Npc({ model, walker }: { model: CharacterModel; walker: Walker }) {
-  useWanderer(walker, (w) => {
-    const p = randomSpotNear(w.position.x, w.position.z, 16);
-    walkTo(w, p.x, p.z);
+  const plan = useRef<{ kind: "walk" | "buy" | "enter"; until: number }>({
+    kind: "walk",
+    until: 0,
   });
-  return <Character model={model} walker={walker} />;
+  const g = useRef<Group>(null);
+  const bubble = useRef(`npc:${Math.random().toString(36).slice(2, 8)}`);
+  useEffect(() => registerAnchor(bubble.current, () => walker.position), [walker]);
+  useFrame(() => {
+    // Đang ở trong quán thì ẩn đi; hết giờ thì bước ra.
+    const inside =
+      plan.current.kind === "enter" && !walker.target && Date.now() < plan.current.until;
+    if (g.current) g.current.visible = !inside;
+  });
+  useWanderer(walker, (w) => {
+    const now = Date.now();
+    const p = plan.current;
+    if (p.kind === "buy" && !w.target && p.until > now) return; // đứng chờ mua
+    if (p.kind === "enter" && p.until > now) return;
+    const r = Math.random();
+    const minute = useGame.getState().clock?.minute ?? 0;
+    const open = content.data.vendors.filter((v) => vendorOpen(v.id, minute));
+    if (r < 0.3 && open.length) {
+      const v = open[Math.floor(Math.random() * open.length)];
+      const spot = v ? vendorSpot(v.id) : null;
+      if (spot) {
+        walkTo(w, spot.x + (Math.random() - 0.5) * 1.2, spot.z, spot.yaw);
+        plan.current = { kind: "buy", until: now + 9000 };
+        if (Math.random() < 0.5)
+          useGame
+            .getState()
+            .say(
+              { who: bubble.current, text: `Cho một phần ${v?.items[0]?.name.toLowerCase()}!` },
+              3000,
+            );
+        return;
+      }
+    }
+    if (r < 0.45) {
+      const id = ENTERABLE[Math.floor(Math.random() * ENTERABLE.length)] ?? "quan_com";
+      const spot = placeSpot(id);
+      walkTo(w, spot.x, spot.z, spot.yaw);
+      plan.current = { kind: "enter", until: now + 25_000 };
+      return;
+    }
+    const q = randomSpotNear(w.position.x, w.position.z, 16);
+    walkTo(w, q.x, q.z);
+    plan.current = { kind: "walk", until: 0 };
+  });
+  return (
+    <group ref={g}>
+      <Character model={model} walker={walker} />
+    </group>
+  );
 }
 
 /** Vòng tròn đánh dấu điểm đến — phản hồi thị giác cho thao tác chạm. */

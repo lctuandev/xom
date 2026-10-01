@@ -131,6 +131,10 @@ export function loadContent(raw: unknown): Content {
   for (const l of parsed.lots) onFoot(`chỗ bán ${l.id}`, l.position.x, l.position.z);
   for (const a of parsed.delivery.addresses)
     onFoot(`nhà ${a.id}`, a.position.x, a.position.z + (a.facing === 0 ? 1.3 : -1.3));
+  for (const v of parsed.vendors) {
+    onFoot(`sạp ${v.id}`, v.position.x, v.position.z);
+    if (v.close <= v.open) errors.push(`sạp ${v.id}: giờ dọn phải sau giờ mở`);
+  }
   if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
     errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
   for (const j of parsed.jobs) {

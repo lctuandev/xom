@@ -28,6 +28,8 @@ export function Customers() {
       orderBus.on((o) => {
         // Khách là người chơi thật thì chính nhân vật của họ đứng ở quầy — không sinh NPC.
         if (o.buyerId) return;
+        // Tiệm trong nhà: khách vào tận trong tiệm (ShopInterior), không đứng ngoài phố.
+        if (content.lotById.get(o.lotId)?.kind === "house") return;
         setList((prev) => (prev.length >= MAX_CUSTOMERS ? prev : [...prev, o]));
       }),
     [],

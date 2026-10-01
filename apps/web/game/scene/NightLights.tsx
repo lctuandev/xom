@@ -65,6 +65,12 @@ export function NightLights() {
           const p = content.lot(o.lotId).position;
           return { x: p.x, y: 2.3, z: p.z, pool: 2.4 };
         }),
+      ...content.data.vendors.map((v) => ({
+        x: v.position.x,
+        y: 2.3,
+        z: v.position.z,
+        pool: 2.6,
+      })),
       ...content.data.places.map((pl) => ({
         x: pl.position.x,
         y: 2.4,

@@ -233,4 +233,32 @@ describe("Xóm chung (e2e)", () => {
     a.socket.disconnect();
     b.socket.disconnect();
   });
+
+  it("sạp đồ ăn theo giờ: đứng gần, sạp đang bày thì mua được; sạp tối chưa bày thì không", async () => {
+    const b = await join(url);
+    const xoi = content.data.vendors.find((v) => v.id === "xoi_ba_bay");
+    if (!xoi) throw new Error("không có sạp xôi");
+    b.socket.emit("move", { x: 20, z: 4, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 120));
+    expect(
+      await emit(b.socket, "vendor:buy", { vendorId: xoi.id, itemId: "xoi_ga" }),
+    ).toMatchObject({
+      ok: false,
+      message: "Lại gần sạp mới mua được",
+    });
+    b.socket.emit("move", { ...xoi.position, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 120));
+    const heard = next(b.socket, "say", (e: SayEvent) => e.who === `vendor:${xoi.id}`);
+    const bought = await emit(b.socket, "vendor:buy", { vendorId: xoi.id, itemId: "xoi_ga" });
+    expect(bought.ok && bought.data.money).toBe(b.snap.me.money - 20_000);
+    expect((await heard).text).toMatch(/Xôi gà/);
+    // Ốc đêm chưa bày buổi sáng.
+    const oc = content.data.vendors.find((v) => v.id === "oc_dem");
+    if (!oc) throw new Error("không có sạp ốc");
+    b.socket.emit("move", { ...oc.position, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 120));
+    const closed = await emit(b.socket, "vendor:buy", { vendorId: oc.id, itemId: "oc_huong" });
+    expect(closed.ok).toBe(false);
+    b.socket.disconnect();
+  });
 });

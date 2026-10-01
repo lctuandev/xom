@@ -377,7 +377,8 @@ function Wrong({ order }: { order: OrderState }) {
   );
 }
 
-const DENOMS = [1_000, 2_000, 5_000, 10_000, 20_000, 50_000];
+/** Mệnh giá tiền Việt Nam đang lưu hành (docs/DESIGN.md §2). */
+const DENOMS = [1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000];
 
 /** Tính tiền: chuyển khoản / đưa đủ / thối tiền từ các tờ tiền lẻ (UC-F7). */
 function Payment({ order, discount }: { order: OrderState; discount: boolean }) {

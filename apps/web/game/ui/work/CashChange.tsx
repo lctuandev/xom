@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { vnd } from "../../format";
 
-const DENOMS = [1_000, 2_000, 5_000, 10_000, 20_000, 50_000];
+/** Mệnh giá tiền Việt Nam đang lưu hành (docs/DESIGN.md §2). */
+const DENOMS = [1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000];
 
 /**
  * Thối tiền (UC-F7, W3, W5): khách đưa tờ `bill` cho khoản `due`; ghép các tờ tiền lẻ để thối.

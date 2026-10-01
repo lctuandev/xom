@@ -16,6 +16,7 @@ import {
   seededRandom,
   settleCash,
   validateBuild,
+  XP,
 } from "@xom/sim";
 import {
   InsufficientFundsError,
@@ -292,6 +293,10 @@ export class OrderService {
             data: { reputation: Math.min(1, Math.max(0, rep)) },
           });
         }
+        await tx.player.update({
+          where: { id: playerId },
+          data: { xp: { increment: discount ? XP.serveDiscount : XP.serve } },
+        });
         await addToReport(tx, playerId, room.day, {
           revenue: received,
           tips: tip,

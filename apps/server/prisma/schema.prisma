@@ -46,6 +46,8 @@ model Player {
   jobId       String?
   /// Bước kịch bản người mới đang ở (content tutorial step id).
   tutorial    String   @default("gap_chu_bay")
+  /// Kinh nghiệm tích luỹ từ làm thật (docs/DESIGN.md §4) — cấp độ suy ra từ đây.
+  xp          Int      @default(0)
   createdAt   DateTime @default(now())
 
   businesses Business[]

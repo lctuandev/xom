@@ -74,6 +74,26 @@ export function BusinessSheet() {
 
       <OpenButton biz={biz} stock={stock} working={me.jobId !== null} money={me.money} />
 
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => close("recipes")}
+          className="h-11 rounded-xl bg-white font-semibold shadow-sm"
+        >
+          📖 Công thức
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            close(null);
+            setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+          }}
+          className="h-11 rounded-xl bg-white font-semibold shadow-sm"
+        >
+          🧺 Ra chợ mua hàng
+        </button>
+      </div>
+
       <Section title="Thực đơn & giá">
         <MenuEditor biz={biz} />
       </Section>

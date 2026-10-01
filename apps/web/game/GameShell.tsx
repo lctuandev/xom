@@ -1,9 +1,12 @@
 "use client";
 
+import { content } from "@xom/content";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { setAmbient, setMusicMood, sfx, startMusic, stopMusic, unlockAudio } from "./audio";
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
+import ShopInterior from "./interior/ShopInterior";
 import { connectGame } from "./net/socket";
 import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
@@ -11,10 +14,10 @@ import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
-import { CameraButtons } from "./ui/CameraButtons";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
 import { EquipmentSheet } from "./ui/EquipmentSheet";
+import { ProfileSheet, QuestsSheet, RecipeSheet, SettingsSheet } from "./ui/HubSheets";
 import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
 import { Kitchen } from "./ui/Kitchen";
@@ -22,8 +25,10 @@ import { MarketSheet } from "./ui/MarketSheet";
 import { QuickChat } from "./ui/QuickChat";
 import { ShopSheet } from "./ui/ShopSheet";
 import { TalkSheet } from "./ui/TalkSheet";
+import { FoodSheet, VendorSheet } from "./ui/VendorSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
 import { Payslip } from "./ui/work/Payslip";
+import { LoadingScreen } from "./ui/XomArt";
 import { XomSheet } from "./ui/XomSheet";
 import { useWorldEffects } from "./useWorldEffects";
 
@@ -41,6 +46,8 @@ export default function GameShell() {
   useWorldEffects();
   useTutorial();
   useInvite();
+  useNews();
+  useSound();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
   useEffect(() => {
@@ -74,19 +81,18 @@ export default function GameShell() {
     );
   }
 
-  if (!authed || !me) {
-    return (
-      <div className="flex h-full items-center justify-center text-base font-semibold">
-        Đang vào xóm…
-      </div>
-    );
-  }
+  if (!authed || !me) return <LoadingScreen />;
 
   // Vào nơi làm: cảnh nội thất riêng thay cho bản đồ (bản đồ tắt hẳn để tiết kiệm GPU).
   if (inside) {
     return (
       <div className="relative h-full w-full overflow-hidden select-none">
-        <Interior placeId={inside} />
+        {inside.startsWith("shop:") ? (
+          <ShopInterior lotId={inside.slice(5)} />
+        ) : (
+          <Interior placeId={inside} />
+        )}
+        {sheet === "recipes" && <RecipeSheet />}
         <Dialogue />
         <Payslip />
         <DaySummary />
@@ -104,11 +110,16 @@ export default function GameShell() {
       {sheet === "jobs" && <JobsSheet />}
       {sheet === "xom" && <XomSheet />}
       {sheet === "shop" && <ShopSheet />}
+      {sheet === "vendor" && <VendorSheet />}
+      {sheet === "food" && <FoodSheet />}
+      {sheet === "quests" && <QuestsSheet />}
+      {sheet === "profile" && <ProfileSheet />}
+      {sheet === "settings" && <SettingsSheet />}
+      {sheet === "recipes" && <RecipeSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />
       <QuickChat />
-      <CameraButtons />
       <Kitchen />
       <DoorSheet />
       <Payslip />
@@ -143,4 +154,55 @@ function useInvite() {
     shown.current = true;
     useGame.getState().openSheet("xom");
   }, [invite, roster, dialogue, sheet]);
+}
+
+/** Dải tin chuyện trong xóm: sạp bày hàng, sang ngày mới (tin hàng xóm vào/ra đẩy từ socket). */
+function useNews() {
+  const minute = useGame((s) => s.clock?.minute ?? -1);
+  const day = useGame((s) => s.clock?.day ?? 0);
+  const last = useRef<{ open: Set<string>; day: number } | null>(null);
+  useEffect(() => {
+    if (minute < 0) return;
+    const push = useGame.getState().pushNews;
+    const open = new Set(
+      content.data.vendors.filter((v) => minute >= v.open && minute < v.close).map((v) => v.id),
+    );
+    const prev = last.current;
+    if (prev && prev.day !== day) push(`☀️ Sang ngày ${day} — xóm lại nhộn nhịp`);
+    if (prev)
+      for (const v of content.data.vendors) {
+        if (open.has(v.id) && !prev.open.has(v.id)) push(`🍜 ${v.sign} vừa bày hàng`);
+        if (!open.has(v.id) && prev.open.has(v.id)) push(`🧹 ${v.sign} dọn hàng rồi`);
+      }
+    last.current = { open, day };
+  }, [minute, day]);
+}
+
+/**
+ * Âm thanh: mở khoá ở cú chạm đầu tiên (chính sách trình duyệt), bật nhạc nền, nhạc đổi theo ngày/đêm;
+ * mọi nút bấm có tiếng "tách" nhỏ.
+ */
+function useSound() {
+  const minute = useGame((s) => s.clock?.minute ?? 600);
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      unlockAudio();
+      startMusic();
+      if ((e.target as Element | null)?.closest?.("button")) sfx("click");
+    };
+    window.addEventListener("pointerdown", onDown, { capture: true });
+    return () => {
+      window.removeEventListener("pointerdown", onDown, { capture: true });
+      stopMusic();
+    };
+  }, []);
+  const inside = useGame((s) => s.inside);
+  useEffect(() => {
+    setMusicMood(minute >= 1080 || minute < 330 ? "night" : "day");
+    // Giờ cao điểm (sáng đi làm, trưa, tan tầm) phố ồn hơn; khuya vắng.
+    const h = minute / 60;
+    const rush = (h >= 7 && h < 9) || (h >= 11 && h < 13) || (h >= 17 && h < 19.5);
+    const crowd = rush ? 1 : h >= 21 || h < 6 ? 0.25 : 0.55;
+    setAmbient(inside ? "inside" : "street", crowd);
+  }, [minute, inside]);
 }

@@ -59,6 +59,15 @@ export interface MeView {
   /** Độ thân thiết với NPC (id địa điểm → 0–100). */
   friendship: Record<string, number>;
   today: TodayView;
+  /** Tiến trình (DESIGN §4): cấp độ từ KN, danh tiếng từ số khách đã phục vụ + uy tín. */
+  progress: {
+    xp: number;
+    level: number;
+    into: number;
+    need: number;
+    fame: "unknown" | "local" | "popular" | "famous";
+    served: number;
+  };
 }
 
 export interface LotOccupant {
@@ -464,6 +473,7 @@ export const shopOrderSchema = z.object({
   picks: z.record(contentId, contentId).default({}),
   mods: z.array(contentId).max(8).default([]),
 });
+export const vendorBuySchema = z.object({ vendorId: contentId, itemId: contentId });
 export const joinRoomSchema = z.object({
   code: z
     .string()

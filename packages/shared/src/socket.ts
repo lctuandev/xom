@@ -71,6 +71,8 @@ export interface ClientToServerEvents {
   /** Vị trí của mình (không cần Ack, 10 lần/giây khi có thay đổi). */
   move: (payload: MovePayload) => void;
   "xom:join": Intent<{ code: string }>;
+  /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
+  "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
   /** Gọi món ở quầy hàng xóm (UC-J3). */
   "shop:order": Intent<{
     businessId: string;

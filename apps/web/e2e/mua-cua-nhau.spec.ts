@@ -19,7 +19,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
   await register(page, "An");
   await waitForMorning(page, 9);
   await openBanhMiStall(page);
-  await page.getByRole("button", { name: /^Xóm: 1 người online/ }).tap();
+  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
     .getByRole("dialog", { name: "Xóm" })
@@ -36,7 +36,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
   await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
 
   // Bình mở bảng Xóm → "Tới quầy" của An → tới nơi bảng gọi món tự mở.
-  await b.getByRole("button", { name: /^Xóm: 2 người online/ }).tap();
+  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   const shop = b.getByRole("dialog", { name: "Quầy An" });
   await expect(shop).toBeVisible({ timeout: 30_000 });
@@ -47,14 +47,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
     "bánh mì thịt, không hành",
   );
   await shot(b, "22-goi-mon-hang-xom");
-  const moneyBefore = Number(
-    (
-      (await b
-        .getByText(/^[\d.]+đ$/)
-        .first()
-        .textContent()) ?? ""
-    ).replace(/\D/g, ""),
-  );
+  const moneyBefore = Number(await b.locator("[data-money]").getAttribute("data-money"));
   await shop.getByRole("button", { name: /^🛒 Gọi món ·/ }).tap();
   await expect(b.getByText(/⏳ Chờ An làm: bánh mì thịt, không hành/)).toBeVisible();
 
@@ -82,16 +75,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
     b.getByText(/📱 Chuyển .* cho quầy — nhận bánh mì thịt, không hành/).first(),
   ).toBeVisible();
   await expect
-    .poll(async () =>
-      Number(
-        (
-          (await b
-            .getByText(/^[\d.]+đ$/)
-            .first()
-            .textContent()) ?? ""
-        ).replace(/\D/g, ""),
-      ),
-    )
+    .poll(async () => Number(await b.locator("[data-money]").getAttribute("data-money")))
     .toBeLessThan(moneyBefore);
   await shot(b, "24-nhan-mon");
   await ctx.close();

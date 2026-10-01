@@ -5,7 +5,7 @@ import { content, type Place } from "@xom/content";
 import { useMemo, useRef } from "react";
 import type { CharacterModel, CityModel } from "../assets";
 import { useGame } from "../store";
-import { addressSpot, placeSpot, standBehind } from "../world";
+import { addressSpot, placeSpot, standBehind, vendorOpen, vendorSpot } from "../world";
 import { Character, Walker } from "./Character";
 import { Instances, type Placement } from "./CityKit";
 import { speakerWalker } from "./guide";
@@ -116,6 +116,14 @@ export function ProximityWatcher() {
       if (distanceTo(p.x, p.z) <= radius + 1.5) shop = l.businessId;
     }
     if (shop !== s.nearShop) s.setNearShop(shop);
+    // Sạp đồ ăn NPC đang bày ở gần (UC-B9).
+    let vendor: string | null = null;
+    const minute = s.clock?.minute ?? 0;
+    for (const v of content.data.vendors) {
+      const spot = vendorSpot(v.id);
+      if (spot && vendorOpen(v.id, minute) && distanceTo(spot.x, spot.z) <= radius) vendor = v.id;
+    }
+    if (vendor !== s.nearVendor) s.setNearVendor(vendor);
 
     const g = s.goal;
     const arrived =
@@ -125,7 +133,9 @@ export function ProximityWatcher() {
           ? door === g.id
           : g?.kind === "shop"
             ? shop === g.id
-            : atStall;
+            : g?.kind === "vendor"
+              ? vendor === g.id
+              : atStall;
     if (g && !getPlayer().target && arrived) {
       s.setGoal(null);
       if ("open" in g && g.open) s.openSheet(g.open);

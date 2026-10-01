@@ -4,6 +4,7 @@ import { content } from "@xom/content";
 import type { CashierTaskView, ShiftView } from "@xom/shared";
 import { ringTotal } from "@xom/sim";
 import { useEffect, useState } from "react";
+import { sfx } from "../../audio";
 import { vnd } from "../../format";
 import type { WaiterActions } from "../../interior/Interior";
 import { staff, whereIsStaff } from "../../interior/quancom/staff";
@@ -149,7 +150,10 @@ export function PlatePanel({
               type="button"
               aria-label={`Múc ${f.name}`}
               disabled={portions <= 0}
-              onClick={() => setPlate([...onPlate, f.id])}
+              onClick={() => {
+                sfx("scoop");
+                setPlate([...onPlate, f.id]);
+              }}
               className="relative flex min-h-18 flex-col items-center justify-center rounded-xl border border-ink/10 bg-gradient-to-b from-white to-[#eef1f3] p-1 text-center shadow-sm active:scale-95 disabled:opacity-40"
             >
               <span className="absolute top-1 right-1 rounded-full bg-ink/80 px-1.5 text-[10px] font-bold text-cream tabular-nums">
@@ -205,6 +209,7 @@ export function PlatePanel({
           disabled={busy || onPlate.length === 0}
           onClick={async () => {
             setBusy(true);
+            sfx("plate");
             await sendWork({ kind: "plate", taskId: task.id, items: onPlate }, `diner:${task.id}`);
             setPlate(null);
             setBusy(false);

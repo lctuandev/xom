@@ -46,6 +46,12 @@ export function connectGame(onSignedOut: () => void): () => void {
   });
   s.on("roster", (r) => {
     seedPeers(r);
+    const before = new Set(useGame.getState().roster?.peers.map((p) => p.id));
+    const after = new Set(r.peers.map((p) => p.id));
+    for (const p of r.peers)
+      if (before.size && !before.has(p.id)) game.pushNews(`👋 ${p.name} vừa vào xóm`);
+    for (const p of useGame.getState().roster?.peers ?? [])
+      if (!after.has(p.id)) game.pushNews(`🚶 ${p.name} rời xóm`);
     game.setRoster(r);
   });
   s.on("peers", applyPeers);

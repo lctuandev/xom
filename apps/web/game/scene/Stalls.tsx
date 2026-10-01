@@ -28,6 +28,25 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
   const model = content.equipment(occupant.equipmentId).model as CityModel;
   const at = useMemo(() => [{ x: lot.position.x, z: lot.position.z, rot: lot.facing }], [lot]);
   const text = `${product.sign} ${occupant.ownerName.toLocaleUpperCase("vi")}`;
+  if (lot.kind === "house") {
+    // Tiệm trong nhà: biển hiệu lớn trên cửa, mái hiên; khách vào trong (không đứng ngoài vỉa hè).
+    const out = lot.facing === 0 ? -1 : 1;
+    return (
+      <group>
+        <Instances
+          model="detail-awning-wide"
+          at={[{ x: lot.position.x, z: lot.position.z + out * 1.3, rot: lot.facing }]}
+        />
+        <Sign
+          text={`🏪 ${text}`}
+          position={[lot.position.x, 3.2, lot.position.z + out * 1.35]}
+          rotationY={lot.facing}
+          bg={occupant.open ? product.signColor : CLOSED_SIGN}
+          size={[3.2, 0.7]}
+        />
+      </group>
+    );
+  }
   return (
     <group>
       <Instances model={model} at={at} />

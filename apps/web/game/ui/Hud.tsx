@@ -1,149 +1,220 @@
 "use client";
 
 import { formatClock } from "@xom/sim";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { logout } from "../auth/store";
+import { useEffect, useState } from "react";
 import { vnd } from "../format";
 import { type SheetId, useGame } from "../store";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
-const NAV: { id: SheetId | null; label: string; icon: string }[] = [
-  { id: null, label: "Bản đồ", icon: "🗺️" },
-  { id: "business", label: "Kinh doanh", icon: "🛒" },
-  { id: "market", label: "Chợ", icon: "🧺" },
+type NavItem = { id: SheetId | null; label: string; icon: string };
+
+/**
+ * Điều hướng chính (docs/PLAN.md — HUD): 5 mục theo nhóm tính năng, giữa là Nhiệm vụ (nổi lên).
+ * Xóm = bản đồ · Làm ăn = quầy/chợ/công thức/kho · Nhiệm vụ = việc hôm nay + hướng dẫn ·
+ * Việc làm = làm thuê (sau này: bảng tuyển dụng) · Hàng xóm = ai online, mời bạn (sau này: bạn bè, chat).
+ */
+const NAV: NavItem[] = [
+  { id: null, label: "Xóm", icon: "🗺️" },
+  { id: "business", label: "Làm ăn", icon: "🏪" },
+  { id: "quests", label: "Nhiệm vụ", icon: "🎯" },
   { id: "jobs", label: "Việc làm", icon: "💼" },
+  { id: "xom", label: "Hàng xóm", icon: "👥" },
 ];
 
 export function Hud() {
-  const me = useGame((s) => s.me);
-  const clock = useGame((s) => s.clock);
   const sheet = useGame((s) => s.sheet);
   const openSheet = useGame((s) => s.openSheet);
-  const [menu, setMenu] = useState(false);
-  const nearPlace = useGame((s) => s.nearPlace);
-  const setGoal = useGame((s) => s.setGoal);
-  const toast = useGame((s) => s.toast);
-
-  // "Chợ" = đi bộ tới chợ rồi mở (docs/PLAN.md Phase 1.5); các mục khác mở ngay.
-  const navigate = (id: SheetId | null) => {
-    if (id === "market" && nearPlace !== "cho_dau_moi") {
-      openSheet(null);
-      setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
-      toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
-      return;
-    }
-    openSheet(sheet === id ? null : id);
-  };
-  const [showPerf, setShowPerf] = useState(false);
+  const showPerf = useGame((s) => s.showPerf);
+  const online = useGame((s) => s.roster?.peers.length ?? 0);
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-      <header className="pt-safe pointer-events-auto flex items-center gap-2 px-3">
-        <div className="rounded-full bg-cream/95 px-3 py-1.5 text-sm font-extrabold tabular-nums shadow-sm">
-          {me ? vnd(me.money) : "…"}
+      <header className="pt-safe pointer-events-auto flex items-start gap-2 px-3">
+        <ProfileBadge />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <ResourceBar />
+          <NewsTicker />
         </div>
-        <div className="rounded-full bg-cream/95 px-3 py-1.5 text-sm font-semibold tabular-nums shadow-sm">
-          {clock ? `N${clock.day} · ${formatClock(clock.minute)}` : "…"}
-        </div>
-        <RosterChip />
-        <div className="flex-1" />
         <button
           type="button"
-          onClick={() => setMenu((v) => !v)}
-          aria-expanded={menu}
-          aria-label="Menu"
-          className="flex h-9 items-center gap-1.5 rounded-full bg-cream/95 px-3 text-xs font-semibold shadow-sm"
+          onClick={() => openSheet(sheet === "settings" ? null : "settings")}
+          aria-label="Cài đặt"
+          className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-cream/95 text-xl shadow-md ring-2 ring-sun/70 active:scale-95"
         >
-          <Connection />☰
+          ⚙️
+          <ConnectionDot />
         </button>
       </header>
-
-      {menu && (
-        <div className="pointer-events-auto absolute top-16 right-3 z-20 flex w-52 flex-col rounded-2xl bg-cream p-2 shadow-lg">
-          <p className="px-3 py-2 text-sm text-ink/60">{me?.displayName}</p>
-          <button
-            type="button"
-            onClick={() => setShowPerf((v) => !v)}
-            className="h-11 rounded-xl px-3 text-left font-semibold active:bg-ink/5"
-          >
-            {showPerf ? "Ẩn số đo" : "Hiện số đo hiệu năng"}
-          </button>
-          <LogoutButton />
-        </div>
-      )}
 
       <Toasts />
       <div className="flex flex-1 flex-col">
         <Objective />
         <DeliveryHud />
+        <SideRail />
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
           {showPerf && <PerfPanel />}
           <JobBadge />
         </div>
       </div>
 
-      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-4 gap-1 bg-cream px-2 pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
-        {NAV.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={() => navigate(item.id)}
-            aria-current={sheet === item.id ? "page" : undefined}
-            className="flex h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
-          >
-            <span className="text-lg leading-none" aria-hidden>
-              {item.icon}
-            </span>
-            {item.label}
-          </button>
-        ))}
+      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-5 items-end gap-0.5 bg-cream px-1.5 pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
+        {NAV.map((item) => {
+          const center = item.id === "quests";
+          const active = sheet === item.id;
+          const label = item.id === "xom" ? `Hàng xóm: ${online} người online` : item.label;
+          return (
+            <button
+              key={item.label}
+              type="button"
+              aria-label={label}
+              onClick={() => openSheet(active ? null : item.id)}
+              aria-current={active ? "page" : undefined}
+              className={
+                center
+                  ? "-mt-6 flex flex-col items-center gap-0.5 text-[11px] font-semibold"
+                  : "relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
+              }
+            >
+              {center ? (
+                <span className="flex size-14 items-center justify-center rounded-full bg-red text-2xl text-cream shadow-lg ring-4 ring-cream">
+                  {item.icon}
+                </span>
+              ) : (
+                <span className="text-lg leading-none" aria-hidden>
+                  {item.icon}
+                </span>
+              )}
+              {item.label}
+              {item.id === "xom" && online > 1 && (
+                <span className="absolute top-0.5 right-3 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream">
+                  {online}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
     </div>
   );
 }
 
-/** Số người đang online trong xóm; chạm để mời bạn / vào xóm bạn. */
-function RosterChip() {
-  const n = useGame((s) => s.roster?.peers.length ?? 0);
+/** Ảnh đại diện (chữ cái đầu tên) + ngày; chạm mở hồ sơ. */
+function ProfileBadge() {
+  const me = useGame((s) => s.me);
   const openSheet = useGame((s) => s.openSheet);
+  const initial = (me?.displayName ?? "?").trim().charAt(0).toUpperCase();
+  const p = me?.progress;
+  const pct = p ? Math.round((p.into / Math.max(1, p.need)) * 100) : 0;
   return (
     <button
       type="button"
-      onClick={() => openSheet("xom")}
-      aria-label={`Xóm: ${n} người online`}
-      className="h-9 rounded-full bg-cream/95 px-3 text-sm font-semibold tabular-nums shadow-sm"
+      aria-label="Hồ sơ"
+      onClick={() => openSheet("profile")}
+      className="relative flex size-12 shrink-0 items-center justify-center rounded-full shadow-md active:scale-95"
+      style={{ background: `conic-gradient(#2f7d4f ${pct}%, #fff6e5 0)` }}
     >
-      👥 {n}
+      {/* Vòng KN quanh ảnh đại diện; số là cấp độ. */}
+      <span className="flex size-10 items-center justify-center rounded-full bg-gradient-to-b from-sun to-[#e0a126] text-lg font-extrabold text-ink">
+        {initial}
+      </span>
+      <span className="absolute -bottom-1.5 rounded-full bg-ink px-1.5 text-[10px] font-bold text-cream tabular-nums">
+        Cấp {p?.level ?? 1}
+      </span>
     </button>
   );
 }
 
-function LogoutButton() {
-  const router = useRouter();
+/** Thanh chỉ số: tiền · uy tín quầy · giờ (mặt trời/trăng). */
+function ResourceBar() {
+  const me = useGame((s) => s.me);
+  const clock = useGame((s) => s.clock);
+  const minute = clock?.minute ?? 0;
+  const night = minute >= 1080 || minute < 330;
+  const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        await logout();
-        router.replace("/dang-nhap");
-      }}
-      className="h-11 rounded-xl px-3 text-left font-semibold text-red active:bg-ink/5"
-    >
-      Đăng xuất
-    </button>
+    <div className="flex items-center gap-2 rounded-full bg-ink/80 py-1 pr-3 pl-1 text-cream shadow-md">
+      <span
+        className="rounded-full bg-cream/15 px-2 py-0.5 text-sm font-extrabold tabular-nums"
+        data-money={me?.money}
+      >
+        💵 {me ? vnd(me.money) : "…"}
+      </span>
+      {rep !== null && (
+        <span className="text-xs font-semibold tabular-nums">⭐ {rep.toFixed(1)}</span>
+      )}
+      <span
+        className="ml-auto text-xs font-semibold tabular-nums"
+        data-clock={clock ? minute : undefined}
+      >
+        N{clock?.day ?? 1} {night ? "🌙" : "☀️"} {clock ? formatClock(minute) : "…"}
+      </span>
+    </div>
   );
 }
 
-function Connection() {
+/** Dải tin "chuyện trong xóm": xoay vòng mấy tin mới nhất. */
+function NewsTicker() {
+  const news = useGame((s) => s.news);
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (news.length < 2) return;
+    const id = setInterval(() => setI((v) => v + 1), 5000);
+    return () => clearInterval(id);
+  }, [news.length]);
+  const item = news.length ? news[news.length - 1 - (i % news.length)] : null;
+  return (
+    <div className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm">
+      <span aria-hidden>📺</span>
+      <span key={item?.id} className="truncate">
+        {item?.text ?? "Một ngày mới trong xóm…"}
+      </span>
+    </div>
+  );
+}
+
+/** Nút nhanh bên trái bản đồ: ăn uống, ra chợ. */
+function SideRail() {
+  const openSheet = useGame((s) => s.openSheet);
+  const nearPlace = useGame((s) => s.nearPlace);
+  const setGoal = useGame((s) => s.setGoal);
+  const toast = useGame((s) => s.toast);
+  const btn =
+    "pointer-events-auto flex size-12 flex-col items-center justify-center rounded-2xl bg-cream/95 text-xl shadow-md active:scale-95";
+  return (
+    <div className="mt-2 flex flex-col gap-2 self-start px-3">
+      <button
+        type="button"
+        aria-label="Quán ăn quanh xóm"
+        className={btn}
+        onClick={() => openSheet("food")}
+      >
+        🍜<span className="text-[9px] font-bold">Ăn uống</span>
+      </button>
+      <button
+        type="button"
+        aria-label="Ra chợ"
+        className={btn}
+        onClick={() => {
+          if (nearPlace === "cho_dau_moi") return openSheet("market");
+          openSheet(null);
+          setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+          toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
+        }}
+      >
+        🧺<span className="text-[9px] font-bold">Chợ</span>
+      </button>
+    </div>
+  );
+}
+
+/** Chấm trạng thái kết nối trên nút cài đặt. */
+function ConnectionDot() {
   const status = useGame((s) => s.status);
-  const ping = useGame((s) => s.pingMs);
   return (
-    <>
-      <span className={`size-2.5 rounded-full ${status === "online" ? "bg-leaf" : "bg-red"}`} />
-      <span className="tabular-nums">{status === "online" ? `${ping ?? "…"}ms` : "Mất mạng"}</span>
-    </>
+    <span
+      className={`absolute top-0 right-0 size-3 rounded-full ring-2 ring-cream ${status === "online" ? "bg-leaf" : "bg-red"}`}
+    />
   );
 }
 

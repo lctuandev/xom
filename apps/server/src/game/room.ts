@@ -17,8 +17,10 @@ export interface Member {
   sockets: Set<string>;
   /** Hẹn giờ dọn dẹp khi người chơi rời đi (cho phép vào lại trong thời gian ân hạn). */
   leaveTimer?: NodeJS.Timeout;
-  /** Vị trí gần nhất client báo lên (chỉ để người khác thấy; server không dùng cho luật chơi). */
+  /** Vị trí gần nhất client báo lên (để người khác thấy và để server kiểm đứng gần). */
   pos?: MovePayload;
+  /** Lúc bắt đầu phiên chơi (đo thời lượng phiên). */
+  sessionStart?: number;
 }
 
 /** Đơn khách đang ở quầy (chỉ sống trong bộ nhớ): chờ làm món → chờ tính tiền → đi. */

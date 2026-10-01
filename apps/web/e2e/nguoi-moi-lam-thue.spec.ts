@@ -5,6 +5,7 @@ import {
   readDialogue,
   register,
   shot,
+  skipGuide,
   waitForMorning,
   walkToObjective,
 } from "./helpers";
@@ -51,6 +52,7 @@ async function servePlate(page: Page) {
 test("người mới: đứng quầy múc cơm ở quán Cô Tư rồi ra ca nhận phiếu lương", async ({ page }) => {
   await enterQuanCom(page, "Hoa");
   await page.getByRole("button", { name: /Đứng quầy múc cơm/ }).tap();
+  await skipGuide(page);
   await expect(page.getByText(/xong 0 việc/)).toBeVisible();
 
   await servePlate(page);
@@ -71,6 +73,7 @@ test("người mới: đứng quầy múc cơm ở quán Cô Tư rồi ra ca nh�
 test("thu ngân bấm máy tính tiền theo phiếu, thu và thối tiền", async ({ page }) => {
   await enterQuanCom(page, "Lan");
   await page.getByRole("button", { name: /Thu ngân/ }).tap();
+  await skipGuide(page);
 
   // Thu ngân: bấm đúng từng dòng trên phiếu → báo giá → thu tiền.
   const task = page.locator("[data-task]");
@@ -104,6 +107,7 @@ test("bưng bê: tới cửa bếp lấy dĩa, bưng tới đúng bàn rồi b�
 }) => {
   await enterQuanCom(page, "Minh");
   await page.getByRole("button", { name: /Bưng bê/ }).tap();
+  await skipGuide(page);
   // Cô Tư múc cho khách → dĩa ra cửa bếp; phải đi tới cửa bếp mới lấy được.
   const toPass = page.getByRole("button", { name: /📍 Tới cửa bếp lấy dĩa/ });
   const grab = page.getByRole("button", { name: /🍽️ Lấy dĩa bàn \d/ }).first();

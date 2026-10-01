@@ -138,6 +138,8 @@ describe("Vòng chơi làm thật (e2e)", () => {
     });
     expect(paid.ok && paid.data.today.revenue).toBe(order.price);
     expect(paid.ok && paid.data.today.tips).toBeGreaterThanOrEqual(1_000);
+    // Làm thật mới có kinh nghiệm (DESIGN §4): bán đúng một món = +10 KN.
+    expect(paid.ok && paid.data.progress).toMatchObject({ xp: 10, level: 1, served: 1 });
     expect(await result).toMatchObject({ served: true, received: order.price });
     socket.disconnect();
   });

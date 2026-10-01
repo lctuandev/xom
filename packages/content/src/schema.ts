@@ -142,6 +142,8 @@ export const lotSchema = z.object({
   position: z.object({ x: z.number(), z: z.number() }),
   /** Hướng quầy quay ra (radian quanh trục Y). */
   facing: z.number(),
+  /** cart = xe đẩy trên vỉa hè; house = nhà mặt tiền có không gian tiệm bên trong (UC-W6). */
+  kind: z.enum(["cart", "house"]).default("cart"),
 });
 
 export const npcArchetypeSchema = z.object({
@@ -165,6 +167,8 @@ export const jobRoleSchema = z.object({
   description: z.string(),
   /** Tiền cho mỗi việc làm đúng (một dĩa, một lượt tính tiền, một đơn giao…). */
   piecePay: vnd,
+  /** Người chủ chỉ việc từng bước khi mới vào làm vai này (UC-W1). */
+  guide: z.array(z.string()).default([]),
 });
 
 export const jobSchema = z.object({
@@ -193,6 +197,28 @@ export const mapSchema = z.object({
   origin: point,
   rows: z.array(z.string().regex(/^[=|+csaBTKHPMSL.]+$/)).min(1),
 });
+
+/** Sạp đồ ăn NPC bày theo giờ (docs/USECASES.md UC-B9): người chơi mua ăn tại chỗ. */
+export const vendorSchema = z.object({
+  id,
+  /** Người bán (hiện trong khung thoại). */
+  name: z.string(),
+  /** Chữ trên biển: "XÔI BÀ BẢY". */
+  sign: z.string(),
+  signColor: z.string(),
+  /** Model xe/sạp trong city bundle. */
+  model: z.string(),
+  position: point,
+  /** 0 = mặt quầy quay về +z. */
+  facing: z.number(),
+  /** Mở/dọn hàng (phút trong ngày). */
+  open: z.number().int(),
+  close: z.number().int(),
+  seats: z.number().int().min(0).max(6).default(2),
+  lines: z.array(z.string()).min(1),
+  items: z.array(z.object({ id, name: z.string(), emoji: z.string(), price: vnd })).min(1),
+});
+export type Vendor = z.infer<typeof vendorSchema>;
 
 export const restaurantSchema = z.object({
   foods: z.array(z.object({ id, name: z.string(), emoji: z.string(), model: z.string() })),
@@ -375,6 +401,7 @@ export const contentSchema = z.object({
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
   map: mapSchema,
+  vendors: z.array(vendorSchema).default([]),
   restaurant: restaurantSchema,
   delivery: deliverySchema,
   ingredients: z.array(ingredientSchema),

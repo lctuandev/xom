@@ -118,15 +118,24 @@ cửa sổ nhà sáng đèn, bảng hiệu quán sáng, sạp đêm treo bóng �
 bóng đèn đường sáng + vầng sáng dưới đất, cửa sổ nhà sáng đèn, bóng đèn ở quầy đang mở và các địa điểm — không dùng đèn thật (vài draw call).
 **Chưa:** kéo ngày tới 23:00 cho chợ đêm, bảng hiệu hộp đèn.
 
-### UC-B9 · Sạp đồ ăn theo giờ ⏳
+### UC-B9 · Sạp đồ ăn theo giờ ✅ (bản đầu)
 **Sáng (06–10h):** xôi, bánh mì, phở, cà phê cóc. **Trưa (10–14h):** cơm tấm, bún, nước mía. **Chiều (14–18h):** bánh tráng trộn, trà sữa, chè.
 **Tối (18–23h):** ốc, lẩu, nướng, hột vịt lộn — bàn ghế nhựa bày ra vỉa hè.
 Sạp NPC tự dọn ra/dọn vào đúng giờ (thấy người bày hàng, dọn hàng); người chơi mở quầy cùng giờ thì cạnh tranh khách.
+**Đã làm:** 8 sạp trong `content.vendors` (xôi Bà Bảy, phở Chú Hai, cà phê cóc, nước mía, bánh tráng trộn ở cổng trường, chè Cô Năm,
+ốc đêm, nướng đêm) — tới giờ thì hiện xe/sạp, biển, người bán, ghế nhựa, vài người ngồi ăn (đổi theo giờ), tối có bóng đèn;
+☰ → "🍜 Quán ăn quanh xóm" xem sạp nào đang bày, chạm "Đi tới" là đi theo đường tới, tới nơi mở thực đơn.
+**Chưa:** hoạt ảnh bày/dọn hàng, cạnh tranh khách với quầy người chơi.
 
-### UC-B10 · Cảnh sinh hoạt ⏳
+### UC-B10 · Cảnh sinh hoạt 🚧
 NPC có việc để làm: đi làm buổi sáng, học sinh tan trường, người mua đồ ăn sáng đứng chờ, ngồi ghế nhựa ăn, uống cà phê, vào nhà hàng
 rồi đi ra, chạy xe máy trên đường, dừng đèn đỏ, người bán dạo đẩy xe. Người chơi **làm khách**: mua đồ ăn ở sạp NPC (tốn tiền, ngồi ăn),
 **vào quán cơm Cô Tư ngồi ăn** (thấy quán sống động từ phía khách), trò chuyện với người ngồi cùng bàn.
+
+**Đã làm:** người chơi mua đồ ăn ở sạp (server kiểm giờ bày + đứng gần, tiền qua sổ cái, thân thiết +1), người bán nói một câu,
+mình ra ghế nhựa ngồi ăn (có muỗng) vài giây; NPC có việc để làm: ghé sạp gọi món, vào quán cơm/chợ/bưu cục rồi đi ra, đi dạo theo đường.
+**Chưa:** xe máy trên đường, dừng đèn đỏ, người bán dạo; người chơi vào quán cơm Cô Tư ngồi ăn như khách.
+**Kiểm chứng:** e2e server `xom.e2e-spec.ts` (sạp theo giờ); Playwright `an-sang.spec.ts`.
 
 **Thứ tự làm (mỗi bước deploy):** B8 ngày/đêm + đèn → B7 góc nhìn → B6 map rộng + đường xá → B9 sạp theo giờ → B10 cảnh sinh hoạt & làm khách.
 
@@ -176,6 +185,13 @@ Quán cơm Cô Tư xin việc → làm 2 việc vặt → Chú Bảy gợi ý t�
 **Kiểm chứng (đã chạy):** e2e server (rao hàng → thông báo, hồi chiêu); Playwright (câu rao hiện trên đầu).
 ### UC-D4 · Chat với người chơi khác ⏳ (Phase 2)
 Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc từ ngữ thô tục; bấm vào người chơi → *Chặn* / *Báo cáo*. Người bị chặn không thấy tin nhắn của mình.
+
+### UC-D5 · Âm thanh: nhạc nền, tiếng thao tác, giọng nói ✅ (bản đầu)
+Tổng hợp bằng WebAudio (không file, không lo bản quyền): **nhạc nền** ngũ cung kiểu đàn tranh (ngày tươi, đêm chậm/dịu);
+**hiệu ứng**: bấm nút "tách", tiền vào "ting", múc cơm, đặt dĩa, chuông, lỗi "è"; **giọng nói** lầm bầm theo âm tiết mỗi khi ai đó nói
+(mỗi người một cao độ; khách bực/cãi nhau thì gắt, nhanh — kèm câu càu nhàu "Làm ăn kiểu gì chậm như rùa vậy!", "Muốn gây hả?").
+Cài đặt ⚙️: thanh âm lượng nhạc / hiệu ứng / giọng, nút tắt tiếng (nhớ trên máy). Âm thanh chỉ bật sau cú chạm đầu tiên (luật trình duyệt).
+**Chưa:** đọc chữ thật (TTS tiếng Việt), âm thanh môi trường (xe cộ, chợ ồn).
 
 ---
 
@@ -384,6 +400,8 @@ Chủ đánh giá nhân viên (đúng giờ, làm đúng món, thái độ); nh�
 > Thu nhập làm thuê = **lương cứng theo giờ khi có làm** + **tiền theo từng việc** (+ thưởng/boa). Đứng không = không có tiền.
 
 ### UC-W1 · Vào/ra một nơi làm việc ✅
+**Hướng dẫn vào ca:** lần đầu làm một vai, người chủ (Cô Tư / Anh Tám) chỉ việc từng bước (5 bước, nội dung trong `content.jobs[].roles[].guide`);
+nút "❓ Cách làm" mở lại bất cứ lúc nào; Cài đặt → "Xem lại hướng dẫn vào làm" để được chỉ lại từ đầu.
 **Luồng:** tới cửa quán → "🍚 Vào quán · Cô Tư" → màn hình chuyển vào trong (1 giây) → chọn **vai** (đứng quầy / thu ngân / bưng bê) → *Vào ca*.
 Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương cứng, tiền việc, thưởng, khấu trừ) → quay ra phố.
 **Đời thật & rẽ nhánh:**
@@ -494,8 +512,23 @@ có không gian quán như Cô Tư** (UC-W6).
 **Kiểm chứng:** unit `floor.test.ts` (vòng đời, than/xin lỗi, quỵt, gây lộn, bàn/đi bộ); e2e server `work.e2e-spec.ts`
 (bưng bê cầm dĩa → đi tới bàn, khách trả tiền ra về có đánh giá); Playwright `nguoi-moi-lam-thue.spec.ts` (3 vai, iPhone 16 Pro + Pixel 7).
 
-### UC-W6 · Quầy riêng của mình — không gian sau xe hàng ⏳
-Vào quầy (đứng sau xe bánh mì) → camera ngang tầm mắt từ sau tủ kính: thấy khay nguyên liệu, ổ bánh trên thớt, khách đứng trước quầy. Các bước làm món (UC-F4) diễn ra **trên mô hình 3D**: chạm ổ bánh → dao xẻ; chạm khay pa-tê → phết; thứ gì cho vào hiện trên ổ bánh; gói giấy → đưa qua quầy cho khách. Trà sữa: ly lên máy dán nắp, lắc bằng thao tác kéo lên-xuống.
+### UC-W6 · Tiệm riêng — thuê một căn nhà mặt tiền, có không gian quán như Cô Tư 🚧
+> Người chơi yêu cầu: user có tiệm là một căn nhà (như quán Cô Tư) thì mới có không gian quán; cách bày quầy tham khảo
+> ảnh quầy trà sữa (ly M/L, bình trà, lưới topping, máy dán nắp) — khách tới quầy gọi món, mình chạm từng ô rồi bấm đưa món.
+
+**Luồng:** bảng Kinh doanh → *Chỗ bán* có thêm **nhà mặt tiền** (tiền thuê/ngày cao hơn xe đẩy, không bị mưa nắng, có bàn cho khách ngồi)
+→ mở tiệm → trên phố căn nhà có **biển hiệu tên mình**, cửa mở; tới cửa bấm *🏪 Vào tiệm* → cảnh trong tiệm:
+quầy của mình (theo nghề: tủ kính bánh mì / quầy trà sữa), khách **đi từ cửa vào, xếp hàng ở quầy, khung thoại gọi món**,
+mình làm món trên **bảng quầy** (các ô nguyên liệu/khay dạng lưới có tên + số còn lại, chạm từng ô theo lời khách) → *Đưa món* → tính tiền.
+Khách mua mang về đi ra cửa; khách ăn tại chỗ ngồi bàn (như quán Cô Tư).
+**Đời thật:** tiệm đông thì cần người phụ (UC-H, tuyển NPC/người chơi) — vị trí mình không làm thì người phụ làm;
+tiền điện nước tính vào tiền thuê; bảng hiệu, bàn ghế nâng cấp dần.
+**Luật:** mở tiệm = đứng quầy trong tiệm; ra khỏi tiệm = quầy vắng chủ (như UC-F3); một người một chỗ bán (xe đẩy **hoặc** nhà).
+**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 120k/ngày) trong danh sách Chỗ bán;
+ngoài phố căn nhà có mái hiên + biển "🏪 BÁNH MÌ <TÊN>"; đứng trước cửa bấm "🏪 Vào tiệm" → cảnh trong tiệm (quầy, đồ bày, bàn ghế,
+camera xoay được), khách đi từ cửa vào xếp hàng, khung thoại gọi món, nhận món xong đi ra; "👨‍🍳 Làm món cho khách" dùng màn làm món,
+"📖 Công thức" ngay trong tiệm. **Chưa:** bảng quầy dạng lưới riêng cho trà sữa (như ảnh tham khảo), khách ngồi ăn tại bàn, thuê người phụ.
+**Kiểm chứng:** Playwright `tiem-rieng.spec.ts`.
 
 ### UC-W7 · Phiếu lương & uy tín người làm ⏳
 Mỗi ca có phiếu lương chi tiết. Người làm có **uy tín làm thuê** (đúng giờ, ít lỗi, không bỏ ca): uy tín cao → được nhận vai khó hơn/lương cao hơn (thu ngân cần uy tín ≥ 60), chủ NPC gọi làm thêm; uy tín thấp → một số nơi không nhận.

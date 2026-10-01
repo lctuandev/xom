@@ -8,7 +8,7 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   // An: vào game, bỏ qua lời Chú Bảy, mở bảng Xóm lấy mã.
   await register(page, "An");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await page.getByRole("button", { name: /^Xóm: 1 người online/ }).tap();
+  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   expect(code).toMatch(/^[0-9a-f]{8}$/);
   await page
@@ -26,10 +26,10 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   await expect(sheet.getByText(/Bạn được mời vào xóm/)).toBeVisible();
   await sheet.getByRole("button", { name: "Vào xóm" }).tap();
   await expect(bPage.getByText(/Đã vào xóm mới/)).toBeVisible();
-  await expect(bPage.getByRole("button", { name: /^Xóm: 2 người online/ })).toBeVisible();
+  await expect(bPage.getByRole("button", { name: /^Hàng xóm: 2 người online/ })).toBeVisible();
 
   // An thấy Bình: số người online + bảng tên trên đầu.
-  await expect(page.getByRole("button", { name: /^Xóm: 2 người online/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Hàng xóm: 2 người online/ })).toBeVisible();
   const tag = page.locator("[data-bubble]").filter({ hasText: /^Bình$/ });
   await expect(tag).toBeVisible();
   await shot(page, "20-thay-ban");
@@ -51,5 +51,5 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
 
   // Bình rời game → An thấy xóm còn 1 người.
   await ctx.close();
-  await expect(page.getByRole("button", { name: /^Xóm: 1 người online/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Hàng xóm: 1 người online/ })).toBeVisible();
 });

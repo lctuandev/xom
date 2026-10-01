@@ -43,6 +43,32 @@ export function shopSpot(lotId: string): Spot {
   return { x: lot.position.x - 0.8, z: lot.position.z + front * 1.3, yaw: lot.facing + Math.PI };
 }
 
+/** Chỗ đứng mua ở sạp đồ ăn NPC (trước mặt người bán). */
+export function vendorSpot(id: string): Spot | null {
+  const v = content.data.vendors.find((x) => x.id === id);
+  if (!v) return null;
+  const front = v.facing === 0 ? 1 : -1;
+  return { x: v.position.x + 0.6, z: v.position.z + front * 1.3, yaw: v.facing + Math.PI };
+}
+
+/** Ghế nhựa trước sạp (khách ngồi ăn). */
+export function vendorSeats(id: string): Spot[] {
+  const v = content.data.vendors.find((x) => x.id === id);
+  if (!v) return [];
+  const front = v.facing === 0 ? 1 : -1;
+  return Array.from({ length: v.seats }, (_, i) => ({
+    x: v.position.x - 1.6 + i * 0.85,
+    z: v.position.z + front * 2.2,
+    yaw: v.facing,
+  }));
+}
+
+/** Sạp đang bày hàng lúc này. */
+export function vendorOpen(id: string, minute: number): boolean {
+  const v = content.data.vendors.find((x) => x.id === id);
+  return !!v && minute >= v.open && minute < v.close;
+}
+
 /** Vị trí của một mục tiêu kịch bản / goal; null nếu chưa xác định (ví dụ chưa chọn chỗ bán). */
 export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
   const kind = typeof target === "string" ? (target === "stall" ? "stall" : "place") : target.kind;
@@ -52,6 +78,7 @@ export function spotFor(target: string | Goal, me: MeView | null): Spot | null {
   }
   if (typeof target !== "string" && target.kind === "address") return addressSpot(target.id);
   if (typeof target !== "string" && target.kind === "shop") return shopSpot(target.lotId);
+  if (typeof target !== "string" && target.kind === "vendor") return vendorSpot(target.id);
   const id = typeof target === "string" ? target : target.kind === "place" ? target.id : "";
   return content.placeById.has(id) ? placeSpot(id) : null;
 }

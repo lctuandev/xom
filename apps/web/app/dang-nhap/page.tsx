@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthForm } from "@/game/auth/AuthForm";
+import { XomArt } from "@/game/ui/XomArt";
 
 export const metadata: Metadata = { title: "Đăng nhập · XÓM" };
 
@@ -9,12 +10,17 @@ export default async function LoginPage({ searchParams }: PageProps<"/dang-nhap"
   const target =
     typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : "/play";
   return (
-    <main className="pt-safe pb-safe mx-auto flex min-h-full max-w-md flex-col px-6">
-      <div className="flex flex-col items-center gap-2 py-10 text-center">
-        <h1 className="text-5xl font-extrabold tracking-tight text-red">XÓM</h1>
-        <p className="text-ink/70">Sống, buôn bán và làm hàng xóm với bạn bè.</p>
+    <main className="pb-safe mx-auto flex min-h-full max-w-md flex-col">
+      <div className="relative">
+        <XomArt className="h-60 w-full" />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-cream to-transparent pt-10 pb-2 text-center">
+          <h1 className="text-5xl font-extrabold tracking-tight text-red drop-shadow-sm">XÓM</h1>
+          <p className="text-sm text-ink/70">Sống, buôn bán và làm hàng xóm với bạn bè.</p>
+        </div>
       </div>
-      <AuthForm next={target} />
+      <div className="px-6 pt-4">
+        <AuthForm next={target} />
+      </div>
     </main>
   );
 }
