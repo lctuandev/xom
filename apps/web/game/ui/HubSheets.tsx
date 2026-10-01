@@ -13,6 +13,7 @@ import { isSpicy, setSpicy } from "../voice";
 import { nearestAtm } from "../world";
 import { Achievements, useMyStats } from "./BoardSheet";
 import { Sheet } from "./Sheet";
+import { StoryTimeline } from "./Story";
 import { Tabs } from "./Tabs";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
@@ -92,7 +93,7 @@ export function ProfileSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
   const stats = useMyStats();
-  const [tab, setTab] = useState<"me" | "skills" | "badges" | "friends">("me");
+  const [tab, setTab] = useState<"me" | "story" | "skills" | "badges" | "friends">("me");
   if (!me) return null;
   const friends = Object.entries(me.friendship)
     .filter(([, v]) => v > 0)
@@ -116,6 +117,7 @@ export function ProfileSheet() {
         onChange={setTab}
         tabs={[
           { id: "me", label: "🧑 Tôi" },
+          { id: "story", label: "📖 Chuyện" },
           { id: "skills", label: "📈 Kỹ năng" },
           {
             id: "badges",
@@ -125,6 +127,7 @@ export function ProfileSheet() {
           { id: "friends", label: "🫶 Người quen" },
         ]}
       />
+      {tab === "story" && <StoryTimeline name={me.displayName} />}
       {tab === "me" && (
         <>
           <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">

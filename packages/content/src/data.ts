@@ -1901,6 +1901,21 @@ export const data: ContentInput = {
     },
   ],
 
+  // Chuyện của tôi (docs/THEGIOI.md §1): mốc đời người chơi, server ghi một lần kèm ngày game.
+  story: [
+    { id: "join", emoji: "🧳", text: "Dọn về xóm với {money} trong túi" },
+    { id: "first_cart", emoji: "🛒", text: "Mua {equipment} — bắt đầu đi buôn" },
+    { id: "switch_trade", emoji: "🔄", text: "Đổi nghề: bán xe cũ, mua {equipment}" },
+    { id: "first_open", emoji: "🎪", text: "Mở quầy {product} đầu tiên ở {lot}" },
+    { id: "first_shop", emoji: "🏠", text: "Thuê nhà mặt tiền {lot}, mở tiệm đàng hoàng" },
+    { id: "first_job", emoji: "💼", text: "Đi làm thuê lần đầu: {job}" },
+    {
+      id: "first_donate",
+      emoji: "🏗️",
+      text: "Lần đầu góp {money} vào quỹ xóm làm công trình chung",
+    },
+  ],
+
   achievements: [
     {
       id: "mo_hang",
@@ -1909,6 +1924,7 @@ export const data: ContentInput = {
       description: "Bán món đầu tiên",
       metric: "served",
       goal: 1,
+      story: "Bán được món đầu tiên — tiền lẻ đầu tiên của nghề buôn",
     },
     {
       id: "khoi_nghiep",
@@ -1917,6 +1933,7 @@ export const data: ContentInput = {
       description: "Bán 100 món",
       metric: "served",
       goal: 100,
+      story: "Quầy phục vụ đủ 100 khách",
     },
     {
       id: "tay_to",
@@ -1925,6 +1942,7 @@ export const data: ContentInput = {
       description: "Bán 1.000 món",
       metric: "served",
       goal: 1000,
+      story: "Quầy đạt 1.000 khách — cả xóm biết mặt",
     },
     {
       id: "trieu_dau",
@@ -1933,6 +1951,7 @@ export const data: ContentInput = {
       description: "Doanh thu cộng dồn 1.000.000đ",
       metric: "revenue",
       goal: 1_000_000,
+      story: "Doanh thu cộng dồn chạm 1 triệu",
     },
     {
       id: "chuc_trieu",
@@ -1941,6 +1960,7 @@ export const data: ContentInput = {
       description: "Doanh thu cộng dồn 10.000.000đ",
       metric: "revenue",
       goal: 10_000_000,
+      story: "Doanh thu cộng dồn chạm 10 triệu",
     },
     {
       id: "cham_chi",
@@ -1949,6 +1969,7 @@ export const data: ContentInput = {
       description: "Kiếm 300.000đ tiền công làm thuê",
       metric: "wages",
       goal: 300_000,
+      story: "Kiếm đủ 300.000đ tiền công làm thuê",
     },
     {
       id: "nam_sao",
@@ -1957,6 +1978,7 @@ export const data: ContentInput = {
       description: "Nhận 10 đánh giá 5★",
       metric: "five_stars",
       goal: 10,
+      story: "Nhận đánh giá 5★ thứ 10",
     },
     {
       id: "co_tam",

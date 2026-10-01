@@ -537,6 +537,13 @@ export interface DayReportView {
   moneyEnd: number;
 }
 
+/** Một dòng trong "Chuyện của tôi" (docs/THEGIOI.md §1). */
+export interface StoryEntryView {
+  day: number;
+  emoji: string;
+  text: string;
+}
+
 export interface NotifyEvent {
   kind: "info" | "good" | "warn";
   text: string;

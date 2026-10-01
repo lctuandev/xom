@@ -65,6 +65,7 @@ model Player {
   inventory  InventoryItem[]
   reports    DailyReport[]
   reviews    Review[]       @relation("ReviewsReceived")
+  stories    StoryEntry[]
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -257,4 +258,21 @@ model NpcRelation {
   lastGreetDay Int    @default(0)
 
   @@id([playerId, npcId])
+}
+
+/// "Chuyện của tôi" (docs/THEGIOI.md §1): mốc đời người chơi, mỗi mốc (key) ghi một lần với câu đã viết sẵn.
+model StoryEntry {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  playerId  String   @db.Uuid
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// id mốc trong content.story / thành tựu (`ach:<id>`), có thể kèm hậu tố (đổi nghề theo từng nghề).
+  key       String
+  /// Ngày game xảy ra.
+  day       Int
+  emoji     String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, key])
+  @@index([playerId, day])
 }

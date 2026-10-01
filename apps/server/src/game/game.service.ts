@@ -71,6 +71,7 @@ import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
 import { StatsService } from "./stats.js";
+import { StoryService } from "./story.js";
 import { WorkService } from "./work.js";
 
 /** 1 giây thật = 1 phút game (docs/PLAN.md §3.2). */
@@ -146,6 +147,7 @@ export class GameService implements OnModuleDestroy {
     readonly reviews: ReviewService,
     readonly stats: StatsService,
     readonly projects: ProjectService,
+    readonly story: StoryService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -153,6 +155,7 @@ export class GameService implements OnModuleDestroy {
     this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.projects.setNotifier((roomId, n) => emitter.toRoom(roomId, "notify", n));
+    this.story.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -652,6 +655,16 @@ export class GameService implements OnModuleDestroy {
       });
     });
     this.paidBy(playerId, src, eq.price);
+    // Chuyện của tôi: chiếc xe đầu tiên, hoặc đổi nghề (mỗi nghề ghi một lần).
+    if (current)
+      await this.story.note(
+        playerId,
+        "switch_trade",
+        room.day,
+        { equipment: eq.name },
+        { suffix: eq.id },
+      );
+    else await this.story.note(playerId, "first_cart", room.day, { equipment: eq.name });
     this.emitWorld(room);
   }
 
@@ -792,6 +805,9 @@ export class GameService implements OnModuleDestroy {
     });
     this.paidBy(playerId, src, amount);
     void this.log(playerId, "fund_donate", { amount });
+    await this.story.note(playerId, "first_donate", room.day, {
+      money: `${amount.toLocaleString("vi-VN")}đ`,
+    });
     const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
     this.emitter?.toRoom(room.id, "notify", {
       kind: "good",
@@ -800,6 +816,11 @@ export class GameService implements OnModuleDestroy {
     await this.projects.tick(room);
     void this.emitMe(playerId).catch(() => undefined);
     return this.projects.view(room, playerId);
+  }
+
+  /** Chuyện của tôi (docs/THEGIOI.md §1). */
+  storyList({ playerId }: IntentContext) {
+    return this.story.list(playerId);
   }
 
   async projectPropose({ room, playerId }: IntentContext, projectId: string) {
@@ -1052,6 +1073,11 @@ export class GameService implements OnModuleDestroy {
       productId: biz.productId,
       kind: lot.kind,
     });
+    // Chuyện của tôi: lần đầu mở quầy; lần đầu mở tiệm trong nhà mặt tiền.
+    const product = content.product(biz.productId).name.toLowerCase();
+    await this.story.note(playerId, "first_open", room.day, { product, lot: lot.name });
+    if (lot.kind === "house")
+      await this.story.note(playerId, "first_shop", room.day, { lot: lot.name });
     this.emitWorld(room);
   }
 

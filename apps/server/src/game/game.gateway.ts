@@ -198,6 +198,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
           `Tới ${place.name} mới nhận việc được`,
         );
       await this.game.work.start(ctx.room, ctx.playerId, p.jobId, p.role);
+      const job = content.jobById.get(p.jobId);
+      const role = job?.roles.find((r) => r.id === p.role);
+      await this.game.story.note(ctx.playerId, "first_job", ctx.room.day, {
+        job: `${role?.name.toLowerCase() ?? ""} · ${job?.name ?? ""}`,
+      });
       return this.workResult(ctx, { ok: true, line: "Vào ca!", pay: 0 });
     });
   }
@@ -258,9 +263,12 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("order:pay")
   pay(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, payOrderSchema, body, (ctx, p) =>
-      this.game.orders.pay(ctx.room, ctx.playerId, p.orderId, p.change, p.discount),
-    );
+    return this.handle(c, payOrderSchema, body, async (ctx, p) => {
+      const r = await this.game.orders.pay(ctx.room, ctx.playerId, p.orderId, p.change, p.discount);
+      // Thành tựu + "Chuyện của tôi" ngay khoảnh khắc đạt mốc (món đầu tiên, khách thứ 100…), không đợi cuối ngày.
+      void this.game.stats.checkAchievements(ctx.playerId, ctx.room.day).catch(() => undefined);
+      return r;
+    });
   }
 
   @SubscribeMessage("vendor:buy")
@@ -333,6 +341,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("stats:xom")
   statsXom(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsXom(ctx));
+  }
+
+  @SubscribeMessage("story:list")
+  storyList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.storyList(ctx));
   }
 
   @SubscribeMessage("stats:me")

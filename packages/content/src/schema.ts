@@ -491,8 +491,17 @@ export const achievementSchema = z.object({
   description: z.string(),
   metric: achievementMetric,
   goal: z.number().int().positive(),
+  /** Câu ghi vào "Chuyện của tôi" khi đạt (docs/THEGIOI.md §1); bỏ trống = không ghi. */
+  story: z.string().optional(),
 });
 export type Achievement = z.infer<typeof achievementSchema>;
+
+/**
+ * Một mốc trong "Chuyện của tôi" (docs/THEGIOI.md §1): câu có chỗ trống {money}, {lot}, {product}…
+ * Server điền và lưu nguyên câu lúc xảy ra — đổi content sau này không làm sai ký ức.
+ */
+export const storyBeatSchema = z.object({ id, emoji: z.string(), text: z.string() });
+export type StoryBeat = z.infer<typeof storyBeatSchema>;
 
 /**
  * Giọng thoại theo kiểu khách (#12): học sinh nói teencode, dân văn phòng Gen Z, cô chú kiểu xóm…
@@ -807,6 +816,7 @@ export const contentSchema = z.object({
   needs: needsSchema,
   fund: fundSchema,
   achievements: z.array(achievementSchema).min(1),
+  story: z.array(storyBeatSchema).min(1),
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

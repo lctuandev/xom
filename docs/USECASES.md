@@ -839,6 +839,23 @@ tổ trưởng giữ quỹ, thuê thợ làm vài ngày rồi cả xóm ra nghi�
 
 ---
 
+## M. Thế giới sống & ký ức (docs/THEGIOI.md)
+
+### UC-M1 · Chuyện của tôi ✅ (bản đầu)
+**Ai:** mọi người chơi. **Luật:** THEGIOI §1, 17.1 (không ép, chỉ ghi lại).
+**Luồng:** làm thật thì server ghi **mốc** kèm ngày game: dọn về xóm (với bao nhiêu tiền) → mua xe đầu tiên / đổi nghề →
+mở quầy đầu tiên (ở đâu) → thuê nhà mặt tiền mở tiệm → đi làm thuê lần đầu → góp quỹ xóm lần đầu → các thành tựu có câu kể
+(món đầu tiên, 100 khách, 1.000 khách, doanh thu 1 triệu / 10 triệu, 10 đánh giá 5★…). Mốc mới hiện thông báo **📖** (thành
+tựu đã có 🏅 nên không báo thêm). **Hồ sơ → 📖 Chuyện**: dòng thời gian *Ngày 1 · Dọn về xóm với 1.500.000đ trong túi*…
+**Đời thật:** nhìn lại thấy *"quầy này mình bắt đầu từ 1,5 triệu"* — tiến trình có ký ức.
+**Dữ liệu:** `content.story` (mốc sự kiện, câu có chỗ trống `{money}`, `{lot}`, `{product}`…) + `achievements[].story`.
+Bảng `StoryEntry` (mỗi mốc một lần theo `key`; câu lưu nguyên văn lúc xảy ra — đổi content sau không làm sai ký ức).
+**Kiểm chứng:** sim `story.test.ts`; e2e server `story.e2e-spec.ts` (thứ tự mốc, mở lại quầy không ghi trùng, đi làm thuê báo 📖);
+Playwright `chuyen-cua-toi.spec.ts` (iPhone + Pixel).
+**Sau này:** chia sẻ chuyện thành ảnh, chuyện riêng của từng quầy (ngày khai trương, khách thứ 1.000).
+
+---
+
 ## L. Hệ thống & lỗi
 
 | Mã | Tình huống | Hành vi mong đợi |
