@@ -1780,6 +1780,132 @@ export const data: ContentInput = {
     banned: ["đm", "dm", "đmm", "vcl", "vl", "đéo", "địt", "lồn", "cặc", "đĩ"],
   },
 
+  // Giọng thoại theo kiểu khách (#12, USECASES UC-D6). Câu "mặn" nhẹ thôi — người chơi tắt được trong Cài đặt.
+  voice: {
+    voices: [
+      {
+        archetype: "hoc_sinh",
+        ask: [
+          "Shop ơi cho em {dish} nha 🥺",
+          "Cho e {dish} vớiii, nhanh nhanh e trễ học r",
+          "Chị ơi {dish} một cái nha, hôm nay đói xỉu ngang",
+          "1 {dish} nha shop, ko lấy bịch đâu ạ",
+        ],
+        cheap: [
+          "Rẻ vãi, mai em rủ cả lớp ra 🤩",
+          "Giá học sinh luôn, iu shop",
+          "U là trời rẻ dữ dzậy",
+        ],
+        pricey: [
+          "Hơi chát á shop, tiền tiêu vặt e có nhiêu đâu 🥲",
+          "Mắc dữ, tuần này nhịn trà sữa luôn",
+          "Ủa sao mắc z trời",
+        ],
+        thanks: [
+          "Ngon xỉu, 10 điểm ko có nhưng 💯",
+          "Iu shop, mai ghé tiếp nha",
+          "Đỉnh của chóp luôn á",
+          "Tks shop nhaaa",
+        ],
+        impatient: [
+          "Trễ học r, thôi em đi đây 😭",
+          "Lâu vãi, thôi khum chờ nữa",
+          "Chờ mòn mỏi luôn á, bye",
+        ],
+      },
+      {
+        archetype: "dan_van_phong",
+        ask: [
+          "Cho anh {dish}, nhanh giúp anh nha, 8h chấm công rồi",
+          "Em ơi {dish} nha, chuyển khoản được không?",
+          "Một {dish}, anh lấy mang đi",
+          "Cho chị {dish} nha, deadline dí quá chưa kịp ăn",
+        ],
+        cheap: ["Giá này hợp lý ghê, mai anh dẫn team ra", "Rẻ mà chất lượng, recommend"],
+        pricey: [
+          "Giá hơi cao so với mặt bằng chung á em",
+          "Ngang giá quán máy lạnh luôn rồi đó",
+          "Lương chưa về mà giá này hơi căng",
+        ],
+        thanks: [
+          "Ok em, chuyển rồi nha",
+          "Ngon, cứu đói buổi sáng",
+          "Nhanh gọn, 5 sao",
+          "Ổn áp, mai ghé",
+        ],
+        impatient: [
+          "Trễ giờ rồi, thôi anh đi",
+          "Sếp gọi rồi, để bữa khác nha",
+          "Đợi lâu quá, chịu không nổi",
+        ],
+      },
+      {
+        archetype: "co_chu",
+        ask: [
+          "Bán cho cô {dish} nghen con",
+          "Con ơi lấy chú {dish}, đừng có cay nha",
+          "Cho cô {dish}, gói kỹ kỹ cô mang về cho thằng cháu",
+          "Con bé ơi, {dish} một phần coi",
+        ],
+        cheap: ["Rẻ vậy con, để cô giới thiệu mấy bà trong xóm", "Giá vậy là có lương tâm nè"],
+        pricey: [
+          "Hồi xưa có mấy ngàn hà, giờ mắc quá con ơi",
+          "Mắc dữ vậy con, bớt cho cô chút coi",
+          "Giá này chợ bán rẻ hơn á nghen",
+        ],
+        thanks: [
+          "Cảm ơn con nghen, con làm khéo ghê",
+          "Được đó con, mai cô ghé",
+          "Ngon, giữ tiền lẻ luôn con",
+        ],
+        impatient: [
+          "Thôi cô đi chợ đã, lát ghé",
+          "Đợi lâu quá con, cô về nấu cơm đây",
+          "Thôi để bữa khác nghen",
+        ],
+      },
+      {
+        archetype: "khach_vang_lai",
+        ask: [
+          "Cho mình {dish} nhé",
+          "{dish} một phần, bạn ơi",
+          "Ở đây có {dish} không bạn? Cho mình một cái",
+        ],
+        pricey: ["Hơi mắc nha bạn", "Giá này hơi chát á", "Chà, giá du lịch ha"],
+        thanks: ["Cảm ơn bạn nha!", "Ok, ngon đó", "Lẹ ghê, cảm ơn nhé"],
+        impatient: ["Thôi mình đi, gấp quá", "Lâu quá bạn ơi", "Đợi hoài, thôi đi tiếp"],
+      },
+      {
+        archetype: "reviewer",
+        ask: [
+          "Cho mình {dish}, mình quay clip review xíu được hông? 📸",
+          "Hello shop, {dish} nha, nghe bảo hot lắm",
+        ],
+        cheap: [
+          "Giá này mà chất lượng vậy là deal hời đó mọi người 🔥",
+          "Rẻ mà ngon, quẹo lựa nha",
+        ],
+        pricey: ["Hơi đắt so với chất lượng nha, 6/10", "Mức giá này thì cần cải thiện thêm"],
+        thanks: [
+          "Ngon nha, chấm 8.5/10, sẽ quay lại",
+          "Okela, lên clip liền",
+          "Chất lượng ổn, phục vụ nhanh, ủng hộ!",
+        ],
+        impatient: [
+          "Chờ lâu quá, cái này phải ghi vào review rồi",
+          "Hơi lâu nha shop, trừ điểm phục vụ",
+        ],
+      },
+    ],
+    soften: {
+      vãi: "quá",
+      "xỉu ngang": "lắm luôn",
+      "đỉnh của chóp": "tuyệt",
+      "u là trời": "trời ơi",
+      "chịu không nổi": "hết chờ nổi",
+    },
+  },
+
   customerLines: {
     cheap: ["Rẻ vậy! Mai ghé nữa nha", "Giá này hời quá", "Cho thêm ổ nữa được hông?"],
     fair: ["Cho một phần nha", "Bán cho con với", "Như mọi khi nha"],

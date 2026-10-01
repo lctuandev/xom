@@ -460,6 +460,28 @@ export const achievementSchema = z.object({
 });
 export type Achievement = z.infer<typeof achievementSchema>;
 
+/**
+ * Giọng thoại theo kiểu khách (#12): học sinh nói teencode, dân văn phòng Gen Z, cô chú kiểu xóm…
+ * Câu có thể hơi "mặn"; người chơi tắt "thoại mặn" thì client đổi từ theo `soften`.
+ */
+const lineList = z.array(z.string()).min(2).optional();
+export const voiceSchema = z.object({
+  archetype: id,
+  /** Câu gọi món, có {dish}. */
+  ask: z.array(z.string()).min(2),
+  cheap: lineList,
+  fair: lineList,
+  pricey: lineList,
+  thanks: lineList,
+  impatient: lineList,
+});
+export type Voice = z.infer<typeof voiceSchema>;
+export const voicesSchema = z.object({
+  voices: z.array(voiceSchema),
+  /** Từ "mặn" → từ hiền (khi người chơi tắt thoại mặn). Khoá là chữ thường. */
+  soften: z.record(z.string(), z.string()),
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -683,6 +705,7 @@ export const contentSchema = z.object({
   /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
   customerLines: customerLinesSchema,
+  voice: voicesSchema,
   reviews: reviewsSchema,
   awards: z.array(awardSchema).min(1),
   achievements: z.array(achievementSchema).min(1),

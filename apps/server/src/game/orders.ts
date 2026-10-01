@@ -16,6 +16,7 @@ import {
   generateOrder,
   hasIngredients,
   ingredientsFor,
+  type LineKind,
   LOST_WEIGHT,
   nextReputation,
   patienceFactor,
@@ -29,6 +30,8 @@ import {
   seededRandom,
   settleCash,
   validateBuild,
+  voiceAsk,
+  voiceLine,
   wearAfter,
   XP,
 } from "@xom/sim";
@@ -46,6 +49,17 @@ import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
 import { addToReport } from "./report.js";
 import { purchaseKey, ReviewService } from "./reviews.js";
+import { VoiceAiService } from "./voice-ai.js";
+
+/** Mô tả tình huống cho lớp AI thoại (tuỳ chọn). */
+const SITUATION: Record<LineKind, string> = {
+  cheap: "vừa trả tiền ở xe đẩy, khen giá rẻ",
+  fair: "đang gọi món ở xe đẩy",
+  pricey: "vừa trả tiền ở xe đẩy, chê giá hơi đắt",
+  thanks: "vừa nhận món ngon, làm nhanh, nói cảm ơn khi trả tiền",
+  impatient: "chờ ở xe đẩy quá lâu nên bỏ đi",
+};
+
 import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
@@ -82,7 +96,22 @@ export class OrderService {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     private readonly reviews: ReviewService,
+    private readonly ai: VoiceAiService,
   ) {}
+
+  /** Câu khách nói theo giọng kiểu khách; có AI (tuỳ chọn) thì đôi khi là câu AI đã sinh sẵn. */
+  private voice(archetype: string, kind: LineKind, rand: () => number) {
+    const fallback = voiceLine(content, archetype, kind, rand);
+    const own = content.data.voice.voices.find((v) => v.archetype === archetype)?.[kind];
+    const name = content.data.npcs.find((n) => n.id === archetype)?.name ?? "Khách";
+    return this.ai.line(
+      `${archetype}:${kind}`,
+      `${name} ${SITUATION[kind]}`,
+      fallback,
+      own ?? content.data.customerLines[kind],
+      rand,
+    );
+  }
 
   setEmitter(emit: OrderEmitter) {
     this.emit = emit;
@@ -138,7 +167,8 @@ export class OrderService {
         productId: biz.productId,
         variantId: order.variantId,
         archetype,
-        ask: order.ask,
+        // Giọng theo kiểu khách: học sinh nói teencode, cô chú kiểu xóm… (content.voice).
+        ask: voiceAsk(content, archetype, order.dish, rand) ?? order.ask,
         dish: order.dish,
         spec: order.spec,
         price,
@@ -400,7 +430,6 @@ export class OrderService {
       })
       .catch(() => undefined);
 
-    const lines = content.data.customerLines;
     const line = vip
       ? correct && fast && !short
         ? `Chuẩn! Lâu lắm mới gặp quầy làm kỹ vậy — boa ${vnd(tip)} nè!`
@@ -412,10 +441,10 @@ export class OrderService {
           : discount
             ? "Thôi được, lần sau làm kỹ nha."
             : ratio > 1.15
-              ? pick(lines.pricey, rand)
+              ? this.voice(e.archetype, "pricey", rand)
               : ratio < 0.9
-                ? pick(lines.cheap, rand)
-                : pick(lines.thanks, rand);
+                ? this.voice(e.archetype, "cheap", rand)
+                : this.voice(e.archetype, "thanks", rand);
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
   }
 
@@ -511,7 +540,7 @@ export class OrderService {
         tip: 0,
         line: e.buyerId
           ? "⌛ Chờ lâu quá, thôi để bữa khác"
-          : pick(content.data.customerLines.impatient, seededRandom("late", id)),
+          : this.voice(e.archetype, "impatient", seededRandom("late", id)),
       });
     }
   }

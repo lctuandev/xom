@@ -8,6 +8,7 @@ import {
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
 import { orderBus, orderResultBus, orderUpdateBus, purchaseOf, useGame } from "../store";
+import { voiceText } from "../voice";
 import { applyPeers, seedPeers, startPresence } from "./presence";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -61,7 +62,9 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("events", (events) => game.setEvents(events));
   // Đơn của khách là người chơi (UC-J3): lời gọi món và kết quả hiện trên đầu chính người đó.
   const buyers = new Map<string, string>();
-  s.on("order", (o) => {
+  // Câu NPC đi qua bộ lọc "thoại mặn" (Cài đặt) trước khi tới UI.
+  s.on("order", (raw) => {
+    const o = { ...raw, ask: voiceText(raw.ask) };
     orderBus.emit(o);
     const st = useGame.getState();
     if (o.ownerId === st.me?.playerId) game.addOrder(o);
@@ -70,7 +73,8 @@ export function connectGame(onSignedOut: () => void): () => void {
     game.say({ who: o.buyerId, text: o.dish }, 6000);
     if (o.buyerId === st.me?.playerId) game.setPurchase(purchaseOf(o, st.world));
   });
-  s.on("orderUpdate", (u) => {
+  s.on("orderUpdate", (raw) => {
+    const u = { ...raw, line: voiceText(raw.line) };
     game.updateOrder(u);
     // "making" chỉ là khách chờ thêm (không có lời nói, không đổi trạng thái món).
     if (u.stage === "making") return;
@@ -81,7 +85,8 @@ export function connectGame(onSignedOut: () => void): () => void {
     const p = useGame.getState().purchase;
     if (p?.orderId === u.orderId) game.setPurchase({ ...p, stage: u.stage });
   });
-  s.on("orderResult", (r) => {
+  s.on("orderResult", (raw) => {
+    const r = { ...raw, line: voiceText(raw.line) };
     orderResultBus.emit(r);
     game.removeOrder(r.orderId);
     const buyer = buyers.get(r.orderId);
@@ -93,7 +98,7 @@ export function connectGame(onSignedOut: () => void): () => void {
       game.toast({ kind: r.served ? "good" : "warn", text: r.line });
     }
   });
-  s.on("say", (e) => game.say(e));
+  s.on("say", (e) => game.say({ ...e, text: voiceText(e.text) }));
   s.on("shift", (v) => game.setShift(v));
   s.on("payslip", (p) => game.setPayslip(p));
   s.on("dayEnd", (report) => game.setReport(report));

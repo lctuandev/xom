@@ -5,10 +5,19 @@ import { GameService } from "./game.service.js";
 import { OrderService } from "./orders.js";
 import { ReviewService } from "./reviews.js";
 import { StatsService } from "./stats.js";
+import { VoiceAiService } from "./voice-ai.js";
 import { WorkService } from "./work.js";
 
 @Module({
   imports: [AuthModule],
-  providers: [GameGateway, GameService, OrderService, ReviewService, StatsService, WorkService],
+  providers: [
+    GameGateway,
+    GameService,
+    OrderService,
+    ReviewService,
+    StatsService,
+    VoiceAiService,
+    WorkService,
+  ],
 })
 export class GameModule {}

@@ -263,6 +263,21 @@ Tổng hợp bằng WebAudio (không file, không lo bản quyền): **nhạc n�
 Cài đặt ⚙️: thanh âm lượng nhạc / hiệu ứng / giọng, nút tắt tiếng (nhớ trên máy). Âm thanh chỉ bật sau cú chạm đầu tiên (luật trình duyệt).
 **Chưa:** đọc chữ thật (TTS tiếng Việt), âm thanh môi trường (xe cộ, chợ ồn).
 
+### UC-D6 · Giọng thoại theo kiểu khách (Gen Z, teencode, cô chú) + "thoại mặn" + AI tuỳ chọn ✅ (bản đầu)
+**Hệ thống:** 🎭 Bản sắc · 🧠 Hành vi NPC · **Luật:** 10 (bản sắc), 15 (dữ liệu).
+**Đời thật:** học sinh "Shop ơi cho em … nha 🥺", "rẻ vãi"; dân văn phòng "nhanh giúp anh, 8h chấm công rồi";
+cô chú "bán cho cô … nghen con", "hồi xưa có mấy ngàn hà"; reviewer "chấm 8.5/10".
+**Luật game:**
+- `content.voice.voices`: mỗi kiểu khách có câu gọi món (`{dish}`), câu khen rẻ / chê đắt / cảm ơn / bỏ đi; thiếu thì dùng câu chung.
+- **Thoại mặn** (Cài đặt ⚙️, mặc định bật): câu có thể hơi suồng sã ("vãi", "xỉu ngang"); tắt thì client đổi từ theo
+  `content.voice.soften` ngay khi nhận (`soften` trong sim) — áp cho lời gọi món, lời khách, khung thoại.
+- **AI tuỳ chọn** (server có `ANTHROPIC_API_KEY`): game **không bao giờ chờ AI** — trả ngay câu dữ liệu hoặc câu AI đã sinh sẵn;
+  kho thiếu thì nạp ngầm (claude-haiku-4-5, tối đa 30 lần gọi/giờ, timeout 8s); câu AI phải một dòng, ≤ 120 ký tự,
+  không dính từ tục nặng mới dùng; lỗi thì chỉ dùng dữ liệu. Áp cho lời khách khi trả tiền/bỏ đi và đánh giá NPC.
+**Kiểm chứng:** unit `progression.test.ts` (voiceAsk, voiceLine, soften); e2e server `voice.e2e-spec.ts` (giọng gọi món, AI giả:
+kho nạp ngầm, lọc câu bẩn, lỗi thì quay về dữ liệu).
+**Chưa:** giọng riêng cho người bán NPC (Bà Năm, Chú Bảy…), thoại theo thời tiết/sự kiện.
+
 ---
 
 ## E. Mua sắm (người chơi là khách)

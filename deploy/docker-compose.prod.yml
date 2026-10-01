@@ -31,6 +31,8 @@ services:
     environment:
       DATABASE_URL: postgresql://xom:${POSTGRES_PASSWORD}@postgres:5432/xom
       JWT_SECRET: ${JWT_SECRET:?chạy deploy/deploy.sh để tạo deploy/.env}
+      # Tuỳ chọn: thoại NPC sinh thêm bằng AI (UC-D6). Để trống = chỉ dùng câu trong dữ liệu.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     depends_on:
       migrate: { condition: service_completed_successfully }
     healthcheck:

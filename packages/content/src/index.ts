@@ -190,6 +190,13 @@ export function loadContent(raw: unknown): Content {
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
+  // Giọng thoại: kiểu khách phải có thật, câu gọi món phải có chỗ điền món.
+  const npcIds = new Set(parsed.npcs.map((n) => n.id));
+  for (const v of parsed.voice.voices) {
+    if (!npcIds.has(v.archetype)) errors.push(`giọng thoại: không có kiểu khách ${v.archetype}`);
+    for (const a of v.ask)
+      if (!a.includes("{dish}")) errors.push(`giọng thoại ${v.archetype}: câu "${a}" thiếu {dish}`);
+  }
   if (errors.length) throw new Error(`Nội dung game không hợp lệ:\n- ${errors.join("\n- ")}`);
   return new Content(parsed);
 }

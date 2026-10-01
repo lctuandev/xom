@@ -160,3 +160,44 @@ export function reviewSummary(stars: readonly number[]): {
     : 0;
   return { avg, count: stars.length, dist };
 }
+
+// ───────── Giọng thoại theo kiểu khách (content.voice, UC-D6) ─────────
+
+export type LineKind = "cheap" | "fair" | "pricey" | "thanks" | "impatient";
+
+/** Câu khách nói theo kiểu khách; kiểu khách chưa có giọng riêng thì dùng câu chung. */
+export function voiceLine(
+  c: Content,
+  archetype: string,
+  kind: LineKind,
+  rand: () => number,
+): string {
+  const own = c.data.voice.voices.find((v) => v.archetype === archetype)?.[kind];
+  const list = own?.length ? own : c.data.customerLines[kind];
+  return list[Math.floor(rand() * list.length)] ?? "";
+}
+
+/** Câu gọi món theo giọng kiểu khách (null = dùng câu mặc định của món). */
+export function voiceAsk(
+  c: Content,
+  archetype: string,
+  dish: string,
+  rand: () => number,
+): string | null {
+  const list = c.data.voice.voices.find((v) => v.archetype === archetype)?.ask;
+  if (!list?.length) return null;
+  return (list[Math.floor(rand() * list.length)] ?? "").replace("{dish}", dish);
+}
+
+/** Tắt "thoại mặn": đổi từ mặn sang từ hiền (không phân biệt hoa thường, giữ phần còn lại của câu). */
+export function soften(text: string, map: Readonly<Record<string, string>>): string {
+  let out = text;
+  for (const [from, to] of Object.entries(map)) {
+    const re = new RegExp(
+      `(^|[^\\p{L}])${from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[^\\p{L}])`,
+      "giu",
+    );
+    out = out.replace(re, (_m, pre: string) => `${pre}${to}`);
+  }
+  return out;
+}

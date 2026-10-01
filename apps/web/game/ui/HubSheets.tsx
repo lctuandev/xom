@@ -9,6 +9,7 @@ import { logout } from "../auth/store";
 import { vnd } from "../format";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
+import { isSpicy, setSpicy } from "../voice";
 import { nearestAtm } from "../world";
 import { Achievements, useMyStats } from "./BoardSheet";
 import { Sheet } from "./Sheet";
@@ -260,6 +261,7 @@ export function SettingsSheet() {
       </div>
       <AudioSettings />
       <div className="flex flex-col gap-2">
+        <SpicyToggle className={btn} />
         <button type="button" className={btn} onClick={() => setShowPerf(!showPerf)}>
           📊 {showPerf ? "Ẩn số đo hiệu năng" : "Hiện số đo hiệu năng"}
         </button>
@@ -403,5 +405,24 @@ function Skills({ points, level }: { points: Record<string, number | undefined>;
         ))}
       </ul>
     </section>
+  );
+}
+
+/** Bật/tắt "thoại mặn": khách teencode, đôi khi hơi tục nhẹ (UC-D6). */
+function SpicyToggle({ className }: { className: string }) {
+  const [on, setOn] = useState(isSpicy);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className={className}
+      onClick={() => {
+        setSpicy(!on);
+        setOn(!on);
+      }}
+    >
+      🌶️ Thoại mặn: {on ? "Bật — khách nói teencode, đôi khi hơi tục" : "Tắt — lời lẽ hiền"}
+    </button>
   );
 }

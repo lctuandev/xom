@@ -5,6 +5,7 @@ import { addSkill, maskText, reviewSummary, type SkillPoints, seededRandom } fro
 import { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { GameError, type RoomRuntime } from "./room.js";
+import { VoiceAiService } from "./voice-ai.js";
 
 const LATEST = 20;
 
@@ -20,7 +21,10 @@ const pick = <T>(list: readonly T[], rand: () => number): T =>
 export class ReviewService {
   private notify?: (playerId: string, n: NotifyEvent) => void;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: VoiceAiService,
+  ) {}
 
   setNotifier(fn: (playerId: string, n: NotifyEvent) => void) {
     this.notify = fn;
@@ -42,7 +46,15 @@ export class ReviewService {
       e.archetype === "vip"
         ? (archetype?.name ?? "Khách sộp")
         : `${pick(cfg.names, rand)} · ${(archetype?.name ?? "khách").toLowerCase()}`;
-    const text = pick(cfg.lines[tag] ?? cfg.lines.ok ?? ["…"], rand);
+    const examples = cfg.lines[tag] ?? cfg.lines.ok ?? ["…"];
+    const product = content.product(e.productId).name.toLowerCase();
+    const text = this.ai.line(
+      `review:${e.productId}:${tag}`,
+      `Khách viết đánh giá ngắn trên mạng về quầy ${product} ở xóm (${stars} sao), tình huống: ${tag}`,
+      pick(examples, rand),
+      examples,
+      rand,
+    );
     await this.prisma.review.create({
       data: {
         ownerId: e.ownerId,
