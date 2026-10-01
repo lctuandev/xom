@@ -695,7 +695,11 @@ export interface AtmReceipt {
   minute: number;
 }
 /** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
-export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
+export const debugClockSchema = z.object({
+  minute: z.number().int().min(360).max(1300),
+  /** Nhảy tới ngày này (thử lịch tuần: chợ đêm thứ Bảy…). */
+  day: z.number().int().min(1).max(10_000).optional(),
+});
 export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({

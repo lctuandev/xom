@@ -854,6 +854,18 @@ Bảng `StoryEntry` (mỗi mốc một lần theo `key`; câu lưu nguyên văn 
 Playwright `chuyen-cua-toi.spec.ts` (iPhone + Pixel).
 **Sau này:** chia sẻ chuyện thành ảnh, chuyện riêng của từng quầy (ngày khai trương, khách thứ 1.000).
 
+### UC-M2 · Lịch tuần & chợ đêm thứ Bảy ✅ (bản đầu)
+**Luồng:** ngày 1 của xóm là **Thứ Hai**; thanh trạng thái ghi `T7·N6` (cuối tuần chữ vàng; giữ lâu xem "Thứ Bảy, ngày 6 · trời…").
+Sang ngày mới dải tin báo *"☀️ Sang Thứ Bảy, ngày 6 — cuối tuần, trong hẻm đông vui"*. Bảng **Xóm → 📅 Hôm nay** liệt kê sự kiện cả
+xóm trong ngày kèm giờ (*🏮 Chợ đêm thứ Bảy 18:00–22:00*, đang diễn ra thì chữ đỏ).
+**Luật (dữ liệu):** `calendar.weekendTraffic` — cuối tuần cổng trường ×0,55, văn phòng ×0,5, trong hẻm ×1,25, gần chợ ×1,2 (vào công
+thức khách trong sim). Sự kiện kiểu `weekly` (chợ đêm: thứ Bảy 18:00, 240 phút) với hiệu ứng `categoryDemand` (ăn vặt ×1,4, đồ uống
+×1,7, phụ kiện ×1,8) cho mọi quầy đang mở. `pnpm balance` vẫn không cảnh báo.
+**Đời thật:** cuối tuần học sinh nghỉ thì xe bánh mì cổng trường vắng — phải dời vào hẻm; tối thứ Bảy cả xóm ra chợ đêm.
+**Kiểm chứng:** sim `events.test.ts` (chợ đêm chỉ thứ Bảy, hệ số theo nhóm hàng, cuối tuần theo khu); e2e server `events.e2e-spec.ts`
+(nhảy tới thứ Bảy có chợ đêm, ngày thường không); Playwright `cho-dem.spec.ts` (T2 → T7, 📅 Hôm nay có chợ đêm).
+**Sau này:** ngày lễ (Tết, Trung Thu, 2/9), mùa mưa, thuê sạp ở chợ đêm (booth), sự kiện cả server.
+
 ---
 
 ## L. Hệ thống & lỗi

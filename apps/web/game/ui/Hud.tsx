@@ -161,7 +161,7 @@ function ResourceBar() {
   const night = minute >= 1080 || minute < 330;
   const sky = clock?.weather.now ?? "sunny";
   const next = clock?.weather.next;
-  const skyLabel = `${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
+  const skyLabel = `${content.weekday(clock?.day ?? 1).name}, ngày ${clock?.day ?? 1} · ${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
   const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
     <div className="flex h-9 items-center gap-1.5 rounded-full bg-ink/85 py-1 pr-2.5 pl-1 text-cream shadow-md">
@@ -189,7 +189,13 @@ function ResourceBar() {
         data-weather={clock ? sky : undefined}
         title={skyLabel}
       >
-        <span className="opacity-80">N{clock?.day ?? 1}</span>
+        {/* Thứ + ngày (THEGIOI §2): cuối tuần chữ vàng. */}
+        <span
+          className={`opacity-90 ${content.weekday(clock?.day ?? 1).weekend ? "text-sun" : ""}`}
+          data-weekday={content.weekday(clock?.day ?? 1).short}
+        >
+          {content.weekday(clock?.day ?? 1).short}·N{clock?.day ?? 1}
+        </span>
         <IconWeather kind={sky} night={night} className="size-5" />
         <span className="sr-only">{skyLabel}</span>
         {next && (
@@ -207,14 +213,20 @@ function ResourceBar() {
 function NewsTicker() {
   const news = useGame((s) => s.news);
   const [i, setI] = useState(0);
+  const newest = news.at(-1)?.id;
   useEffect(() => {
-    if (news.length < 2) return;
+    // Tin mới về thì hiện ngay (về đầu vòng), rồi mới xoay vòng các tin cũ mỗi 5 giây.
+    setI(0);
+    if (newest === undefined) return;
     const id = setInterval(() => setI((v) => v + 1), 5000);
     return () => clearInterval(id);
-  }, [news.length]);
+  }, [newest]);
   const item = news.length ? news[news.length - 1 - (i % news.length)] : null;
   return (
-    <div className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm">
+    <div
+      className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm"
+      data-news-ticker
+    >
       <span aria-hidden>📺</span>
       <span key={item?.id} className="truncate">
         {item?.text ?? "Một ngày mới trong xóm…"}

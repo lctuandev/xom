@@ -458,7 +458,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("debug:clock")
   debugClock(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, debugClockSchema, body, (ctx, p) => this.game.debugClock(ctx, p.minute));
+    return this.handle(c, debugClockSchema, body, (ctx, p) =>
+      this.game.debugClock(ctx, p.minute, p.day),
+    );
   }
 
   @SubscribeMessage("debug:grant")

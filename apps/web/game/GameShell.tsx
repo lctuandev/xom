@@ -210,7 +210,12 @@ function useNews() {
       content.data.vendors.filter((v) => minute >= v.open && minute < v.close).map((v) => v.id),
     );
     const prev = last.current;
-    if (prev && prev.day !== day) push(`☀️ Sang ngày ${day} — xóm lại nhộn nhịp`);
+    if (prev && prev.day !== day) {
+      const w = content.weekday(day);
+      push(
+        `☀️ Sang ${w.name}, ngày ${day} — ${w.weekend ? "cuối tuần, trong hẻm đông vui" : "xóm lại nhộn nhịp"}`,
+      );
+    }
     if (prev)
       for (const v of content.data.vendors) {
         if (open.has(v.id) && !prev.open.has(v.id)) push(`🍜 ${v.sign} vừa bày hàng`);

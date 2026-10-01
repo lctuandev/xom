@@ -1,5 +1,6 @@
 import { data } from "./data.js";
 import {
+  type Calendar,
   type ContentData,
   contentSchema,
   MAP_WALKABLE,
@@ -302,6 +303,14 @@ export class Content {
     );
   }
   /** Kiểu trời theo id (luôn có đủ 4 kiểu — đã kiểm khi nạp). */
+  /** Thứ trong tuần của ngày game (ngày 1 = Thứ Hai), kèm chỉ số 0–6 (THEGIOI §2). */
+  weekday(day: number): Calendar["weekdays"][number] & { index: number } {
+    const index = (((day - 1) % 7) + 7) % 7;
+    const w = this.data.calendar.weekdays[index] ?? this.data.calendar.weekdays[0];
+    if (!w) throw new Error("Lịch không có thứ nào");
+    return { ...w, index };
+  }
+
   weatherKind(id: WeatherId): WeatherKind {
     return must(
       this.data.weather.kinds.find((k) => k.id === id),

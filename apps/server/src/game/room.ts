@@ -7,6 +7,7 @@ import {
   type WeatherSpan,
   weatherAt,
   weatherPlan,
+  weeklyEvents,
 } from "@xom/sim";
 import type { Shift } from "./work.js";
 
@@ -103,7 +104,12 @@ export class RoomRuntime {
       this.day,
     );
     this.events = [];
-    for (const e of dailyEvents(content.data.events, this.id, this.day)) {
+    // Sự kiện ngẫu nhiên trong ngày + sự kiện theo lịch tuần (chợ đêm thứ Bảy, THEGIOI §2).
+    const today = [
+      ...dailyEvents(content.data.events, this.id, this.day),
+      ...weeklyEvents(content.data.events, content.weekday(this.day).index),
+    ];
+    for (const e of today) {
       const sky = content.event(e.eventId).effects.weather;
       if (sky) this.weather = overrideWeather(this.weather, { from: e.from, to: e.to, kind: sky });
       this.events.push({ key: `${e.eventId}:${this.day}`, ...e });

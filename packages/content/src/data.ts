@@ -896,6 +896,20 @@ export const data: ContentInput = {
     },
   ],
 
+  // Lịch tuần (docs/THEGIOI.md §2): cuối tuần học sinh nghỉ, văn phòng vắng; trong hẻm, gần chợ đông hơn.
+  calendar: {
+    weekdays: [
+      { name: "Thứ Hai", short: "T2" },
+      { name: "Thứ Ba", short: "T3" },
+      { name: "Thứ Tư", short: "T4" },
+      { name: "Thứ Năm", short: "T5" },
+      { name: "Thứ Sáu", short: "T6" },
+      { name: "Thứ Bảy", short: "T7", weekend: true },
+      { name: "Chủ nhật", short: "CN", weekend: true },
+    ],
+    weekendTraffic: { school: 0.55, office: 0.5, residential: 1.25, market: 1.2 },
+  },
+
   trafficProfiles: [
     {
       id: "school",
@@ -2354,6 +2368,17 @@ export const data: ContentInput = {
         vip: { minMods: 2, patience: 0.8, tipMult: 5, repWin: 0.04, repLose: 0.05 },
       },
       news: "🕴️ Có khách sộp ghé {shop} — dặn kỹ lắm, làm chuẩn là được boa đậm",
+    },
+    {
+      // Chợ đêm thứ Bảy (THEGIOI §2): cả xóm ra đường, quầy ăn vặt / đồ uống / phụ kiện đông hẳn.
+      id: "cho_dem",
+      name: "Chợ đêm thứ Bảy",
+      emoji: "🏮",
+      scope: "neighborhood",
+      minutes: 240,
+      trigger: { kind: "weekly", weekdays: [5], from: 18 * 60 },
+      effects: { categoryDemand: { breakfast: 1.4, drink: 1.7, accessory: 1.8 } },
+      news: "🏮 Tối nay chợ đêm thứ Bảy — 18:00 tới 22:00, bày hàng ra là đông!",
     },
     {
       id: "mua_lon",

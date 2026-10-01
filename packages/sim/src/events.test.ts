@@ -1,6 +1,14 @@
 import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
-import { canHost, chanceIn, dailyEvents, hostCost } from "./events.js";
+import { weekdayTraffic } from "./economy.js";
+import {
+  canHost,
+  chanceIn,
+  dailyEvents,
+  eventCategoryDemand,
+  hostCost,
+  weeklyEvents,
+} from "./events.js";
 import { generateOrder } from "./recipe.js";
 import { seededRandom } from "./time.js";
 
@@ -47,5 +55,28 @@ describe("sự kiện bằng dữ liệu (DESIGN §9)", () => {
       const mods = recipe.mods.filter((m) => o?.dish.includes(m.say));
       expect(mods.length).toBeGreaterThanOrEqual(2);
     }
+  });
+});
+
+describe("lịch tuần (THEGIOI §2)", () => {
+  it("chợ đêm chỉ diễn ra thứ Bảy, từ 18:00 tới 22:00", () => {
+    const sat = content.weekday(6);
+    expect(sat.name).toBe("Thứ Bảy");
+    expect(weeklyEvents(content.data.events, sat.index)).toEqual([
+      { eventId: "cho_dem", from: 18 * 60, to: 22 * 60 },
+    ]);
+    expect(weeklyEvents(content.data.events, content.weekday(1).index)).toEqual([]);
+  });
+
+  it("chợ đêm tăng khách đồ uống, không đụng sửa xe", () => {
+    expect(eventCategoryDemand(content, ["cho_dem"], "drink")).toBeGreaterThan(1.5);
+    expect(eventCategoryDemand(content, ["cho_dem"], "repair")).toBe(1);
+    expect(eventCategoryDemand(content, [], "drink")).toBe(1);
+  });
+
+  it("cuối tuần cổng trường vắng, trong hẻm đông; ngày thường như cũ", () => {
+    expect(weekdayTraffic(content, 6, "school")).toBeLessThan(1);
+    expect(weekdayTraffic(content, 7, "residential")).toBeGreaterThan(1);
+    expect(weekdayTraffic(content, 3, "school")).toBe(1);
   });
 });

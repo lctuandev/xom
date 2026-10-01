@@ -163,6 +163,16 @@ export const equipmentSchema = z.object({
   model: z.string(),
 });
 
+/** Lịch tuần (docs/THEGIOI.md §2): ngày 1 của xóm là Thứ Hai; cuối tuần lưu lượng mỗi kiểu khu khác nhau. */
+export const calendarSchema = z.object({
+  weekdays: z
+    .array(z.object({ name: z.string(), short: z.string(), weekend: z.boolean().default(false) }))
+    .length(7),
+  /** Ngày cuối tuần: nhân người qua lại theo kiểu khu (trafficProfile id); không khai báo = như ngày thường. */
+  weekendTraffic: z.record(id, z.number().positive()).default({}),
+});
+export type Calendar = z.infer<typeof calendarSchema>;
+
 export const trafficProfileSchema = z.object({
   id,
   name: z.string(),
@@ -717,6 +727,13 @@ export const gameEventSchema = z.object({
       to: z.number().int().min(0).max(1440),
     }),
     z.object({ kind: z.literal("per_hour"), perHour: z.number().positive() }),
+    /** Theo lịch tuần (THEGIOI §2): đúng thứ đó thì diễn ra trong khung giờ (chợ đêm thứ Bảy). */
+    z.object({
+      kind: z.literal("weekly"),
+      /** Thứ trong tuần (0 = Thứ Hai … 6 = Chủ nhật, theo calendar.weekdays). */
+      weekdays: z.array(z.number().int().min(0).max(6)).min(1),
+      from: z.number().int().min(0).max(1440),
+    }),
   ]),
   effects: z.object({
     /** Hệ số khách cho quầy của người tổ chức. */
@@ -725,6 +742,8 @@ export const gameEventSchema = z.object({
     discount: z.number().min(0).max(0.5).optional(),
     /** Đè thời tiết cả xóm. */
     weather: weatherIdSchema.optional(),
+    /** Sự kiện cả xóm: nhân khách theo nhóm hàng (category) cho mọi quầy đang mở (chợ đêm: ăn vặt, đồ uống). */
+    categoryDemand: z.record(id, z.number().min(0).max(5)).optional(),
     /** Khách VIP: dặn nhiều, ít kiên nhẫn, boa đậm; làm hoàn hảo thì uy tín lên, hỏng thì tụt. */
     vip: z
       .object({
@@ -789,6 +808,7 @@ export const contentSchema = z.object({
   products: z.array(productSchema),
   equipment: z.array(equipmentSchema),
   trafficProfiles: z.array(trafficProfileSchema),
+  calendar: calendarSchema,
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),

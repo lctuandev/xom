@@ -70,6 +70,12 @@ export interface TickInput {
   minutes: number;
 }
 
+/** Lịch tuần (THEGIOI §2): cuối tuần cổng trường / văn phòng vắng, trong hẻm / gần chợ đông hơn. */
+export function weekdayTraffic(content: Content, day: number, trafficId: string): number {
+  if (!content.weekday(day).weekend) return 1;
+  return content.data.calendar.weekendTraffic[trafficId] ?? 1;
+}
+
 /** Một nhịp: mỗi quầy đang mở (có người đứng) có bao nhiêu khách dừng lại. */
 export function customerArrivals({
   content,
@@ -88,7 +94,9 @@ export function customerArrivals({
 
   return info.map(({ s, product, lot, attract }) => {
     const traffic =
-      valueAt(content.traffic(lot.traffic).peoplePerHour, minuteOfDay) * lot.trafficScale;
+      valueAt(content.traffic(lot.traffic).peoplePerHour, minuteOfDay) *
+      lot.trafficScale *
+      weekdayTraffic(content, day, lot.traffic);
     const interest = valueAt(product.interestByHour, minuteOfDay);
     const rivals = info.filter(
       (o) =>

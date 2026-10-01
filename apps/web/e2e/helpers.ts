@@ -316,15 +316,18 @@ export async function setWeather(page: Page, kind: string, after = 0, minutes = 
 }
 
 /** Đặt giờ của xóm (lệnh thử nghiệm, chỉ bản dev): kịch bản dài khỏi bị hết ngày giữa chừng. */
-export async function setClock(page: Page, minute: number) {
-  const ok = await page.evaluate(async (m) => {
-    const dbg = (
-      window as unknown as {
-        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
-      }
-    ).xomDebug;
-    return (await dbg?.send("debug:clock", { minute: m }))?.ok ?? false;
-  }, minute);
+export async function setClock(page: Page, minute: number, day?: number) {
+  const ok = await page.evaluate(
+    async (p) => {
+      const dbg = (
+        window as unknown as {
+          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+        }
+      ).xomDebug;
+      return (await dbg?.send("debug:clock", p))?.ok ?? false;
+    },
+    day === undefined ? { minute } : { minute, day },
+  );
   expect(ok).toBe(true);
 }
 

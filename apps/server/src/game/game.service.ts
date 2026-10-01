@@ -28,6 +28,7 @@ import {
   choosePayment,
   customerArrivals,
   eat,
+  eventCategoryDemand,
   fameOf,
   feeToFund,
   hostCost,
@@ -962,10 +963,16 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Dev/test: đặt giờ trong ngày của xóm mình; production không cho. */
-  async debugClock({ room }: IntentContext, minute: number) {
+  async debugClock({ room }: IntentContext, minute: number, day?: number) {
     if (process.env.NODE_ENV === "production")
       throw new GameError("invalid_state", "Không có lệnh này");
     room.minute = minute;
+    if (day !== undefined && day !== room.day) {
+      // Nhảy ngày: lên lại kế hoạch trời + sự kiện của ngày đó (lịch tuần).
+      room.day = day;
+      room.planWeather();
+      this.emitter?.toRoom(room.id, "events", room.events);
+    }
     this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
   }
 
@@ -1278,6 +1285,10 @@ export class GameService implements OnModuleDestroy {
     if (businesses.length === 0) return;
     // Công trình chung đã nghiệm thu (UC-J5): đường sá, cầu, đèn… làm khách ghé chỗ bán gần đó nhiều hơn.
     const built = await this.projects.done(room.id);
+    const xomEvents = room
+      .activeEvents()
+      .filter((e) => !e.businessId)
+      .map((e) => e.eventId);
     const results = customerArrivals({
       content,
       day: room.day,
@@ -1297,6 +1308,8 @@ export class GameService implements OnModuleDestroy {
           this.promoOf(room, b.id).demand *
           wearDemand(b.wear, eco.maintenance) *
           projectDemand(content, built, b.lotId ?? "") *
+          // Sự kiện cả xóm theo nhóm hàng (chợ đêm thứ Bảy: ăn vặt, đồ uống, phụ kiện đông hẳn).
+          eventCategoryDemand(content, xomEvents, content.product(b.productId).category) *
           weatherDemand(
             room.sky,
             content.lot(b.lotId ?? "").kind,
