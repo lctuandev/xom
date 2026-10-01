@@ -16,7 +16,8 @@ test("thuê nhà mặt tiền mở tiệm: khách vào tiệm gọi món, làm m
   await register(page, "Tiệm");
   await waitForMorning(page, 9);
   // Thuê nhà mặt tiền + thuế khoán đắt hơn xe đẩy (UC-I7): người mới phải bán vài ngày mới đủ — kịch bản cộng sẵn vốn.
-  await grantMoney(page, 100_000);
+  // Nhà mặt tiền mở ở cấp 3 (Luật 4.2) — cộng sẵn KN.
+  await grantMoney(page, 100_000, 300);
   await openBanhMiStall(page, /Nhà mặt tiền số 10/);
   await page.getByRole("button", { name: "🏪 Vào tiệm" }).tap();
   const panel = page.getByRole("region", { name: "Tiệm của tôi" });

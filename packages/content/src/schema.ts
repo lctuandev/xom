@@ -559,6 +559,28 @@ export const housingSchema = z.object({
   school: z.string(),
 });
 
+/**
+ * Kỹ năng (docs/DESIGN.md §4): tăng nhờ làm thật — mỗi việc làm đúng cho điểm vào kỹ năng tương ứng.
+ * `per` = điểm cần cho mỗi bậc (bậc tối đa `max`); `effect` = hiệu quả mỗi bậc (đọc ở sim/progression).
+ */
+export const skillSchema = z.object({
+  id: z.enum(["tay_nhanh", "nho_mon", "an_noi"]),
+  name: z.string(),
+  emoji: z.string(),
+  description: z.string(),
+  per: z.number().int().positive(),
+  max: z.number().int().min(1).max(10),
+  /** Mỗi bậc: tay nhanh = giảm thời gian giữ nút; ăn nói = tăng kiên nhẫn khách; nhớ món = bậc mở gợi ý. */
+  effect: z.number().min(0).max(1),
+});
+
+/** Mở khoá theo cấp (Luật 4.2 — mở bằng làm thật). */
+export const unlockSchema = z.object({
+  id: z.enum(["lot_house", "event_host"]),
+  level: z.number().int().min(1),
+  label: z.string(),
+});
+
 export const contentSchema = z.object({
   templates: z.array(templateSchema),
   products: z.array(productSchema),
@@ -582,6 +604,8 @@ export const contentSchema = z.object({
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),
   housing: housingSchema,
+  skills: z.array(skillSchema).default([]),
+  unlocks: z.array(unlockSchema).default([]),
 });
 
 export type Template = z.infer<typeof templateSchema>;
@@ -608,5 +632,7 @@ export type WeatherKind = z.infer<typeof weatherKindSchema>;
 export type Weather = z.infer<typeof weatherSchema>;
 export type GameEventDef = z.infer<typeof gameEventSchema>;
 export type Housing = z.infer<typeof housingSchema>;
+export type Skill = z.infer<typeof skillSchema>;
+export type SkillId = Skill["id"];
 export type ContentData = z.infer<typeof contentSchema>;
 export type ContentInput = z.input<typeof contentSchema>;

@@ -18,7 +18,8 @@ test("khai trương quầy bánh mì: trả tiền, bong bóng, khách đông, g
   await waitForMorning(page, 12);
   await openBanhMiStall(page);
   // Bán vài ngày mới đủ vốn khai trương — kịch bản cộng sẵn (lệnh thử của bản dev).
-  await grantMoney(page, 200_000);
+  // Khai trương mở ở cấp 2 (Luật 4.2) — cộng sẵn KN.
+  await grantMoney(page, 200_000, 150);
 
   await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
   const sheet = page.getByRole("dialog", { name: /Xe bánh mì kính/ });

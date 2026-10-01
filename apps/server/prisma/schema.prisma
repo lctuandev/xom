@@ -48,6 +48,8 @@ model Player {
   tutorial    String   @default("gap_chu_bay")
   /// Kinh nghiệm tích luỹ từ làm thật (docs/DESIGN.md §4) — cấp độ suy ra từ đây.
   xp          Int      @default(0)
+  /// Điểm kỹ năng (DESIGN §4): { tay_nhanh, nho_mon, an_noi } — tăng nhờ làm thật.
+  skills      Json     @default("{}")
   createdAt   DateTime @default(now())
 
   businesses Business[]

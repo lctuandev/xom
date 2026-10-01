@@ -1,3 +1,5 @@
+import type { Content, Skill, SkillId } from "@xom/content";
+
 // Tiến trình (docs/DESIGN.md §4): người chơi phải luôn thấy "mình đang phát triển".
 // Kinh nghiệm (KN) chỉ đến từ làm thật; cấp độ tăng chậm dần; danh tiếng xã hội theo số khách đã phục vụ + uy tín.
 
@@ -51,4 +53,50 @@ export function fameOf(totalServed: number, reputation: number): Fame {
   if (totalServed >= 150 && reputation >= 0.6) return "popular";
   if (totalServed >= 20) return "local";
   return "unknown";
+}
+
+// ───────── Kỹ năng & mở khoá (content.skills, content.unlocks) ─────────
+
+export type SkillPoints = Partial<Record<SkillId, number>>;
+
+/** Bậc kỹ năng từ điểm (0 = chưa có). */
+export function skillLevel(skill: Skill, points: number): number {
+  return Math.min(skill.max, Math.floor(Math.max(0, points) / skill.per));
+}
+
+/** Hệ số thời gian giữ nút (tay nhanh): 1 → nhỏ dần theo bậc, không dưới 0,5. */
+export function holdFactor(content: Content, points: SkillPoints): number {
+  const s = content.data.skills.find((x) => x.id === "tay_nhanh");
+  if (!s) return 1;
+  return Math.max(0.5, 1 - skillLevel(s, points.tay_nhanh ?? 0) * s.effect);
+}
+
+/** Hệ số kiên nhẫn của khách (ăn nói). */
+export function patienceFactor(content: Content, points: SkillPoints): number {
+  const s = content.data.skills.find((x) => x.id === "an_noi");
+  if (!s) return 1;
+  return 1 + skillLevel(s, points.an_noi ?? 0) * s.effect;
+}
+
+/** Nhớ món: có gợi ý lời dặn không. */
+export function remembersOrders(content: Content, points: SkillPoints): boolean {
+  const s = content.data.skills.find((x) => x.id === "nho_mon");
+  return !!s && skillLevel(s, points.nho_mon ?? 0) >= 1;
+}
+
+/** Cộng điểm kỹ năng (không vượt bậc tối đa). */
+export function addSkill(
+  content: Content,
+  points: SkillPoints,
+  id: SkillId,
+  amount = 1,
+): SkillPoints {
+  const s = content.data.skills.find((x) => x.id === id);
+  if (!s) return points;
+  return { ...points, [id]: Math.min(s.per * s.max, (points[id] ?? 0) + amount) };
+}
+
+/** Cấp cần để mở một thứ (1 nếu không khoá). */
+export function unlockLevel(content: Content, id: "lot_house" | "event_host"): number {
+  return content.data.unlocks.find((u) => u.id === id)?.level ?? 1;
 }

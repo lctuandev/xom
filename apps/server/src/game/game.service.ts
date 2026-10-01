@@ -1,5 +1,5 @@
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
-import { content } from "@xom/content";
+import { content, type SkillId } from "@xom/content";
 import type {
   ClockView,
   DayReportView,
@@ -16,6 +16,7 @@ import type {
   WorldView,
 } from "@xom/shared";
 import {
+  addSkill,
   atmAmountError,
   bankInterest,
   canHost,
@@ -29,8 +30,10 @@ import {
   overrideWeather,
   repairCost,
   resaleValue,
+  type SkillPoints,
   seededRandom,
   spoilage,
+  unlockLevel,
   wearDemand,
   wearState,
   weatherDemand,
@@ -510,6 +513,7 @@ export class GameService implements OnModuleDestroy {
     const biz = await this.requireBusiness(playerId);
     if (lotId === biz.lotId) return;
     if (!content.lotById.has(lotId)) throw new GameError("invalid_payload", "Không có chỗ này");
+    if (content.lot(lotId).kind === "house") await this.requireLevel(playerId, "lot_house");
     if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
     const taken = (this.occupantsCache.get(room.id) ?? []).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
@@ -601,6 +605,7 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_state", "Mở quầy và đứng ở quầy rồi mới khai trương được");
     if (room.activeEvents(biz.id).length)
       throw new GameError("invalid_state", "Quầy đang khai trương rồi mà");
+    await this.requireLevel(playerId, "event_host");
     const why = canHost(def, biz.promoDay, room.day);
     if (why) throw new GameError("invalid_state", why);
     const end = Math.min(content.economy.dayEndMinute, room.minute + def.minutes);
@@ -652,12 +657,37 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Dev/test: cộng tiền mặt cho mình (để kịch bản thử tính năng cần vốn); production không cho. */
-  async debugGrant({ playerId }: IntentContext, money: number) {
+  async debugGrant({ playerId }: IntentContext, p: { money?: number; xp?: number }) {
     if (process.env.NODE_ENV === "production")
       throw new GameError("invalid_state", "Không có lệnh này");
-    await this.prisma.$transaction((tx) =>
-      this.ledger.transfer(tx, SYSTEM.bank, playerWallet(playerId), money, "debug"),
-    );
+    const { money, xp } = p;
+    if (money)
+      await this.prisma.$transaction((tx) =>
+        this.ledger.transfer(tx, SYSTEM.bank, playerWallet(playerId), money, "debug"),
+      );
+    if (xp)
+      await this.prisma.player.update({ where: { id: playerId }, data: { xp: { increment: xp } } });
+  }
+
+  /** Cấp hiện tại của người chơi (mở khoá theo cấp, Luật 4.2). */
+  private async requireLevel(playerId: string, id: "lot_house" | "event_host") {
+    const need = unlockLevel(content, id);
+    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
+    const level = levelOf(player.xp).level;
+    if (level < need) {
+      const label = content.data.unlocks.find((u) => u.id === id)?.label ?? "Việc này";
+      throw new GameError(
+        "invalid_state",
+        `${label}: cần cấp ${need} (đang cấp ${level}) — làm thêm cho lên cấp nha`,
+      );
+    }
+  }
+
+  /** Cộng điểm kỹ năng (làm thật mới lên). */
+  async gainSkill(tx: Tx, playerId: string, id: SkillId, amount = 1) {
+    const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
+    const next = addSkill(content, (player.skills ?? {}) as SkillPoints, id, amount);
+    await tx.player.update({ where: { id: playerId }, data: { skills: next } });
   }
 
   /** Dev/test (UC-B4): ép thời tiết của xóm mình trong một khoảng; production không cho. */
@@ -836,9 +866,12 @@ export class GameService implements OnModuleDestroy {
         where: { playerId_npcId: { playerId, npcId } },
       });
       if (!rel || rel.lastGreetDay !== room.day) {
-        friendship = await this.prisma.$transaction((tx) =>
-          this.addFriendship(tx, playerId, npcId, 2, room.day),
-        );
+        friendship = await this.prisma.$transaction(async (tx) => {
+          await this.gainSkill(tx, playerId, "an_noi");
+          return this.addFriendship(tx, playerId, npcId, 2, room.day);
+        });
+        // Kỹ năng ăn nói vừa nhích lên: gửi lại hồ sơ.
+        void this.emitMe(playerId);
         line =
           friendship >= content.economy.friendDiscountAt
             ? `Con đó hả! ${place.keeper.greeting}`
@@ -1123,6 +1156,7 @@ export class GameService implements OnModuleDestroy {
         need: lv.need,
         fame: fameOf(totalServed, biz?.reputation ?? 0),
         served: totalServed,
+        skills: (player.skills ?? {}) as SkillPoints,
       },
       today: {
         sold: report?.served ?? 0,

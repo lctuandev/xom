@@ -38,6 +38,8 @@ describe("Sự kiện (e2e)", () => {
     const { socket, snap } = await openBanhMiStall(url);
     // Bán vài ngày mới có vốn khai trương — test nạp sẵn qua sổ cái.
     await fund(app, snap.me.playerId, 200_000);
+    // Khai trương mở ở cấp 2 (Luật 4.2).
+    await emit(socket, "debug:grant", { xp: 150 });
     const me = (await emit(socket, "biz:attend", { on: true })) as { ok: true; data: MeView };
     const announced = next(socket, "events", (list) =>
       list.some((e) => e.eventId === "khai_truong"),

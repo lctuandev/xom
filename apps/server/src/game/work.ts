@@ -10,6 +10,7 @@ import type {
   WorkAct,
 } from "@xom/shared";
 import {
+  addSkill,
   annoy,
   apologize,
   callBack,
@@ -32,6 +33,7 @@ import {
   queueOf,
   type Role,
   ringTotal,
+  type SkillPoints,
   sameItems,
   seededRandom,
   served,
@@ -419,9 +421,14 @@ export class WorkService {
     if (out.ok && out.pay > 0) {
       s.stats.done++;
       s.lastDoneMinute = room.minute;
+      // Làm thuê cũng luyện tay (kỹ năng tay nhanh, DESIGN §4).
+      const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
       await this.prisma.player.update({
         where: { id: playerId },
-        data: { xp: { increment: a.kind === "settle" ? XP.delivery : XP.jobTask } },
+        data: {
+          xp: { increment: a.kind === "settle" ? XP.delivery : XP.jobTask },
+          skills: addSkill(content, (player.skills ?? {}) as SkillPoints, "tay_nhanh"),
+        },
       });
     }
     if (room.shifts.has(playerId)) this.push(room, s);

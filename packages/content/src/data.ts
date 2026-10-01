@@ -1609,6 +1609,43 @@ export const data: ContentInput = {
     interactRadius: 2.5,
   },
 
+  // Kỹ năng (DESIGN §4): làm thật mới lên — bán kịp, làm đúng lời dặn, chào hỏi/khách vui.
+  skills: [
+    {
+      id: "tay_nhanh",
+      name: "Tay nhanh",
+      emoji: "⚡",
+      description: "Phục vụ kịp giờ thì lên. Mỗi bậc: giữ nút (lắc, giữ…) nhanh hơn 8%.",
+      per: 15,
+      max: 5,
+      effect: 0.08,
+    },
+    {
+      id: "nho_mon",
+      name: "Nhớ món",
+      emoji: "🧠",
+      description:
+        "Làm đúng món có lời dặn thì lên. Từ bậc 1: màn làm món nhắc lại lời dặn của khách.",
+      per: 10,
+      max: 5,
+      effect: 1,
+    },
+    {
+      id: "an_noi",
+      name: "Ăn nói",
+      emoji: "💬",
+      description: "Chào hỏi, khách vui vẻ ra về thì lên. Mỗi bậc: khách kiên nhẫn thêm 5%.",
+      per: 12,
+      max: 5,
+      effect: 0.05,
+    },
+  ],
+  // Mở khoá theo cấp (Luật 4.2): làm thật mới mở — không mua bằng tiền thật.
+  unlocks: [
+    { id: "event_host", level: 2, label: "Tổ chức khai trương" },
+    { id: "lot_house", level: 3, label: "Thuê nhà mặt tiền mở tiệm" },
+  ],
+
   // Xóm quê (góp ý chủ dự án 10/2026): ít nhà cao tầng; nhà dân phần lớn là nhà cấp 4 mái ngói, vài nhà tranh,
   // lác đác nhà ống — sau này người chơi mua/xây nhà thì nâng cấp dần lên (DESIGN §5).
   housing: {

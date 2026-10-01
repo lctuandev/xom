@@ -2,7 +2,7 @@
 
 import { content } from "@xom/content";
 import type { BusinessView } from "@xom/shared";
-import { formatClock, priceScore, repairCost, wearState } from "@xom/sim";
+import { formatClock, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
@@ -276,18 +276,22 @@ function PromoSection({ biz, money }: { biz: BusinessView; money: number }) {
     s.events.find((e) => e.businessId === biz.id && minute >= e.from && minute < e.to),
   );
   const [busy, setBusy] = useState(false);
+  const level = useGame((s) => s.me?.progress.level ?? 1);
   if (!def || def.trigger.kind !== "player") return null;
   const cost = def.trigger.costs.reduce((sum, c) => sum + c.price, 0);
   const wait = biz.promoDay === null ? 0 : def.trigger.cooldownDays - (day - biz.promoDay);
+  const need = unlockLevel(content, "event_host");
   const hint = active
     ? null
-    : wait > 0
-      ? `Mới khai trương — ${wait} ngày nữa mới làm lại được`
-      : !biz.open || !atStall
-        ? "Mở quầy và đứng ở quầy rồi mới khai trương được"
-        : cost > money
-          ? "Không đủ tiền mặt"
-          : null;
+    : level < need
+      ? `🔒 Cấp ${need} mới tổ chức khai trương được`
+      : wait > 0
+        ? `Mới khai trương — ${wait} ngày nữa mới làm lại được`
+        : !biz.open || !atStall
+          ? "Mở quầy và đứng ở quầy rồi mới khai trương được"
+          : cost > money
+            ? "Không đủ tiền mặt"
+            : null;
   return (
     <Section title={`${def.emoji} ${def.name}`}>
       <div className="rounded-2xl bg-white p-3 shadow-sm" data-promo={active ? "on" : "off"}>
@@ -438,6 +442,7 @@ function StockList({ productId }: { productId: string }) {
 }
 
 function LotPicker({ biz }: { biz: BusinessView }) {
+  const level = useGame((s) => s.me?.progress.level ?? 1);
   const world = useGame((s) => s.world);
   const [open, setOpen] = useState(biz.lotId === null);
   const current = biz.lotId ? content.lot(biz.lotId) : null;
@@ -468,11 +473,14 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       {content.data.lots.map((lot) => {
         const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
         const selected = biz.lotId === lot.id;
+        // Nhà mặt tiền mở khoá theo cấp (Luật 4.2).
+        const need = lot.kind === "house" ? unlockLevel(content, "lot_house") : 1;
+        const locked = level < need;
         return (
           <li key={lot.id}>
             <button
               type="button"
-              disabled={!!taken}
+              disabled={!!taken || locked}
               aria-pressed={selected}
               onClick={async () => {
                 const res = await send("biz:update", { lotId: lot.id });
@@ -483,7 +491,11 @@ function LotPicker({ biz }: { biz: BusinessView }) {
               <span className="min-w-0">
                 <span className="block font-extrabold">{lot.name}</span>
                 <span className="block text-sm text-ink/60">
-                  {taken ? `${taken.ownerName} đang dùng` : lot.hint}
+                  {locked
+                    ? `🔒 Cấp ${need} mới thuê được`
+                    : taken
+                      ? `${taken.ownerName} đang dùng`
+                      : lot.hint}
                 </span>
               </span>
               <span className="shrink-0 font-semibold tabular-nums">

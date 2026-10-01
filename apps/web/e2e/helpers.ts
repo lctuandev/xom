@@ -325,16 +325,19 @@ export async function setClock(page: Page, minute: number) {
   expect(ok).toBe(true);
 }
 
-/** Cộng tiền mặt (lệnh thử nghiệm, chỉ bản dev). */
-export async function grantMoney(page: Page, money: number) {
-  const ok = await page.evaluate(async (m) => {
-    const dbg = (
-      window as unknown as {
-        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
-      }
-    ).xomDebug;
-    return (await dbg?.send("debug:grant", { money: m }))?.ok ?? false;
-  }, money);
+/** Cộng tiền mặt / KN (lệnh thử nghiệm, chỉ bản dev). */
+export async function grantMoney(page: Page, money: number, xp?: number) {
+  const ok = await page.evaluate(
+    async (p) => {
+      const dbg = (
+        window as unknown as {
+          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+        }
+      ).xomDebug;
+      return (await dbg?.send("debug:grant", p))?.ok ?? false;
+    },
+    { money, xp },
+  );
   expect(ok).toBe(true);
 }
 

@@ -2,7 +2,7 @@
 
 import { content, type RecipeStep } from "@xom/content";
 import type { DishSelection, DishView } from "@xom/shared";
-import { wearState } from "@xom/sim";
+import { holdFactor, remembersOrders, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
@@ -85,6 +85,7 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
             {order.promo && <span className="ml-1 text-red">🎉 giá khai trương</span>} nói:
           </p>
           <p className="text-[15px] leading-snug font-semibold">“{order.ask}”</p>
+          <OrderNotes dish={order.dish} />
         </div>
         <button
           type="button"
@@ -308,7 +309,10 @@ function HoldStep({
       // Xe ọp ẹp (Luật 2.2) thì giữ lâu hơn mới xong.
       const biz = useGame.getState().me?.business;
       const m = content.economy.maintenance;
-      const slow = biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1;
+      const skills = useGame.getState().me?.progress.skills ?? {};
+      // Xe ọp ẹp thì chậm hơn; tay nhanh (kỹ năng) thì nhanh hơn.
+      const slow =
+        (biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1) * holdFactor(content, skills);
       const p = Math.min(1, (performance.now() - t0) / (1000 * slow));
       setProgress(p);
       if (p >= 1) {
@@ -499,5 +503,22 @@ function Payment({ order, discount }: { order: OrderState; discount: boolean }) 
         {hint ? `Cần thối ${vnd(bill - price)}` : "💡 Tính giúp"}
       </button>
     </div>
+  );
+}
+
+/** Kỹ năng "Nhớ món" (DESIGN §4): nhắc lại lời dặn của khách thành từng mục để khỏi quên. */
+function OrderNotes({ dish }: { dish: string }) {
+  const skills = useGame((s) => s.me?.progress.skills);
+  const notes = dish.split(", ").slice(1);
+  if (!skills || notes.length === 0 || !remembersOrders(content, skills)) return null;
+  return (
+    <ul className="mt-1 flex flex-wrap gap-1" aria-label="Lời dặn" data-notes>
+      <li className="text-[11px] font-semibold text-ink/50">🧠 Nhớ nè:</li>
+      {notes.map((n) => (
+        <li key={n} className="rounded-full bg-sun/40 px-2 py-0.5 text-[11px] font-bold">
+          {n}
+        </li>
+      ))}
+    </ul>
   );
 }

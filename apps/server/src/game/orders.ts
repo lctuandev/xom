@@ -3,15 +3,18 @@ import { Injectable } from "@nestjs/common";
 import { content, type GameEventDef } from "@xom/content";
 import type { DishView, OrderEvent, OrderResultEvent, OrderUpdateEvent } from "@xom/shared";
 import {
+  addSkill,
   customOrder,
   generateOrder,
   hasIngredients,
   ingredientsFor,
   LOST_WEIGHT,
   nextReputation,
+  patienceFactor,
   pickArchetype,
   pickPayment,
   priceScore,
+  type SkillPoints,
   scoreDish,
   seededRandom,
   settleCash,
@@ -91,6 +94,9 @@ export class OrderService {
     const stock = await stockMap(this.prisma, biz.ownerId);
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     let waiting = this.waitingAt(room, biz.id);
+    // Ăn nói khéo (kỹ năng) thì khách kiên nhẫn hơn.
+    const owner = await this.prisma.player.findUnique({ where: { id: biz.ownerId } });
+    const patienceMul = patienceFactor(content, (owner?.skills ?? {}) as SkillPoints);
     let created = 0;
     let lost = 0;
     for (let k = 0; k < arrivals; k++) {
@@ -106,7 +112,7 @@ export class OrderService {
       }
       const archetype = opts.vip ? "vip" : pickArchetype(content, product.category, rand);
       const npc = content.data.npcs.find((n) => n.id === archetype);
-      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1);
+      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1) * patienceMul;
       // Khai trương giảm giá: làm tròn 500đ, không dưới 1.000đ.
       const price = opts.discount
         ? Math.max(1_000, round500(order.price * (1 - opts.discount)))
@@ -329,9 +335,15 @@ export class OrderService {
             },
           });
         }
+        // Kỹ năng (DESIGN §4): kịp giờ → tay nhanh; đúng lời dặn → nhớ món; khách vui → ăn nói.
+        const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
+        let skills = (player.skills ?? {}) as SkillPoints;
+        if (correct && fast) skills = addSkill(content, skills, "tay_nhanh");
+        if (correct && e.dish.includes(",")) skills = addSkill(content, skills, "nho_mon");
+        if (satisfaction >= 0.8) skills = addSkill(content, skills, "an_noi");
         await tx.player.update({
           where: { id: playerId },
-          data: { xp: { increment: discount ? XP.serveDiscount : XP.serve } },
+          data: { xp: { increment: discount ? XP.serveDiscount : XP.serve }, skills },
         });
         await addToReport(tx, playerId, room.day, {
           revenue: received,

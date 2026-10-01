@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import { baseSpec, FAME_LABEL } from "@xom/sim";
+import { baseSpec, FAME_LABEL, skillLevel } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { audioLevels, setAudioLevels } from "../audio";
@@ -127,6 +127,7 @@ export function ProfileSheet() {
           KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
         </p>
       </div>
+      <Skills points={me.progress.skills} level={me.progress.level} />
       <div className="rounded-2xl bg-white p-3 shadow-sm">
         {row("💵 Tiền mặt", vnd(me.money))}
         {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}
@@ -334,5 +335,48 @@ export function RecipeSheet() {
         )}
       </div>
     </Sheet>
+  );
+}
+
+/** Kỹ năng (DESIGN §4) + những thứ mở khoá theo cấp (Luật 4.2). */
+function Skills({ points, level }: { points: Record<string, number | undefined>; level: number }) {
+  return (
+    <section aria-label="Kỹ năng" className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
+      <p className="mb-1.5 text-sm font-extrabold">Kỹ năng</p>
+      <ul className="flex flex-col gap-2">
+        {content.data.skills.map((s) => {
+          const p = points[s.id] ?? 0;
+          const lv = skillLevel(s, p);
+          const into = lv >= s.max ? s.per : p - lv * s.per;
+          return (
+            <li key={s.id} data-skill={s.id} data-level={lv}>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="font-semibold">
+                  {s.emoji} {s.name}
+                </span>
+                <span className="text-xs text-ink/60">
+                  Bậc {lv}/{s.max}
+                </span>
+              </div>
+              <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-ink/10">
+                <div
+                  className="h-full rounded-full bg-sun"
+                  style={{ width: `${Math.round((into / s.per) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-ink/60">{s.description}</p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 mb-1 text-sm font-extrabold">Mở khoá theo cấp</p>
+      <ul className="flex flex-col gap-1 text-sm">
+        {content.data.unlocks.map((u) => (
+          <li key={u.id} className={level >= u.level ? "" : "text-ink/50"}>
+            {level >= u.level ? "✅" : "🔒"} Cấp {u.level}: {u.label}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

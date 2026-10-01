@@ -351,7 +351,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("debug:grant")
   debugGrant(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, debugGrantSchema, body, (ctx, p) => this.game.debugGrant(ctx, p.money));
+    return this.handle(c, debugGrantSchema, body, (ctx, p) => this.game.debugGrant(ctx, p));
   }
 
   @SubscribeMessage("debug:weather")

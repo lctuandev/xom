@@ -85,6 +85,8 @@ export interface MeView {
     need: number;
     fame: "unknown" | "local" | "popular" | "famous";
     served: number;
+    /** Điểm kỹ năng (bậc suy ra từ content.skills). */
+    skills: Partial<Record<"tay_nhanh" | "nho_mon" | "an_noi", number>>;
   };
 }
 
@@ -529,7 +531,10 @@ export const joinRoomSchema = z.object({
 });
 export const emptySchema = z.object({}).optional();
 /** Dev/test: cộng tiền mặt (qua sổ cái, lý do "debug") — production từ chối. */
-export const debugGrantSchema = z.object({ money: z.number().int().min(1_000).max(10_000_000) });
+export const debugGrantSchema = z.object({
+  money: z.number().int().min(1_000).max(10_000_000).optional(),
+  xp: z.number().int().min(1).max(100_000).optional(),
+});
 /** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
 export const atmSchema = z.object({
   atmId: z.string().regex(/^atm_[0-9]+_[0-9]+$/),

@@ -22,6 +22,8 @@ describe("Money sink (e2e)", () => {
   async function stall(lotId: string) {
     const { socket, snap } = await join(url);
     await emit(socket, "debug:weather", { kind: "sunny", minutes: 960 });
+    // Nhà mặt tiền mở ở cấp 3 (Luật 4.2) — kịch bản cộng sẵn KN.
+    await emit(socket, "debug:grant", { xp: 300 });
     // Vốn đủ thuê nhà mặt tiền (người mới thường phải bán vài ngày).
     await app
       .get(PrismaService)

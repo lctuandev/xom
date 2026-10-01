@@ -175,6 +175,21 @@ mình ra ghế nhựa ngồi ăn (có muỗng) vài giây; NPC có việc để 
 
 ---
 
+### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
+**Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
+**Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.
+Người mới chưa ai cho thuê mặt bằng — phải bán được một thời gian, có tiếng trong xóm mới thuê nhà mặt tiền.
+**Luật game (content.skills, content.unlocks; công thức ở `packages/sim/src/progression.ts`):**
+- ⚡ **Tay nhanh** (+1 khi bán kịp giờ, +1 mỗi việc làm thuê có tiền): mỗi bậc giữ nút (lắc, giữ…) nhanh hơn 8%, tối đa 5 bậc.
+- 🧠 **Nhớ món** (+1 khi làm đúng món có lời dặn): từ bậc 1, màn làm món nhắc lại lời dặn thành từng mục ("🧠 Nhớ nè: không hành · nhiều ớt").
+- 💬 **Ăn nói** (+1 khi chào hỏi NPC mỗi ngày, +1 khi khách vui ≥ 80%): mỗi bậc khách kiên nhẫn thêm 5%.
+- **Mở khoá theo cấp**: cấp 2 tổ chức khai trương, cấp 3 thuê nhà mặt tiền mở tiệm — server kiểm, chỗ bán/nút hiện 🔒 kèm cấp cần.
+- Hồ sơ hiện thanh từng kỹ năng + danh sách mở khoá.
+**Kiểm chứng:** unit `progression.test.ts`; e2e server `skills.e2e-spec.ts`; Playwright `ky-nang.spec.ts`.
+**Chưa:** kỹ năng theo nghề riêng (pha chế, sửa xe), mở khoá món/nghề mới theo cấp.
+
+---
+
 ## C. Kịch bản người mới (Chú Bảy)
 
 ### UC-C1 · Gặp Chú Bảy, chọn hướng đi ✅

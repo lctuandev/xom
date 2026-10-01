@@ -26,7 +26,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
 | 💰 Kinh tế | ✅ Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k, **tách 💵 tiền mặt / 🏦 ngân hàng**, cây ATM, lãi có trần | Chuyển tiền tự do giữa người chơi, phí ATM | 3 |
 | 💸 Money sink | ✅ Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp, **phí chợ/thuế khoán, điện nước tiệm, hao mòn + sửa xe, khai trương**, thanh lý hàng lỗ vốn | Lương nhân viên, trang trí, xăng; quỹ xóm cho công trình chung | 3 |
-| 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
+| 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc; **kỹ năng** (tay nhanh, nhớ món, ăn nói); **mở khoá theo cấp** (khai trương cấp 2, nhà mặt tiền cấp 3) | Kỹ năng theo nghề, mở khoá món/nghề | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
 | 🌦️ Thế giới thay đổi | ✅ Ngày/đêm, sạp theo giờ, **thời tiết** 4 kiểu (khách, giao hàng, hạt mưa, tiếng mưa/sấm, báo trước) | Giao thông/xe chạy, mái che xe đẩy | 3 |
@@ -79,8 +79,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Tạo nhân vật: tóc, mặt, áo, giày, phụ kiện | ⏳ | 3 | Hệ nhân vật modular (PLAN §5) |
 | Biểu cảm / emote (👋 😄 🙏…) | ✅ cơ bản | 1.6 | Câu nói nhanh, UC-D3 |
 | Cử chỉ (vẫy tay, bắt tay, high-five) có animation | ⏳ | 2 | |
-| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ⏳ | 🚧 | 1.10 | Không có "năng lượng" ép giờ chơi |
-| Kỹ năng theo nghề (tay nhanh, nhớ món…) | 💤 | | |
+| Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ✅ | ✅ | 1.11 | Không có "năng lượng" ép giờ chơi |
+| Kỹ năng (tay nhanh, nhớ món, ăn nói) tăng nhờ làm thật + mở khoá theo cấp | ✅ | 1.11 | UC-P1 |
 
 ## 3. 🏘️ Thế giới / khu phố
 
