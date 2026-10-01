@@ -300,6 +300,33 @@ export interface MyStatsView {
   achievements: AchievementView[];
 }
 
+/** Công trình chung đang bàn/làm (UC-J5). */
+export interface ProjectView {
+  id: string;
+  projectId: string;
+  status: "VOTING" | "FUNDING" | "BUILDING" | "DONE" | "REJECTED";
+  proposerName: string;
+  yes: number;
+  no: number;
+  /** Phiếu của mình (null = chưa bỏ). */
+  mine: boolean | null;
+  /** Hết hạn bỏ phiếu (ngày, phút game). */
+  voteDay: number;
+  voteMinute: number;
+  /** Ngày xong thi công (đang làm). */
+  doneDay: number | null;
+}
+
+export interface FundView {
+  /** Số dư quỹ xóm. */
+  balance: number;
+  /** Số người trong xóm (được bỏ phiếu). */
+  members: number;
+  active: ProjectView[];
+  /** Công trình đã nghiệm thu (id content). */
+  done: string[];
+}
+
 export interface TalkResult {
   line: string;
   friendship: number;
@@ -638,3 +665,10 @@ export const reviewWriteSchema = z.object({
   text: reviewText,
 });
 export const reviewReplySchema = z.object({ reviewId: z.string().uuid(), text: reviewText });
+
+export const fundDonateSchema = z.object({
+  amount: z.number().int().min(10_000).max(10_000_000),
+  pay: payMethodSchema,
+});
+export const projectProposeSchema = z.object({ projectId: contentId });
+export const projectVoteSchema = z.object({ id: z.string().uuid(), yes: z.boolean() });

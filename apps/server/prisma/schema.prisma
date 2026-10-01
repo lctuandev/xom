@@ -70,6 +70,36 @@ model Room {
   minute    Int
   createdAt DateTime @default(now())
   players   Player[]
+  projects  RoomProject[]
+}
+
+enum ProjectStatus {
+  VOTING
+  FUNDING
+  BUILDING
+  DONE
+  REJECTED
+}
+
+/// Công trình chung của xóm (UC-J5): đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu.
+model RoomProject {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  roomId     String        @db.Uuid
+  room       Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  /// Id công trình trong content.projects.
+  projectId  String
+  status     ProjectStatus @default(VOTING)
+  proposerId String        @db.Uuid
+  /// Phiếu: { playerId: true (thuận) | false (chống) }.
+  votes      Json          @default("{}")
+  /// Hết hạn bỏ phiếu: ngày + phút game.
+  voteDay    Int
+  voteMinute Int
+  /// Ngày game xong thi công (khi đang BUILDING).
+  doneDay    Int?
+  createdAt  DateTime      @default(now())
+
+  @@index([roomId, status])
 }
 
 enum WalletKind {
@@ -77,6 +107,8 @@ enum WalletKind {
   PLAYER
   /// 🏦 Tài khoản ngân hàng của người chơi ("bank:<id>"): nhận chuyển khoản, rút/gửi ở ATM (DESIGN §2).
   PLAYER_BANK
+  /// 🏗️ Quỹ xóm ("fund:<roomId>"): phí chợ một phần + hàng xóm góp, chi cho công trình chung (UC-J5).
+  ROOM_FUND
   SYSTEM
 }
 

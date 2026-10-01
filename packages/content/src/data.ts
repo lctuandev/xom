@@ -1562,6 +1562,72 @@ export const data: ContentInput = {
     { id: "vay_tay", text: "👋" },
   ],
 
+  // Quỹ xóm + công trình chung (UC-J5). Giá tham khảo công trình nông thôn (đã nén như mọi số tiền trong game).
+  fund: { feeShare: 0.6, voteMinutes: 240, donateStep: 10_000 },
+  projects: [
+    {
+      id: "lat_hem_12",
+      name: "Lát bê tông hẻm 12",
+      emoji: "🛣️",
+      description: "Đổ bê tông con hẻm đất đầu xóm, mưa không còn sình lầy.",
+      why: "Mưa xuống hẻm sình, khách ngại vô đầu hẻm mua đồ.",
+      cost: 600_000,
+      buildDays: 2,
+      demand: { lots: ["dau_hem", "goc_cay"], mult: 1.15 },
+    },
+    {
+      id: "den_duong",
+      name: "Đèn đường năng lượng mặt trời",
+      emoji: "💡",
+      description: "Dựng 6 trụ đèn dọc trục chính, tối đi lại sáng sủa.",
+      why: "Chiều tối đường tối thui, người ta ngại ra đường ăn uống.",
+      cost: 900_000,
+      buildDays: 2,
+      demand: { lots: ["nga_tu", "ben_xe_buyt", "nha_so_10", "nha_so_24"], mult: 1.08 },
+    },
+    {
+      id: "mo_rong_cho",
+      name: "Mở rộng mái che chợ",
+      emoji: "⛺",
+      description: "Dựng thêm mái tôn che nắng mưa quanh chợ đầu mối.",
+      why: "Trời mưa là khách chạy hết, sạp gần chợ vắng hoe.",
+      cost: 1_200_000,
+      buildDays: 3,
+      demand: { lots: ["gan_cho"], mult: 1.2 },
+    },
+    {
+      id: "cau_tre",
+      name: "Cầu tre qua mương cuối phố",
+      emoji: "🌉",
+      description: "Bắc cầu tre qua con mương, bà con xóm bên kia sang mua bán được.",
+      why: "Cuối phố vắng vì xóm bên kia phải đi vòng cả cây số.",
+      cost: 800_000,
+      buildDays: 3,
+      demand: { lots: ["cuoi_pho"], mult: 1.35 },
+    },
+    {
+      id: "cau_be_tong",
+      name: "Nâng cầu tre thành cầu bê tông",
+      emoji: "🌁",
+      description: "Thay cầu tre bằng cầu bê tông, xe máy chạy qua được.",
+      why: "Cầu tre chỉ đi bộ được, xe chở hàng không qua nổi.",
+      cost: 2_500_000,
+      buildDays: 5,
+      demand: { lots: ["cuoi_pho", "goc_cay"], mult: 1.2 },
+      requires: "cau_tre",
+    },
+    {
+      id: "ao_ca",
+      name: "Đào ao cá + ghế đá công viên",
+      emoji: "🎣",
+      description: "Đào cái ao nhỏ thả cá, đặt ghế đá — chiều chiều người ta ra hóng mát.",
+      why: "Xóm chưa có chỗ ngồi chơi, chiều tối ai cũng ở nhà.",
+      cost: 1_500_000,
+      buildDays: 4,
+      demand: { lots: ["cong_truong", "van_phong", "goc_cay"], mult: 1.1 },
+    },
+  ],
+
   // Bảng giải của xóm (UC-P2): 7 ngày gần nhất, mỗi hạng mục một kiểu người chơi — không chỉ người giàu nhất.
   awards: [
     {

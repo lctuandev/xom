@@ -25,12 +25,14 @@ import {
   choosePayment,
   customerArrivals,
   fameOf,
+  feeToFund,
   hostCost,
   levelOf,
   marketPackPrice,
   menuPriceRatio,
   overrideWeather,
   type PaySource,
+  projectDemand,
   repairCost,
   resaleValue,
   type SkillPoints,
@@ -43,6 +45,7 @@ import {
 } from "@xom/sim";
 import {
   bankWallet,
+  fundWallet,
   InsufficientFundsError,
   LedgerService,
   playerWallet,
@@ -54,6 +57,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { addItems, inventoryView, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
+import { ProjectService } from "./projects.js";
 import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
@@ -127,12 +131,14 @@ export class GameService implements OnModuleDestroy {
     readonly work: WorkService,
     readonly reviews: ReviewService,
     readonly stats: StatsService,
+    readonly projects: ProjectService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
     this.emitter = emitter;
     this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.projects.setNotifier((roomId, n) => emitter.toRoom(roomId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────
@@ -610,6 +616,43 @@ export class GameService implements OnModuleDestroy {
     );
   }
 
+  /** Quỹ xóm + công trình chung (UC-J5). */
+  fundView({ room, playerId }: IntentContext) {
+    return this.projects.view(room, playerId);
+  }
+
+  /** Góp quỹ xóm: tiền đi qua sổ cái vào ví quỹ (không lấy lại được). */
+  async fundDonate({ room, playerId }: IntentContext, amount: number, pay?: PayMethod) {
+    const step = content.data.fund.donateStep;
+    if (amount % step !== 0)
+      throw new GameError("invalid_payload", `Góp theo bội số ${step.toLocaleString("vi-VN")}đ`);
+    let src: PaySource = "cash";
+    await this.prisma.$transaction(async (tx) => {
+      src = await this.payOut(tx, playerId, amount, fundWallet(room.id), "donate", room.id, pay);
+    });
+    this.paidBy(playerId, src, amount);
+    void this.log(playerId, "fund_donate", { amount });
+    const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
+    this.emitter?.toRoom(room.id, "notify", {
+      kind: "good",
+      text: `🤝 ${name} góp ${amount.toLocaleString("vi-VN")}đ vào quỹ xóm`,
+    });
+    await this.projects.tick(room);
+    void this.emitMe(playerId).catch(() => undefined);
+    return this.projects.view(room, playerId);
+  }
+
+  async projectPropose({ room, playerId }: IntentContext, projectId: string) {
+    await this.projects.propose(room, playerId, projectId);
+    void this.log(playerId, "project_propose", { projectId });
+    return this.projects.view(room, playerId);
+  }
+
+  async projectVote({ room, playerId }: IntentContext, id: string, yes: boolean) {
+    await this.projects.vote(room, playerId, id, yes);
+    return this.projects.view(room, playerId);
+  }
+
   /** Bảng giải + thị phần + đang hot của xóm (UC-P2). */
   statsXom({ room }: IntentContext) {
     return this.stats.board(room);
@@ -816,8 +859,14 @@ export class GameService implements OnModuleDestroy {
         await this.payOut(tx, playerId, lot.rentPerDay, SYSTEM.landlord, "rent", lot.id);
         // Phí chợ/vệ sinh (xe đẩy) hoặc thuế khoán (tiệm) mỗi ngày — Luật 2.2.
         const fee = eco.fees.daily[lot.kind];
-        // Phí chợ thu tiền mặt tận tay (thiếu tiền mặt thì "tự chọn" lấy từ tài khoản).
-        if (fee > 0) await this.payOut(tx, playerId, fee, SYSTEM.landlord, "fee", lot.id);
+        // Phí chợ thu tận tay; một phần vào quỹ xóm làm công trình chung (UC-J5), còn lại cho ban quản lý chợ.
+        if (fee > 0) {
+          const toFund = feeToFund(fee, content.data.fund.feeShare);
+          if (toFund > 0)
+            await this.payOut(tx, playerId, toFund, fundWallet(room.id), "fee", lot.id);
+          if (fee - toFund > 0)
+            await this.payOut(tx, playerId, fee - toFund, SYSTEM.landlord, "fee", lot.id);
+        }
         await addToReport(tx, playerId, room.day, { rent: lot.rentPerDay, fees: fee });
       }
       await tx.business.update({
@@ -989,7 +1038,10 @@ export class GameService implements OnModuleDestroy {
       if (room.minute >= eco.dayEndMinute) {
         await this.endDay(room);
       } else {
-        if (room.minute % eco.economyTickMinutes === 0) await this.customerTick(room);
+        if (room.minute % eco.economyTickMinutes === 0) {
+          await this.customerTick(room);
+          await this.projects.tick(room);
+        }
         if (room.minute % 60 === 0) await this.chargeUtilities(room);
         await this.work.tick(room);
         await this.orders.expire(room);
@@ -1009,6 +1061,8 @@ export class GameService implements OnModuleDestroy {
       where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
     });
     if (businesses.length === 0) return;
+    // Công trình chung đã nghiệm thu (UC-J5): đường sá, cầu, đèn… làm khách ghé chỗ bán gần đó nhiều hơn.
+    const built = await this.projects.done(room.id);
     const results = customerArrivals({
       content,
       day: room.day,
@@ -1027,6 +1081,7 @@ export class GameService implements OnModuleDestroy {
           ((room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1) *
           this.promoOf(room, b.id).demand *
           wearDemand(b.wear, eco.maintenance) *
+          projectDemand(content, built, b.lotId ?? "") *
           weatherDemand(
             room.sky,
             content.lot(b.lotId ?? "").kind,

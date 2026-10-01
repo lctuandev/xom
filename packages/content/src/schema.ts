@@ -482,6 +482,35 @@ export const voicesSchema = z.object({
   soften: z.record(z.string(), z.string()),
 });
 
+/**
+ * Công trình chung của xóm (UC-J5): đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu.
+ * Tiền lấy từ quỹ xóm (phí chợ một phần + hàng xóm góp) — chỗ tiêu chung (Luật 2.2).
+ */
+export const projectSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  description: z.string(),
+  /** Đời thật: vì sao cần (hiện khi đề xuất). */
+  why: z.string(),
+  cost: vnd,
+  /** Số ngày game thi công. */
+  buildDays: z.number().int().min(1).max(14),
+  /** Hiệu ứng khi xong: khách ở các chỗ bán này ghé nhiều hơn. */
+  demand: z.object({ lots: z.array(id).min(1), mult: z.number().min(1).max(1.5) }),
+  /** Phải xong công trình này trước. */
+  requires: id.optional(),
+});
+export type Project = z.infer<typeof projectSchema>;
+export const fundSchema = z.object({
+  /** Phần phí chợ / thuế khoán hằng ngày đi vào quỹ xóm (phần còn lại cho ban quản lý chợ). */
+  feeShare: z.number().min(0).max(1),
+  /** Hạn bỏ phiếu (phút game kể từ lúc đề xuất). */
+  voteMinutes: z.number().int().min(30),
+  /** Góp quỹ: bước tiền. */
+  donateStep: vnd,
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -708,6 +737,8 @@ export const contentSchema = z.object({
   voice: voicesSchema,
   reviews: reviewsSchema,
   awards: z.array(awardSchema).min(1),
+  projects: z.array(projectSchema).min(1),
+  fund: fundSchema,
   achievements: z.array(achievementSchema).min(1),
   economy: economySchema,
   weather: weatherSchema,

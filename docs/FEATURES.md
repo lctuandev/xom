@@ -25,7 +25,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 |---|---|---|---|
 | 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
 | 💰 Kinh tế | ✅ Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k, **tách 💵 tiền mặt / 🏦 ngân hàng**, cây ATM, lãi có trần | Chuyển tiền tự do giữa người chơi, phí ATM | 3 |
-| 💸 Money sink | ✅ Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp, **phí chợ/thuế khoán, điện nước tiệm, hao mòn + sửa xe, khai trương**, thanh lý hàng lỗ vốn | Lương nhân viên, trang trí, xăng; quỹ xóm cho công trình chung | 3 |
+| 💸 Money sink | ✅ Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp, **phí chợ/thuế khoán, điện nước tiệm, hao mòn + sửa xe, khai trương**, thanh lý hàng lỗ vốn | Lương nhân viên, trang trí, xăng; **quỹ xóm cho công trình chung ✅ (UC-J5)** | 3 |
 | 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc; **kỹ năng** (tay nhanh, nhớ món, ăn nói); **mở khoá theo cấp** (khai trương cấp 2, nhà mặt tiền cấp 3) | Kỹ năng theo nghề, mở khoá món/nghề | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
@@ -128,6 +128,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Thêm nghề bằng dữ liệu (công thức từng bước) | ✅ | 1.6 | `packages/content` |
 | Bánh mì, trà sữa, phụ kiện — tự tay làm món | ✅ | 1.6 | UC-F4…F6 |
 | Sổ đánh giá quầy: khách NPC/hàng xóm chấm sao + viết, chủ quầy trả lời, che từ tục | ✅ | 1.11 | UC-F11 |
+| Quỹ xóm + công trình chung: đề xuất, bỏ phiếu, góp quỹ, thi công, nghiệm thu → khách tăng ở chỗ bán liên quan | ✅ | 1.11 | UC-J5 |
 | Giọng thoại theo kiểu khách (Gen Z/teencode/cô chú) + công tắc "thoại mặn" + AI tuỳ chọn (ANTHROPIC_API_KEY) | ✅ | 1.11 | UC-D6 |
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |

@@ -3,6 +3,7 @@ import type {
   ClockView,
   DayReportView,
   EventView,
+  FundView,
   MakeResult,
   MeView,
   MovePayload,
@@ -98,6 +99,11 @@ export interface ClientToServerEvents {
   "review:list": Intent<{ ownerId: string }, ReviewsView>;
   "review:write": Intent<{ ownerId: string; stars: number; text: string }, ReviewsView>;
   "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;
+  /** Quỹ xóm + công trình chung (UC-J5). */
+  "fund:view": Intent<Record<string, never>, FundView>;
+  "fund:donate": Intent<{ amount: number; pay?: PayMethod }, FundView>;
+  "project:propose": Intent<{ projectId: string }, FundView>;
+  "project:vote": Intent<{ id: string; yes: boolean }, FundView>;
   /** Bảng giải + thị phần + đang hot của xóm (UC-P2). */
   "stats:xom": Intent<Record<string, never>, XomBoardView>;
   /** Số liệu 7 ngày của mình + thành tựu. */

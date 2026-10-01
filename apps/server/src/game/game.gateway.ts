@@ -20,6 +20,7 @@ import {
   debugGrantSchema,
   debugWeatherSchema,
   emptySchema,
+  fundDonateSchema,
   hostEventSchema,
   joinRoomSchema,
   type MakeResult,
@@ -33,6 +34,8 @@ import {
   type PongPayload,
   payOrderSchema,
   pingSchema,
+  projectProposeSchema,
+  projectVoteSchema,
   repairSchema,
   reviewListSchema,
   reviewReplySchema,
@@ -284,6 +287,32 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("npc:talk")
   talk(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<TalkResult>> {
     return this.handleWith(c, talkSchema, body, (ctx, p) => this.game.talk(ctx, p.npcId, p.topic));
+  }
+
+  @SubscribeMessage("fund:view")
+  fundView(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.fundView(ctx));
+  }
+
+  @SubscribeMessage("fund:donate")
+  fundDonate(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, fundDonateSchema, body, (ctx, p) =>
+      this.game.fundDonate(ctx, p.amount, p.pay),
+    );
+  }
+
+  @SubscribeMessage("project:propose")
+  projectPropose(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, projectProposeSchema, body, (ctx, p) =>
+      this.game.projectPropose(ctx, p.projectId),
+    );
+  }
+
+  @SubscribeMessage("project:vote")
+  projectVote(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, projectVoteSchema, body, (ctx, p) =>
+      this.game.projectVote(ctx, p.id, p.yes),
+    );
   }
 
   @SubscribeMessage("stats:xom")

@@ -28,6 +28,7 @@ import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
 import { EquipmentSheet } from "./ui/EquipmentSheet";
+import { FundSheet } from "./ui/FundSheet";
 import { ProfileSheet, QuestsSheet, RecipeSheet, SettingsSheet } from "./ui/HubSheets";
 import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
@@ -130,6 +131,7 @@ export default function GameShell() {
       {sheet === "recipes" && <RecipeSheet />}
       {sheet === "atm" && <AtmSheet />}
       {sheet === "board" && <BoardSheet />}
+      {sheet === "fund" && <FundSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       <ActionBar />

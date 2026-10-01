@@ -747,6 +747,26 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 - **UC-J5 Tranh chỗ** — chỗ bán đã có người thuê trong ngày thì người khác không thuê được; đấu giá chỗ đẹp theo tuần (⏳).
 - **UC-J6 Chống quấy rối** — chặn, báo cáo, lọc từ ngữ; không cho đứng chắn trước quầy người khác quá 1 phút (bị đẩy nhẹ ra).
 
+### UC-J5 · Quỹ xóm + công trình chung (đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu) ✅ (bản đầu)
+**Hệ thống:** 🤝 Xã hội · 💸 Money sink · 🎲 Sự kiện do người chơi tạo · **Luật:** 2.2 (chỗ tiêu chung), 9 (sự kiện người chơi tạo),
+13 (nhiều người chơi), 15 (dữ liệu).
+**Đời thật:** xóm họp tổ dân phố bàn đổ bê tông hẻm, dựng đèn đường, bắc cầu qua mương; nhà nhà góp tiền theo khả năng,
+tổ trưởng giữ quỹ, thuê thợ làm vài ngày rồi cả xóm ra nghiệm thu.
+**Luồng:** *Hàng xóm* → *🏗️ Quỹ xóm*:
+- Đầu sheet: số dư quỹ + nút *Góp 10k/50k/100k/500k* (chọn 💵/🏦 như mọi khoản trả).
+- Tab **📋 Đề xuất**: 6 công trình (`content.projects`) — lý do đời thật, giá, số ngày thi công, chỗ bán được hưởng;
+  công trình nâng cấp phải làm cái trước (cầu tre → cầu bê tông).
+- Tab **🗳️ Đang bàn / làm**: thẻ đề xuất có 👍 Thuận / 👎 Chống, hạn bỏ phiếu; qua rồi thì thanh "còn thiếu …đ";
+  đang thi công thì "nghiệm thu ngày N". Tab **✅ Đã xong**.
+**Luật game:**
+- Quỹ = ví sổ cái `fund:<xóm>` (không âm): 60% phí chợ/thuế khoán mỗi ngày + tiền hàng xóm góp (không rút ra được).
+- Mỗi lúc một đề xuất đang bỏ phiếu; người đề xuất tự thuận. Kiểm phiếu khi cả xóm đã bỏ hoặc hết 4 giờ game:
+  thuận > chống thì qua (xóm một người tự quyết).
+- Qua → chờ quỹ đủ → trừ quỹ, thi công `buildDays` ngày → nghiệm thu: khách ở các chỗ bán liên quan ×`demand.mult` (nhân dồn).
+- Mọi bước báo cho cả xóm (đề xuất, kết quả phiếu, khởi công, nghiệm thu, ai góp bao nhiêu).
+**Kiểm chứng:** unit `projects.test.ts`; e2e server `projects.e2e-spec.ts`; Playwright `quy-xom.spec.ts`.
+**Chưa:** công trình hiện trên bản đồ 3D (đường lát, đèn, cầu), mở rộng đất/lô bán mới, hạng mục "Người vì xóm" trong Bảng xóm.
+
 ---
 
 ## K. Sự kiện đời sống

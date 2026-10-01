@@ -190,6 +190,15 @@ export function loadContent(raw: unknown): Content {
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
+  // Công trình: chỗ bán và công trình tiên quyết phải có thật.
+  const lotIds = new Set(parsed.lots.map((l) => l.id));
+  const projectIds = new Set(parsed.projects.map((p) => p.id));
+  for (const p of parsed.projects) {
+    for (const l of p.demand.lots)
+      if (!lotIds.has(l)) errors.push(`công trình ${p.id}: không có chỗ bán ${l}`);
+    if (p.requires && !projectIds.has(p.requires))
+      errors.push(`công trình ${p.id}: không có công trình ${p.requires}`);
+  }
   // Giọng thoại: kiểu khách phải có thật, câu gọi món phải có chỗ điền món.
   const npcIds = new Set(parsed.npcs.map((n) => n.id));
   for (const v of parsed.voice.voices) {

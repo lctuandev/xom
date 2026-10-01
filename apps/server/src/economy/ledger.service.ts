@@ -18,6 +18,8 @@ export const SYSTEM = {
 export const playerWallet = (playerId: string) => `player:${playerId}`;
 /** 🏦 Tài khoản ngân hàng của người chơi (nhận chuyển khoản, rút/gửi ở ATM). */
 export const bankWallet = (playerId: string) => `bank:${playerId}`;
+/** 🏗️ Quỹ xóm (UC-J5). */
+export const fundWallet = (roomId: string) => `fund:${roomId}`;
 
 export class InsufficientFundsError extends Error {}
 
@@ -73,7 +75,9 @@ export class LedgerService {
           ? "SYSTEM"
           : key.startsWith("bank:")
             ? "PLAYER_BANK"
-            : "PLAYER",
+            : key.startsWith("fund:")
+              ? "ROOM_FUND"
+              : "PLAYER",
       },
       update: {},
     });
