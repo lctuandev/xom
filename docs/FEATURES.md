@@ -139,6 +139,9 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
+| Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
+| 🧑‍🤝‍🧑 Khách quen: cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, boa, dắt bạn, giận khi bị bỏ) | 🚧 | 1.19a | KIENTRUC §1 |
+| 👩‍🍳 Thuê nhân viên NPC bán thay, phiếu ca, doanh thu khi vắng có trần | ⏳ | 1.19b | KIENTRUC §2 |
 | Kế hoạch thế giới sống (Chuyện của tôi, lịch tuần, khu phố, khi vắng mặt, giao thông, luật & hậu quả) | ✅ | 1.16 | docs/THEGIOI.md |
 | 📖 Chuyện của tôi: mốc đời người chơi (dữ liệu), tab Chuyện trong hồ sơ | ✅ | 1.16a | UC-M1, THEGIOI §1 |
 | 📅 Thứ trong tuần, cuối tuần, chợ đêm thứ Bảy, 📅 Hôm nay trong bảng Xóm | ✅ | 1.16b | UC-M2, THEGIOI §2 |

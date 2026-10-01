@@ -14,6 +14,7 @@ Bối cảnh: làm **1 người**; **chưa kiếm tiền** (không thiết kế 
 
 - Bảng theo dõi tính năng: `docs/FEATURES.md` — **cập nhật trạng thái (✅/🚧/⏳/💤) cùng commit với code** mỗi khi xong/bắt đầu một tính năng.
 - Kế hoạch nghề nghiệp: `docs/NGHE.md` (nghề đợt 1, cơ chế lõi dùng chung, lộ trình 1.12–1.15).
+- Kiến trúc đợt 2: `docs/KIENTRUC.md` (khách quen, nhân viên, hợp đồng & tin cậy, xe ôm, giao thông).
 - Kế hoạch thế giới sống: `docs/THEGIOI.md` (Chuyện của tôi, lịch, khu phố, khi vắng mặt, giao thông, luật & hậu quả).
 - Use case & kịch bản: `docs/USECASES.md` — tính năng mới phải có use case (luồng, tình huống đời thật, luật game, kiểm chứng) và kịch bản Playwright tương ứng trong `apps/web/e2e`.
 - Tiền chỉ vào ví khi người chơi **làm** (làm món + tính tiền, việc vặt…); không thêm thu nhập tự động.
