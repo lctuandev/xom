@@ -12,6 +12,7 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
 
   await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
   const sheet = page.getByRole("dialog", { name: /Xe bánh mì kính/ });
+  await sheet.getByRole("tab", { name: "📊 Số liệu" }).tap();
   const week = sheet.locator("[data-week]");
   await week.scrollIntoViewIfNeeded();
   await expect(week).toBeVisible();
@@ -21,6 +22,7 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await expect(sheet).toHaveCount(0);
 
   await page.getByRole("button", { name: "Hồ sơ" }).tap();
+  await page.getByRole("tab", { name: /🏅 Thành tựu/ }).tap();
   const badge = page.locator('[data-achievement="mo_hang"]');
   await badge.scrollIntoViewIfNeeded();
   await expect(badge).toHaveAttribute("data-done", "true");

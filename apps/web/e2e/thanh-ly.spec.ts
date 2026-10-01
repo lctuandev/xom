@@ -12,7 +12,7 @@ test("thanh lý hàng tồn cho chợ Bà Năm", async ({ page }) => {
   await expect(market.locator('[data-item="pate"]').getByText(/trong kho [1-9]/)).toBeVisible();
   const money = Number(await page.locator("[data-money]").getAttribute("data-money"));
 
-  await market.getByText(/♻️ Thanh lý hàng tồn/).tap();
+  await market.getByRole("tab", { name: /♻️ Thanh lý/ }).tap();
   await market
     .locator("[data-liquidate]")
     .getByRole("button", { name: /Bán lại · / })

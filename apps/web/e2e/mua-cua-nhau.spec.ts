@@ -103,6 +103,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await shot(b, "25-danh-gia");
 
   await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
+  await page.getByRole("tab", { name: "📒 Đánh giá" }).tap();
   const book = page.getByRole("region", { name: "Sổ đánh giá" });
   const review = book.locator("[data-review]").filter({ hasText: "Bánh giòn" });
   await review.scrollIntoViewIfNeeded();

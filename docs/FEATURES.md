@@ -36,7 +36,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🛵 Phương tiện | Xe máy giao hàng (chỉ là tốc độ) | Xe đạp/xe máy sở hữu, xăng, hư hỏng | 4 |
 | 🏪 Làm ăn | Kho, giá, rao hàng, khách, đánh giá, hỏng hàng | Nhà cung cấp/giá biến động, đối thủ, trào lưu | 3 |
 | 🧠 Hành vi NPC | Khách quán, NPC ghé sạp/vào quán | Lịch sinh hoạt theo dữ liệu, nhớ quầy quen | 3 |
-| 📱 Giao diện | HUD mới tối giản, menu Làm ăn/Nhiệm vụ/Hàng xóm | Túi đồ 🎒 riêng | 4 |
+| 📱 Giao diện | HUD mới tối giản, menu Làm ăn/Nhiệm vụ/Hàng xóm; list dài chia tab dính (chợ, Làm ăn, Hồ sơ, Bảng xóm — Luật 12.3) | Túi đồ 🎒 riêng | 4 |
 | ♻️ Giữ chân | Nhiệm vụ hôm nay (không thưởng tiền) | Chợ phiên tuần, mùa, sưu tầm | 4 |
 
 ## 1. 🌐 Online / Multiplayer core

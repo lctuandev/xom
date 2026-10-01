@@ -12,12 +12,17 @@ import { useMyStats, WeekChart } from "./BoardSheet";
 import { usePayMethod } from "./PayPicker";
 import { ReviewBook } from "./Reviews";
 import { Section, Sheet, Stepper } from "./Sheet";
+import { Tabs } from "./Tabs";
 
+type BizTab = "sell" | "menu" | "stock" | "lot" | "stats" | "reviews";
+
+/** Bảng Làm ăn: phần đầu (uy tín, mở quầy) luôn hiện; phần dài chia tab dính (góp ý UX). */
 export function BusinessSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
   const setGoal = useGame((s) => s.setGoal);
   const [changing, setChanging] = useState(false);
+  const [tab, setTab] = useState<BizTab | null>(null);
   const stats = useMyStats();
   const biz = me?.business;
 
@@ -52,6 +57,8 @@ export function BusinessSheet() {
     );
   }
 
+  // Chưa chọn chỗ thì mở thẳng tab Chỗ bán (người mới đi theo kịch bản).
+  const current: BizTab = tab ?? (biz.lotId ? "sell" : "lot");
   const product = content.product(biz.productId);
   const equipment = content.equipment(biz.equipmentId);
   // Số phần còn làm được của các món đang bán (theo nguyên liệu trong kho).
@@ -99,53 +106,79 @@ export function BusinessSheet() {
         </button>
       </div>
 
-      <WearBar biz={biz} />
+      <Tabs
+        label="Bảng làm ăn"
+        value={current}
+        onChange={setTab}
+        tabs={[
+          { id: "sell", label: "🏪 Bán" },
+          { id: "menu", label: "🍽️ Thực đơn" },
+          { id: "stock", label: "📦 Kho" },
+          { id: "lot", label: "📍 Chỗ bán" },
+          { id: "stats", label: "📊 Số liệu" },
+          { id: "reviews", label: "📒 Đánh giá" },
+        ]}
+      />
 
-      <PromoSection biz={biz} money={me.money} />
+      {current === "sell" && (
+        <>
+          <WearBar biz={biz} />
+          <PromoSection biz={biz} money={me.money} />
+          <Section title="Hôm nay">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {/* Khách hụt hiện trong báo cáo cuối ngày. */}
+              <Stat label="Đã bán" value={String(me.today.sold)} />
+              <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
+              <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
+            </div>
+          </Section>
+        </>
+      )}
 
-      <Section title="Thực đơn & giá">
-        <MenuEditor biz={biz} />
-      </Section>
+      {current === "menu" && (
+        <Section title="Thực đơn & giá">
+          <MenuEditor biz={biz} />
+        </Section>
+      )}
 
-      <Section title="Chỗ bán">
-        <LotPicker biz={biz} />
-      </Section>
+      {current === "lot" && (
+        <Section title="Chỗ bán">
+          <LotPicker biz={biz} />
+        </Section>
+      )}
 
-      <Section title="Nguyên liệu trong kho">
-        <StockList productId={biz.productId} />
-        <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
-          <p className="text-sm">
-            Làm được khoảng <b className="tabular-nums">{stock}</b> phần
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
-              close(null);
-            }}
-            className="h-10 rounded-xl bg-sun px-4 font-semibold"
-          >
-            🚶 Ra chợ
-          </button>
-        </div>
-      </Section>
+      {current === "stock" && (
+        <Section title="Nguyên liệu trong kho">
+          <StockList productId={biz.productId} />
+          <div className="mt-2 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
+            <p className="text-sm">
+              Làm được khoảng <b className="tabular-nums">{stock}</b> phần
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
+                close(null);
+              }}
+              className="h-10 rounded-xl bg-sun px-4 font-semibold"
+            >
+              🚶 Ra chợ
+            </button>
+          </div>
+        </Section>
+      )}
 
-      <Section title="Hôm nay">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          {/* Khách hụt hiện trong báo cáo cuối ngày. */}
-          <Stat label="Đã bán" value={String(me.today.sold)} />
-          <Stat label="Doanh thu" value={vndShort(me.today.revenue)} />
-          <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
-        </div>
-      </Section>
+      {current === "stats" && (
+        <Section title="📊 7 ngày qua">
+          <WeekChart stats={stats} />
+        </Section>
+      )}
 
-      <Section title="📊 7 ngày qua">
-        <WeekChart stats={stats} />
-      </Section>
-
-      <Section title="📒 Sổ đánh giá">
-        <ReviewBook ownerId={me.playerId} owner />
-      </Section>
+      {current === "reviews" && (
+        <Section title="📒 Sổ đánh giá">
+          <ReviewBook ownerId={me.playerId} owner />
+        </Section>
+      )}
 
       <button
         type="button"

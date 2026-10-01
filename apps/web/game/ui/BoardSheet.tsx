@@ -7,6 +7,7 @@ import { vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
 import { Sheet } from "./Sheet";
+import { Tabs } from "./Tabs";
 
 const MEDAL = ["🥇", "🥈", "🥉"];
 
@@ -52,20 +53,7 @@ export function BoardSheet() {
 
   return (
     <Sheet title="Bảng xóm" onClose={() => close(null)}>
-      <div className="mb-3 flex gap-1.5" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className="h-10 flex-1 rounded-xl bg-white text-sm font-semibold shadow-sm aria-selected:bg-ink aria-selected:text-cream"
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs label="Bảng xóm" value={tab} onChange={setTab} tabs={TABS} />
       {!board && <p className="text-sm text-ink/50">Đang tổng hợp…</p>}
       {board && tab === "awards" && (
         <>

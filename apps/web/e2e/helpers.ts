@@ -52,7 +52,10 @@ export async function walkToObjective(page: Page, arrivedButton: RegExp) {
 export async function buyIngredients(page: Page, ids: string[]) {
   for (const id of ids) {
     const row = page.locator(`[data-item="${id}"]`);
-    if (!(await row.isVisible())) await page.getByText(/Hàng khác/).tap();
+    // Chợ chia tab theo nghề: chưa thấy hàng thì lật lần lượt từng tab.
+    const tabs = page.getByRole("tablist", { name: "Quầy hàng ở chợ" }).getByRole("tab");
+    for (let i = 0; i < (await tabs.count()) && !(await row.isVisible()); i++)
+      await tabs.nth(i).tap();
     await row.getByRole("button", { name: /^Mua/ }).tap();
     // Mua đủ món cuối thì Chú Bảy có thể bắt chuyện (bảng chợ tự đóng) — cũng là mua xong.
     await expect(

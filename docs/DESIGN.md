@@ -123,6 +123,9 @@ Sau này: **âm thanh theo khoảng cách** (đứng gần nghe rõ, đi xa nh�
 - HUD **tối giản**: tiền · nhân vật ở giữa · bản đồ / túi đồ · nút **Tương tác** theo ngữ cảnh.
 - Hệ thống phức tạp (Làm ăn, Kho, Bản đồ, Xã hội…) nằm trong **menu / sheet**, không bày ra màn hình chính.
 **Luật 12.1** — Thêm nút lên màn hình chính phải bỏ/gộp một nút khác. **Luật 12.2** — Mọi thao tác chính trong vùng ngón cái, 360×640 dùng được.
+**Luật 12.3** — Sheet có list dài (quá ~1,5 màn hình) thì chia **tab dính** trên đầu vùng cuộn (component `Tabs`):
+phần quyết định chính (nút Mở quầy, cách trả tiền…) để trên tab, mỗi tab một nhóm; tab mặc định theo ngữ cảnh
+(vd. chưa chọn chỗ bán thì mở tab Chỗ bán). Đang áp: chợ đầu mối (theo nghề + Thanh lý), Làm ăn, Hồ sơ, Bảng xóm.
 
 ## 13. 🌐 Nhiều người chơi
 

@@ -10,6 +10,7 @@ import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
+import { Tabs } from "./Tabs";
 
 const NONE: never[] = [];
 
@@ -21,10 +22,27 @@ export function MarketSheet() {
   const me = useGame((s) => s.me);
   const clock = useGame((s) => s.clock);
   const close = useGame((s) => s.openSheet);
+  const [tab, setTab] = useState<string>("mine");
   if (!me || !clock) return null;
 
   const mine = me.business ? ingredientsOfProduct(me.business.productId) : [];
-  const others = content.data.ingredients.filter((i) => !mine.includes(i.id));
+  // Tab theo nghề (góp ý UX: list dài chia tab): quầy của mình trước, rồi từng nghề khác, cuối cùng là thanh lý.
+  const groups: { id: string; label: string; items: string[] }[] = [];
+  if (me.business) {
+    const p = content.product(me.business.productId);
+    groups.push({ id: "mine", label: `${p.emoji} Quầy của bạn`, items: mine });
+  }
+  const seen = new Set(mine);
+  for (const p of content.data.products) {
+    const items = ingredientsOfProduct(p.id).filter((id) => !seen.has(id));
+    for (const id of items) seen.add(id);
+    if (items.length) groups.push({ id: p.id, label: `${p.emoji} ${p.name}`, items });
+  }
+  const rest = content.data.ingredients.map((i) => i.id).filter((id) => !seen.has(id));
+  if (rest.length) groups.push({ id: "khac", label: "🧺 Khác", items: rest });
+  const leftovers = me.inventory.filter((i) => i.qty > 0).length;
+  const current =
+    groups.some((g) => g.id === tab) || (tab === "sell" && leftovers) ? tab : groups[0]?.id;
   // Tiền thuê chỗ còn phải trả hôm nay: nhắc chừa lại để không kẹt vốn.
   const biz = me.business;
   const reserve =
@@ -42,29 +60,26 @@ export function MarketSheet() {
           {friend && ` · thân với Bà Năm bớt thêm ${Math.round(eco.friendDiscount * 100)}%`}
         </p>
         <PayPicker />
-        {mine.length > 0 && (
-          <>
-            <h3 className="mb-2 text-xs font-semibold tracking-wide text-ink/60 uppercase">
-              Cho quầy của bạn
-            </h3>
-            <ul className="mb-4 flex flex-col gap-2">
-              {mine.map((id) => (
+        <Tabs
+          label="Quầy hàng ở chợ"
+          value={current ?? "sell"}
+          onChange={setTab}
+          tabs={[
+            ...groups.map((g) => ({ id: g.id, label: g.label })),
+            ...(leftovers ? [{ id: "sell", label: "♻️ Thanh lý", badge: leftovers }] : []),
+          ]}
+        />
+        {current === "sell" ? (
+          <Liquidate />
+        ) : (
+          <ul className="flex flex-col gap-2" data-group={current}>
+            {groups
+              .find((g) => g.id === current)
+              ?.items.map((id) => (
                 <Row key={id} ing={content.ingredient(id)} reserve={reserve} friend={friend} />
               ))}
-            </ul>
-          </>
-        )}
-        <details open={mine.length === 0}>
-          <summary className="mb-2 cursor-pointer text-xs font-semibold tracking-wide text-ink/60 uppercase">
-            Hàng khác ({others.length})
-          </summary>
-          <ul className="flex flex-col gap-2">
-            {others.map((ing) => (
-              <Row key={ing.id} ing={ing} reserve={reserve} friend={friend} />
-            ))}
           </ul>
-        </details>
-        <Liquidate />
+        )}
       </PlaceGate>
     </Sheet>
   );
@@ -152,10 +167,7 @@ export function Liquidate() {
   if (items.length === 0) return null;
   const rate = content.economy.resaleRate;
   return (
-    <details className="mt-4" data-liquidate>
-      <summary className="mb-2 cursor-pointer text-xs font-semibold tracking-wide text-ink/60 uppercase">
-        ♻️ Thanh lý hàng tồn ({items.length})
-      </summary>
+    <section aria-label="Thanh lý hàng tồn" data-liquidate>
       <p className="mb-2 text-xs text-ink/60">
         Bà Năm mua lại {Math.round(rate * 100)}% giá gốc — dùng khi đổi nghề hoặc dư hàng.
       </p>
@@ -187,6 +199,6 @@ export function Liquidate() {
           );
         })}
       </ul>
-    </details>
+    </section>
   );
 }

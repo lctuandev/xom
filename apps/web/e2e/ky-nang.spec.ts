@@ -23,6 +23,7 @@ test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", 
   await expect(talk).toBeHidden();
 
   await page.getByRole("button", { name: "Hồ sơ" }).tap();
+  await page.getByRole("tab", { name: "📈 Kỹ năng" }).tap();
   const skills = page.getByRole("region", { name: "Kỹ năng" });
   await expect(skills.locator('[data-skill="an_noi"]')).toBeVisible();
   await expect(skills.getByText("🔒 Cấp 3: Thuê nhà mặt tiền mở tiệm")).toBeVisible();
