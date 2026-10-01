@@ -208,7 +208,7 @@ const point = z.object({ x: z.number(), z: z.number() });
 /**
  * Bản đồ xóm (docs/USECASES.md UC-B6): lưới ô vuông, mỗi ký tự một ô.
  * = đường ngang · | đường dọc · + ngã ba/ngã tư · c vạch sang đường · s vỉa hè · a hẻm
- * B nhà phố · T nhà cao tầng · K trường học · H nhà ở · P công viên · M chợ · S sân trường · L bãi xe · . đất trống
+ * B nhà phố (tiệm tạp hoá, nhà ống) · T trụ sở xã / nhà văn hoá · K trường làng · H nhà dân (cấp nhà: content.housing) · P công viên · M chợ · S sân trường · L bãi xe · . đất trống
  * N cây ATM trên vỉa hè (rút/gửi tiền ngân hàng, UC-I6)
  */
 export const MAP_WALKABLE = "=|+csaPMSLN";
@@ -537,6 +537,28 @@ export const gameEventSchema = z.object({
   news: z.string(),
 });
 
+/**
+ * Cấp nhà (docs/DESIGN.md §5 — nhà ở nâng cấp dần): xóm quê bắt đầu bằng nhà tranh, nhà cấp 4; sau này người chơi
+ * mua/xây nhà thì nâng lên nhà ống 1 lầu, 2 lầu. `models` là tên model trong bundle village (art/blender/nha_que.py).
+ */
+export const housingSchema = z.object({
+  tiers: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        models: z.array(z.string()).min(1),
+        /** Tỉ lệ nhà dân (ô H) ở cấp này lúc xóm mới lập. */
+        start: z.number().min(0).max(1),
+      }),
+    )
+    .min(1),
+  /** Nhà phố buôn bán (ô B), trụ sở xã (ô T), trường làng (ô K). */
+  shops: z.array(z.string()).min(1),
+  office: z.string(),
+  school: z.string(),
+});
+
 export const contentSchema = z.object({
   templates: z.array(templateSchema),
   products: z.array(productSchema),
@@ -559,6 +581,7 @@ export const contentSchema = z.object({
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),
+  housing: housingSchema,
 });
 
 export type Template = z.infer<typeof templateSchema>;
@@ -584,5 +607,6 @@ export type WeatherId = z.infer<typeof weatherIdSchema>;
 export type WeatherKind = z.infer<typeof weatherKindSchema>;
 export type Weather = z.infer<typeof weatherSchema>;
 export type GameEventDef = z.infer<typeof gameEventSchema>;
+export type Housing = z.infer<typeof housingSchema>;
 export type ContentData = z.infer<typeof contentSchema>;
 export type ContentInput = z.input<typeof contentSchema>;

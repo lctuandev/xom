@@ -21,6 +21,10 @@ import { MeshoptEncoder } from "meshoptimizer";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const outDir = join(root, "apps/web/public/assets/models");
 const config = JSON.parse(await readFile(join(root, "packages/assets/bundles.json"), "utf8"));
+// `pnpm assets village` → chỉ build bundle/nhóm có tên này (giữ nguyên phần còn lại của manifest) — dùng khi máy
+// không có art/vendor (Kenney) mà chỉ đổi model tự dựng trong art/export.
+const only = process.argv.slice(2).filter((a) => !a.startsWith("-"));
+const wanted = (name) => only.length === 0 || only.includes(name);
 
 await MeshoptEncoder.ready;
 const io = new NodeIO()
@@ -89,9 +93,13 @@ async function write(doc, file) {
   return glb.byteLength;
 }
 
-const manifest = {};
+const manifestPath = join(outDir, "manifest.json");
+const manifest = only.length
+  ? JSON.parse(await readFile(manifestPath, "utf8").catch(() => "{}"))
+  : {};
 
 for (const [bundleName, bundle] of Object.entries(config.bundles)) {
+  if (!wanted(bundleName)) continue;
   const target = new Document();
   const targetScene = target.createScene(bundleName);
   target.getRoot().setDefaultScene(targetScene);
@@ -115,6 +123,7 @@ for (const [bundleName, bundle] of Object.entries(config.bundles)) {
 }
 
 for (const [groupName, group] of Object.entries(config.singles)) {
+  if (!wanted(groupName)) continue;
   const files = {};
   for (const name of group.models) {
     const doc = await loadModel(group, name, group.scale);
@@ -126,5 +135,5 @@ for (const [groupName, group] of Object.entries(config.singles)) {
   manifest[groupName] = { type: "single", files };
 }
 
-await writeFile(join(outDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log("manifest.json đã cập nhật");

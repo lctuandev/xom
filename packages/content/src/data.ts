@@ -1609,6 +1609,20 @@ export const data: ContentInput = {
     interactRadius: 2.5,
   },
 
+  // Xóm quê (góp ý chủ dự án 10/2026): ít nhà cao tầng; nhà dân phần lớn là nhà cấp 4 mái ngói, vài nhà tranh,
+  // lác đác nhà ống — sau này người chơi mua/xây nhà thì nâng cấp dần lên (DESIGN §5).
+  housing: {
+    tiers: [
+      { id: "nha_tranh", name: "Nhà tranh vách tre", models: ["nha-tranh"], start: 0.25 },
+      { id: "cap4", name: "Nhà cấp 4 mái ngói", models: ["nha-cap4", "nha-cap4-xanh"], start: 0.6 },
+      { id: "ong1", name: "Nhà ống 1 lầu", models: ["nha-ong-1-lau"], start: 0.15 },
+      { id: "ong2", name: "Nhà ống 2 lầu", models: ["nha-ong-2-lau"], start: 0 },
+    ],
+    shops: ["tiem-tap-hoa", "tiem-tap-hoa-trang", "nha-cap4", "nha-ong-1-lau"],
+    office: "uy-ban",
+    school: "truong-lang",
+  },
+
   // Sự kiện (docs/USECASES.md UC-B5, nhóm K; DESIGN §9): người chơi tạo (khai trương), cá nhân (khách VIP), toàn xóm (mưa lớn).
   events: [
     {

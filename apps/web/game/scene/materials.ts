@@ -19,7 +19,13 @@ export function toLambert(root: Object3D) {
       if (!(m instanceof MeshStandardMaterial)) return m;
       let lambert = cache.get(m);
       if (!lambert) {
-        lambert = new MeshLambertMaterial({ map: m.map, color: m.color, side: m.side });
+        // Model tự dựng (art/blender) tô màu bằng vertex color — giữ lại khi đổi material.
+        lambert = new MeshLambertMaterial({
+          map: m.map,
+          color: m.color,
+          side: m.side,
+          vertexColors: m.vertexColors,
+        });
         cache.set(m, lambert);
       }
       return lambert;

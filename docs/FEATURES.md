@@ -98,7 +98,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Ngày 06:00–22:00, ban đêm bỏ qua | ✅ | 1 | |
 | Thời tiết (nắng, âm u, mưa, bão): khách, giao hàng, hạt mưa GPU, tiếng mưa/sấm, báo trước trên dải tin | ✅ | 1.11 | UC-B4 |
 | Tương tác vật thể: ngồi, nhặt, đặt, mở cửa | ⏳ | 2–3 | |
-| Nhà riêng, trang trí | 💤 | 3 | Mục 14 |
+| Xóm quê: nhà tranh/cấp 4/nhà ống theo **cấp nhà bằng dữ liệu** (content.housing), tiệm tạp hoá, UBND xã, trường làng, rào tre, dừa, chuối, tre — model Blender tự dựng | ✅ | 1.11 | UC-B6 |
+| Nhà riêng, trang trí, nâng cấp nhà (dùng cấp nhà ở trên) | 💤 | 3 | Mục 14 |
 
 ## 4. 💰 Kinh tế
 

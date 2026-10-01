@@ -177,6 +177,8 @@ export function loadContent(raw: unknown): Content {
     for (const cat of Object.keys(k.category))
       if (!parsed.products.some((p) => p.category === cat))
         errors.push(`thời tiết ${k.id}: không có danh mục ${cat}`);
+  const startSum = parsed.housing.tiers.reduce((s, t) => s + t.start, 0);
+  if (Math.abs(startSum - 1) > 1e-6) errors.push("cấp nhà: tổng tỉ lệ lúc lập xóm phải bằng 1");
   const seenEvents = new Set<string>();
   for (const ev of parsed.events) {
     if (seenEvents.has(ev.id)) errors.push(`sự kiện trùng: ${ev.id}`);

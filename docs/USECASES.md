@@ -118,6 +118,11 @@ Sự kiện khai báo trong `content.events`: **ai/khi nào gây ra** (`trigger`
 **Chưa:** hội chợ đêm (UC-K1), tan trường sớm, mất điện, kiểm tra VSATTP; tiệc do người chơi mời bạn bè.
 
 ### UC-B6 · Xóm rộng, đường xá ra đường xá ✅ (bản đầu)
+> **Xóm quê (1.11, góp ý chủ dự án):** bỏ nhà cao tầng hiện đại — nhà dân là **nhà tranh / nhà cấp 4 mái ngói / nhà ống 1 lầu**
+> theo tỉ lệ trong `content.housing` (cấp nhà bằng dữ liệu, để sau này mua/xây nhà thì nâng cấp dần lên nhà ống 2 lầu…),
+> nhà phố là tiệm tạp hoá mái hiên, toà cao tầng thành **trụ sở UBND xã**, trường thành **trường làng** có cột cờ; sân trước có rào tre,
+> lu nước, đống rơm; cây dừa, chuối, bụi tre. Model tự dựng bằng Blender (`art/blender/nha_que.py` → bundle `village`, `pnpm assets village`),
+> mỗi model 1 material + vertex color = **1 draw call mỗi loại**, 56–324 tam giác.
 > Người chơi yêu cầu: map chuẩn chỉnh hơn, đường xá phân chia hợp lý, map rộng hơn, nhiều cảnh vật hơn.
 
 **Bố cục (khoảng 3×2 dãy phố):** một **đường lớn** hai chiều có vạch, ngã tư có **đèn giao thông + vạch sang đường**, hai **đường nhánh**

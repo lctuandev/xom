@@ -13,7 +13,7 @@ import {
   Quaternion,
   Vector3,
 } from "three";
-import { CITY_URL, type CityModel } from "../assets";
+import { CITY_URL, type CityModel, VILLAGE_URL } from "../assets";
 import { toLambert } from "./materials";
 
 export interface Placement {
@@ -47,15 +47,18 @@ function collectParts(root: Object3D): Part[] {
   return parts;
 }
 
-/** Tải bundle city một lần; trả về các phần (geometry + material) của từng model theo tên. */
+/** Tải bundle city + village một lần; trả về các phần (geometry + material) của từng model theo tên. */
 function useCityParts(): Record<string, Part[]> {
-  const gltf = useGLTF(CITY_URL);
+  const [city, village] = useGLTF([CITY_URL, VILLAGE_URL]);
   return useMemo(() => {
-    toLambert(gltf.scene);
     const byName: Record<string, Part[]> = {};
-    for (const child of gltf.scene.children) byName[child.name] = collectParts(child);
+    for (const gltf of [city, village]) {
+      if (!gltf) continue;
+      toLambert(gltf.scene);
+      for (const child of gltf.scene.children) byName[child.name] = collectParts(child);
+    }
     return byName;
-  }, [gltf]);
+  }, [city, village]);
 }
 
 const up = new Vector3(0, 1, 0);
@@ -122,3 +125,4 @@ function InstancedPart({ part, at }: { part: Part; at: Placement[] }) {
 }
 
 useGLTF.preload(CITY_URL);
+useGLTF.preload(VILLAGE_URL);

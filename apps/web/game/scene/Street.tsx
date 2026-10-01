@@ -13,40 +13,20 @@ export const TILE = content.data.map.tile;
 const ROAD = "=|+c";
 const WALK = "=|+csaPMSLN";
 
-const BUILDINGS: CityModel[] = [
-  "building-a",
-  "building-b",
-  "building-c",
-  "building-d",
-  "building-e",
-  "building-f",
-  "building-g",
-  "building-h",
-  "building-i",
-  "building-j",
-  "building-k",
-  "building-l",
-  "building-m",
-  "building-n",
-];
-const TOWERS: CityModel[] = [
-  "building-skyscraper-a",
-  "building-skyscraper-b",
-  "building-skyscraper-c",
-  "building-skyscraper-d",
-  "building-skyscraper-e",
-];
-const HOUSES: CityModel[] = [
-  "low-detail-building-a",
-  "low-detail-building-b",
-  "low-detail-building-c",
-  "low-detail-building-d",
-  "low-detail-building-e",
-  "low-detail-building-f",
-  "low-detail-building-g",
-  "low-detail-building-h",
-];
-const TREES: CityModel[] = ["tree_default", "tree_oak", "tree_detailed", "tree_fat"];
+/** Nhà dân theo cấp nhà lúc lập xóm (content.housing.tiers[].start), chọn tất định theo ô. */
+function houseModel(h: number): string {
+  const tiers = content.data.housing.tiers;
+  let x = h;
+  for (const t of tiers) {
+    if (x < t.start)
+      return t.models[Math.floor((x / t.start) * t.models.length)] ?? t.models[0] ?? "";
+    x -= t.start;
+  }
+  return tiers[0]?.models[0] ?? "";
+}
+// Cây quê: dừa, chuối, tre lẫn với cây bóng mát.
+const STREET_TREES: CityModel[] = ["cay-dua", "tree_oak", "cay-chuoi", "tree_fat"];
+const PARK_TREES: CityModel[] = ["bui-tre", "tree_oak", "cay-chuoi", "cay-dua", "tree_default"];
 const FLOWERS: CityModel[] = ["flower_redA", "flower_yellowA", "flower_purpleA"];
 const CARS: CityModel[] = ["sedan", "van", "taxi", "suv", "hatchback-sports"];
 
@@ -115,7 +95,7 @@ function layout() {
             lamps.push(lamp);
           }
           if ((roadS || roadN) && c % 3 === 0 && h < 0.7)
-            put(out, TREES[Math.floor(h * 10) % TREES.length] as CityModel, {
+            put(out, STREET_TREES[Math.floor(h * 10) % STREET_TREES.length] as CityModel, {
               x: x + 1.2,
               z: z + (roadS ? -1.4 : 1.4),
             });
@@ -142,7 +122,10 @@ function layout() {
         }
       } else if (ch === "P") {
         // Công viên: cỏ, cây, bụi, hoa, ghế đá.
-        put(out, TREES[Math.floor(h * 17) % TREES.length] as CityModel, { x: x - 1, z: z - 1 });
+        put(out, PARK_TREES[Math.floor(h * 17) % PARK_TREES.length] as CityModel, {
+          x: x - 1,
+          z: z - 1,
+        });
         put(out, FLOWERS[Math.floor(h * 5) % FLOWERS.length] as CityModel, {
           x: x + 1.2,
           z: z + 1,
@@ -150,11 +133,35 @@ function layout() {
         if (h > 0.5) put(out, "plant_bushLarge", { x: x + 1.3, z: z - 1.3 });
         if (h < 0.4) put(out, "bench", { x, z: z + 1.5, rot: Math.PI });
       } else if (ch === "B" || ch === "T" || ch === "H" || ch === "K") {
-        const list = ch === "T" ? TOWERS : ch === "H" ? HOUSES : ch === "K" ? HOUSES : BUILDINGS;
-        const model = list[Math.floor(h * list.length)] as CityModel;
-        const p = { x, z, rot: facing(c, r) };
+        // Xóm quê (content.housing): nhà dân theo cấp nhà, nhà phố là tiệm tạp hoá / nhà ống, trụ sở xã, trường làng.
+        const housing = content.data.housing;
+        const model = (
+          ch === "H"
+            ? houseModel(h)
+            : ch === "T"
+              ? housing.office
+              : ch === "K"
+                ? housing.school
+                : housing.shops[Math.floor(h * housing.shops.length)]
+        ) as CityModel;
+        const rot = facing(c, r);
+        const p = { x, z, rot };
         put(out, model, p);
         buildings.push({ ...p, model });
+        if (ch === "H") {
+          // Sân trước: rào tre, lu nước, cây chuối/dừa; sau nhà có đống rơm.
+          const fx = Math.sin(rot);
+          const fz = Math.cos(rot);
+          if (h < 0.7) put(out, "hang-rao-tre", { x: x + fx * 1.95, z: z + fz * 1.95, rot });
+          if (h > 0.45)
+            put(out, "lu-nuoc", { x: x + fx * 1.6 + fz * 1.5, z: z + fz * 1.6 - fx * 1.5 });
+          if (h < 0.35)
+            put(out, h < 0.15 ? "cay-dua" : "cay-chuoi", {
+              x: x - fx * 0.2 - fz * 1.8,
+              z: z - fz * 0.2 + fx * 1.8,
+            });
+          if (h > 0.8) put(out, "dong-rom", { x: x - fx * 1.7, z: z - fz * 1.7 });
+        }
       }
     }
   }

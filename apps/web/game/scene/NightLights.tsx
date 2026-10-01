@@ -45,7 +45,9 @@ export function NightLights() {
       const fz = Math.cos(rot);
       const face = box.max.z + 0.06;
       let n = 0;
-      for (let y = 3.6; y < box.max.y - 0.8; y += 2.6) {
+      // Nhà một tầng (nhà quê) có cửa sổ ở tầng trệt; nhà cao thì từ tầng 2.
+      const first = box.max.y < 6 ? 1.5 : 3.6;
+      for (let y = first; y < box.max.y - 0.8; y += 2.6) {
         for (const dx of [-1.1, 1.1]) {
           n++;
           if ((k + n) % 5 === 0 || (k + n) % 7 === 0) continue; // vài phòng tắt đèn
