@@ -438,11 +438,17 @@ export interface NotifyEvent {
 
 const contentId = z.string().regex(/^[a-z0-9_]+$/);
 
-export const buyEquipmentSchema = z.object({ equipmentId: contentId });
+/** Trả bằng gì: tự chọn (mặc định) · 💵 tiền mặt · 🏦 chuyển khoản. */
+export const payMethodSchema = z.enum(["auto", "cash", "bank"]).default("auto");
+export type PayMethod = "auto" | "cash" | "bank";
+
+export const buyEquipmentSchema = z.object({ equipmentId: contentId, pay: payMethodSchema });
 export const marketBuySchema = z.object({
   itemId: contentId,
   packs: z.number().int().min(1).max(50),
+  pay: payMethodSchema,
 });
+export const repairSchema = z.object({ pay: payMethodSchema });
 /** Thanh lý hết một loại hàng tồn cho chợ. */
 export const marketSellSchema = z.object({ itemId: contentId });
 export const updateBusinessSchema = z.object({ lotId: contentId });
@@ -520,8 +526,13 @@ export const shopOrderSchema = z.object({
   variantId: contentId,
   picks: z.record(contentId, contentId).default({}),
   mods: z.array(contentId).max(8).default([]),
+  pay: payMethodSchema,
 });
-export const vendorBuySchema = z.object({ vendorId: contentId, itemId: contentId });
+export const vendorBuySchema = z.object({
+  vendorId: contentId,
+  itemId: contentId,
+  pay: payMethodSchema,
+});
 export const joinRoomSchema = z.object({
   code: z
     .string()
@@ -543,7 +554,7 @@ export const atmSchema = z.object({
 });
 /** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
 export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
-export const hostEventSchema = z.object({ eventId: contentId });
+export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({
   kind: z.enum(["sunny", "cloudy", "rain", "storm"]),

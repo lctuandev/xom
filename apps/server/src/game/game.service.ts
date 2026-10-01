@@ -7,6 +7,7 @@ import type {
   MeView,
   MovePayload,
   NotifyEvent,
+  PayMethod,
   PeerPos,
   RosterView,
   SayEvent,
@@ -21,6 +22,7 @@ import {
   bankInterest,
   canHost,
   chanceIn,
+  choosePayment,
   customerArrivals,
   fameOf,
   hostCost,
@@ -28,6 +30,7 @@ import {
   marketPackPrice,
   menuPriceRatio,
   overrideWeather,
+  type PaySource,
   repairCost,
   resaleValue,
   type SkillPoints,
@@ -320,6 +323,47 @@ export class GameService implements OnModuleDestroy {
     return { from: from.id, to: to.id };
   }
 
+  /**
+   * Người chơi trả tiền (DESIGN §2): 💵 / 🏦 theo lựa chọn, hoặc tự chọn (lặt vặt trả tiền mặt, khoản lớn chuyển khoản).
+   * Trả về nguồn đã dùng; thiếu tiền thì báo cách gỡ (rút ATM, chọn ví kia).
+   */
+  private async payOut(
+    tx: Tx,
+    playerId: string,
+    amount: number,
+    to: string,
+    reason: string,
+    refId?: string,
+    method: PayMethod = "auto",
+    cashOnly = false,
+  ): Promise<PaySource> {
+    const [cash, bank] = await Promise.all([
+      this.ledger.balance(tx, playerWallet(playerId)),
+      this.ledger.balance(tx, bankWallet(playerId)),
+    ]);
+    const src = choosePayment({
+      amount,
+      cash,
+      bank,
+      method,
+      cashOnly,
+      cashFirstBelow: content.economy.bank.cashFirstBelow,
+    });
+    if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
+    const from = src === "cash" ? playerWallet(playerId) : bankWallet(playerId);
+    await this.ledger.transfer(tx, from, to, amount, reason, refId);
+    return src;
+  }
+
+  /** Báo cho người chơi khoản vừa trả đi bằng ví nào (chuyển khoản thì có "ting ting"). */
+  private paidBy(playerId: string, src: PaySource, amount: number) {
+    if (src !== "bank") return;
+    this.emitter?.toPlayer(playerId, "notify", {
+      kind: "info",
+      text: `🏦 Đã chuyển khoản ${amount.toLocaleString("vi-VN")}đ`,
+    });
+  }
+
   // ───────────────────────── Intent ─────────────────────────
 
   /** Chạy một intent trong hàng đợi của xóm; trả về kết quả của fn (mặc định MeView mới). */
@@ -394,7 +438,7 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_state", message);
   }
 
-  async buyEquipment({ room, playerId }: IntentContext, equipmentId: string) {
+  async buyEquipment({ room, playerId }: IntentContext, equipmentId: string, pay?: PayMethod) {
     const eq = content.equipmentById.get(equipmentId);
     if (!eq) throw new GameError("invalid_payload", "Không có thiết bị này");
     this.requireAt(room, playerId, "vua_xe", "Tới vựa xe Ông Sáu mới mua xe được");
@@ -403,6 +447,7 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_state", "Đóng quầy trước khi đổi nghề");
     if (current?.equipmentId === equipmentId)
       throw new GameError("invalid_state", `Bạn đã có ${eq.name}`);
+    let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
       if (current) {
         // Đổi nghề: bán lại thiết bị cũ với nửa giá.
@@ -418,14 +463,7 @@ export class GameService implements OnModuleDestroy {
         );
         await tx.business.delete({ where: { id: current.id } });
       }
-      await this.ledger.transfer(
-        tx,
-        playerWallet(playerId),
-        SYSTEM.supplier,
-        eq.price,
-        "equipment_buy",
-        eq.id,
-      );
+      src = await this.payOut(tx, playerId, eq.price, SYSTEM.supplier, "equipment_buy", eq.id, pay);
       await tx.business.create({
         data: {
           ownerId: playerId,
@@ -439,11 +477,17 @@ export class GameService implements OnModuleDestroy {
         replaced: current?.equipmentId ?? null,
       });
     });
+    this.paidBy(playerId, src, eq.price);
     this.emitWorld(room);
   }
 
   /** Mua nguyên liệu theo gói (UC-E1): mua sỉ và thân với Bà Năm được bớt giá. */
-  async marketBuy({ room, playerId }: IntentContext, itemId: string, packs: number) {
+  async marketBuy(
+    { room, playerId }: IntentContext,
+    itemId: string,
+    packs: number,
+    pay?: PayMethod,
+  ) {
     const ing = content.ingredientById.get(itemId);
     if (!ing) throw new GameError("invalid_payload", "Chợ không bán món này");
     this.requireAt(room, playerId, MARKET_KEEPER, "Ra chợ Bà Năm mới mua được");
@@ -453,19 +497,14 @@ export class GameService implements OnModuleDestroy {
     if (packs >= eco.bulkPacks) total *= 1 - eco.bulkDiscount;
     if (friendship >= eco.friendDiscountAt) total *= 1 - eco.friendDiscount;
     total = Math.max(500, Math.round(total / 500) * 500);
+    let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
-      await this.ledger.transfer(
-        tx,
-        playerWallet(playerId),
-        SYSTEM.market,
-        total,
-        "market_buy",
-        itemId,
-      );
+      src = await this.payOut(tx, playerId, total, SYSTEM.market, "market_buy", itemId, pay);
       await addItems(tx, playerId, itemId, room.day, ing.packSize * packs);
       await addToReport(tx, playerId, room.day, { stockCost: total });
       await this.addFriendship(tx, playerId, MARKET_KEEPER, 1);
     });
+    this.paidBy(playerId, src, total);
     this.stockChanged(room);
   }
 
@@ -567,7 +606,12 @@ export class GameService implements OnModuleDestroy {
    * Mua đồ ăn ở sạp NPC (UC-B9, B10): sạp phải đang bày (đúng giờ), mình phải đứng gần; tiền đi qua sổ cái.
    * Người bán nói một câu, thân thiết +1.
    */
-  async vendorBuy({ room, playerId }: IntentContext, vendorId: string, itemId: string) {
+  async vendorBuy(
+    { room, playerId }: IntentContext,
+    vendorId: string,
+    itemId: string,
+    pay?: PayMethod,
+  ) {
     const v = content.data.vendors.find((x) => x.id === vendorId);
     const item = v?.items.find((i) => i.id === itemId);
     if (!v || !item) throw new GameError("invalid_payload", "Sạp không bán món này");
@@ -576,17 +620,21 @@ export class GameService implements OnModuleDestroy {
     const pos = room.members.get(playerId)?.pos;
     if (pos && (pos.inside || Math.hypot(pos.x - v.position.x, pos.z - v.position.z) > ORDER_REACH))
       throw new GameError("invalid_state", "Lại gần sạp mới mua được");
+    let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
-      await this.ledger.transfer(
+      src = await this.payOut(
         tx,
-        playerWallet(playerId),
-        SYSTEM.market,
+        playerId,
         item.price,
+        SYSTEM.market,
         "food",
         v.id,
+        pay,
+        v.cashOnly,
       );
       await this.addFriendship(tx, playerId, v.id, 1);
     });
+    this.paidBy(playerId, src, item.price);
     void this.log(playerId, "vendor_buy", { vendorId: v.id, itemId: item.id, price: item.price });
     const line = v.lines[Math.floor(Math.random() * v.lines.length)] ?? "Cảm ơn con!";
     this.emitter?.toRoom(room.id, "say", { who: `vendor:${v.id}`, text: `${line} (${item.name})` });
@@ -596,7 +644,7 @@ export class GameService implements OnModuleDestroy {
    * Người chơi tự tổ chức sự kiện (DESIGN §9, UC-B5): khai trương — phải đang đứng quầy đang mở; trả tiền pháo, bong bóng,
    * băng rôn (money sink, Luật 2.2); đổi lại quầy đông khách + giảm giá trong X giờ game, cả xóm thấy tin.
    */
-  async hostEvent({ room, playerId }: IntentContext, eventId: string) {
+  async hostEvent({ room, playerId }: IntentContext, eventId: string, pay?: PayMethod) {
     const def = content.data.events.find((e) => e.id === eventId);
     if (!def || def.trigger.kind !== "player")
       throw new GameError("invalid_payload", "Không có sự kiện này");
@@ -612,12 +660,14 @@ export class GameService implements OnModuleDestroy {
     if (end - room.minute < 30)
       throw new GameError("invalid_state", "Sắp hết ngày rồi — mai khai trương cho đông");
     const cost = hostCost(def);
+    let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
-      await this.ledger.transfer(tx, playerWallet(playerId), SYSTEM.market, cost, "event", def.id);
+      src = await this.payOut(tx, playerId, cost, SYSTEM.market, "event", def.id, pay);
       await tx.business.update({ where: { id: biz.id }, data: { promoDay: room.day } });
       await addToReport(tx, playerId, room.day, { fees: cost });
       await this.event(tx, playerId, "event_host", { eventId: def.id, cost, lotId: biz.lotId });
     });
+    this.paidBy(playerId, src, cost);
     const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
     room.events.push({
       key: `${def.id}:${biz.id}:${room.day}`,
@@ -725,25 +775,11 @@ export class GameService implements OnModuleDestroy {
     await this.prisma.$transaction(async (tx) => {
       const paid = biz.rentPaidDay === room.day && biz.rentLotId === lot.id;
       if (!paid) {
-        await this.ledger.transfer(
-          tx,
-          playerWallet(playerId),
-          SYSTEM.landlord,
-          lot.rentPerDay,
-          "rent",
-          lot.id,
-        );
+        await this.payOut(tx, playerId, lot.rentPerDay, SYSTEM.landlord, "rent", lot.id);
         // Phí chợ/vệ sinh (xe đẩy) hoặc thuế khoán (tiệm) mỗi ngày — Luật 2.2.
         const fee = eco.fees.daily[lot.kind];
-        if (fee > 0)
-          await this.ledger.transfer(
-            tx,
-            playerWallet(playerId),
-            SYSTEM.landlord,
-            fee,
-            "fee",
-            lot.id,
-          );
+        // Phí chợ thu tiền mặt tận tay (thiếu tiền mặt thì "tự chọn" lấy từ tài khoản).
+        if (fee > 0) await this.payOut(tx, playerId, fee, SYSTEM.landlord, "fee", lot.id);
         await addToReport(tx, playerId, room.day, { rent: lot.rentPerDay, fees: fee });
       }
       await tx.business.update({
@@ -762,7 +798,7 @@ export class GameService implements OnModuleDestroy {
   /**
    * Sửa xe/quầy ở vựa xe Ông Sáu (Luật 2.2): tiền sửa theo độ mòn; sửa xong như mới.
    */
-  async repair({ room, playerId }: IntentContext) {
+  async repair({ room, playerId }: IntentContext, pay?: PayMethod) {
     this.requireAt(room, playerId, "vua_xe", "Đẩy xe tới vựa xe Ông Sáu mới sửa được");
     const biz = await this.requireBusiness(playerId);
     if (biz.status === "OPEN")
@@ -770,18 +806,13 @@ export class GameService implements OnModuleDestroy {
     const m = content.economy.maintenance;
     const cost = repairCost(content.equipment(biz.equipmentId).price, biz.wear, m);
     if (cost <= 0) throw new GameError("invalid_state", "Xe còn tốt mà, chưa cần sửa đâu con");
+    let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
-      await this.ledger.transfer(
-        tx,
-        playerWallet(playerId),
-        SYSTEM.supplier,
-        cost,
-        "repair",
-        biz.id,
-      );
+      src = await this.payOut(tx, playerId, cost, SYSTEM.supplier, "repair", biz.id, pay);
       await tx.business.update({ where: { id: biz.id }, data: { wear: 0 } });
       await addToReport(tx, playerId, room.day, { fees: cost });
     });
+    this.paidBy(playerId, src, cost);
     void this.log(playerId, "repair", { cost, wear: biz.wear });
     this.emitter?.toRoom(room.id, "say", {
       who: "vua_xe",

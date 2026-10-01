@@ -10,6 +10,7 @@ import type {
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
+  PayMethod,
   PayslipView,
   PeerPos,
   RosterView,
@@ -50,8 +51,8 @@ type Intent<P, R = MeView> = (payload: P, ack: (res: Ack<R>) => void) => void;
 
 export interface ClientToServerEvents {
   ping: (payload: PingPayload, ack: (res: Ack<PongPayload>) => void) => void;
-  "equipment:buy": Intent<{ equipmentId: string }>;
-  "market:buy": Intent<{ itemId: string; packs: number }>;
+  "equipment:buy": Intent<{ equipmentId: string; pay?: PayMethod }>;
+  "market:buy": Intent<{ itemId: string; packs: number; pay?: PayMethod }>;
   /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
   "market:sell": Intent<{ itemId: string }>;
   "biz:update": Intent<{ lotId: string }>;
@@ -59,7 +60,7 @@ export interface ClientToServerEvents {
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;
   /** Sửa xe/quầy ở vựa xe Ông Sáu (Luật 2.2). */
-  "biz:repair": Intent<Record<string, never>>;
+  "biz:repair": Intent<{ pay?: PayMethod }>;
   "work:start": Intent<{ jobId: string; role: string }, WorkResult>;
   "work:act": Intent<WorkAct, WorkResult>;
   "work:stop": Intent<Record<string, never>, WorkResult>;
@@ -79,11 +80,11 @@ export interface ClientToServerEvents {
   move: (payload: MovePayload) => void;
   "xom:join": Intent<{ code: string }>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
-  "vendor:buy": Intent<{ vendorId: string; itemId: string }>;
+  "vendor:buy": Intent<{ vendorId: string; itemId: string; pay?: PayMethod }>;
   /** Rút / gửi tiền ở cây ATM (UC-I6). */
   "atm:use": Intent<{ atmId: string; action: "deposit" | "withdraw"; amount: number }>;
   /** Người chơi tổ chức sự kiện (khai trương). */
-  "event:host": Intent<{ eventId: string }>;
+  "event:host": Intent<{ eventId: string; pay?: PayMethod }>;
   /** Dev/test: đặt giờ của xóm (production từ chối). */
   "debug:clock": Intent<{ minute: number }>;
   /** Dev/test: cộng tiền (production từ chối). */
@@ -96,6 +97,7 @@ export interface ClientToServerEvents {
     variantId: string;
     picks?: Record<string, string>;
     mods?: string[];
+    pay?: PayMethod;
   }>;
 }
 

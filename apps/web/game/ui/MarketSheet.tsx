@@ -7,6 +7,7 @@ import { vnd } from "../format";
 import { send } from "../net/socket";
 import { ingredientsOfProduct } from "../recipes";
 import { useGame } from "../store";
+import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
 
@@ -40,6 +41,7 @@ export function MarketSheet() {
           {` · mua từ ${eco.bulkPacks} gói bớt ${Math.round(eco.bulkDiscount * 100)}%`}
           {friend && ` · thân với Bà Năm bớt thêm ${Math.round(eco.friendDiscount * 100)}%`}
         </p>
+        <PayPicker />
         {mine.length > 0 && (
           <>
             <h3 className="mb-2 text-xs font-semibold tracking-wide text-ink/60 uppercase">
@@ -79,6 +81,8 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
   const clock = useGame((s) => s.clock);
   const [packs, setPacks] = useState(1);
   const [busy, setBusy] = useState(false);
+  const check = usePayCheck();
+  const pay = usePayMethod((s) => s.method);
   if (!me || !clock) return null;
   const eco = content.economy;
   const pack = marketPackPrice(ing, clock.day, clock.minute, eco);
@@ -87,7 +91,8 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
   if (friend) total *= 1 - eco.friendDiscount;
   total = Math.max(500, Math.round(total / 500) * 500);
   const stock = me.inventory.find((i) => i.itemId === ing.id)?.qty ?? 0;
-  const left = me.money - total;
+  const src = check(total);
+  const left = src === "cash" ? me.money - total : me.money;
 
   return (
     <li className="rounded-2xl bg-white p-3 shadow-sm" data-item={ing.id}>
@@ -116,10 +121,10 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
         </div>
         <button
           type="button"
-          disabled={busy || total > me.money}
+          disabled={busy || typeof src !== "string"}
           onClick={async () => {
             setBusy(true);
-            await send("market:buy", { itemId: ing.id, packs });
+            await send("market:buy", { itemId: ing.id, packs, pay });
             setBusy(false);
           }}
           className="h-11 shrink-0 rounded-xl bg-sun px-3 text-sm font-semibold disabled:opacity-40"
@@ -127,7 +132,8 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
           {busy ? "…" : `Mua ${vnd(total)}`}
         </button>
       </div>
-      {total <= me.money && left < reserve && (
+      {typeof src !== "string" && <p className="mt-1 text-xs text-ink/60">{src.error}</p>}
+      {src === "cash" && left < reserve && (
         <p className="mt-1 text-xs font-semibold text-red">
           Mua xong không đủ {vnd(reserve)} tiền thuê chỗ hôm nay!
         </p>

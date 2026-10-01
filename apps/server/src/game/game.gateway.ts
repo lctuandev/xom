@@ -33,6 +33,7 @@ import {
   type PongPayload,
   payOrderSchema,
   pingSchema,
+  repairSchema,
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
@@ -133,14 +134,14 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("equipment:buy")
   buyEquipment(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, buyEquipmentSchema, body, (ctx, p) =>
-      this.game.buyEquipment(ctx, p.equipmentId),
+      this.game.buyEquipment(ctx, p.equipmentId, p.pay),
     );
   }
 
   @SubscribeMessage("market:buy")
   marketBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, marketBuySchema, body, (ctx, p) =>
-      this.game.marketBuy(ctx, p.itemId, p.packs),
+      this.game.marketBuy(ctx, p.itemId, p.packs, p.pay),
     );
   }
 
@@ -168,7 +169,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("biz:repair")
   repair(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, emptySchema, body, (ctx) => this.game.repair(ctx));
+    return this.handle(c, repairSchema, body, (ctx, p) => this.game.repair(ctx, p.pay));
   }
 
   @SubscribeMessage("work:start")
@@ -254,7 +255,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("vendor:buy")
   vendorBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, vendorBuySchema, body, (ctx, p) =>
-      this.game.vendorBuy(ctx, p.vendorId, p.itemId),
+      this.game.vendorBuy(ctx, p.vendorId, p.itemId, p.pay),
     );
   }
 
@@ -341,7 +342,9 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("event:host")
   hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, hostEventSchema, body, (ctx, p) => this.game.hostEvent(ctx, p.eventId));
+    return this.handle(c, hostEventSchema, body, (ctx, p) =>
+      this.game.hostEvent(ctx, p.eventId, p.pay),
+    );
   }
 
   @SubscribeMessage("debug:clock")

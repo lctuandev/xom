@@ -1154,6 +1154,7 @@ export const data: ContentInput = {
       open: 330,
       close: 600,
       seats: 2,
+      cashOnly: true,
       lines: ["Xôi nóng đây con!", "Ăn xôi cho chắc bụng đi học!"],
       items: [
         { id: "xoi_ga", name: "Xôi gà", emoji: "🍗", price: 20_000 },
@@ -1188,6 +1189,7 @@ export const data: ContentInput = {
       open: 360,
       close: 660,
       seats: 3,
+      cashOnly: true,
       lines: ["Cà phê sữa đá hông con?", "Ngồi đây coi người qua lại nè."],
       items: [
         { id: "cf_sua_da", name: "Cà phê sữa đá", emoji: "🧋", price: 18_000 },
@@ -1605,6 +1607,8 @@ export const data: ContentInput = {
       interestMin: 100_000,
       withdrawStep: 10_000,
       depositStep: 10_000,
+      // Mua lặt vặt (dưới 200k) thì móc tiền mặt; mua xe, trả tiền nhà thì quét mã chuyển khoản.
+      cashFirstBelow: 200_000,
     },
     serveReputationBonus: 0.01,
     interactRadius: 2.5,

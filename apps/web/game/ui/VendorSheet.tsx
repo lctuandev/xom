@@ -9,6 +9,7 @@ import { send } from "../net/socket";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
 import { vendorOpen, vendorSeats } from "../world";
+import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { Sheet } from "./Sheet";
 
 /** Thời gian ngồi ăn (ms thật). */
@@ -17,15 +18,20 @@ const EAT_MS = 8000;
 /** Sạp đồ ăn đang đứng trước (UC-B9, B10): chọn món, trả tiền, rồi ra ghế nhựa ngồi ăn. */
 export function VendorSheet() {
   const id = useGame((s) => s.nearVendor);
-  const money = useGame((s) => s.me?.money ?? 0);
   const close = useGame((s) => s.openSheet);
   const [busy, setBusy] = useState(false);
+  const check = usePayCheck();
+  const pay = usePayMethod((s) => s.method);
   const v = content.data.vendors.find((x) => x.id === id);
   if (!v) return null;
 
   const buy = async (itemId: string) => {
     setBusy(true);
-    const res = await send("vendor:buy", { vendorId: v.id, itemId });
+    const res = await send("vendor:buy", {
+      vendorId: v.id,
+      itemId,
+      pay: v.cashOnly && pay === "bank" ? "auto" : pay,
+    });
     setBusy(false);
     if (!res.ok) return;
     close(null);
@@ -43,6 +49,7 @@ export function VendorSheet() {
         {v.name} bán từ {formatClock(v.open)} tới {formatClock(v.close)} · ăn tại chỗ, ghế nhựa có
         sẵn.
       </p>
+      <PayPicker cashOnly={v.cashOnly} />
       <ul className="flex flex-col gap-1.5">
         {v.items.map((i) => (
           <li
@@ -56,7 +63,7 @@ export function VendorSheet() {
             <span className="text-sm tabular-nums">{vnd(i.price)}</span>
             <button
               type="button"
-              disabled={busy || money < i.price}
+              disabled={busy || typeof check(i.price, v.cashOnly) !== "string"}
               onClick={() => buy(i.id)}
               className="h-10 rounded-xl bg-red px-3 text-sm font-semibold text-cream disabled:opacity-40"
             >

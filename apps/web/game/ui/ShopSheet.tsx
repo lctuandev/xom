@@ -6,6 +6,7 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { Sheet } from "./Sheet";
 
 /**
@@ -14,8 +15,9 @@ import { Sheet } from "./Sheet";
  */
 export function ShopSheet() {
   const lot = useGame((s) => s.world.lots.find((l) => l.businessId === s.nearShop));
-  // Trả bằng chuyển khoản nếu tài khoản đủ, không thì tiền mặt (UC-I6).
-  const money = useGame((s) => Math.max(s.me?.money ?? 0, s.me?.bank ?? 0));
+  // Trả 💵 / 🏦 theo lựa chọn; tiền mặt thì đưa một tờ, chủ quầy thối lại (UC-I6).
+  const check = usePayCheck();
+  const pay = usePayMethod((s) => s.method);
   const close = useGame((s) => s.openSheet);
   const [variantId, setVariantId] = useState<string | null>(null);
   const [picks, setPicks] = useState<Record<string, string>>({});
@@ -31,6 +33,7 @@ export function ShopSheet() {
   const variant = recipe.variants.find((v) => v.id === variantId);
   const order = variant ? customOrder(recipe, menu, variant.id, picks, mods) : null;
   const priced = order && typeof order !== "string" ? order : null;
+  const src = priced ? check(priced.price) : null;
 
   const place = async () => {
     if (!variant) return;
@@ -40,6 +43,7 @@ export function ShopSheet() {
       variantId: variant.id,
       picks,
       mods,
+      pay,
     });
     setBusy(false);
     if (res.ok) close(null);
@@ -145,14 +149,15 @@ export function ShopSheet() {
             {typeof order === "string" && (
               <p className="mb-1.5 text-center text-sm text-red">{order}</p>
             )}
+            <PayPicker />
             <button
               type="button"
-              disabled={busy || !priced || priced.price > money}
+              disabled={busy || !priced || typeof src !== "string"}
               onClick={place}
               className="h-12 w-full rounded-2xl bg-red font-semibold text-cream disabled:opacity-40"
             >
-              {priced && priced.price > money
-                ? "Không đủ tiền"
+              {src && typeof src !== "string"
+                ? src.error
                 : `🛒 Gọi món · ${priced ? vnd(priced.price) : ""}`}
             </button>
           </div>

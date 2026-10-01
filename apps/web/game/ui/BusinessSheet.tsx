@@ -8,6 +8,7 @@ import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { baseCost, ingredientsOfProduct, makeableCount } from "../recipes";
 import { useGame } from "../store";
+import { usePayMethod } from "./PayPicker";
 import { Section, Sheet, Stepper } from "./Sheet";
 
 export function BusinessSheet() {
@@ -318,7 +319,7 @@ function PromoSection({ biz, money }: { biz: BusinessView; money: number }) {
               disabled={busy || hint !== null}
               onClick={async () => {
                 setBusy(true);
-                await send("event:host", { eventId: def.id });
+                await send("event:host", { eventId: def.id, pay: usePayMethod.getState().method });
                 setBusy(false);
               }}
               className="mt-2 h-11 w-full rounded-xl bg-red font-semibold text-cream disabled:opacity-40"

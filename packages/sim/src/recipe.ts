@@ -316,6 +316,11 @@ export type Payment = { kind: "transfer" } | { kind: "cash"; bill: number };
 
 const BILLS = [10_000, 20_000, 50_000, 100_000, 200_000];
 
+/** Tờ tiền nhỏ nhất đủ trả (người chơi đưa tiền mặt cho quầy hàng xóm). */
+export function billFor(price: number): number {
+  return BILLS.find((b) => b >= price) ?? Math.ceil(price / 100_000) * 100_000;
+}
+
 /** Khách trả thế nào: chuyển khoản, đưa đúng tiền, hay đưa tờ lớn cần thối. */
 export function pickPayment(price: number, transferRate: number, rand: () => number): Payment {
   if (rand() < transferRate) return { kind: "transfer" };

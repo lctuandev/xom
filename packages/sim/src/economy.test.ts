@@ -4,6 +4,7 @@ import {
   atmAmountError,
   attractiveness,
   bankInterest,
+  choosePayment,
   customerArrivals,
   menuPriceRatio,
   nextReputation,
@@ -168,5 +169,38 @@ describe("hao mòn xe/quầy (Luật 2.2)", () => {
     expect(repairCost(1_200_000, 0.5, m)).toBe(72_000);
     expect(repairCost(1_200_000, 0, m)).toBe(0);
     expect(repairCost(1_300_000, 1, m) % 1000).toBe(0);
+  });
+});
+
+describe("choosePayment — trả bằng gì", () => {
+  const base = { cashFirstBelow: 200_000, cash: 100_000, bank: 2_000_000 };
+  it("tự chọn: lặt vặt trả tiền mặt, khoản lớn chuyển khoản", () => {
+    expect(choosePayment({ ...base, amount: 20_000, method: "auto" })).toBe("cash");
+    expect(choosePayment({ ...base, amount: 1_200_000, method: "auto" })).toBe("bank");
+  });
+  it("tự chọn: ví ưu tiên thiếu thì dùng ví kia", () => {
+    expect(choosePayment({ ...base, amount: 150_000, method: "auto" })).toBe("bank");
+    expect(choosePayment({ ...base, bank: 0, amount: 90_000, method: "auto" })).toBe("cash");
+    expect(choosePayment({ ...base, amount: 9_000_000, method: "auto" })).toEqual({
+      error: "Không đủ tiền",
+    });
+  });
+  it("chọn tay thì đúng ví đó; thiếu thì báo cách gỡ", () => {
+    expect(choosePayment({ ...base, amount: 20_000, method: "bank" })).toBe("bank");
+    expect(choosePayment({ ...base, amount: 150_000, method: "cash" })).toEqual({
+      error: "Không đủ tiền mặt — chọn chuyển khoản hoặc ra cây ATM rút",
+    });
+    expect(choosePayment({ ...base, amount: 3_000_000, method: "bank" })).toEqual({
+      error: "Tài khoản không đủ số dư",
+    });
+  });
+  it("sạp chỉ nhận tiền mặt", () => {
+    const stall = { ...base, cashOnly: true };
+    expect(choosePayment({ ...stall, amount: 20_000, method: "bank" })).toEqual({
+      error: "Sạp này chỉ nhận tiền mặt thôi con",
+    });
+    expect(choosePayment({ ...stall, cash: 0, amount: 20_000, method: "auto" })).toEqual({
+      error: "Sạp chỉ nhận tiền mặt — ra cây ATM rút đã",
+    });
   });
 });

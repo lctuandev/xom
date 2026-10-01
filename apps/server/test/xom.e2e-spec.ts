@@ -13,8 +13,10 @@ import type {
   ServerToClientEvents,
   Snapshot,
 } from "@xom/shared";
+import { billFor } from "@xom/sim";
 import { io, type Socket } from "socket.io-client";
 import { PrismaService } from "../src/prisma/prisma.service.js";
+import { changeFor } from "./client.js";
 import { register, startApp } from "./helpers.js";
 
 // Xóm chung (docs/USECASES.md UC-J1, J2): mời bằng mã, thấy nhau đi lại, nghe nhau nói.
@@ -222,10 +224,11 @@ describe("Xóm chung (e2e)", () => {
     expect((await wrongSeen).line).toMatch(/^❌ Sai phần/);
     await emit(a.socket, "order:make", { orderId: o.orderId, build: o.spec });
 
-    // Tính tiền: chuyển khoản từ ví Bình sang ví An, không boa tự động.
+    // Tính tiền: món lặt vặt nên Bình "tự chọn" trả tiền mặt — đưa một tờ, An thối lại; không boa tự động.
+    expect(o.pay).toEqual({ kind: "cash", bill: billFor(o.price) });
     const bMoney = next(b.socket, "me", (m: MeView) => m.money === b.snap.me.money - o.price);
     const done = next(b.socket, "orderResult", (r: OrderResultEvent) => r.orderId === o.orderId);
-    const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: null });
+    const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: changeFor(o) });
     expect(paid.ok && paid.data.today.revenue).toBe(o.price);
     expect(paid.ok && paid.data.today.tips).toBe(0);
     await bMoney;

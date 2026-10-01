@@ -224,3 +224,42 @@ export function wearDemand(wear: number, m: Maintenance): number {
 export function repairCost(price: number, wear: number, m: Maintenance): number {
   return Math.round((price * wear * m.repairRate) / 1000) * 1000;
 }
+
+export type PayMethod = "auto" | "cash" | "bank";
+export type PaySource = "cash" | "bank";
+
+/**
+ * Trả bằng gì (DESIGN §2): người chơi chọn 💵 tiền mặt / 🏦 chuyển khoản, hoặc "tự chọn" — món lặt vặt móc tiền mặt trước,
+ * khoản lớn chuyển khoản trước; ví nào thiếu thì dùng ví kia. Sạp chỉ nhận tiền mặt thì không chuyển khoản được.
+ * Trả về nguồn tiền, hoặc câu báo lỗi cho người chơi.
+ */
+export function choosePayment(o: {
+  amount: number;
+  cash: number;
+  bank: number;
+  method: PayMethod;
+  cashOnly?: boolean;
+  cashFirstBelow: number;
+}): PaySource | { error: string } {
+  const has = (src: PaySource) => (src === "cash" ? o.cash : o.bank) >= o.amount;
+  if (o.method === "bank" && o.cashOnly) return { error: "Sạp này chỉ nhận tiền mặt thôi con" };
+  if (o.method !== "auto") {
+    if (has(o.method)) return o.method;
+    if (o.method === "bank") return { error: "Tài khoản không đủ số dư" };
+    return {
+      error:
+        !o.cashOnly && has("bank")
+          ? "Không đủ tiền mặt — chọn chuyển khoản hoặc ra cây ATM rút"
+          : "Không đủ tiền mặt — ra cây ATM rút thêm",
+    };
+  }
+  const order: PaySource[] = o.cashOnly
+    ? ["cash"]
+    : o.amount < o.cashFirstBelow
+      ? ["cash", "bank"]
+      : ["bank", "cash"];
+  const src = order.find(has);
+  if (src) return src;
+  if (o.cashOnly && has("bank")) return { error: "Sạp chỉ nhận tiền mặt — ra cây ATM rút đã" };
+  return { error: "Không đủ tiền" };
+}

@@ -627,6 +627,22 @@ cuối ngày lãi 0,2% cho số dư từ 100k, **tối đa 3.000đ/ngày**, làm
 bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
 **Chưa:** phí rút ở ATM khác ngân hàng, chuyển tiền tự do giữa người chơi, trả lương nhân viên qua tài khoản.
 
+### UC-I8 · Trả bằng gì: 💵 tiền mặt / 🏦 chuyển khoản / tự chọn ✅ (bản đầu)
+**Hệ thống:** 💰 Kinh tế · **Luật:** 2 (tách tiền mặt / ngân hàng), 14 (server kiểm ví, kiểm sạp nhận gì).
+**Đời thật:** mua ổ bánh mì, gói xôi thì móc tiền mặt; mua xe, trả tiền nhà thì quét mã chuyển khoản. Sạp xôi, cà phê cóc
+không có mã QR — chỉ nhận tiền mặt. Hết tiền mặt thì chuyển khoản, hoặc ra cây ATM rút.
+**Luồng:** ở chợ Bà Năm, vựa xe Ông Sáu, sạp ăn, quầy hàng xóm có dòng *Trả bằng · 💵 … · 🏦 …* với 3 ô
+*Tự chọn* · *💵 Tiền mặt* · *🏦 Chuyển khoản* (nhớ lựa chọn trên máy). Sửa xe, khai trương dùng luôn lựa chọn đó.
+**Luật game (`choosePayment` trong sim, server và client dùng chung):**
+- *Tự chọn* (mặc định): dưới 200k trả tiền mặt trước, từ 200k chuyển khoản trước; ví ưu tiên thiếu thì dùng ví kia.
+  Tiền thuê chỗ + phí chợ khi mở quầy luôn theo *tự chọn*.
+- Chọn tay thì chỉ dùng ví đó; thiếu thì báo cách gỡ ("Không đủ tiền mặt — chọn chuyển khoản hoặc ra cây ATM rút").
+- Sạp `cashOnly` (xôi Bà Bảy, cà phê cóc) khoá ô chuyển khoản.
+- Trả bằng chuyển khoản thì hiện "🏦 Đã chuyển khoản …đ".
+- Gọi món ở quầy hàng xóm: chọn 🏦 thì tiền vào tài khoản chủ quầy; trả 💵 thì đưa một tờ (tờ nhỏ nhất đủ trả), chủ quầy
+  phải thối lại như khách thường.
+**Kiểm chứng:** unit `economy.test.ts` (choosePayment); e2e server `pay.e2e-spec.ts`, `xom.e2e-spec.ts`; Playwright `tra-tien.spec.ts`.
+
 ### UC-I7 · Chỗ tiêu bắt buộc: phí chợ/thuế, điện nước, hao mòn + sửa xe, thanh lý hàng ✅ (bản đầu)
 **Hệ thống:** 💸 Money sink · 🏪 Làm ăn · **Luật:** 2.2 (mỗi nguồn thu có chỗ tiêu), 7 (rủi ro làm ăn), 14 (sửa xe/thanh lý phải tới nơi).
 **Đời thật:** bán vỉa hè thì đóng phí chợ/vệ sinh cho ban quản lý; mở tiệm thì có thuế khoán và tiền điện nước hằng tháng;

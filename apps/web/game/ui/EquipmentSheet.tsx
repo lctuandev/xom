@@ -7,6 +7,7 @@ import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
 import { EquipmentPicker } from "./EquipmentPicker";
+import { usePayMethod } from "./PayPicker";
 import { PlaceGate } from "./PlaceGate";
 import { Sheet } from "./Sheet";
 
@@ -51,7 +52,7 @@ function RepairBox() {
         disabled={busy || biz.open}
         onClick={async () => {
           setBusy(true);
-          await send("biz:repair", {});
+          await send("biz:repair", { pay: usePayMethod.getState().method });
           setBusy(false);
         }}
         className="mt-2 h-11 w-full rounded-xl bg-sun font-semibold disabled:opacity-40"

@@ -236,6 +236,8 @@ export const vendorSchema = z.object({
   open: z.number().int(),
   close: z.number().int(),
   seats: z.number().int().min(0).max(6).default(2),
+  /** Sạp nhỏ không có mã QR — chỉ nhận tiền mặt. */
+  cashOnly: z.boolean().default(false),
   lines: z.array(z.string()).min(1),
   items: z.array(z.object({ id, name: z.string(), emoji: z.string(), price: vnd })).min(1),
 });
@@ -443,6 +445,8 @@ export const economySchema = z.object({
     interestMin: z.number().int().nonnegative(),
     withdrawStep: vnd,
     depositStep: vnd,
+    /** "Tự chọn" cách trả: dưới mức này trả tiền mặt trước, từ mức này chuyển khoản trước (như ngoài đời). */
+    cashFirstBelow: vnd,
   }),
 });
 

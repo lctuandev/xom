@@ -5,18 +5,24 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 
 /** Chọn nghề = chọn thiết bị. Đổi nghề thì thiết bị cũ được bán lại nửa giá. */
 export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
   const me = useGame((s) => s.me);
   const [busy, setBusy] = useState<string | null>(null);
   const current = me?.business?.equipmentId;
+  const check = usePayCheck();
+  const pay = usePayMethod((s) => s.method);
 
   return (
     <ul className="flex flex-col gap-3">
+      <li>
+        <PayPicker />
+      </li>
       {content.data.equipment.map((eq) => {
         const product = content.product(eq.products[0] ?? "");
-        const affordable = (me?.money ?? 0) >= eq.price;
+        const affordable = typeof check(eq.price) === "string";
         const owned = current === eq.id;
         return (
           <li key={eq.id} className="rounded-2xl bg-white p-3 shadow-sm">
@@ -39,7 +45,7 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
               disabled={owned || !affordable || busy !== null}
               onClick={async () => {
                 setBusy(eq.id);
-                const res = await send("equipment:buy", { equipmentId: eq.id });
+                const res = await send("equipment:buy", { equipmentId: eq.id, pay });
                 setBusy(null);
                 if (res.ok) onDone?.();
               }}

@@ -12,7 +12,7 @@ import {
 
 // Mua của nhau (docs/USECASES.md UC-J3): An mở xe bánh mì; Bình vào xóm An, tới quầy gọi món
 // "không hành"; An làm tay đúng lời dặn; tính tiền thì tiền đi từ ví Bình sang ví An.
-test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản giữa hai ví", async ({
+test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả tiền mặt, chủ quầy thối", async ({
   browser,
   page,
 }, info) => {
@@ -80,9 +80,9 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, chuyển khoản 
     break;
   }
 
-  // Bình nhận món, ví bị trừ đúng giá (chuyển khoản sang ví An).
+  // Bình nhận món: món lặt vặt nên "tự chọn" trả tiền mặt (UC-I8) — đưa một tờ, An thối lại.
   await expect(
-    b.getByText(/📱 Chuyển .* cho quầy — nhận bánh mì thịt, không hành/).first(),
+    b.getByText(/💵 Đưa .*, trả .* — nhận bánh mì thịt, không hành/).first(),
   ).toBeVisible();
   await expect
     .poll(async () => Number(await b.locator("[data-money]").getAttribute("data-money")))

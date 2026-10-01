@@ -1,9 +1,17 @@
 import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import { content, type GameEventDef } from "@xom/content";
-import type { DishView, OrderEvent, OrderResultEvent, OrderUpdateEvent } from "@xom/shared";
+import type {
+  DishView,
+  OrderEvent,
+  OrderResultEvent,
+  OrderUpdateEvent,
+  PayMethod,
+} from "@xom/shared";
 import {
   addSkill,
+  billFor,
+  choosePayment,
   customOrder,
   generateOrder,
   hasIngredients,
@@ -153,7 +161,12 @@ export class OrderService {
     room: RoomRuntime,
     buyer: { id: string; name: string },
     biz: Business,
-    choice: { variantId: string; picks: Record<string, string>; mods: string[] },
+    choice: {
+      variantId: string;
+      picks: Record<string, string>;
+      mods: string[];
+      pay?: PayMethod;
+    },
   ) {
     if (biz.ownerId === buyer.id) throw new GameError("invalid_state", "Quầy của mình mà");
     if (biz.status !== "OPEN" || !biz.lotId)
@@ -170,13 +183,19 @@ export class OrderService {
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     const order = customOrder(product.recipe, menu, choice.variantId, choice.picks, choice.mods);
     if (typeof order === "string") throw new GameError("invalid_state", order);
-    // Hàng xóm trả bằng chuyển khoản nếu tài khoản đủ, không thì đưa tiền mặt.
+    // Hàng xóm chọn 💵 / 🏦 (hoặc tự chọn: món lặt vặt thì đưa tiền mặt). Tiền mặt thì đưa một tờ, chủ quầy thối lại.
     const [cash, bank] = await Promise.all([
       this.ledger.balance(this.prisma, playerWallet(buyer.id)),
       this.ledger.balance(this.prisma, bankWallet(buyer.id)),
     ]);
-    if (Math.max(cash, bank) < order.price)
-      throw new GameError("insufficient_funds", "Không đủ tiền");
+    const src = choosePayment({
+      amount: order.price,
+      cash,
+      bank,
+      method: choice.pay ?? "auto",
+      cashFirstBelow: content.economy.bank.cashFirstBelow,
+    });
+    if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
     const now = Date.now();
     const event: OrderEvent = {
       orderId: randomUUID(),
@@ -190,7 +209,7 @@ export class OrderService {
       dish: order.dish,
       spec: order.spec,
       price: order.price,
-      pay: { kind: "transfer" },
+      pay: src === "bank" ? { kind: "transfer" } : { kind: "cash", bill: billFor(order.price) },
       createdAt: now,
       expiresAt: now + PLAYER_PATIENCE_MS,
       buyerId: buyer.id,
@@ -355,12 +374,15 @@ export class OrderService {
       });
     } catch (err) {
       if (!(err instanceof InsufficientFundsError)) throw err;
-      throw new GameError("invalid_state", "Khách không đủ tiền chuyển khoản — xin lỗi khách thôi");
+      throw new GameError("invalid_state", "Khách không đủ tiền — xin lỗi khách thôi");
     }
     room.orders.delete(orderId);
     if (e.buyerId) {
       this.emit?.charged(e.buyerId);
-      const line = `📱 Chuyển ${vnd(received)} cho quầy — nhận ${e.dish}`;
+      const line =
+        e.pay.kind === "transfer"
+          ? `📱 Chuyển ${vnd(received)} cho quầy — nhận ${e.dish}`
+          : `💵 Đưa ${vnd(e.pay.bill)}, trả ${vnd(received)} — nhận ${e.dish}`;
       this.emit?.result(room.id, { orderId, served: true, tip: 0, line, outcome, received });
       return;
     }
@@ -390,8 +412,7 @@ export class OrderService {
    */
   private async collect(tx: Tx, e: OrderEvent, amount: number) {
     if (e.buyerId) {
-      const bank = await this.ledger.balance(tx, bankWallet(e.buyerId));
-      const viaBank = bank >= amount;
+      const viaBank = e.pay.kind === "transfer";
       await this.ledger.transfer(
         tx,
         viaBank ? bankWallet(e.buyerId) : playerWallet(e.buyerId),
