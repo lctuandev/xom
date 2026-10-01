@@ -132,6 +132,8 @@ interface GameState {
   contextLost: boolean;
   /** Ai đang online trong xóm (vị trí từng khung hình nằm ở net/peers.ts, không qua store). */
   roster: RosterView | null;
+  /** Chat của người chơi trong xóm (30 câu gần nhất, chỉ trên máy). */
+  chatLog: { id: number; who: string; name: string; text: string; mine: boolean }[];
   /** Mã xóm từ link mời (?xom=…) đang chờ người chơi đồng ý vào. */
   invite: string | null;
   /** Quầy hàng xóm đang đứng gần (businessId) — gọi món được (UC-J3). */
@@ -211,7 +213,9 @@ export function purchaseOf(o: OrderEvent | undefined, world: WorldView): Purchas
 
 let toastId = 0;
 
-export const useGame = create<GameState>((set) => ({
+let chatSeq = 0;
+
+export const useGame = create<GameState>((set, get) => ({
   status: "connecting",
   me: null,
   clock: null,
@@ -240,6 +244,7 @@ export const useGame = create<GameState>((set) => ({
   pingMs: null,
   contextLost: false,
   roster: null,
+  chatLog: [],
   invite: null,
   nearShop: null,
   purchase: null,
@@ -332,8 +337,15 @@ export const useGame = create<GameState>((set) => ({
   openKitchen: (kitchen) => set({ kitchen, sheet: null }),
   say: (e, ms = 4000) => {
     voice(e.who, e.text, moodOf(e.text));
+    // Người chơi nói (không phải NPC) thì ghi vào khung chat.
+    const st = get();
+    const mine = st.me?.playerId === e.who;
+    const name = mine ? st.me?.displayName : st.roster?.peers.find((p) => p.id === e.who)?.name;
     set((s) => ({
       bubbles: { ...s.bubbles, [e.who]: { text: e.text, tone: "say", until: Date.now() + ms } },
+      chatLog: name
+        ? [...s.chatLog.slice(-29), { id: ++chatSeq, who: e.who, name, text: e.text, mine }]
+        : s.chatLog,
     }));
   },
   setBubble: (key, b) =>

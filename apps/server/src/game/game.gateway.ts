@@ -16,6 +16,7 @@ import {
   attendSchema,
   buyEquipmentSchema,
   type ClientToServerEvents,
+  chatTextSchema,
   debugClockSchema,
   debugGrantSchema,
   debugWeatherSchema,
@@ -342,6 +343,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handleWith(c, reviewReplySchema, body, (ctx, p) =>
       this.game.reviewReply(ctx, p.reviewId, p.text),
     );
+  }
+
+  @SubscribeMessage("chat:text")
+  chatText(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, chatTextSchema, body, (ctx, p) => this.game.chatText(ctx, p.text));
   }
 
   @SubscribeMessage("chat:say")

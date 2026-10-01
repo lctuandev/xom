@@ -5,6 +5,7 @@ import { formatClock } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { vnd } from "../format";
 import { type SheetId, useGame } from "../store";
+import { IconFood, IconGear, IconMarket, IconTrophy } from "./icons";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
@@ -41,9 +42,10 @@ export function Hud() {
           type="button"
           onClick={() => openSheet(sheet === "settings" ? null : "settings")}
           aria-label="Cài đặt"
-          className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-cream/95 text-xl shadow-md ring-2 ring-sun/70 active:scale-95"
+          title="Cài đặt"
+          className="relative flex size-11 shrink-0 items-center justify-center active:scale-90"
         >
-          ⚙️
+          <IconGear className="icon-halo size-10" />
           <ConnectionDot />
         </button>
       </header>
@@ -188,27 +190,32 @@ function NewsTicker() {
   );
 }
 
-/** Nút nhanh bên trái bản đồ: ăn uống, ra chợ. */
+/**
+ * Icon neo bên trái bản đồ (góp ý UX): ăn uống, ra chợ, bảng xóm — icon vẽ tay nhìn là biết, không nền, không chữ
+ * (tên đầy đủ ở aria-label / title).
+ */
 function SideRail() {
   const openSheet = useGame((s) => s.openSheet);
   const nearPlace = useGame((s) => s.nearPlace);
   const setGoal = useGame((s) => s.setGoal);
   const toast = useGame((s) => s.toast);
-  const btn =
-    "pointer-events-auto flex size-12 flex-col items-center justify-center rounded-2xl bg-cream/95 text-xl shadow-md active:scale-95";
+  const btn = "pointer-events-auto flex size-12 items-center justify-center active:scale-90";
+  const icon = "icon-halo size-11";
   return (
-    <div className="mt-2 flex flex-col gap-2 self-start px-3">
+    <div className="mt-2 flex flex-col gap-1.5 self-start px-2">
       <button
         type="button"
         aria-label="Quán ăn quanh xóm"
+        title="Ăn uống"
         className={btn}
         onClick={() => openSheet("food")}
       >
-        🍜<span className="text-[9px] font-bold">Ăn uống</span>
+        <IconFood className={icon} />
       </button>
       <button
         type="button"
         aria-label="Ra chợ"
+        title="Chợ đầu mối"
         className={btn}
         onClick={() => {
           if (nearPlace === "cho_dau_moi") return openSheet("market");
@@ -217,7 +224,16 @@ function SideRail() {
           toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
         }}
       >
-        🧺<span className="text-[9px] font-bold">Chợ</span>
+        <IconMarket className={icon} />
+      </button>
+      <button
+        type="button"
+        aria-label="Bảng xóm"
+        title="Bảng xóm: giải tuần, thị phần, đang hot"
+        className={btn}
+        onClick={() => openSheet("board")}
+      >
+        <IconTrophy className={icon} />
       </button>
     </div>
   );

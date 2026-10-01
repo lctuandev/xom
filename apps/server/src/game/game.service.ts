@@ -29,6 +29,7 @@ import {
   hostCost,
   levelOf,
   marketPackPrice,
+  maskText,
   menuPriceRatio,
   overrideWeather,
   type PaySource,
@@ -71,6 +72,8 @@ const LEAVE_GRACE_MS = 30_000;
 const EQUIPMENT_RESALE = 0.5;
 /** Người bán ở chợ (thân thiết tăng khi mua hàng). */
 const MARKET_KEEPER = "cho_dau_moi";
+/** Khoảng cách tối thiểu giữa hai tin chat của một người. */
+const CHAT_GAP_MS = 1500;
 /** Tối đa người online trong một xóm (docs/PLAN.md Phase 2). */
 export const MAX_MEMBERS = 8;
 /** Nhịp phát vị trí người chơi cho cả xóm. */
@@ -1005,6 +1008,18 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Câu nói nhanh (UC-D3): hiện trên đầu; câu rao hàng khi đứng quầy thì kéo thêm khách. */
+  /** Chat tự gõ (UC-D4): một dòng ngắn, che từ tục, mỗi người cách nhau tối thiểu CHAT_GAP_MS. */
+  chatText({ room, playerId }: IntentContext, text: string) {
+    const now = Date.now();
+    if (now - (room.chatAt.get(playerId) ?? 0) < CHAT_GAP_MS)
+      throw new GameError("invalid_state", "Từ từ thôi, nói chậm lại chút");
+    room.chatAt.set(playerId, now);
+    const clean = maskText(text.replace(/\s+/g, " ").trim(), content.data.reviews.banned);
+    this.emitter?.toRoom(room.id, "say", { who: playerId, text: clean });
+    void this.log(playerId, "chat", { length: clean.length });
+    return Promise.resolve();
+  }
+
   async say({ room, playerId }: IntentContext, phraseId: string) {
     const phrase = content.data.quickPhrases.find((p) => p.id === phraseId);
     if (!phrase) throw new GameError("invalid_payload", "Không có câu này");

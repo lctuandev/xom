@@ -253,8 +253,13 @@ Quán cơm Cô Tư xin việc → làm 2 việc vặt → Chú Bảy gợi ý t�
 **Kiểm chứng:** Playwright: bấm câu rao → khung thoại trên đầu nhân vật; server: hệ số khách tăng trong thời gian hiệu lực.
 
 **Kiểm chứng (đã chạy):** e2e server (rao hàng → thông báo, hồi chiêu); Playwright (câu rao hiện trên đầu).
-### UC-D4 · Chat với người chơi khác ⏳ (Phase 2)
-Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc từ ngữ thô tục; bấm vào người chơi → *Chặn* / *Báo cáo*. Người bị chặn không thấy tin nhắn của mình.
+### UC-D4 · Chat với người chơi khác 🚧 (gõ chữ ✅, chặn/báo cáo ⏳)
+**Luồng:** icon 💬 (bong bóng, không nền) → khung *Chat xóm*: 30 câu gần nhất của người chơi trong xóm (của mình bên phải),
+ô *Nói gì với cả xóm…* + *Gửi* (Enter để gửi), bên dưới là câu nói nhanh dạng chip. Có tin mới khi đang đóng khung thì icon hiện số.
+**Luật game:** server nhận `chat:text` (1–80 ký tự, gộp khoảng trắng), che từ tục (`content.reviews.banned`), mỗi người cách nhau ≥ 1,5 giây;
+câu hiện trên đầu nhân vật cho cả xóm (sự kiện `say`) + vào khung chat; chỉ ghi độ dài vào GameEvent (không lưu nội dung).
+**Kiểm chứng:** e2e server `chat.e2e-spec.ts`; Playwright `chat.spec.ts`.
+**Chưa:** bấm vào người chơi → *Chặn* / *Báo cáo*; người bị chặn không thấy tin nhắn của mình.
 
 ### UC-D5 · Âm thanh: nhạc nền, tiếng thao tác, giọng nói ✅ (bản đầu)
 Tổng hợp bằng WebAudio (không file, không lo bản quyền): **nhạc nền** ngũ cung kiểu đàn tranh (ngày tươi, đêm chậm/dịu);

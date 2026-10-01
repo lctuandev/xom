@@ -672,3 +672,6 @@ export const fundDonateSchema = z.object({
 });
 export const projectProposeSchema = z.object({ projectId: contentId });
 export const projectVoteSchema = z.object({ id: z.string().uuid(), yes: z.boolean() });
+
+/** Chat tự gõ (UC-D4): một dòng ngắn, server che từ tục. */
+export const chatTextSchema = z.object({ text: z.string().trim().min(1).max(80) });

@@ -126,6 +126,9 @@ Sau này: **âm thanh theo khoảng cách** (đứng gần nghe rõ, đi xa nh�
 **Luật 12.3** — Sheet có list dài (quá ~1,5 màn hình) thì chia **tab dính** trên đầu vùng cuộn (component `Tabs`):
 phần quyết định chính (nút Mở quầy, cách trả tiền…) để trên tab, mỗi tab một nhóm; tab mặc định theo ngữ cảnh
 (vd. chưa chọn chỗ bán thì mở tab Chỗ bán). Đang áp: chợ đầu mối (theo nghề + Thanh lý), Làm ăn, Hồ sơ, Bảng xóm.
+**Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** — nhìn là biết (tô phở = Ăn uống,
+rổ rau = Chợ, cúp = Bảng xóm, bánh răng = Cài đặt, bong bóng = Chat); tên đầy đủ ở `aria-label`/`title`; class `icon-halo`
+(quầng trắng + bóng) để nổi trên mọi nền 3D. Cột neo trái tối đa 3 icon (Luật 12.1).
 
 ## 13. 🌐 Nhiều người chơi
 

@@ -79,6 +79,8 @@ export interface ClientToServerEvents {
   "order:start": Intent<{ orderId: string }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
+  /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */
+  "chat:text": Intent<{ text: string }>;
   "tutorial:set": Intent<{ step: string }>;
   /** Vị trí của mình (không cần Ack, 10 lần/giây khi có thay đổi). */
   move: (payload: MovePayload) => void;

@@ -80,22 +80,13 @@ export function XomSheet() {
         </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => close("board")}
-          className="h-12 rounded-xl bg-sun font-semibold"
-        >
-          🏆 Bảng xóm
-        </button>
-        <button
-          type="button"
-          onClick={() => close("fund")}
-          className="h-12 rounded-xl bg-leaf font-semibold text-cream"
-        >
-          🏗️ Quỹ xóm
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => close("fund")}
+        className="mt-3 h-12 w-full rounded-xl bg-leaf font-semibold text-cream"
+      >
+        🏗️ Quỹ xóm & công trình chung
+      </button>
 
       <p className="mt-4 mb-1.5 text-sm font-extrabold">
         Đang online ({roster.peers.length}/{roster.max})

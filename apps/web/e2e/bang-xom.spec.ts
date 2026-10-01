@@ -30,8 +30,8 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await page.getByRole("button", { name: /^Hàng xóm:/ }).tap();
-  await page.getByRole("button", { name: /🏆 Bảng xóm/ }).tap();
+  // Bảng xóm là icon cúp neo bên trái màn hình chính.
+  await page.getByRole("button", { name: "Bảng xóm", exact: true }).tap();
   const board = page.getByRole("dialog", { name: "Bảng xóm" });
   await expect(board.locator('[data-award="doanh_nhan"]').getByText("Hạng (bạn)")).toBeVisible();
   await shot(page, "92-bang-xom");

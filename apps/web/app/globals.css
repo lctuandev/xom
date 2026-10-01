@@ -43,3 +43,9 @@ body {
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
 }
+
+/* Icon neo trên bản đồ (không nền nút): quầng sáng + bóng để nổi trên mọi nền 3D, ngày lẫn đêm. */
+.icon-halo {
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff)
+    drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+}
