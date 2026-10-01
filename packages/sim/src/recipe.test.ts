@@ -9,6 +9,7 @@ import {
   generateOrder,
   hasIngredients,
   ingredientsFor,
+  inspectPart,
   marketPackPrice,
   pickPayment,
   scoreDish,
@@ -187,5 +188,47 @@ describe("người chơi tự gọi món (UC-J3)", () => {
     expect(customOrder(banhMi, [], "banh_mi_thit", {}, [])).toBeTypeOf("string");
     expect(customOrder(banhMi, menu, "banh_mi_thit", { nhan: "bo" }, [])).toBeTypeOf("string");
     expect(customOrder(banhMi, menu, "banh_mi_thit", {}, ["bay_ba"])).toBeTypeOf("string");
+  });
+});
+
+describe("sửa xe (SERVICE, UC-G2…G4)", () => {
+  const repair = content.product("sua_xe").recipe;
+  const menu = repair.variants.map((v) => ({ variantId: v.id, price: v.refPrice }));
+
+  it("khách chỉ kể triệu chứng, không nói tên bệnh", () => {
+    for (let i = 0; i < 30; i++) {
+      const order = generateOrder(repair, menu, seededRandom("sx", i));
+      expect(order).not.toBeNull();
+      if (!order) continue;
+      const variant = repair.variants.find((v) => v.id === order.variantId);
+      expect(variant?.symptoms).toContain(order.dish);
+      expect(order.ask).not.toContain(variant?.name ?? "");
+    }
+  });
+
+  it("hai bệnh cùng triệu chứng (xẹp bánh) — phải kiểm tra mới biết vá hay thay ruột", () => {
+    const vaRuot = repair.variants.find((v) => v.id === "lop_dinh");
+    const thayRuot = repair.variants.find((v) => v.id === "ruot_nat");
+    const shared = vaRuot?.symptoms?.filter((x) => thayRuot?.symptoms?.includes(x)) ?? [];
+    expect(shared.length).toBeGreaterThan(0);
+    expect(inspectPart(content, "sua_xe", "lop_dinh", "lop_sau")).toMatch(/vá được/);
+    expect(inspectPart(content, "sua_xe", "ruot_nat", "lop_sau")).toMatch(/thay ruột/);
+  });
+
+  it("bộ phận không có bệnh thì bình thường; sản phẩm không có chẩn đoán trả null", () => {
+    expect(inspectPart(content, "sua_xe", "bugi_hong", "den")).toBe(
+      content.product("sua_xe").diagnosis?.ok,
+    );
+    expect(inspectPart(content, "sua_xe", "bugi_hong", "khong_co")).toBeNull();
+    expect(inspectPart(content, "banh_mi", "thit", "bugi")).toBeNull();
+  });
+
+  it("sửa sai bệnh bị chấm sai; sửa đúng thì đủ điểm và tốn đúng phụ tùng", () => {
+    const spec = baseSpec(repair, "bugi_hong");
+    const wrong: Dish = { ...spec, sua: "va_ruot" };
+    expect(scoreDish(repair, spec, wrong).mistakes).toContain("sua");
+    expect(scoreDish(repair, spec, spec).score).toBe(1);
+    expect(ingredientsFor(repair, spec).get("bugi")).toBe(1);
+    expect(ingredientsFor(repair, baseSpec(repair, "non_hoi")).size).toBe(0);
   });
 });

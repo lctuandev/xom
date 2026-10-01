@@ -41,6 +41,8 @@ export interface PendingOrder {
   dish: { build: DishView; score: number; mistakes: string[] } | null;
   /** Chủ quầy đã bắt tay làm món (chỉ cộng thêm kiên nhẫn một lần). */
   started?: boolean;
+  /** Số lần kiểm tra bộ phận (sửa xe, UC-G3). */
+  checks?: number;
   /** Khách VIP: hệ số boa, uy tín được/mất (từ content.events). */
   vip?: { minMods: number; patience: number; tipMult: number; repWin: number; repLose: number };
 }

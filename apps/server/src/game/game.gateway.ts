@@ -25,6 +25,8 @@ import {
   emptySchema,
   fundDonateSchema,
   hostEventSchema,
+  type InspectResult,
+  inspectSchema,
   joinRoomSchema,
   type MakeResult,
   type MeView,
@@ -277,6 +279,16 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   startOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, orderIdSchema, body, (ctx, p) =>
       this.game.orders.start(ctx.room, ctx.playerId, p.orderId),
+    );
+  }
+
+  @SubscribeMessage("order:inspect")
+  inspect(
+    @ConnectedSocket() c: GameSocket,
+    @MessageBody() body: unknown,
+  ): Promise<Ack<InspectResult>> {
+    return this.handleWith(c, inspectSchema, body, async (ctx, p) =>
+      this.game.orders.inspect(ctx.room, ctx.playerId, p.orderId, p.part),
     );
   }
 

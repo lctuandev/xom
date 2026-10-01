@@ -141,8 +141,11 @@ function Build({ order }: { order: OrderState }) {
   };
 
   if (!step) return null;
+  // Dịch vụ (sửa xe): kiểm tra bộ phận trước, chữ trên nút theo nghề.
+  const service = !!content.product(order.productId).diagnosis;
   return (
     <div className="flex flex-col gap-3 py-3" data-inventory={inventory?.length}>
+      {service && <Diagnose order={order} />}
       <ol className="flex gap-1 overflow-x-auto pb-1" aria-label="Các bước">
         {steps.map((s, i) => (
           <li key={s.id}>
@@ -167,7 +170,7 @@ function Build({ order }: { order: OrderState }) {
         onNext={advance}
       />
 
-      <DishPreview steps={steps} build={build} />
+      <DishPreview steps={steps} build={build} title={service ? "Đang sửa" : "Món đang làm"} />
 
       <button
         type="button"
@@ -175,16 +178,79 @@ function Build({ order }: { order: OrderState }) {
         onClick={deliver}
         className="h-12 rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98] disabled:opacity-50"
       >
-        {busy ? "…" : "🤲 Giao món cho khách"}
+        {busy ? "…" : service ? "🛵 Giao xe cho khách chạy thử" : "🤲 Giao món cho khách"}
       </button>
       <button
         type="button"
         onClick={() => void send("order:decline", { orderId: order.orderId })}
         className="h-10 text-sm font-semibold text-ink/60"
       >
-        🙏 Xin lỗi, hết món này rồi
+        {service ? "🙏 Xin lỗi, bệnh này tiệm chưa sửa được" : "🙏 Xin lỗi, hết món này rồi"}
       </button>
     </div>
+  );
+}
+
+/**
+ * Chẩn đoán (sửa xe, UC-G3): chạm từng bộ phận để kiểm tra — server trả kết quả sau vài giây.
+ * Kiểm tra quá 3 chỗ thì khách sốt ruột (thanh kiên nhẫn tụt); nghe triệu chứng mà đoán đúng chỗ là giỏi.
+ */
+function Diagnose({ order }: { order: OrderState }) {
+  const dx = content.product(order.productId).diagnosis;
+  const [found, setFound] = useState<Record<string, string>>({});
+  const [checking, setChecking] = useState<string | null>(null);
+  if (!dx) return null;
+  const check = async (part: string) => {
+    if (checking || found[part]) return;
+    setChecking(part);
+    const [res] = await Promise.all([
+      send("order:inspect", { orderId: order.orderId, part }),
+      new Promise((r) => setTimeout(r, dx.checkMs)),
+    ]);
+    setChecking(null);
+    if (res.ok) setFound((f) => ({ ...f, [part]: res.data.finding }));
+  };
+  const count = Object.keys(found).length;
+  return (
+    <section aria-label="Kiểm tra xe" className="rounded-2xl bg-white p-3 shadow-sm">
+      <p className="mb-2 font-extrabold">
+        🔍 Kiểm tra xe
+        <span className="ml-2 text-xs font-semibold text-ink/50">
+          {count < 3 ? "nghe triệu chứng, xem đúng chỗ" : "khách bắt đầu sốt ruột…"}
+        </span>
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {dx.parts.map((p) => {
+          const res = found[p.id];
+          const bad = res !== undefined && res !== dx.ok;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              disabled={!!checking && checking !== p.id}
+              onClick={() => void check(p.id)}
+              data-finding={res ?? undefined}
+              className={`flex min-h-18 flex-col items-center justify-center gap-0.5 rounded-xl p-1.5 text-center disabled:opacity-40 ${
+                bad ? "bg-sun/40 ring-2 ring-red" : res ? "bg-leaf/15" : "bg-ink/5"
+              }`}
+            >
+              <span className="text-2xl leading-none" aria-hidden>
+                {checking === p.id ? "⏳" : p.emoji}
+              </span>
+              <span className="text-xs leading-tight font-semibold">{p.label}</span>
+              {checking === p.id && <span className="text-[10px] text-ink/60">Đang xem…</span>}
+              {res && (
+                <span
+                  className={`text-[10px] leading-tight ${bad ? "font-bold text-red" : "text-ink/60"}`}
+                >
+                  {res}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -348,7 +414,15 @@ function HoldStep({
   );
 }
 
-function DishPreview({ steps, build }: { steps: RecipeStep[]; build: DishView }) {
+function DishPreview({
+  steps,
+  build,
+  title,
+}: {
+  steps: RecipeStep[];
+  build: DishView;
+  title: string;
+}) {
   const items: string[] = [];
   for (const s of steps) {
     const v = build[s.id];
@@ -361,7 +435,7 @@ function DishPreview({ steps, build }: { steps: RecipeStep[]; build: DishView })
   }
   return (
     <div className="rounded-xl bg-ink/5 p-2.5">
-      <p className="mb-1 text-xs font-semibold text-ink/60">Món đang làm</p>
+      <p className="mb-1 text-xs font-semibold text-ink/60">{title}</p>
       <p className="text-sm leading-relaxed">{items.length ? items.join(" · ") : "Chưa có gì"}</p>
     </div>
   );
@@ -370,12 +444,17 @@ function DishPreview({ steps, build }: { steps: RecipeStep[]; build: DishView })
 function Wrong({ order }: { order: OrderState }) {
   const [discount, setDiscount] = useState(false);
   const resetDish = useGame((s) => s.resetDish);
-  const recipe = content.product(order.productId).recipe;
+  const product = content.product(order.productId);
+  const recipe = product.recipe;
+  // Sửa xe: khách chạy thử vẫn hư (UC-G4) — kiểm tra lại rồi sửa tiếp.
+  const service = !!product.diagnosis;
   if (discount) return <Payment order={order} discount />;
   return (
     <div className="flex flex-col gap-3 py-3">
       <div className="rounded-2xl bg-red/10 p-3">
-        <p className="font-extrabold text-red">Khách phàn nàn: món sai!</p>
+        <p className="font-extrabold text-red">
+          {service ? "Khách chạy thử: xe vẫn hư!" : "Khách phàn nàn: món sai!"}
+        </p>
         <p className="text-sm">
           Sai ở:{" "}
           {order.mistakes
@@ -388,14 +467,14 @@ function Wrong({ order }: { order: OrderState }) {
         onClick={() => resetDish(order.orderId)}
         className="h-12 rounded-2xl bg-sun font-semibold"
       >
-        🔁 Làm lại món khác (tốn thêm nguyên liệu)
+        {service ? "🔁 Kiểm tra lại, sửa tiếp" : "🔁 Làm lại món khác (tốn thêm nguyên liệu)"}
       </button>
       <button
         type="button"
         onClick={() => setDiscount(true)}
         className="h-12 rounded-2xl bg-ink/10 font-semibold"
       >
-        💸 Đưa luôn, giảm 50%
+        {service ? "💸 Lấy nửa tiền công" : "💸 Đưa luôn, giảm 50%"}
       </button>
     </div>
   );

@@ -181,6 +181,8 @@ describe("Vòng chơi làm thật (e2e)", () => {
       await emit(socket, "order:decline", { orderId: order.orderId });
       order = await nextOrder(socket);
     }
+    // Khách tới dồn dập (Luật 7.2) → vừa từ chối nhiều lượt; nghỉ chút cho khỏi chạm giới hạn 20 thao tác/giây.
+    await new Promise((r) => setTimeout(r, 1_100));
     // Thử làm bằng xíu mại (không có trong kho) → bị từ chối, không trừ gì.
     const noStock = await emit(socket, "order:make", {
       orderId: order.orderId,
@@ -192,7 +194,7 @@ describe("Vòng chơi làm thật (e2e)", () => {
     const result = nextResult(socket, order.orderId);
     const short = (changeFor(order) ?? 0) - 2_000;
     const paid = await emit(socket, "order:pay", { orderId: order.orderId, change: short });
-    expect(paid.ok && paid.data.today.revenue).toBe(order.price);
+    expect(paid.ok ? paid.data.today.revenue : paid.message).toBe(order.price);
     expect(await result).toMatchObject({ outcome: "short" });
     socket.disconnect();
   });

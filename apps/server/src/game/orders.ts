@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { content, type GameEventDef } from "@xom/content";
 import type {
   DishView,
+  InspectResult,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
@@ -18,6 +19,7 @@ import {
   generateOrder,
   hasIngredients,
   ingredientsFor,
+  inspectPart,
   type LineKind,
   LOST_WEIGHT,
   needsFrom,
@@ -71,6 +73,9 @@ const PAY_WAIT_MS = 20_000;
 const MAKING_WAIT_MS = 45_000;
 /** Người chơi thật chờ món lâu hơn khách NPC (họ còn đứng nhìn chủ quầy làm). */
 const PLAYER_PATIENCE_MS = 180_000;
+/** Sửa xe: số lần kiểm tra bộ phận khách không phiền; quá thì mỗi lần bớt chừng này kiên nhẫn (ms). */
+const FREE_CHECKS = 3;
+const CHECK_COST_MS = 6_000;
 const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
 const pick = <T>(list: readonly T[], rand: () => number): T =>
@@ -171,7 +176,11 @@ export class OrderService {
         variantId: order.variantId,
         archetype,
         // Giọng theo kiểu khách: học sinh nói teencode, cô chú kiểu xóm… (content.voice).
-        ask: voiceAsk(content, archetype, order.dish, rand) ?? order.ask,
+        // Dịch vụ (sửa xe): khách kể triệu chứng nguyên văn, không ghép vào câu "cho con …".
+        ask:
+          product.template === "SERVICE"
+            ? order.ask
+            : (voiceAsk(content, archetype, order.dish, rand) ?? order.ask),
         dish: order.dish,
         spec: order.spec,
         price,
@@ -274,13 +283,37 @@ export class OrderService {
     });
   }
 
+  /**
+   * Sửa xe — kiểm tra một bộ phận (UC-G3). Server mới biết bệnh; mỗi lần kiểm tra quá FREE_CHECKS lần
+   * thì khách sốt ruột (bớt kiên nhẫn) — kiểm tra đúng chỗ mới nhanh.
+   */
+  inspect(room: RoomRuntime, playerId: string, orderId: string, part: string): InspectResult {
+    const order = this.requireOrder(room, playerId, orderId);
+    const finding = inspectPart(content, order.event.productId, order.event.variantId, part);
+    if (finding === null)
+      throw new GameError("invalid_payload", "Không có bộ phận này để kiểm tra");
+    order.checks = (order.checks ?? 0) + 1;
+    if (order.checks > FREE_CHECKS) {
+      order.event.expiresAt = Math.max(Date.now() + 5_000, order.event.expiresAt - CHECK_COST_MS);
+      this.emit?.update(room.id, {
+        orderId,
+        stage: "making",
+        line: "",
+        mistakes: [],
+        expiresAt: order.event.expiresAt,
+      });
+    }
+    return { part, finding, expiresAt: order.event.expiresAt };
+  }
+
   /** Người chơi làm xong một món: kiểm tra, trừ nguyên liệu, chấm điểm; sai thì khách phàn nàn. */
   async make(room: RoomRuntime, playerId: string, orderId: string, build: DishView) {
     const order = this.requireOrder(room, playerId, orderId);
     if (order.dish && order.dish.mistakes.length === 0) {
       throw new GameError("invalid_state", "Món này làm xong rồi, tính tiền cho khách đi");
     }
-    const recipe = content.product(order.event.productId).recipe;
+    const product = content.product(order.event.productId);
+    const recipe = product.recipe;
     const invalid = validateBuild(recipe, build);
     if (invalid) throw new GameError("invalid_payload", invalid);
     const need = ingredientsFor(recipe, build);
@@ -303,7 +336,12 @@ export class OrderService {
       // Khách là người thật: không nói thay họ, chỉ báo kết quả.
       line = order.event.buyerId
         ? "✅ Đúng món mình gọi"
-        : pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
+        : product.diagnosis
+          ? pick(["Máy nổ giòn rồi! Hay quá con!", "Êm ru luôn, cảm ơn nha!"], rand)
+          : pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
+    } else if (product.diagnosis && mistakes.includes("sua")) {
+      // Sửa sai bệnh: khách chạy thử vẫn hư (UC-G4) — phụ tùng đã thay thì mất.
+      line = product.diagnosis.stillBroken;
     } else {
       line = order.event.buyerId
         ? `❌ Sai phần ${part} rồi`

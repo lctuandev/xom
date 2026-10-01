@@ -223,6 +223,14 @@ export interface OrderResultEvent {
   received?: number;
 }
 
+/** Kết quả kiểm tra một bộ phận (UC-G3). */
+export interface InspectResult {
+  part: string;
+  finding: string;
+  /** Hạn chờ mới của khách (kiểm tra quá nhiều thì khách sốt ruột). */
+  expiresAt: number;
+}
+
 export interface MakeResult {
   me: MeView;
   correct: boolean;
@@ -574,6 +582,14 @@ export const payOrderSchema = z.object({
   discount: z.boolean().default(false),
 });
 export const orderIdSchema = z.object({ orderId: z.string().min(1).max(64) });
+/** Kiểm tra một bộ phận khi chẩn đoán (sửa xe, UC-G3). */
+export const inspectSchema = z.object({
+  orderId: z.string().min(1).max(64),
+  part: z
+    .string()
+    .regex(/^[a-z0-9_]+$/)
+    .max(32),
+});
 export const talkSchema = z.object({
   npcId: contentId,
   topic: z.enum(["greet", "price", "gossip"]),

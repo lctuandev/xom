@@ -5,6 +5,7 @@ import type {
   DayReportView,
   EventView,
   FundView,
+  InspectResult,
   MakeResult,
   MeView,
   MovePayload,
@@ -78,6 +79,8 @@ export interface ClientToServerEvents {
   "order:decline": Intent<{ orderId: string }>;
   /** Chủ quầy bắt tay làm món cho khách này (khách thấy thì chờ thêm). */
   "order:start": Intent<{ orderId: string }>;
+  /** Sửa xe: kiểm tra một bộ phận (server trả kết quả, khách chờ thêm chút). */
+  "order:inspect": Intent<{ orderId: string; part: string }, InspectResult>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */

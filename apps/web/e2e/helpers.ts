@@ -114,7 +114,7 @@ export async function makeDish(page: Page, opts: { mistake?: string; timeout?: n
       await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap(t);
     }
   }
-  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
+  await kitchen.getByRole("button", { name: /Giao món cho khách|Giao xe cho khách/ }).tap(t);
   return { orderId, spec };
 }
 

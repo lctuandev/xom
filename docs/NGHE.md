@@ -42,7 +42,7 @@ Lọc từ 8 nhóm đề xuất (F&B, bán lẻ, vận chuyển, dịch vụ, s�
 | 2 | Sạp phụ kiện | 🛍️ Bán lẻ | 2 | nhập sỉ bán lẻ | ✅ có |
 | 3 | Phụ quán cơm (múc cơm / thu ngân / bưng bê) | 💼 Làm thuê | 1 | lương giờ + tiền việc | ✅ có |
 | 4 | Giao hàng bưu cục | 🚚 Vận chuyển | 1 | tiền chuyến | ✅ có |
-| 5 | **Tiệm sửa xe** | 🔧 Dịch vụ | 2 | tiền công + phụ tùng | 🚧 **làm đầu tiên** |
+| 5 | **Tiệm sửa xe** | 🔧 Dịch vụ | 2 | tiền công + phụ tùng | ✅ bản đầu (UC-G1…G4) |
 | 6 | **Xe ôm** | 🚚 Vận chuyển | 1 | tiền cuốc | ⏳ |
 | 7 | **Thợ chụp ảnh / review quán** | 🎬 Sáng tạo | 1→2 | hợp đồng chụp, tiền quảng cáo | ⏳ |
 | 8 | **Phụ hồ công trình xóm** | 🏗️ Xây dựng | 1 | công nhật từ quỹ xóm | ⏳ |
@@ -210,7 +210,7 @@ người mới vẫn có cơ hội đứng top ở nghề của mình.
 
 | Phase | Nội dung | Kiểm chứng |
 |---|---|---|
-| **1.12a** | 🔧 Tiệm sửa xe: template `SERVICE`, bệnh & phụ tùng bằng dữ liệu, Tiệm phụ tùng Chú Chín, màn chẩn đoán + sửa, khách chạy thử | sim test bệnh/giá, e2e server, Playwright `sua-xe` |
+| **1.12a** ✅ | 🔧 Tiệm sửa xe: template `SERVICE`, bệnh & phụ tùng bằng dữ liệu, Tiệm phụ tùng Chú Chín, màn chẩn đoán + sửa, khách chạy thử | sim test bệnh/giá, e2e server, Playwright `sua-xe` |
 | 1.12b | 🛵 Xe ôm (dùng lại đi đường của giao hàng), trả giá cuốc, thuê xe, xăng | e2e + Playwright `xe-om` |
 | 1.13a | 📋 Bảng việc xóm (Contract + escrow) | e2e tiền giữ / hoàn |
 | 1.13b | 📸 Thợ chụp ảnh / review (hợp đồng đầu tiên), boost quầy | Playwright `chup-anh` |

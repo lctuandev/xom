@@ -139,7 +139,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
 | Kế hoạch nghề nghiệp đợt 1 (10 nghề, cơ chế lõi dùng chung, phụ thuộc giữa người chơi) | ✅ | 1.12 | docs/NGHE.md |
-| Dịch vụ: tiệm sửa xe (SERVICE) — triệu chứng → chẩn đoán → báo giá → sửa → chạy thử; Tiệm phụ tùng Chú Chín | 🚧 | 1.12a | UC-G, NGHE §3.1 |
+| Dịch vụ: tiệm sửa xe (SERVICE) — khách kể triệu chứng → kiểm tra bộ phận (server trả kết quả) → sửa bằng phụ tùng → chạy thử (sai bệnh thì vẫn hư) | ✅ | 1.12a | UC-G1…G4, NGHE §3.1 |
+| Sửa xe nâng cao: báo giá & trả giá, bảo hành, Tiệm phụ tùng Chú Chín, model xe đồ nghề | ⏳ | 1.12a+ | UC-G4 |
 | Xe ôm: trạm đầu ngõ, trả giá cuốc, chọn đường, thuê xe + xăng | ⏳ | 1.12b | NGHE §3.2 |
 | Bảng việc xóm (hợp đồng + tiền giữ escrow) | ⏳ | 1.13a | NGHE §5 |
 | Thợ chụp ảnh / review quán (hợp đồng, tăng khách cho quầy) | ⏳ | 1.13b | NGHE §3.3 |

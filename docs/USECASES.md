@@ -458,27 +458,29 @@ Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 
 ---
 
-## G. Dịch vụ sửa xe (nghề mới, template SERVICE)
+## G. Dịch vụ sửa xe (nghề mới, template SERVICE — docs/NGHE.md §3.1)
 
-### UC-G1 · Mở tiệm sửa xe ⏳
-**Luồng:** vựa xe Ông Sáu bán *Bộ đồ nghề sửa xe* (bơm, mỏ lết, ruột xe mẫu) → thuê chỗ (tiệm sửa xe thường ở đầu hẻm, gần ngã tư) → mua **phụ tùng** ở *Tiệm phụ tùng Chú Chín* (ruột xe, bugi, xích, bóng đèn, má phanh).
-**Luật:** không có món ăn hỏng; phụ tùng không hỏng nhưng vốn lớn.
+### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
+**Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
+**Luật:** phụ tùng không hỏng theo ngày nhưng vốn lớn (ruột xe 55k/cái). Biển hiệu "SỬA XE {tên}". Khách đông buổi sáng/chiều tan tầm.
+**Chưa:** *Tiệm phụ tùng Chú Chín* riêng + Chú Chín dẫn nghề; model xe đồ nghề riêng (đang mượn model sạp).
 
-### UC-G2 · Khách dắt xe tới 🚧 (thiết kế)
-**Luồng:** khách dắt xe máy tới, khung thoại kể **triệu chứng**, không nói bệnh: *"Xe chú đạp hoài không nổ"*, *"Đi nghe cạch cạch ở bánh sau"*, *"Bánh trước xẹp lép"*.
-**Đời thật:** một triệu chứng có thể do nhiều bệnh (không nổ: bugi / hết xăng / bình yếu).
+### UC-G2 · Khách dắt xe tới ✅
+**Luồng:** khách tới, nói **triệu chứng** chứ không nói bệnh: *"Bánh sau xẹp lép rồi con ơi"*, *"Đạp hoài không nổ máy"*, *"Thắng kêu két két"*.
+**Đời thật:** một triệu chứng có thể do nhiều bệnh — *bánh sau xẹp* có thể là đinh cắm (vá được) hoặc rách ruột (phải thay).
+**Dữ liệu:** `products[sua_xe].recipe.variants[].symptoms` (7 bệnh: lủng lốp, rách ruột, non hơi, hỏng bugi, mòn má phanh, cháy đèn, chùng xích).
 
-### UC-G3 · Chẩn đoán ⏳
-**Luồng:** màn hình xe máy với các bộ phận chạm được: *lốp trước / lốp sau / bugi / xích / bình / đèn / phanh* → chọn **thao tác kiểm tra** (nhìn, bóp thử, nhúng nước tìm lỗ thủng, thử đề) → mỗi lần kiểm tra tốn thời gian và hiện kết quả ("Lốp sau: có lỗ thủng nhỏ").
-**Luật:** kiểm tra đúng chỗ nhanh → khách tin tưởng; kiểm tra lung tung quá lâu → khách sốt ruột.
+### UC-G3 · Chẩn đoán ✅
+**Luồng:** khung **🔍 Kiểm tra xe** với 6 bộ phận (lốp trước, lốp sau, bugi, xích, phanh, đèn) → chạm một bộ phận → *"Đang xem…"* ~1,2 giây → kết quả: chỗ có bệnh tô đỏ (*"Có cây đinh cắm ở lốp sau, lỗ nhỏ — vá được"*), chỗ khác *"Bình thường"*.
+**Luật (server quyết định):** intent `order:inspect` — server mới biết bệnh và trả kết quả; kiểm tra quá 3 chỗ thì mỗi lần khách bớt ~6 giây kiên nhẫn (*"khách bắt đầu sốt ruột…"*). Nghe triệu chứng mà xem đúng chỗ là nhanh nhất.
 
-### UC-G4 · Báo giá & sửa ⏳
-**Luồng:** báo giá (tiền công + phụ tùng) → khách *đồng ý* / *chê đắt* (trả giá) / *thôi để đi chỗ khác* → sửa theo quy trình (ví dụ vá ruột: tháo bánh → lấy ruột → chà nhám → dán miếng vá → bơm → lắp lại) → khách chạy thử → trả tiền.
-**Đời thật & rẽ nhánh:**
-- Sửa sai bệnh → khách chạy thử vẫn hư → phải sửa tiếp miễn phí hoặc trả tiền lại.
-- **Bảo hành**: sửa ẩu → 1–2 ngày sau khách quay lại bắt đền.
-- Thay phụ tùng không cần thiết để lấy thêm tiền → xác suất khách phát hiện (người quen chỉ) → uy tín −−.
-- Khách xin **khất nợ** ("mai chú gửi") → *Cho khất* (80% khách trả đúng hẹn) / *Không*.
+### UC-G4 · Sửa & chạy thử ✅ (bản đầu)
+**Luồng:** các bước tay: *🔧 Tháo ra* → **Cách sửa** (vá ruột / thay ruột / bơm hơi / thay bugi / thay má phanh / thay bóng đèn / tăng xích — lấy phụ tùng trong kho) → *🔩 Lắp lại* → *🛵 Nổ máy thử* → **🛵 Giao xe cho khách chạy thử**.
+**Rẽ nhánh:**
+- Sửa đúng → *"Máy nổ giòn rồi! Hay quá con!"* → tính tiền (tiền mặt thì thối).
+- Sửa sai bệnh → *"Ủa chạy thử vẫn y chang à… chưa đúng bệnh rồi!"* — phụ tùng đã thay thì mất → **🔁 Kiểm tra lại, sửa tiếp** hoặc **💸 Lấy nửa tiền công**.
+**Chưa:** báo giá & trả giá trước khi sửa, bảo hành (sửa ẩu 1–2 ngày sau khách quay lại), thay phụ tùng không cần thiết bị phát hiện, khách xin khất nợ, mưa thì nhiều xe hư.
+**Kiểm chứng:** sim `recipe.test.ts` (triệu chứng, kết quả kiểm tra, chấm sai bệnh, phụ tùng tiêu hao); e2e server `repair.e2e-spec.ts` (kiểm tra 6 bộ phận, bộ phận lạ bị từ chối, sửa sai → "vẫn hư", sửa đúng → tính tiền); Playwright `sua-xe.spec.ts` (mua xe đồ nghề, phụ tùng, mở tiệm, kiểm tra đúng lốp, sửa sai rồi sửa đúng, thối tiền). `pnpm balance`: tiệm sửa xe ~18 khách/ngày, lãi ~367k (ngang trà sữa / phụ kiện).
 
 ---
 

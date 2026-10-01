@@ -9,7 +9,7 @@ const byHour = z.record(z.string().regex(/^([0-9]|1[0-9]|2[0-3])$/), z.number().
 
 /** Template quy định HÀNH VI; sản phẩm chỉ là số liệu. */
 export const templateSchema = z.object({
-  id: z.enum(["FOOD", "RETAIL"]),
+  id: z.enum(["FOOD", "RETAIL", "SERVICE"]),
   name: z.string(),
 });
 
@@ -71,6 +71,13 @@ export const recipeVariantSchema = z.object({
   refPrice: vnd,
   /** Độ phổ biến khi khách chọn món. */
   popularity: z.number().positive().default(1),
+  /**
+   * Dịch vụ (SERVICE, UC-G2): khách chỉ kể triệu chứng, không nói bệnh — "Bánh sau xẹp lép rồi".
+   * Có symptoms thì câu khách nói lấy từ đây thay cho tên món.
+   */
+  symptoms: z.array(z.string()).optional(),
+  /** Kết quả khi kiểm tra từng bộ phận (UC-G3); bộ phận không ghi = bình thường. */
+  findings: z.record(id, z.string()).default({}),
 });
 
 /** Yêu cầu riêng của khách: "không hành", "nhiều ớt", "thêm pudding". */
@@ -112,9 +119,20 @@ export const counterSchema = z.object({
     .min(1),
 });
 
+/** Chẩn đoán trước khi sửa (SERVICE, UC-G3): các bộ phận chạm vào để kiểm tra. */
+export const diagnosisSchema = z.object({
+  parts: z.array(z.object({ id, label: z.string(), emoji: z.string() })).min(1),
+  /** Thời gian một lần kiểm tra (ms thật) — kiểm tra lung tung thì khách sốt ruột. */
+  checkMs: z.number().int().positive(),
+  /** Câu khi bộ phận không có gì. */
+  ok: z.string(),
+  /** Khách chạy thử mà xe vẫn hư (sửa sai bệnh). */
+  stillBroken: z.string(),
+});
+
 export const productSchema = z.object({
   id,
-  template: z.enum(["FOOD", "RETAIL"]),
+  template: z.enum(["FOOD", "RETAIL", "SERVICE"]),
   category: id,
   name: z.string(),
   emoji: z.string(),
@@ -129,6 +147,8 @@ export const productSchema = z.object({
   recipe: recipeSchema,
   /** Quầy dạng lưới thay cho danh sách bước (bỏ trống = làm theo từng bước). */
   counter: counterSchema.optional(),
+  /** Dịch vụ: kiểm tra bộ phận trước khi sửa (bỏ trống = không có bước chẩn đoán). */
+  diagnosis: diagnosisSchema.optional(),
 });
 
 export const equipmentSchema = z.object({
