@@ -40,7 +40,8 @@ test("ATM: tạo PIN, nộp tiền, in biên lai, rút tiền có phí, nhận l
   await expect(cash).toHaveAttribute("data-money", "1400000");
   await tapScreen("Tiếp tục");
   await tapScreen("Có");
-  await expect(screen.locator("[data-receipt]")).toContainText("Số dư: 100.000đ");
+  // Tài khoản người mới có sẵn 1tr dự phòng + vừa nộp 100k.
+  await expect(screen.locator("[data-receipt]")).toContainText("Số dư: 1.100.000đ");
   await shot(page, "71-atm-bien-lai");
   await tapScreen("Đã lấy biên lai");
   await tapScreen("Có");

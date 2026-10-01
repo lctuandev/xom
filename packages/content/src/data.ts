@@ -2201,6 +2201,8 @@ export const data: ContentInput = {
 
   economy: {
     startingMoney: 1_500_000,
+    // Góp ý chơi thử: mua xe xong còn ~300k, khó sống → mở sẵn tài khoản có 1tr dự phòng.
+    startingBank: 1_000_000,
     dayStartMinute: 6 * 60,
     dayEndMinute: 22 * 60,
     economyTickMinutes: 5,

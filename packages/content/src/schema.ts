@@ -565,6 +565,8 @@ export const needsSchema = z.object({
 
 export const economySchema = z.object({
   startingMoney: vnd,
+  /** Vốn dự phòng gửi sẵn trong tài khoản 🏦 cho người mới (mua xe xong vẫn còn tiền sống, rút ở ATM). */
+  startingBank: z.number().int().nonnegative().default(0),
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
   dayStartMinute: z.number().int().min(0).max(1439),
   dayEndMinute: z.number().int().min(1).max(1440),

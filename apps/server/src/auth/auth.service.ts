@@ -5,7 +5,7 @@ import { content } from "@xom/content";
 import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from "@xom/shared";
 import { jwtVerify, SignJWT } from "jose";
 import { config } from "../config.js";
-import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
+import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface AccessClaims {
@@ -68,6 +68,15 @@ export class AuthService {
         eco.startingMoney,
         "starting_money",
       );
+      if (eco.startingBank > 0) {
+        await this.ledger.transfer(
+          tx,
+          SYSTEM.bank,
+          bankWallet(player.id),
+          eco.startingBank,
+          "starting_bank",
+        );
+      }
       await tx.gameEvent.create({ data: { playerId: player.id, type: "register", payload: {} } });
       return created;
     });

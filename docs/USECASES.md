@@ -715,6 +715,7 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 **Hệ thống:** 💰 Kinh tế · **Luật:** 2 (💵/🏦 tách riêng), 2.1 (sổ cái kép), 2.3 (lãi có trần), 12.1 (HUD chỉ 💵), 14 (đứng gần mới dùng ATM).
 **Đời thật:** khách quét mã chuyển khoản thì tiền vào tài khoản, không cầm được ngay; muốn đi chợ trả tiền mặt thì phải ra cây ATM rút;
 cuối tháng ngân hàng trả chút lãi, không ai sống bằng lãi gửi vài trăm nghìn.
+**Vốn người mới:** 1.500.000đ tiền mặt + **1.000.000đ dự phòng sẵn trong 🏦** (`economy.startingBank`, góp ý chơi thử: mua xe xong chỉ còn ~300k, khó sống) — rút ở ATM khi cần, mua món lớn thì chuyển khoản.
 **Luồng:** khách trả chuyển khoản → tiền vào 🏦; khách trả tiền mặt (+ tiền boa) → 💵. Hàng xóm mua của nhau: chuyển khoản nếu tài khoản đủ,
 không thì trả tiền mặt. HUD chỉ hiện 💵; 🏦 xem ở Hồ sơ (*🚶 Tới cây ATM gần nhất*) hoặc bảng ATM. Tới cây ATM (ô **N** trên bản đồ: cạnh chợ Bà Năm,
 giữa phố gần quán cơm) → *🏧 Rút / gửi tiền · ATM* → chọn số tiền (bội số 10.000đ).

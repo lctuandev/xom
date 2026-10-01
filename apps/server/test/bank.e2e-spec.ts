@@ -18,6 +18,8 @@ describe("Ngân hàng (e2e)", () => {
   afterAll(() => app.close());
 
   const START = content.economy.startingMoney;
+  /** Vốn dự phòng có sẵn trong tài khoản người mới. */
+  const B0 = content.economy.startingBank;
   const balance = (key: string) => app.get(LedgerService).balance(app.get(PrismaService), key);
 
   it("khách chuyển khoản → tiền vào 🏦 tài khoản; trả tiền mặt → vào 💵 ví", async () => {
@@ -89,16 +91,16 @@ describe("Ngân hàng (e2e)", () => {
 
     const dep = await use("deposit", 200_000);
     if (!dep.ok) throw new Error(`nộp: ${dep.message}`);
-    expect(dep.data.me).toMatchObject({ money: START - 200_000, bank: 200_000 });
+    expect(dep.data.me).toMatchObject({ money: START - 200_000, bank: B0 + 200_000 });
     expect(dep.data.receipt).toMatchObject({
       action: "deposit",
       amount: 200_000,
       fee: 0,
-      balance: 200_000,
+      balance: B0 + 200_000,
     });
     expect(dep.data.receipt.code).toMatch(/^FT\d{3}[0-9A-F]{6}$/);
     expect(await use("withdraw", 15_000)).toMatchObject({ ok: false, error: "invalid_payload" });
-    expect(await use("withdraw", 500_000)).toMatchObject({
+    expect(await use("withdraw", B0 + 500_000)).toMatchObject({
       ok: false,
       error: "insufficient_funds",
       message: expect.stringMatching(/Tài khoản không đủ số dư/),
@@ -106,8 +108,8 @@ describe("Ngân hàng (e2e)", () => {
     const fee = content.economy.bank.withdrawFee;
     const wd = await use("withdraw", 50_000);
     if (!wd.ok) throw new Error(`rút: ${wd.message}`);
-    expect(wd.data.me).toMatchObject({ money: START - 150_000, bank: 150_000 - fee });
-    expect(wd.data.receipt).toMatchObject({ fee, balance: 150_000 - fee });
+    expect(wd.data.me).toMatchObject({ money: START - 150_000, bank: B0 + 150_000 - fee });
+    expect(wd.data.receipt).toMatchObject({ fee, balance: B0 + 150_000 - fee });
     expect(
       await emit(socket, "atm:use", {
         atmId: "atm_0_0",
@@ -159,7 +161,7 @@ describe("Ngân hàng (e2e)", () => {
     room.minute = content.economy.dayEndMinute - 2;
     const r: DayReportView = await report;
     expect(r.interest).toBe(content.economy.bank.interestCap);
-    expect(await balance(bankWallet(id))).toBe(50_000_000 + content.economy.bank.interestCap);
+    expect(await balance(bankWallet(id))).toBe(B0 + 50_000_000 + content.economy.bank.interestCap);
     socket.disconnect();
   });
 });
