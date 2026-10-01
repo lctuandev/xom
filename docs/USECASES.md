@@ -15,7 +15,7 @@
 
 | Vai | Mô tả |
 |---|---|
-| **Người mới** | Vừa tạo tài khoản, có 500.000đ, chưa có nghề |
+| **Người mới** | Vừa tạo tài khoản, có 1.500.000đ vốn tích góp, chưa có nghề |
 | **Chủ quầy** | Người chơi có xe hàng / tiệm, tự bán hoặc thuê người |
 | **Nhân viên** | Người chơi (hoặc NPC) làm thuê cho chủ quầy khác |
 | **Khách** | Người chơi đi mua đồ ở quầy khác, hoặc NPC khách |
@@ -41,7 +41,7 @@
 
 ### UC-A1 · Tạo tài khoản ✅
 **Ai:** người mới · **Khi nào:** lần đầu mở game.
-**Luồng:** mở link → "Vào xóm" → tab *Tạo tài khoản* → nhập tên đăng nhập, tên hiển thị (tiếng Việt có dấu), mật khẩu → vào xóm với 500.000đ.
+**Luồng:** mở link → "Vào xóm" → tab *Tạo tài khoản* → nhập tên đăng nhập, tên hiển thị (tiếng Việt có dấu), mật khẩu → vào xóm với 1.500.000đ.
 **Đời thật & rẽ nhánh:** tên đã có người dùng · mật khẩu quá ngắn · mạng rớt khi đang gửi · bấm nút hai lần.
 **Luật:** username 3–20 ký tự không dấu, không phân biệt hoa thường; tên hiển thị 2–24 ký tự; vốn khởi nghiệp đi qua sổ cái.
 **Kiểm chứng:** `apps/server/test/auth.e2e-spec.ts` (409 trùng tên, 400 kèm lỗi từng ô); `apps/web/e2e/*` (luồng đăng ký).
@@ -583,7 +583,7 @@ Khách mua mang về đi ra cửa; khách ăn tại chỗ ngồi bàn (như quá
 **Đời thật:** tiệm đông thì cần người phụ (UC-H, tuyển NPC/người chơi) — vị trí mình không làm thì người phụ làm;
 tiền điện nước tính vào tiền thuê; bảng hiệu, bàn ghế nâng cấp dần.
 **Luật:** mở tiệm = đứng quầy trong tiệm; ra khỏi tiệm = quầy vắng chủ (như UC-F3); một người một chỗ bán (xe đẩy **hoặc** nhà).
-**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 120k/ngày) trong danh sách Chỗ bán;
+**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 140k/ngày) trong danh sách Chỗ bán;
 ngoài phố căn nhà có mái hiên + biển "🏪 BÁNH MÌ <TÊN>"; đứng trước cửa bấm "🏪 Vào tiệm" → cảnh trong tiệm (quầy, đồ bày, bàn ghế,
 camera xoay được), khách đi từ cửa vào xếp hàng, khung thoại gọi món, nhận món xong đi ra; "👨‍🍳 Làm món cho khách" dùng màn làm món,
 "📖 Công thức" ngay trong tiệm. **Chưa:** khách ngồi ăn tại bàn, thuê người phụ. (Bảng quầy dạng lưới cho trà sữa: ✅ 1.11, xem UC-F5.)
@@ -635,7 +635,7 @@ xe đẩy bán nhiều thì bánh xe rơ, kính nứt — để lâu khách ng�
 - Mở quầy lần đầu trong ngày: thuê chỗ **+ phí chợ 5k (xe đẩy) / thuế khoán 15k (tiệm)** — trả một lần/ngày.
 - Tiệm (nhà mặt tiền) trả **điện nước 3k mỗi giờ mở cửa**; hết tiền mặt thì trừ tài khoản, hết cả hai thì tiệm tạm đóng.
 - **Hao mòn**: mỗi món bán xe mòn 0,6%; từ 50% là "ọp ẹp" (khách ×0,85, nút giữ lâu ×1,6); 100% là hư, không mở được.
-  Sửa ở **vựa xe Ông Sáu** (phải đứng đó, đóng quầy): giá = giá xe × độ mòn × 25%, tròn nghìn (xe bánh mì mòn 50% ≈ 40k).
+  Sửa ở **vựa xe Ông Sáu** (phải đứng đó, đóng quầy): giá = giá xe × độ mòn × 12%, tròn nghìn (xe bánh mì 1,2tr mòn 50% ≈ 72k).
 - **Thanh lý hàng tồn** ở chợ Bà Năm: bán hết một loại với 40% giá gốc (tròn 500đ).
 - Mọi khoản trên vào báo cáo cuối ngày (dòng "Phí chợ, điện nước, sửa xe, sự kiện"); `pnpm balance` tính phí ngày, điện nước,
   tiền sửa chia theo món → lãi các nghề giảm ~20%, không chiến lược nào "giàu không giới hạn".

@@ -637,7 +637,7 @@ export const data: ContentInput = {
       emoji: "🎀",
       unit: "cái",
       packSize: 5,
-      costPerUnit: 12_000,
+      costPerUnit: 9_000,
       shelfLifeDays: null,
     },
     {
@@ -646,7 +646,7 @@ export const data: ContentInput = {
       emoji: "💠",
       unit: "cái",
       packSize: 5,
-      costPerUnit: 12_000,
+      costPerUnit: 9_000,
       shelfLifeDays: null,
     },
     {
@@ -655,7 +655,7 @@ export const data: ContentInput = {
       emoji: "🐱",
       unit: "cái",
       packSize: 5,
-      costPerUnit: 14_000,
+      costPerUnit: 11_000,
       shelfLifeDays: null,
     },
     {
@@ -664,7 +664,7 @@ export const data: ContentInput = {
       emoji: "🐶",
       unit: "cái",
       packSize: 5,
-      costPerUnit: 14_000,
+      costPerUnit: 11_000,
       shelfLifeDays: null,
     },
     {
@@ -673,7 +673,7 @@ export const data: ContentInput = {
       emoji: "🧶",
       unit: "cái",
       packSize: 10,
-      costPerUnit: 7_000,
+      costPerUnit: 5_000,
       shelfLifeDays: null,
     },
     {
@@ -691,7 +691,7 @@ export const data: ContentInput = {
     {
       id: "xe_banh_mi",
       name: "Xe bánh mì kính",
-      price: 320_000,
+      price: 1_200_000,
       products: ["banh_mi"],
       queueSize: 4,
       model: "xe-banh-mi",
@@ -699,7 +699,7 @@ export const data: ContentInput = {
     {
       id: "xe_tra_sua",
       name: "Xe đẩy trà sữa",
-      price: 380_000,
+      price: 1_300_000,
       products: ["tra_sua"],
       queueSize: 4,
       model: "xe-tra-sua",
@@ -707,7 +707,7 @@ export const data: ContentInput = {
     {
       id: "sap_phu_kien",
       name: "Sạp phụ kiện",
-      price: 280_000,
+      price: 600_000,
       products: ["phu_kien"],
       queueSize: 3,
       model: "sap-phu-kien",
@@ -812,7 +812,7 @@ export const data: ContentInput = {
       hint: "Học sinh đông sáng sớm, trưa, chiều",
       traffic: "school",
       trafficScale: 1,
-      rentPerDay: 80_000,
+      rentPerDay: 40_000,
       position: { x: -12, z: 2.8 },
       facing: Math.PI,
     },
@@ -822,7 +822,7 @@ export const data: ContentInput = {
       hint: "Sáng rất đông, chiều vắng",
       traffic: "market",
       trafficScale: 1,
-      rentPerDay: 65_000,
+      rentPerDay: 35_000,
       position: { x: -4.5, z: -2.8 },
       facing: 0,
     },
@@ -832,7 +832,7 @@ export const data: ContentInput = {
       hint: "Đông cả ngày, thuê đắt",
       traffic: "crossroad",
       trafficScale: 1.1,
-      rentPerDay: 150_000,
+      rentPerDay: 120_000,
       position: { x: 2.8, z: 2.8 },
       facing: Math.PI,
     },
@@ -842,7 +842,7 @@ export const data: ContentInput = {
       hint: "Giờ đi làm, giờ trưa, tan tầm",
       traffic: "office",
       trafficScale: 1,
-      rentPerDay: 90_000,
+      rentPerDay: 50_000,
       position: { x: 9, z: -2.8 },
       facing: 0,
     },
@@ -872,7 +872,7 @@ export const data: ContentInput = {
       hint: "Người chờ xe cả ngày",
       traffic: "office",
       trafficScale: 0.9,
-      rentPerDay: 50_000,
+      rentPerDay: 30_000,
       position: { x: -22, z: 2.8 },
       facing: Math.PI,
     },
@@ -882,7 +882,7 @@ export const data: ContentInput = {
       hint: "Có tiệm trong nhà, bàn ghế cho khách ngồi, không lo mưa nắng",
       traffic: "residential",
       trafficScale: 1.15,
-      rentPerDay: 60_000,
+      rentPerDay: 70_000,
       position: { x: -12, z: -4.6 },
       facing: 0,
       kind: "house",
@@ -893,7 +893,7 @@ export const data: ContentInput = {
       hint: "Tiệm sát ngã tư phía đông, khách đi làm ghé đông",
       traffic: "crossroad",
       trafficScale: 1.05,
-      rentPerDay: 120_000,
+      rentPerDay: 140_000,
       position: { x: 24, z: 4.6 },
       facing: Math.PI,
       kind: "house",
@@ -956,7 +956,7 @@ export const data: ContentInput = {
     {
       id: "phu_quan_com",
       name: "Phụ quán cơm Cô Tư",
-      wagePerHour: 6_000,
+      wagePerHour: 10_000,
       description:
         "Vào quán làm một vai: múc cơm, thu ngân hoặc bưng bê. Đông nhất giờ trưa và chiều tối.",
       maxStrikes: 6,
@@ -1008,7 +1008,7 @@ export const data: ContentInput = {
     {
       id: "giao_hang",
       name: "Giao hàng bưu cục Anh Tám",
-      wagePerHour: 5_000,
+      wagePerHour: 8_000,
       description:
         "Nhận đơn, soạn đúng gói trên kệ, chạy xe đi giao tận nhà, ký nhận, thu tiền hộ, về nộp tiền.",
       maxStrikes: 4,
@@ -1569,7 +1569,7 @@ export const data: ContentInput = {
   },
 
   economy: {
-    startingMoney: 500_000,
+    startingMoney: 1_500_000,
     dayStartMinute: 6 * 60,
     dayEndMinute: 22 * 60,
     economyTickMinutes: 5,
@@ -1590,12 +1590,13 @@ export const data: ContentInput = {
     // Phí chợ/thuế khoán: xe đẩy 5k/ngày, tiệm 15k/ngày; tiệm còn trả điện nước 3k mỗi giờ mở cửa.
     fees: { daily: { cart: 5_000, house: 15_000 }, utilitiesPerHour: 3_000 },
     // Mòn ~0,6% mỗi món: bán ~80 món là xe ọp ẹp (khách bớt 15%, giữ nút lâu hơn 60%); 100% thì phải sửa mới mở được.
+    // Sửa hết mòn tốn 12% giá xe (xe bánh mì 1,2tr → ~144k, như thay bánh xe + kính + sơn ở tiệm sửa xe).
     maintenance: {
       wearPerServe: 0.006,
       slowAt: 0.5,
       slowDemand: 0.85,
       slowHold: 1.6,
-      repairRate: 0.25,
+      repairRate: 0.12,
     },
     // Lãi 0,2%/ngày cho số dư từ 100k, tối đa 3.000đ/ngày — có cũng vui, không sống bằng lãi được (Luật 2.3).
     bank: {

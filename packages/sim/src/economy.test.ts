@@ -165,8 +165,8 @@ describe("hao mòn xe/quầy (Luật 2.2)", () => {
     expect(wearDemand(0.8, m)).toBeLessThan(1);
   });
   it("tiền sửa theo độ mòn và giá xe, tròn nghìn", () => {
-    expect(repairCost(320_000, 0.5, m)).toBe(40_000);
-    expect(repairCost(320_000, 0, m)).toBe(0);
-    expect(repairCost(380_000, 1, m) % 1000).toBe(0);
+    expect(repairCost(1_200_000, 0.5, m)).toBe(72_000);
+    expect(repairCost(1_200_000, 0, m)).toBe(0);
+    expect(repairCost(1_300_000, 1, m) % 1000).toBe(0);
   });
 });

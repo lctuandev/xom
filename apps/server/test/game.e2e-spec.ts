@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import { content } from "@xom/content";
 import type {
   Ack,
   ClientToServerEvents,
@@ -102,7 +103,7 @@ describe("Vòng chơi làm thật (e2e)", () => {
   it("mua nguyên liệu theo gói; thiếu tiền thì không mua được", async () => {
     const { body } = await register(url);
     const { socket, snapshot } = await connect(url, body.accessToken);
-    expect(snapshot.me.money).toBe(500_000);
+    expect(snapshot.me.money).toBe(content.economy.startingMoney);
     const bought = await emit(socket, "market:buy", { itemId: "banh_mi_phoi", packs: 2 });
     expect(bought.ok && bought.data.inventory).toEqual([
       { itemId: "banh_mi_phoi", qty: 20, expiring: 20 },

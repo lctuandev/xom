@@ -6,7 +6,7 @@ test("ra cây ATM gửi tiền vào tài khoản rồi rút ra", async ({ page }
   await register(page, "Ngân");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
   const cash = page.locator("[data-money]");
-  await expect(cash).toHaveAttribute("data-money", "500000");
+  await expect(cash).toHaveAttribute("data-money", "1500000");
 
   await page.getByRole("button", { name: "Hồ sơ" }).tap();
   await expect(page.getByText("🏦 Tài khoản ngân hàng")).toBeVisible();
@@ -19,11 +19,11 @@ test("ra cây ATM gửi tiền vào tài khoản rồi rút ra", async ({ page }
   const deposit = atm.getByRole("region", { name: "Gửi tiền" });
   await deposit.getByRole("button", { name: /^\s*100\.000đ$/ }).tap();
   await expect(atm.locator("[data-bank]")).toHaveAttribute("data-bank", "100000");
-  await expect(cash).toHaveAttribute("data-money", "400000");
+  await expect(cash).toHaveAttribute("data-money", "1400000");
 
   const withdraw = atm.getByRole("region", { name: "Rút tiền" });
   await withdraw.getByRole("button", { name: /^\s*50\.000đ$/ }).tap();
   await expect(atm.locator("[data-bank]")).toHaveAttribute("data-bank", "50000");
-  await expect(cash).toHaveAttribute("data-money", "450000");
+  await expect(cash).toHaveAttribute("data-money", "1450000");
   await shot(page, "71-atm-rut");
 });

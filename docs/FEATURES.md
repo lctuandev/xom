@@ -114,6 +114,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Trả lương người chơi / NPC làm cho mình | ⏳ | 1.9 | UC-H2…H9 (ký quỹ) |
 | Đặt hàng trước | ⏳ | 1.9 | UC-F10 |
 | Công cụ cân bằng kinh tế | ✅ | 1 | `pnpm balance` |
+| Giá theo thị trường thật: món, nguyên liệu sỉ, xe đẩy cũ, chỗ vỉa hè, nhà mặt tiền, vốn tích góp | ✅ | 1.11 | DESIGN Luật 2.4 (bảng đối chiếu) |
 | Chống lạm phát (money sink): phí chợ/thuế, điện nước, hao mòn + sửa xe, thanh lý hàng tồn | ✅ | 1.11 | UC-I7 |
 
 ## 5. 🏪 Kinh doanh (data-driven)

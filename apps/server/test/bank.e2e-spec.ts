@@ -17,6 +17,7 @@ describe("Ngân hàng (e2e)", () => {
   });
   afterAll(() => app.close());
 
+  const START = content.economy.startingMoney;
   const balance = (key: string) => app.get(LedgerService).balance(app.get(PrismaService), key);
 
   it("khách chuyển khoản → tiền vào 🏦 tài khoản; trả tiền mặt → vào 💵 ví", async () => {
@@ -72,7 +73,7 @@ describe("Ngân hàng (e2e)", () => {
     socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await new Promise((r) => setTimeout(r, 80));
     const dep = await use("deposit", 200_000);
-    expect(dep.ok && dep.data).toMatchObject({ money: 300_000, bank: 200_000 });
+    expect(dep.ok && dep.data).toMatchObject({ money: START - 200_000, bank: 200_000 });
     expect(await use("withdraw", 15_000)).toMatchObject({ ok: false, error: "invalid_payload" });
     expect(await use("withdraw", 500_000)).toMatchObject({
       ok: false,
@@ -80,7 +81,7 @@ describe("Ngân hàng (e2e)", () => {
       message: "Tài khoản không đủ số dư",
     });
     const wd = await use("withdraw", 50_000);
-    expect(wd.ok && wd.data).toMatchObject({ money: 350_000, bank: 150_000 });
+    expect(wd.ok && wd.data).toMatchObject({ money: START - 150_000, bank: 150_000 });
     expect(
       await emit(socket, "atm:use", { atmId: "atm_0_0", action: "deposit", amount: 10_000 }),
     ).toMatchObject({ ok: false, error: "invalid_payload" });

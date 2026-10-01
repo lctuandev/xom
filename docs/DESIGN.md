@@ -40,6 +40,28 @@ lương nhân viên · trang trí · xe cộ · nhà ở. Chạy `pnpm balance` 
 không có chiến lược nào "càng ngày càng giàu không giới hạn".
 **Luật 2.3** — Không có thu nhập thụ động không giới hạn (lãi ngân hàng, cho thuê… đều có trần và tốn công quản lý).
 
+**Luật 2.4 — Giá theo thị trường thật (xóm quê / thị trấn, 2025–2026).** Giá bán món và giá sỉ nguyên liệu lấy đúng giá chợ;
+tài sản (xe, chỗ, nhà) lấy giá thuê/giá đồ cũ thật. Vì 1 ngày game chỉ ~16 phút thật và người chơi phục vụ ít khách hơn ngoài đời
+(20–40 khách thay vì 60–100), **lương giờ** là con số duy nhất được nén lại cho cân với lãi buôn bán.
+
+| Mục | Ngoài đời (tham khảo) | Trong game |
+|---|---|---|
+| Bánh mì thịt / xíu mại / trứng | 15–20k | 16k / 18k / 14k |
+| Trà sữa ly M ở xe đẩy | 20–30k | 25–27k |
+| Kẹp tóc · móc khoá (giá sỉ → bán lẻ) | 5–10k → 15–35k | 9–11k → 30–35k |
+| Xe bánh mì kính (cũ) | 1–1,5tr (mới 3–5tr) | 1,2tr |
+| Xe đẩy trà sữa (cũ) | 1–2tr | 1,3tr |
+| Sạp bạt + kệ phụ kiện | 0,5–1tr | 600k |
+| Chỗ đứng vỉa hè đầu hẻm / gốc cây | 10–30k/ngày | 10–25k |
+| Chỗ đông (cổng trường, chợ, trạm xe) | 30–50k/ngày | 30–50k |
+| Góc ngã tư | ~100k+/ngày | 120k |
+| Nhà mặt tiền nhỏ / lớn ở thị trấn | 2–4,5tr/tháng | 70k / 140k mỗi ngày |
+| Sửa xe đẩy (thay bánh, kính, sơn) | 100–200k | tới 12% giá xe (~144k) |
+| Vốn tích góp ra bán hàng rong | 1–3tr | 1,5tr |
+| Phụ quán cơm / giao hàng | 25–30k/giờ | 10k / 8k mỗi giờ + tiền việc (nén) |
+
+Hoàn vốn xe đẩy 4–9 ngày game (`pnpm balance`) — đủ thấy tiến bộ mà không "giàu sau một buổi".
+
 ## 3. 🧍 Nhân vật & 🧠 Hành vi
 
 - Nhân vật người chơi: ngoại hình, tên, chỉ số (cấp, kinh nghiệm, kỹ năng), túi đồ.
