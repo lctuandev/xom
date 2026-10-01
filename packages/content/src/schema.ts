@@ -212,6 +212,32 @@ export const lotSchema = z.object({
   kind: z.enum(["cart", "house"]).default("cart"),
 });
 
+/** Cư dân có tên trong xóm (KIENTRUC §1): khách tới quầy là một người cụ thể, có món ưa; quầy nhớ họ ghé mấy lần. */
+export const residentSchema = z.object({
+  id,
+  name: z.string(),
+  /** Kiểu khách (npcs id) — giọng nói, kiên nhẫn, model. */
+  archetype: id,
+  /** Nhóm hàng ưa (category) — hay ghé quầy bán nhóm này hơn. */
+  favorite: id.optional(),
+  /** Một dòng giới thiệu: "bán vé số đầu hẻm". */
+  bio: z.string(),
+});
+
+/** Khách quen (KIENTRUC §1): ghé đủ lần thì thành ❤️; làm sai liên tiếp thì giận. */
+export const regularsSchema = z.object({
+  greetAt: z.number().int().min(1),
+  regularAt: z.number().int().min(2),
+  patienceMul: z.number().min(1).max(3),
+  /** Khách quen ăn xong có thể dắt thêm bạn (thêm một khách ở nhịp sau). */
+  friendChance: z.number().min(0).max(1),
+  /** Làm sai / để chờ bỏ về liên tiếp chừng này lần thì khách quen giận, mất ❤️. */
+  angryStreak: z.number().int().min(1),
+  /** Câu mở lời: khách quay lại (đã ghé ≥ greetAt) / khách quen ❤️. */
+  returning: z.array(z.string()).min(1),
+  usual: z.array(z.string()).min(1),
+});
+
 export const npcArchetypeSchema = z.object({
   id,
   name: z.string(),
@@ -856,6 +882,8 @@ export const contentSchema = z.object({
   fund: fundSchema,
   achievements: z.array(achievementSchema).min(1),
   story: z.array(storyBeatSchema).min(1),
+  residents: z.array(residentSchema).min(1),
+  regulars: regularsSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

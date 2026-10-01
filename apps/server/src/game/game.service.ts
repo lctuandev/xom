@@ -71,6 +71,7 @@ import { addItems, inventoryView, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { ProjectService } from "./projects.js";
+import { RegularService } from "./regulars.js";
 import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { GameError, RoomRuntime } from "./room.js";
@@ -152,6 +153,7 @@ export class GameService implements OnModuleDestroy {
     readonly stats: StatsService,
     readonly projects: ProjectService,
     readonly story: StoryService,
+    readonly regulars: RegularService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -160,6 +162,7 @@ export class GameService implements OnModuleDestroy {
     this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.projects.setNotifier((roomId, n) => emitter.toRoom(roomId, "notify", n));
     this.story.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
   }
 
   // ───────────────────────── Vòng đời xóm ─────────────────────────

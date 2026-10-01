@@ -17,6 +17,7 @@ import type {
   PayMethod,
   PayslipView,
   PeerPos,
+  RegularView,
   ReviewsView,
   RosterView,
   SayEvent,
@@ -86,6 +87,10 @@ export interface ClientToServerEvents {
   "story:list": Intent<Record<string, never>, StoryEntryView[]>;
   /** Dev/test: giả như vắng lâu (THEGIOI §4). */
   "debug:away": Intent<{ minutes: number; days: number }>;
+  /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình. */
+  "debug:regulars": Intent<{ visits: number }>;
+  /** Sổ khách quen của quầy mình (KIENTRUC §1). */
+  "regulars:list": Intent<Record<string, never>, RegularView[]>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */

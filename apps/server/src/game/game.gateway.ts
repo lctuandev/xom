@@ -22,6 +22,7 @@ import {
   debugAwaySchema,
   debugClockSchema,
   debugGrantSchema,
+  debugRegularsSchema,
   debugWeatherSchema,
   emptySchema,
   fundDonateSchema,
@@ -342,6 +343,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("stats:xom")
   statsXom(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsXom(ctx));
+  }
+
+  @SubscribeMessage("regulars:list")
+  regularsList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.regulars.list(ctx.playerId));
+  }
+
+  @SubscribeMessage("debug:regulars")
+  debugRegulars(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugRegularsSchema, body, async (ctx, p) => {
+      if (process.env.NODE_ENV === "production")
+        throw new GameError("invalid_state", "Không có lệnh này");
+      await this.game.regulars.debugSet(ctx.playerId, p.visits);
+    });
   }
 
   @SubscribeMessage("story:list")

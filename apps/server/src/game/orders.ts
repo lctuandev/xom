@@ -27,7 +27,10 @@ import {
   patienceFactor,
   pickArchetype,
   pickPayment,
+  pickResident,
   priceScore,
+  regularGreeting,
+  regularStage,
   reviewStars,
   reviewTagOf,
   type SkillPoints,
@@ -52,6 +55,7 @@ import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
+import { RegularService } from "./regulars.js";
 import { addToReport } from "./report.js";
 import { purchaseKey, ReviewService } from "./reviews.js";
 import { VoiceAiService } from "./voice-ai.js";
@@ -105,6 +109,7 @@ export class OrderService {
     private readonly ledger: LedgerService,
     private readonly reviews: ReviewService,
     private readonly ai: VoiceAiService,
+    private readonly regulars: RegularService,
   ) {}
 
   /** Câu khách nói theo giọng kiểu khách; có AI (tuỳ chọn) thì đôi khi là câu AI đã sinh sẵn. */
@@ -148,6 +153,8 @@ export class OrderService {
     const patienceMul = patienceFactor(content, (owner?.skills ?? {}) as SkillPoints);
     let created = 0;
     let lost = 0;
+    // Khách quen (KIENTRUC §1): quầy nhớ cư dân nào đã ghé mấy lần.
+    const memory = await this.regulars.memory(biz.ownerId);
     for (let k = 0; k < arrivals; k++) {
       const rand = seededRandom("order", biz.id, room.day, room.minute, k);
       const order =
@@ -161,7 +168,21 @@ export class OrderService {
       }
       const archetype = opts.vip ? "vip" : pickArchetype(content, product.category, rand);
       const npc = content.data.npcs.find((n) => n.id === archetype);
-      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1) * patienceMul;
+      const residentId = opts.vip
+        ? null
+        : pickResident(content, archetype, product.category, memory, rand);
+      const resident = residentId
+        ? content.data.residents.find((r) => r.id === residentId)
+        : undefined;
+      const mem = residentId ? memory.get(residentId) : undefined;
+      const stage = regularStage(content, mem?.visits ?? 0, mem?.regular ?? false);
+      const greeting = regularGreeting(content, stage, rand);
+      const patienceMs =
+        (npc?.patienceSec ?? 45) *
+        1000 *
+        (opts.vip?.patience ?? 1) *
+        patienceMul *
+        (stage === "regular" ? content.data.regulars.patienceMul : 1);
       // Khai trương giảm giá: làm tròn 500đ, không dưới 1.000đ.
       const price = opts.discount
         ? Math.max(1_000, round500(order.price * (1 - opts.discount)))
@@ -177,10 +198,14 @@ export class OrderService {
         archetype,
         // Giọng theo kiểu khách: học sinh nói teencode, cô chú kiểu xóm… (content.voice).
         // Dịch vụ (sửa xe): khách kể triệu chứng nguyên văn, không ghép vào câu "cho con …".
-        ask:
+        ask: [
+          greeting,
           product.template === "SERVICE"
             ? order.ask
             : (voiceAsk(content, archetype, order.dish, rand) ?? order.ask),
+        ]
+          .filter(Boolean)
+          .join(" "),
         dish: order.dish,
         spec: order.spec,
         price,
@@ -189,6 +214,14 @@ export class OrderService {
         expiresAt: now + patienceMs,
         ...(opts.vip ? { vip: true } : {}),
         ...(opts.discount ? { promo: true } : {}),
+        ...(resident
+          ? {
+              residentId: resident.id,
+              residentName: resident.name,
+              visits: mem?.visits ?? 0,
+              regular: stage === "regular",
+            }
+          : {}),
       };
       room.orders.set(event.orderId, { event, patienceMs, dish: null, vip: opts.vip });
       this.emit?.order(room.id, event);
@@ -354,6 +387,7 @@ export class OrderService {
       mistakes,
       expiresAt: order.event.expiresAt,
     });
+    if (!correct) await this.regulars.disappointed(order.event).catch(() => undefined);
     return { correct, score, mistakes };
   }
 
@@ -499,6 +533,16 @@ export class OrderService {
                 ? this.voice(e.archetype, "cheap", rand)
                 : this.voice(e.archetype, "thanks", rand);
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
+    // Khách quen (KIENTRUC §1): mua đúng món, trả đủ → +1 lần ghé; khách quen có khi rủ bạn tới (thêm khách nhịp sau).
+    if (!e.buyerId && e.residentId) {
+      if (correct && !discount && !short) {
+        const { friend } = await this.regulars.served(e, room.day).catch(() => ({ friend: false }));
+        if (friend)
+          await this.prisma.business
+            .update({ where: { id: e.businessId }, data: { demandCarry: { increment: 1 } } })
+            .catch(() => undefined);
+      } else if (short) await this.regulars.disappointed(e).catch(() => undefined); // làm sai đã tính lúc làm
+    }
   }
 
   /**
@@ -533,6 +577,7 @@ export class OrderService {
     const order = this.requireOrder(room, playerId, orderId);
     room.orders.delete(orderId);
     await this.recordLost(room, playerId, order.event.businessId, 1, order.vip);
+    await this.regulars.disappointed(order.event).catch(() => undefined);
     const line = order.event.buyerId
       ? "🙏 Quầy xin lỗi, không bán được món này"
       : "Vậy thôi, để bữa khác.";
@@ -581,6 +626,7 @@ export class OrderService {
       }
       room.orders.delete(id);
       await this.recordLost(room, e.ownerId, e.businessId, 1, order.vip);
+      await this.regulars.disappointed(e).catch(() => undefined);
       if (!e.buyerId)
         void this.reviews
           .npc(e, room.day, 1 + Math.round(seededRandom("lost", id)()), "lost", {

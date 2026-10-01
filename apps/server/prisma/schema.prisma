@@ -69,6 +69,7 @@ model Player {
   reports    DailyReport[]
   reviews    Review[]       @relation("ReviewsReceived")
   stories    StoryEntry[]
+  residentVisits ResidentVisit[]
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -278,4 +279,21 @@ model StoryEntry {
 
   @@unique([playerId, key])
   @@index([playerId, day])
+}
+
+/// Khách quen (docs/KIENTRUC.md §1): cư dân có tên đã mua ở quầy của người chơi bao nhiêu lần.
+model ResidentVisit {
+  id           String  @id @default(uuid(7)) @db.Uuid
+  ownerId      String  @db.Uuid
+  owner        Player  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Id cư dân trong content.residents.
+  residentId   String
+  visits       Int     @default(0)
+  lastDay      Int     @default(0)
+  /// Bị làm sai / bỏ về liên tiếp (khách quen giận khi đủ chuỗi).
+  streakWrong  Int     @default(0)
+  /// Ngày thành khách quen ❤️ (null = chưa / đã giận).
+  regularSince Int?
+
+  @@unique([ownerId, residentId])
 }

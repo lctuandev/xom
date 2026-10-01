@@ -76,7 +76,19 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-ink/60">
-            {order.buyerName ? `👤 ${order.buyerName} (hàng xóm)` : (npc?.name ?? "Khách")}
+            {order.buyerName
+              ? `👤 ${order.buyerName} (hàng xóm)`
+              : order.residentName
+                ? order.residentName
+                : (npc?.name ?? "Khách")}
+            {/* Khách quen (KIENTRUC §1): ❤️ hoặc ghé lần thứ mấy. */}
+            {order.regular ? (
+              <span className="ml-1 rounded-full bg-red/15 px-1.5 text-red" data-regular>
+                ❤️ khách quen
+              </span>
+            ) : order.residentName && (order.visits ?? 0) > 0 ? (
+              <span className="ml-1 text-ink/50">· ghé lần {(order.visits ?? 0) + 1}</span>
+            ) : null}
             {order.vip && (
               <span className="ml-1 rounded-full bg-sun px-1.5 text-ink" data-vip>
                 VIP · boa đậm

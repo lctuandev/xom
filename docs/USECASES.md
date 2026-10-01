@@ -887,6 +887,18 @@ nguyên liệu nghề mình đổi bao nhiêu. Không có gì đáng kể thì k
 **Kiểm chứng:** sim `away.test.ts` (giá chợ đổi giữa hai ngày); e2e server `away.e2e-spec.ts` (vừa rời → không báo; vắng 30 phút →
 đánh giá mới + số ngày, tiền không đổi); Playwright `khi-vang.spec.ts` (lệnh dev `debug:away`, tải lại trang).
 
+### UC-M5 · Khách quen — NPC có trí nhớ ✅ (bản đầu)
+**Nhân vật:** 18 cư dân có tên (`content.residents`): Bé Su lớp 5 mê trà sữa, Khoa lớp 9 đá banh, Chị Thảo kế toán, Anh Duy IT, Bà Tư
+bán vé số, Chú Lực xe ôm, Bác Hai thợ mộc… (khách vãng lai vẫn là người lạ không tên).
+**Luồng:** khách tới quầy là một **cư dân cụ thể** (ưa đúng nhóm hàng ×2, đã quen ×1,5, khách quen ×3). Màn làm món ghi tên +
+*"ghé lần 4"*; từ lần thứ 3 khách mở lời *"Bữa nay ghé nữa nè!"*. Mua đúng món lần thứ 5 → **❤️ Khách quen** (báo ❤️, ghi vào
+📖 Chuyện "Có khách quen đầu tiên: …"): kiên nhẫn ×1,3, mở lời *"Như mọi khi nha!"*, 20% rủ bạn tới (thêm một khách nhịp sau).
+Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 giận, mất ❤️. **Làm ăn → ❤️ Khách quen**: sổ ai ghé mấy lần.
+**Dữ liệu:** bảng `ResidentVisit` (chủ × cư dân: số lần, chuỗi thất vọng, ngày thành khách quen); `content.regulars` (ngưỡng, hệ số, câu).
+**Kiểm chứng:** sim `regulars.test.ts`; e2e server `regulars.e2e-spec.ts` (lần 5 → ❤️, sổ, Chuyện); Playwright `khach-quen.spec.ts`
+(lệnh dev `debug:regulars`).
+**Sau này:** khách quen giận khi quầy đóng nhiều ngày liền, khách quen giới thiệu bạn bè cụ thể, khách quen dặn món riêng.
+
 ---
 
 ## L. Hệ thống & lỗi

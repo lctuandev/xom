@@ -4,6 +4,7 @@ import { GameGateway } from "./game.gateway.js";
 import { GameService } from "./game.service.js";
 import { OrderService } from "./orders.js";
 import { ProjectService } from "./projects.js";
+import { RegularService } from "./regulars.js";
 import { ReviewService } from "./reviews.js";
 import { StatsService } from "./stats.js";
 import { StoryService } from "./story.js";
@@ -19,6 +20,7 @@ import { WorkService } from "./work.js";
     ReviewService,
     StatsService,
     StoryService,
+    RegularService,
     ProjectService,
     VoiceAiService,
     WorkService,

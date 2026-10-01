@@ -218,6 +218,12 @@ export interface OrderEvent {
   buyerName?: string;
   /** Khách VIP (sự kiện cá nhân): dặn kỹ, ít kiên nhẫn, boa đậm. */
   vip?: boolean;
+  /** Cư dân có tên (khách quen, KIENTRUC §1); khách vãng lai thì không có. */
+  residentId?: string;
+  residentName?: string;
+  /** Đã mua ở quầy này bao nhiêu lần (trước lần này) và có phải khách quen ❤️. */
+  visits?: number;
+  regular?: boolean;
   /** Giá đã giảm do quầy đang khai trương. */
   promo?: boolean;
 }
@@ -559,6 +565,16 @@ export interface DayReportView {
   moneyEnd: number;
 }
 
+/** Một dòng trong sổ khách quen của quầy (KIENTRUC §1). */
+export interface RegularView {
+  residentId: string;
+  name: string;
+  bio: string;
+  visits: number;
+  regular: boolean;
+  lastDay: number;
+}
+
 /** Một dòng trong "Chuyện của tôi" (docs/THEGIOI.md §1). */
 export interface StoryEntryView {
   day: number;
@@ -723,6 +739,8 @@ export const debugClockSchema = z.object({
   day: z.number().int().min(1).max(10_000).optional(),
 });
 /** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
+/** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
 export const debugAwaySchema = z.object({
   minutes: z.number().int().min(1).max(100_000),
   days: z.number().int().min(0).max(1000),
