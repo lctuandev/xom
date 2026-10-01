@@ -64,6 +64,16 @@
 ### UC-A4 · Mở game trên hai tab/hai máy cùng lúc ⏳
 **Luật:** cùng một người chơi chỉ điều khiển từ một nơi; tab mới vào thì tab cũ nhận thông báo "Bạn đang chơi ở nơi khác" và ngắt.
 
+
+### UC-A5 · Thêm XÓM vào màn hình chính (PWA) ✅
+**Đời thật:** người chơi quen mở app từ màn hình chính; Safari không tự hỏi cài, nhiều người không biết làm.
+**Luồng:** trang chủ → *📲 Thêm XÓM vào màn hình chính* (ẩn nếu đang mở từ màn hình chính) → modal *Cài XÓM như ứng dụng*,
+tự chọn tab theo máy:
+- **iPhone / iPad:** 3 bước, mỗi bước một ảnh chụp Safari thật (danh bạ đã làm mờ) có khung đỏ nhấp nháy đúng chỗ bấm:
+  ① nút Chia sẻ → ② *Xem thêm* → ③ *Thêm vào Màn hình chính*; Quay lại / Tiếp / Xong; nhắc mở bằng Safari nếu đang trong Zalo.
+- **Android:** Chrome cho phép thì có nút *📲 Cài ngay* (hộp cài của hệ thống, `beforeinstallprompt`); luôn có 3 bước qua menu ⋮.
+**Kiểm chứng:** Playwright `cai-dat.spec.ts` (cả hai tab, đủ 3 bước).
+
 ---
 
 ## B. Thế giới, di chuyển, thời gian

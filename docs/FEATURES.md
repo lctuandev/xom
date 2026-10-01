@@ -69,6 +69,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Sổ công thức (📖): mỗi món gồm bước nào, bỏ gì; khách hay dặn gì | ✅ | 1.10 | Làm ăn → Công thức |
 | Hướng dẫn vào ca từng vai (❓ Cách làm) | ✅ | 1.10 | UC-W1 |
 | Trang chủ, đăng nhập, màn hình tải có tranh minh hoạ con hẻm (SVG động: đèn lồng, nồi phở, xe máy) + mẹo chơi | ✅ | 1.10 | |
+| Trang chủ: hướng dẫn thêm vào màn hình chính (iOS ảnh khoanh vùng 3 bước, Android cài ngay / menu ⋮), ẩn khi đã cài | ✅ | 1.11 | UC-A5 |
 | Logo mới: icon app (mái đình cong, tre làng, đèn lồng, nắng chiều) + chữ XÓM có dấu nón lá — trang chủ, đăng nhập, màn tải, favicon/PWA | ✅ | 1.11 | Góp ý chủ dự án |
 
 ## 2. 🧍 Nhân vật
