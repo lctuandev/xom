@@ -4,6 +4,7 @@ import { content } from "@xom/content";
 import type { BusinessView } from "@xom/shared";
 import { formatClock, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
+import { districtLikes } from "../districts";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { baseCost, ingredientsOfProduct, makeableCount } from "../recipes";
@@ -497,6 +498,10 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       <div className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
         <div className="min-w-0">
           <p className="font-extrabold">{current.name}</p>
+          <p className="text-xs font-semibold text-leaf" data-district={current.traffic}>
+            {content.traffic(current.traffic).emoji} {content.traffic(current.traffic).name} ·{" "}
+            {districtLikes(current.traffic)}
+          </p>
           <p className="text-sm text-ink/60">
             {current.hint} · {vndShort(current.rentPerDay)}/ngày
           </p>
@@ -535,6 +540,11 @@ function LotPicker({ biz }: { biz: BusinessView }) {
             >
               <span className="min-w-0">
                 <span className="block font-extrabold">{lot.name}</span>
+                {/* Bản sắc khu (THEGIOI §3): khu nào hợp hàng gì. */}
+                <span className="block text-xs font-semibold text-leaf" data-district={lot.traffic}>
+                  {content.traffic(lot.traffic).emoji} {content.traffic(lot.traffic).name} ·{" "}
+                  {districtLikes(lot.traffic)}
+                </span>
                 <span className="block text-sm text-ink/60">
                   {locked
                     ? `🔒 Cấp ${need} mới thuê được`

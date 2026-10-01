@@ -6,6 +6,8 @@ import {
   bankInterest,
   choosePayment,
   customerArrivals,
+  districtDemand,
+  districtFame,
   menuPriceRatio,
   nextReputation,
   pinError,
@@ -88,7 +90,11 @@ describe("khách tới", () => {
   it("có đối thủ cùng loại thì ít khách hơn; khác loại thì không ảnh hưởng", () => {
     const alone = hour([shop()]).get("a") ?? 0;
     expect(hour([shop(), shop({ id: "b" })]).get("a") ?? 0).toBeLessThan(alone);
-    expect(hour([shop(), shop({ id: "ts", productId: "tra_sua" })]).get("a")).toBe(alone);
+    // Khác nhóm hàng (phụ kiện) thì không ảnh hưởng; cùng nhóm ăn uống (trà sữa) thì khu có tiếng → khách tăng nhẹ.
+    expect(hour([shop(), shop({ id: "pk", productId: "phu_kien" })]).get("a")).toBe(alone);
+    expect(
+      hour([shop(), shop({ id: "ts", productId: "tra_sua" })]).get("a") ?? 0,
+    ).toBeGreaterThanOrEqual(alone);
   });
   it("rao hàng (boost) kéo thêm khách", () => {
     expect(hour([shop({ boost: 1.5 })]).get("a") ?? 0).toBeGreaterThan(
@@ -214,5 +220,35 @@ describe("PIN ATM", () => {
     expect(pinError("123456")).toMatch(/liên tiếp/);
     expect(pinError("654321")).toMatch(/liên tiếp/);
     expect(pinError("270915")).toBeNull();
+  });
+});
+
+describe("bản sắc khu phố (THEGIOI §3)", () => {
+  it("khu có khẩu vị riêng: cổng trường ưa trà sữa, gần chợ ưa sửa xe", () => {
+    expect(districtDemand(content, "school", "drink", [])).toBeGreaterThan(1);
+    expect(districtDemand(content, "school", "repair", [])).toBeLessThan(1);
+    expect(districtDemand(content, "market", "repair", [])).toBeGreaterThan(1);
+  });
+
+  it("nhiều quầy ăn uống tụ một khu → khu có tiếng, người qua lại tăng (có trần)", () => {
+    const one = districtFame(content, [{ trafficId: "school", category: "drink" }]);
+    expect(one[0]).toMatchObject({ shops: 1, bonus: 0, named: false });
+    const three = districtFame(content, [
+      { trafficId: "school", category: "drink" },
+      { trafficId: "school", category: "breakfast" },
+      { trafficId: "school", category: "drink" },
+      { trafficId: "office", category: "drink" },
+    ]);
+    const school = three.find((f) => f.trafficId === "school");
+    expect(school).toMatchObject({ groupId: "an_uong", shops: 3, named: true });
+    expect(school?.bonus).toBeCloseTo(0.16);
+    expect(districtDemand(content, "school", "drink", three)).toBeGreaterThan(
+      districtDemand(content, "school", "drink", one),
+    );
+    const many = districtFame(
+      content,
+      Array.from({ length: 20 }, () => ({ trafficId: "school", category: "drink" })),
+    );
+    expect(many[0]?.bonus).toBe(content.data.districtFame.cap);
   });
 });

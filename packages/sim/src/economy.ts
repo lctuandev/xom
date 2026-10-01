@@ -76,6 +76,61 @@ export function weekdayTraffic(content: Content, day: number, trafficId: string)
   return content.data.calendar.weekendTraffic[trafficId] ?? 1;
 }
 
+/** Một quầy đang mở, đủ để tính tiếng khu: thuộc khu nào (trafficProfile), bán nhóm hàng gì. */
+export interface OpenShop {
+  trafficId: string;
+  category: string;
+}
+
+export interface DistrictFame {
+  trafficId: string;
+  groupId: string;
+  /** Số quầy đang mở cùng nhóm hàng trong khu. */
+  shops: number;
+  /** Người qua lại tăng thêm cho cả nhóm (0 → cap). */
+  bonus: number;
+  /** Đủ quầy để bảng xóm gọi tên ("Cổng trường đang thành khu ăn uống"). */
+  named: boolean;
+}
+
+/**
+ * Tiếng khu (THEGIOI §3, emergent): đếm quầy đang mở theo (khu × nhóm hàng); mỗi quầy thứ hai trở đi cộng `perShop`
+ * người qua lại cho cả nhóm, tối đa `cap`. Người chơi mở quầy là đang "xây" khu phố.
+ */
+export function districtFame(content: Content, open: OpenShop[]): DistrictFame[] {
+  const cfg = content.data.districtFame;
+  const counts = new Map<string, number>();
+  for (const o of open) {
+    const g = cfg.groups.find((x) => x.categories.includes(o.category));
+    if (!g) continue;
+    const key = `${o.trafficId}|${g.id}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts].map(([key, shops]) => {
+    const [trafficId = "", groupId = ""] = key.split("|");
+    return {
+      trafficId,
+      groupId,
+      shops,
+      bonus: Math.min(cfg.cap, cfg.perShop * Math.max(0, shops - 1)),
+      named: shops >= cfg.minShops,
+    };
+  });
+}
+
+/** Khẩu vị khu × tiếng khu cho một quầy (THEGIOI §3). */
+export function districtDemand(
+  content: Content,
+  trafficId: string,
+  category: string,
+  fame: DistrictFame[],
+): number {
+  const like = content.traffic(trafficId).likes[category] ?? 1;
+  const group = content.data.districtFame.groups.find((g) => g.categories.includes(category));
+  const bonus = fame.find((f) => f.trafficId === trafficId && f.groupId === group?.id)?.bonus ?? 0;
+  return like * (1 + bonus);
+}
+
 /** Một nhịp: mỗi quầy đang mở (có người đứng) có bao nhiêu khách dừng lại. */
 export function customerArrivals({
   content,
@@ -92,11 +147,16 @@ export function customerArrivals({
     return { s, product, lot, attract: attractiveness(s.priceRatio, product, s.reputation) };
   });
 
+  const fame = districtFame(
+    content,
+    info.map(({ lot, product }) => ({ trafficId: lot.traffic, category: product.category })),
+  );
   return info.map(({ s, product, lot, attract }) => {
     const traffic =
       valueAt(content.traffic(lot.traffic).peoplePerHour, minuteOfDay) *
       lot.trafficScale *
-      weekdayTraffic(content, day, lot.traffic);
+      weekdayTraffic(content, day, lot.traffic) *
+      districtDemand(content, lot.traffic, product.category, fame);
     const interest = valueAt(product.interestByHour, minuteOfDay);
     const rivals = info.filter(
       (o) =>

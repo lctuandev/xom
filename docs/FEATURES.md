@@ -142,7 +142,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Kế hoạch thế giới sống (Chuyện của tôi, lịch tuần, khu phố, khi vắng mặt, giao thông, luật & hậu quả) | ✅ | 1.16 | docs/THEGIOI.md |
 | 📖 Chuyện của tôi: mốc đời người chơi (dữ liệu), tab Chuyện trong hồ sơ | ✅ | 1.16a | UC-M1, THEGIOI §1 |
 | 📅 Thứ trong tuần, cuối tuần, chợ đêm thứ Bảy, 📅 Hôm nay trong bảng Xóm | ✅ | 1.16b | UC-M2, THEGIOI §2 |
-| 🏙️ Bản sắc khu phố + khu có tiếng nhờ người chơi (emergent) | ⏳ | 1.16c | THEGIOI §3 |
+| 🏙️ Bản sắc khu phố + khu có tiếng nhờ người chơi (emergent), tab 🏙️ Khu phố | ✅ | 1.16c | UC-M3, THEGIOI §3 |
 | 🌆 "Trong lúc bạn vắng…" (đánh giá, giá chợ, công trình, sự kiện — không tiền tự sinh) | ⏳ | 1.16d | THEGIOI §4 |
 | 🚦 Xe cộ trên đường, kẹt xe giờ cao điểm ảnh hưởng giao hàng | ⏳ | 1.17 | THEGIOI §5 |
 | ⚖️ Luật & hậu quả: điểm tin cậy, phạt, hoàn tiền, cấm hợp đồng | ⏳ | 1.18 | THEGIOI §6 |

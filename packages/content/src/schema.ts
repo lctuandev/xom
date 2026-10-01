@@ -178,6 +178,22 @@ export const trafficProfileSchema = z.object({
   name: z.string(),
   /** Số người qua lại mỗi giờ. */
   peoplePerHour: byHour,
+  /** Bản sắc khu (THEGIOI §3): người ở khu này ưa nhóm hàng nào (category → hệ số; không ghi = 1). */
+  likes: z.record(id, z.number().positive()).default({}),
+  emoji: z.string().default("🏘️"),
+});
+
+/**
+ * Tiếng khu (THEGIOI §3, emergent): nhiều quầy cùng nhóm hàng đang mở trong một khu thì khu "có tiếng" — người qua
+ * lại tăng cho cả nhóm (mỗi quầy thêm `perShop`, tối đa `cap`). Khu đạt `minShops` thì bảng xóm gọi tên (vd. khu ăn uống).
+ */
+export const districtFameSchema = z.object({
+  perShop: z.number().min(0).max(1),
+  cap: z.number().min(0).max(2),
+  minShops: z.number().int().min(2),
+  groups: z
+    .array(z.object({ id, name: z.string(), emoji: z.string(), categories: z.array(id).min(1) }))
+    .min(1),
 });
 
 export const lotSchema = z.object({
@@ -809,6 +825,7 @@ export const contentSchema = z.object({
   equipment: z.array(equipmentSchema),
   trafficProfiles: z.array(trafficProfileSchema),
   calendar: calendarSchema,
+  districtFame: districtFameSchema,
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),

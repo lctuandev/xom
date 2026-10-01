@@ -866,6 +866,17 @@ thức khách trong sim). Sự kiện kiểu `weekly` (chợ đêm: thứ Bảy 
 (nhảy tới thứ Bảy có chợ đêm, ngày thường không); Playwright `cho-dem.spec.ts` (T2 → T7, 📅 Hôm nay có chợ đêm).
 **Sau này:** ngày lễ (Tết, Trung Thu, 2/9), mùa mưa, thuê sạp ở chợ đêm (booth), sự kiện cả server.
 
+### UC-M3 · Bản sắc khu phố & khu có tiếng ✅ (bản đầu)
+**Luồng:** mỗi chỗ bán thuộc một **khu** (cổng trường 🏫, khu văn phòng 🏢, trong hẻm 🏘️, gần chợ 🧺, ngã tư 🚦). Chọn chỗ bán
+thấy *"🏫 Cổng trường · hợp phụ kiện, trà sữa, bánh mì"*. **Bảng xóm → 🏙️ Khu phố**: mỗi khu hợp hàng gì, đang có mấy quầy mở;
+khu tụ ≥ 2 quầy cùng nhóm hàng thì *"🍜 Đang thành khu ăn uống · +8% người qua lại"*.
+**Luật (dữ liệu, sim):** `trafficProfiles[].likes` (khẩu vị khu theo nhóm hàng) nhân vào người qua lại;
+`districtFame` — mỗi quầy cùng nhóm (ăn uống / mua sắm / sửa xe) đang mở trong khu từ quầy thứ hai cộng +8% người qua lại cho
+cả nhóm, tối đa +30% (cạnh tranh trực tiếp cùng món vẫn chia khách). `pnpm balance` không cảnh báo.
+**Đời thật / emergent:** khu vắng → một người mở quán cà phê → người khác mở trà sữa, quán ăn → khu thành "khu ăn uống".
+**Kiểm chứng:** sim `economy.test.ts` (khẩu vị khu, tiếng khu có trần, quầy khác nhóm không ảnh hưởng); Playwright `khu-pho.spec.ts`.
+**Sau này:** bãi giữ xe (người chơi mở) tăng lưu lượng khu, giá thuê chỗ theo độ đông, khu có tên riêng do người chơi đặt.
+
 ---
 
 ## L. Hệ thống & lỗi

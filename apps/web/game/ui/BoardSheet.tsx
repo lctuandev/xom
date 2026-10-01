@@ -3,6 +3,7 @@
 import { content } from "@xom/content";
 import type { AwardView, MyStatsView, XomBoardView } from "@xom/shared";
 import { useEffect, useState } from "react";
+import { districtLikes, xomFame } from "../districts";
 import { vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
@@ -27,11 +28,12 @@ function valueText(metric: AwardView["metric"], v: number): string {
   }
 }
 
-type Tab = "awards" | "shares" | "trends";
+type Tab = "awards" | "shares" | "trends" | "districts";
 const TABS: { id: Tab; label: string }[] = [
   { id: "awards", label: "🏆 Giải tuần" },
   { id: "shares", label: "📊 Thị phần" },
   { id: "trends", label: "🔥 Đang hot" },
+  { id: "districts", label: "🏙️ Khu phố" },
 ];
 
 /**
@@ -52,7 +54,8 @@ export function BoardSheet() {
   return (
     <Modal title="Bảng xóm" onClose={() => close(null)}>
       <Tabs label="Bảng xóm" value={tab} onChange={setTab} tabs={TABS} />
-      {!board && <p className="text-sm text-ink/50">Đang tổng hợp…</p>}
+      {!board && tab !== "districts" && <p className="text-sm text-ink/50">Đang tổng hợp…</p>}
+      {tab === "districts" && <Districts />}
       {board && tab === "awards" && (
         <>
           <p className="mb-2 text-xs text-ink/60">
@@ -342,5 +345,49 @@ export function Achievements({ stats }: { stats: MyStatsView | null }) {
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * Khu phố (docs/THEGIOI.md §3): mỗi khu hợp hàng gì, đang có bao nhiêu quầy mở; khu tụ đủ quầy cùng nhóm thì "có tiếng"
+ * (khu ăn uống, phố sửa xe…) — người qua lại tăng cho cả nhóm. Người chơi mở quầy là đang xây khu phố.
+ */
+function Districts() {
+  const lots = useGame((s) => s.world.lots);
+  const fame = xomFame(lots);
+  const groups = content.data.districtFame.groups;
+  return (
+    <>
+      <p className="mb-2 text-xs text-ink/60">
+        Nhiều quầy cùng loại hàng mở chung một khu thì khu có tiếng — người qua lại đông hơn cho cả
+        khu.
+      </p>
+      <ul className="flex flex-col gap-2">
+        {content.data.trafficProfiles.map((t) => {
+          const here = fame.filter((f) => f.trafficId === t.id);
+          const open = here.reduce((n, f) => n + f.shops, 0);
+          const named = here.filter((f) => f.named).sort((a, b) => b.shops - a.shops);
+          return (
+            <li key={t.id} className="rounded-2xl bg-white p-3 shadow-sm" data-district={t.id}>
+              <p className="flex items-center justify-between font-extrabold">
+                <span>
+                  {t.emoji} {t.name}
+                </span>
+                <span className="text-xs font-semibold text-ink/60">{open} quầy đang mở</span>
+              </p>
+              <p className="text-xs text-leaf">{districtLikes(t.id)}</p>
+              {named.map((f) => {
+                const g = groups.find((x) => x.id === f.groupId);
+                return (
+                  <p key={f.groupId} className="mt-1 text-sm font-semibold" data-fame={f.groupId}>
+                    {g?.emoji} Đang thành {g?.name} · +{Math.round(f.bonus * 100)}% người qua lại
+                  </p>
+                );
+              })}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

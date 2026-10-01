@@ -910,10 +910,24 @@ export const data: ContentInput = {
     weekendTraffic: { school: 0.55, office: 0.5, residential: 1.25, market: 1.2 },
   },
 
+  // Tiếng khu (THEGIOI §3): khu tụ nhiều quầy cùng nhóm hàng thì có tiếng, người qua lại tăng cho cả nhóm.
+  districtFame: {
+    perShop: 0.08,
+    cap: 0.3,
+    minShops: 2,
+    groups: [
+      { id: "an_uong", name: "khu ăn uống", emoji: "🍜", categories: ["breakfast", "drink"] },
+      { id: "mua_sam", name: "khu mua sắm", emoji: "🛍️", categories: ["accessory"] },
+      { id: "dich_vu", name: "phố sửa xe", emoji: "🔧", categories: ["repair"] },
+    ],
+  },
+
   trafficProfiles: [
     {
       id: "school",
       name: "Cổng trường",
+      emoji: "🏫",
+      likes: { drink: 1.3, accessory: 1.35, breakfast: 1.1, repair: 0.7 },
       peoplePerHour: {
         "6": 160,
         "7": 220,
@@ -931,6 +945,8 @@ export const data: ContentInput = {
     {
       id: "office",
       name: "Khu văn phòng",
+      emoji: "🏢",
+      likes: { drink: 1.2, breakfast: 1.2, accessory: 0.8, repair: 0.9 },
       peoplePerHour: {
         "6": 40,
         "7": 160,
@@ -948,6 +964,8 @@ export const data: ContentInput = {
     {
       id: "residential",
       name: "Trong hẻm",
+      emoji: "🏘️",
+      likes: { repair: 1.2, breakfast: 1, accessory: 0.9, drink: 0.95 },
       peoplePerHour: {
         "6": 60,
         "7": 80,
@@ -962,6 +980,8 @@ export const data: ContentInput = {
     {
       id: "market",
       name: "Gần chợ",
+      emoji: "🧺",
+      likes: { breakfast: 1.2, repair: 1.15, accessory: 1.05, drink: 0.9 },
       peoplePerHour: {
         "6": 180,
         "7": 200,
@@ -976,6 +996,8 @@ export const data: ContentInput = {
     {
       id: "crossroad",
       name: "Ngã tư",
+      emoji: "🚦",
+      likes: { repair: 1.05, drink: 1.05 },
       peoplePerHour: {
         "6": 120,
         "7": 180,
