@@ -133,7 +133,7 @@ rổ rau = Chợ, cúp = Bảng xóm, bánh răng = Cài đặt, bong bóng = Ch
 **Luật 12.6 — Thanh trên & thanh dưới:** thanh trạng thái chỉ chứa *số liệu* (tiền, uy tín, no/khát khi thấp, ngày · trời · giờ),
 trải tới mép phải, icon SVG cùng bộ (`IconCash`, `IconStar`, `IconRice`, `IconDrop`, `IconWeather`); tiền dưới 1 triệu ghi đủ, từ 1 triệu
 thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo: trái = ăn uống, chợ, bảng xóm;
-phải = cài đặt. Thanh điều hướng dưới dùng icon vẽ tay cỡ lớn **có nhãn chữ đè nhẹ ở chân icon** (mục đang mở: icon nổi lên, nhãn đỏ;
+phải = cài đặt. Thanh điều hướng dưới **không nền** (nổi trên bản đồ như cột neo, quầng `icon-halo`), icon vẽ tay cỡ lớn **có nhãn chữ đè nhẹ ở chân icon** (mục đang mở: icon nổi lên, nhãn đỏ;
 Nhiệm vụ ở giữa to nhất). Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
 **Luật 12.5 — Sheet hay Modal:** *bottom sheet* cho thao tác trong lúc chơi, cần vẫn thấy bản đồ (chợ, làm ăn, quầy hàng xóm…);
 *modal* giữa màn hình (`Modal`) cho nội dung xem trọn vẹn, cần tập trung (bảng xếp hạng, hướng dẫn cài đặt). Bảng xếp hạng

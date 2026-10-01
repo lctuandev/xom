@@ -82,7 +82,8 @@ export function Hud() {
         </div>
       </div>
 
-      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-5 items-end gap-0.5 rounded-t-3xl bg-gradient-to-b from-cream to-[#f3e3c3] px-1.5 pt-1 shadow-[0_-2px_14px_rgba(0,0,0,0.12)]">
+      {/* Không nền (góp ý UI): chỉ icon vẽ tay + nhãn chữ, nổi trên bản đồ nhờ quầng sáng như cột icon neo. */}
+      <nav className="pb-safe pointer-events-none relative z-40 grid grid-cols-5 items-end gap-0.5 px-1.5 pt-1">
         {NAV.map((item) => {
           const center = item.id === "quests";
           const active = sheet === item.id;
@@ -94,16 +95,16 @@ export function Hud() {
               aria-label={label}
               onClick={() => openSheet(active ? null : item.id)}
               aria-current={active ? "page" : undefined}
-              className={`group relative flex flex-col items-center ${center ? "-mt-7" : "h-14 justify-end"}`}
+              className={`group pointer-events-auto relative flex flex-col items-center ${center ? "-mt-5" : "h-14 justify-end"}`}
             >
               {/* Icon vẽ tay cỡ lớn; nhãn chữ đè nhẹ ở chân icon (góp ý UI) — mục đang mở nổi lên + nhãn đỏ. */}
               {center ? (
-                <span className="flex size-16 items-center justify-center rounded-full bg-gradient-to-b from-[#ffe6a8] to-sun shadow-lg ring-4 ring-cream transition-transform group-aria-[current=page]:scale-105">
-                  {item.icon("size-11 drop-shadow-sm")}
+                <span className="flex size-16 items-end justify-center transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
+                  {item.icon("icon-halo size-14")}
                 </span>
               ) : (
                 <span className="flex h-11 items-end transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
-                  {item.icon("size-10 drop-shadow-[0_2px_1px_rgba(59,36,20,0.25)]")}
+                  {item.icon("icon-halo size-10")}
                 </span>
               )}
               <span
