@@ -82,5 +82,5 @@
 | **1.16b** ✅ | 📅 Thứ trong tuần + chợ đêm thứ Bảy | sim test; Playwright `cho-dem` |
 | **1.16c** ✅ | 🏙️ Khu phố + tiếng khu (emergent) | sim test, `pnpm balance` |
 | **1.16d** ✅ | 🌆 Trong lúc bạn vắng | e2e server; Playwright |
-| 1.17 | 🚦 Giao thông có xe + ảnh hưởng giao hàng | trace hiệu năng, Playwright |
+| **1.17** ✅ | 🚦 Giao thông có xe + ảnh hưởng giao hàng (UC-N2) + xe ôm (UC-N1) | đo FPS CPU ×4; Playwright `giao-thong`, `xe-om` |
 | **1.18** ✅ | ⚖️ Hợp đồng + điểm tin cậy + phạt (bản đầu, UC-M7) | e2e escrow; Playwright `bang-viec` |

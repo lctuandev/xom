@@ -89,7 +89,7 @@ mặt, thối → khách chấm sao (xe ôm uy tín thì khách quen gọi riên
 (`ROUTE_WEIGHTS`); tốc độ theo `congestion(minute)` + mưa; server kiểm thời gian chạy tối thiểu. Còn lại: xe hao mòn, mua xe
 riêng, khách quen gọi riêng.
 
-## 5. 🚦 Giao thông (1.21, cùng xe ôm)
+## 5. 🚦 Giao thông (1.21, cùng xe ôm) ✅ bản đầu
 
 - **Cảnh 3D:** xe máy, ô tô, xe buýt, xe ba gác chạy theo làn trên bản đồ ô (UC-B6) — **instanced** (1 draw call/loại), tối đa
   60 xe, xe ở xa camera không vẽ; mật độ theo `trafficProfiles` giờ cao điểm. Đèn đỏ ở ngã tư (xe dừng theo pha).
@@ -97,6 +97,7 @@ riêng, khách quen gọi riêng.
   đổi; mưa thêm chậm. Khách đi bộ qua quầy nhiều hơn giờ cao điểm (đã có trong lưu lượng).
 - **Âm thanh:** tiếng xe máy, còi theo mật độ.
 - **Hiệu năng:** trace bằng chrome-devtools CPU ×4 trước khi xong (PLAN §1).
+- **Đã làm (UC-N2):** `scene/Traffic.tsx` — làn từ bản đồ ô, xe dựng bằng khối (chưa có model), đèn đỏ để sau; đo FPS CPU ×4 bật/tắt không khác biệt.
 
 ---
 
@@ -107,6 +108,6 @@ riêng, khách quen gọi riêng.
 | **1.19a** ✅ | Khách quen | `regular_new`, tỉ lệ khách quen quay lại |
 | **1.19b** ✅ | Thuê nhân viên + doanh thu khi vắng | phiếu ca `StaffShift` (bán, sai, lương) |
 | **1.20** ✅ | Hợp đồng (NPC) + tin cậy + phạt | `contract_take/done/fail`, phân bố trust |
-| 1.21 | Xe ôm + giao thông | `ride_*`, thời gian giao hàng theo giờ |
+| **1.21** ✅ | Xe ôm + giao thông | `ride_*`, thời gian giao hàng theo giờ |
 
 Mỗi phase: use case trong `docs/USECASES.md` (nhóm M/N), dòng FEATURES, `pnpm balance` nếu đụng tiền, Playwright iPhone + Pixel.

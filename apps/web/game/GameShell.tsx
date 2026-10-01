@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import { formatClock } from "@xom/sim";
+import { congestion, formatClock } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -270,10 +270,9 @@ function useSound() {
   const inside = useGame((s) => s.inside);
   useEffect(() => {
     setMusicMood(minute >= 1080 || minute < 330 ? "night" : "day");
-    // Giờ cao điểm (sáng đi làm, trưa, tan tầm) phố ồn hơn; khuya vắng.
+    // Giờ cao điểm phố ồn hơn, khuya vắng — cùng độ kẹt xe với xe ôm / giao thông 3D (sim congestion).
     const h = minute / 60;
-    const rush = (h >= 7 && h < 9) || (h >= 11 && h < 13) || (h >= 17 && h < 19.5);
-    const crowd = rush ? 1 : h >= 21 || h < 6 ? 0.25 : 0.55;
+    const crowd = h >= 21 || h < 6 ? 0.2 : 0.25 + 0.75 * congestion(content, minute);
     setAmbient(inside ? "inside" : "street", crowd);
   }, [minute, inside]);
   const sky = useGame((s) => s.clock?.weather.now ?? "sunny");

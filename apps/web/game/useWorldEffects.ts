@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import { ROUTE_WEIGHTS } from "@xom/sim";
+import { congestion, ROUTE_WEIGHTS } from "@xom/sim";
 import { useEffect } from "react";
 import { walkTo } from "./nav";
 import { send } from "./net/socket";
@@ -33,7 +33,10 @@ export function useWorldEffects() {
       const speed = riding?.speed
         ? riding.speed
         : s.shift?.role === "giao_hang"
-          ? (s.shift.fast ? 7 : 4.5) * sky.delivery.speed
+          ? // Giờ cao điểm đường kẹt: xe giao hàng chậm lại tới 35% (UC-N2).
+            (s.shift.fast ? 7 : 4.5) *
+            sky.delivery.speed *
+            (1 - 0.35 * congestion(content, s.clock?.minute ?? 0))
           : 4;
       if (getPlayer().speed !== speed) getPlayer().speed = speed;
 

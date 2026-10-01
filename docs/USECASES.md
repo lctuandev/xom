@@ -967,6 +967,16 @@ sim `congestion`, `rideFare`, `rideFuel`, `haggleChance`, `routeSpeed`, `rideSta
 giá, tới nhanh quá bị từ chối, thu tiền + xăng, Chuyện; nói thách bị từ chối); Playwright `xe-om.spec.ts`.
 **Sau này:** khách quen gọi riêng xe ôm uy tín, xe hao mòn → tiệm sửa xe, mua xe riêng, chở hàng thuê, giao thông 3D (UC-N2).
 
+### UC-N2 · Giao thông trên đường ✅ (bản đầu)
+**Luồng:** đường lớn có **xe máy** (nhiều nhất, người lái áo màu), **ô tô**, **xe buýt** xanh chạy theo làn hai chiều (đường ngang
+và dọc từ bản đồ ô). **Giờ cao điểm** (7:00, 18:00) đông gấp ~4 lần giữa trưa và chạy chậm lại (kẹt); **mưa** bớt xe máy.
+Cùng một độ kẹt `congestion(minute)` với xe ôm (UC-N1): đường lớn chậm, xe **giao hàng** (UC-W5) chậm tới 35% giờ cao điểm,
+tiếng phố (xe rì rì, xe máy chạy ngang, còi) dày theo độ kẹt.
+**Luật / hiệu năng (PLAN §1):** tối đa 60 xe, 4 InstancedMesh = 4 draw call, mỗi khung chỉ cập nhật ma trận; xe chỉ để nhìn (không
+va chạm). Đo CPU ×4 (Playwright + CDP, máy không GPU): giờ tan tầm tắt giao thông 3,9 FPS, bật 56 xe 4,4 FPS → không tốn thêm đáng kể.
+**Kiểm chứng:** Playwright `giao-thong.spec.ts` (giờ tan tầm nhiều xe hơn giữa trưa ≥ 15 xe, không quá 60).
+**Sau này:** đèn đỏ ở ngã tư, xe dừng nhường người đi bộ, model xe máy / xe buýt vẽ bằng Blender, tiếng xe theo vị trí xe.
+
 ## L. Hệ thống & lỗi
 
 | Mã | Tình huống | Hành vi mong đợi |

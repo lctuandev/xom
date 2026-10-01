@@ -154,6 +154,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Kế hoạch nghề nghiệp đợt 1 (10 nghề, cơ chế lõi dùng chung, phụ thuộc giữa người chơi) | ✅ | 1.12 | docs/NGHE.md |
 | Dịch vụ: tiệm sửa xe (SERVICE) — khách kể triệu chứng → kiểm tra bộ phận (server trả kết quả) → sửa bằng phụ tùng → chạy thử (sai bệnh thì vẫn hư) | ✅ | 1.12a | UC-G1…G4, NGHE §3.1 |
 | Sửa xe nâng cao: báo giá & trả giá, bảo hành, Tiệm phụ tùng Chú Chín, model xe đồ nghề | ⏳ | 1.12a+ | UC-G4 |
+| 🚦 Giao thông 3D: xe máy / ô tô / xe buýt instanced (≤ 60, 4 draw call), đông + chậm theo giờ cao điểm, mưa bớt xe máy; giao hàng chậm khi kẹt; tiếng phố theo độ kẹt | ✅ | 1.21 | UC-N2, KIENTRUC §5 |
 | 🛵 Xe ôm: trạm gốc me (Chú Lực), thuê xe + xăng, trả giá cuốc, chọn đường lớn (kẹt giờ cao điểm) / hẻm (trơn khi mưa), thối tiền, sao + boa | ✅ | 1.21 | UC-N1, KIENTRUC §4, NGHE §3.2 |
 | Bảng việc xóm (hợp đồng + tiền giữ escrow) | ⏳ | 1.13a | NGHE §5 |
 | Thợ chụp ảnh / review quán (hợp đồng, tăng khách cho quầy) | ⏳ | 1.13b | NGHE §3.3 |

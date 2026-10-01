@@ -25,6 +25,7 @@ import { Rain } from "./Rain";
 import { Stalls } from "./Stalls";
 import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
+import { Traffic } from "./Traffic";
 import { Spoon, Vendors } from "./Vendors";
 
 const NPC_MODELS: CharacterModel[] = [
@@ -110,6 +111,7 @@ function World() {
   return (
     <>
       <Street />
+      <Traffic />
       {/* Nền đất rộng để không thấy mép bản đồ. */}
       <mesh rotation-x={-Math.PI / 2} position-y={-0.02}>
         <planeGeometry args={[400, 400]} />
