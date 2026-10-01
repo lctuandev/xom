@@ -22,6 +22,7 @@ import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
 import { AtmSheet } from "./ui/AtmSheet";
+import { AwayModal } from "./ui/AwayModal";
 import { BoardSheet } from "./ui/BoardSheet";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
@@ -141,6 +142,7 @@ export default function GameShell() {
       <Payslip />
       <Dialogue />
       <DaySummary />
+      <AwayModal />
     </div>
   );
 }

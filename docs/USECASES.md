@@ -877,6 +877,16 @@ cả nhóm, tối đa +30% (cạnh tranh trực tiếp cùng món vẫn chia kh�
 **Kiểm chứng:** sim `economy.test.ts` (khẩu vị khu, tiếng khu có trần, quầy khác nhóm không ảnh hưởng); Playwright `khu-pho.spec.ts`.
 **Sau này:** bãi giữ xe (người chơi mở) tăng lưu lượng khu, giá thuê chỗ theo độ đông, khu có tên riêng do người chơi đặt.
 
+### UC-M4 · Trong lúc bạn vắng… ✅ (bản đầu)
+**Luồng:** rời game (đóng tab / mất mạng) thì server ghi mốc `lastSeenAt` + ngày game. Vào lại sau ≥ 10 phút (`content.away.minMinutes`)
+thì hiện hộp **🌙 Trong lúc bạn vắng (8 giờ)…**: 📅 xóm đã qua mấy ngày (hàng xóm vẫn chơi), ⭐ đánh giá mới về quầy (số lượng,
+trung bình, câu mới nhất), 🧳 hàng xóm mới dọn về, 🏪 ai đang mở quầy, 🏗️ công trình xong / 🗳️ đề xuất chờ bỏ phiếu, 📈📉 giá chợ
+nguyên liệu nghề mình đổi bao nhiêu. Không có gì đáng kể thì không hiện.
+**Luật:** chỉ kể **chuyện thật** — xóm không có ai online thì đồng hồ dừng (không bịa doanh thu). **Không có tiền tự sinh khi vắng**
+(DESIGN: tiền chỉ vào khi có người làm); doanh thu khi vắng chỉ có sau này khi **thuê nhân viên** bán thay (có lương, có trần).
+**Kiểm chứng:** sim `away.test.ts` (giá chợ đổi giữa hai ngày); e2e server `away.e2e-spec.ts` (vừa rời → không báo; vắng 30 phút →
+đánh giá mới + số ngày, tiền không đổi); Playwright `khi-vang.spec.ts` (lệnh dev `debug:away`, tải lại trang).
+
 ---
 
 ## L. Hệ thống & lỗi

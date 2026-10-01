@@ -1,5 +1,6 @@
 import { content } from "@xom/content";
 import type {
+  AwayView,
   ClockView,
   DayReportView,
   EventView,
@@ -161,6 +162,9 @@ interface GameState {
   setRoster: (r: RosterView) => void;
   setInvite: (code: string | null) => void;
   applySnapshot: (s: Snapshot) => void;
+  /** "Trong lúc bạn vắng…" (THEGIOI §4): có khi vào lại sau một lúc vắng; đóng thì về null. */
+  away: AwayView | null;
+  setAway: (a: AwayView | null) => void;
   setMe: (me: MeView) => void;
   setClock: (c: ClockView) => void;
   setWorld: (w: WorldView) => void;
@@ -266,6 +270,8 @@ export const useGame = create<GameState>((set, get) => ({
   showPerf: false,
   setShowPerf: (showPerf) => set({ showPerf }),
   setPurchase: (purchase) => set({ purchase }),
+  away: null,
+  setAway: (away) => set({ away }),
   setRoster: (roster) => set({ roster }),
   setInvite: (invite) => set({ invite }),
   applySnapshot: (s) =>
@@ -276,6 +282,7 @@ export const useGame = create<GameState>((set, get) => ({
       clock: s.clock,
       world: s.world,
       events: s.events,
+      ...(s.away ? { away: s.away } : {}),
       orders: s.orders
         .filter((o) => o.ownerId === s.me.playerId)
         .map((o) => ({ ...o, made: "none", mistakes: [] })),

@@ -910,6 +910,9 @@ export const data: ContentInput = {
     weekendTraffic: { school: 0.55, office: 0.5, residential: 1.25, market: 1.2 },
   },
 
+  // Vào lại sau ít nhất 10 phút thì tóm tắt "Trong lúc bạn vắng…" (THEGIOI §4).
+  away: { minMinutes: 10 },
+
   // Tiếng khu (THEGIOI §3): khu tụ nhiều quầy cùng nhóm hàng thì có tiếng, người qua lại tăng cho cả nhóm.
   districtFame: {
     perShop: 0.08,

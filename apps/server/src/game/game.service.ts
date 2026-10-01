@@ -3,6 +3,7 @@ import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { content, type SkillId } from "@xom/content";
 import type {
   AtmReceipt,
+  AwayView,
   ClockView,
   DayReportView,
   EventView,
@@ -33,6 +34,7 @@ import {
   feeToFund,
   hostCost,
   levelOf,
+  marketMovesSince,
   marketPackPrice,
   maskText,
   menuPriceRatio,
@@ -43,6 +45,7 @@ import {
   type PaySource,
   pinError,
   projectDemand,
+  recipeIngredients,
   repairCost,
   resaleValue,
   type SkillPoints,
@@ -185,9 +188,83 @@ export class GameService implements OnModuleDestroy {
       if (isNew) await this.refreshOccupants(room);
       return this.snapshot(room, playerId);
     });
+    // Vào lại sau một lúc vắng: tóm tắt chuyện đã xảy ra ở xóm (THEGIOI §4).
+    if (wasOffline) {
+      const away = await this.awayReport(room, player).catch(() => null);
+      if (away) snapshot.away = away;
+    }
     if (isNew) this.emitWorld(room);
     if (wasOffline) this.emitRoster(room);
     return { roomId: room.id, snapshot };
+  }
+
+  /**
+   * "Trong lúc bạn vắng…" (docs/THEGIOI.md §4): chuyện thật đã xảy ra ở xóm khi mình offline — đánh giá mới về quầy,
+   * hàng xóm mới, quầy đang mở, công trình xong / chờ bỏ phiếu, giá chợ đổi. Không có tiền tự sinh. Vắng chưa đủ lâu
+   * hoặc không có gì đáng kể thì không báo.
+   */
+  private async awayReport(
+    room: RoomRuntime,
+    player: { id: string; lastSeenAt: Date | null; lastSeenDay: number | null },
+  ): Promise<AwayView | null> {
+    const since = player.lastSeenAt;
+    if (!since) return null;
+    const minutes = Math.floor((Date.now() - since.getTime()) / 60_000);
+    if (minutes < content.data.away.minMinutes) return null;
+    const fromDay = player.lastSeenDay ?? room.day;
+    const [reviews, neighbors, done, voting, biz] = await Promise.all([
+      this.prisma.review.findMany({
+        where: { ownerId: player.id, createdAt: { gt: since } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+      this.prisma.player.findMany({
+        where: { roomId: room.id, createdAt: { gt: since }, id: { not: player.id } },
+        select: { displayName: true },
+        take: 5,
+      }),
+      this.prisma.roomProject.findMany({
+        where: { roomId: room.id, status: "DONE", doneDay: { gte: fromDay } },
+        select: { projectId: true },
+      }),
+      this.prisma.roomProject.findMany({
+        where: { roomId: room.id, status: "VOTING", createdAt: { gt: since } },
+        select: { projectId: true },
+      }),
+      this.businessOf(player.id),
+    ]);
+    const latest = reviews[0];
+    const items = biz ? recipeIngredients(content.product(biz.productId).recipe) : [];
+    const report: AwayView = {
+      minutes,
+      days: Math.max(0, room.day - fromDay),
+      reviews: {
+        count: reviews.length,
+        avg: reviews.length ? reviews.reduce((n, r) => n + r.stars, 0) / reviews.length : 0,
+        latest: latest ? { name: latest.authorName, stars: latest.stars, text: latest.text } : null,
+      },
+      newNeighbors: neighbors.map((n) => n.displayName),
+      stalls: (this.occupantsCache.get(room.id) ?? [])
+        .filter((o) => o.open && o.ownerId !== player.id)
+        .map((o) => ({ name: o.ownerName, productId: o.productId })),
+      projects: {
+        done: done.map(
+          (p) => content.data.projects.find((x) => x.id === p.projectId)?.name ?? p.projectId,
+        ),
+        voting: voting.map(
+          (p) => content.data.projects.find((x) => x.id === p.projectId)?.name ?? p.projectId,
+        ),
+      },
+      prices: marketMovesSince(content, items, fromDay, room.day),
+    };
+    const nothing =
+      report.days === 0 &&
+      report.reviews.count === 0 &&
+      report.newNeighbors.length === 0 &&
+      report.stalls.length === 0 &&
+      report.projects.done.length === 0 &&
+      report.projects.voting.length === 0;
+    return nothing ? null : report;
   }
 
   leave(playerId: string, socketId: string) {
@@ -198,6 +275,18 @@ export class GameService implements OnModuleDestroy {
     if (member.sockets.size > 0) return;
     // Mất kết nối = không còn đứng ở quầy: ngừng có khách ngay, đóng quầy sau thời gian ân hạn.
     room.attending.delete(playerId);
+    // Mốc để lần sau vào lại tóm tắt "Trong lúc bạn vắng…" (dev/test có thể giả như đã vắng lâu).
+    const fake = this.debugAway.get(playerId);
+    this.debugAway.delete(playerId);
+    void this.prisma.player
+      .update({
+        where: { id: playerId },
+        data: {
+          lastSeenAt: new Date(Date.now() - (fake?.minutes ?? 0) * 60_000),
+          lastSeenDay: room.day - (fake?.days ?? 0),
+        },
+      })
+      .catch(() => undefined);
     void this.log(playerId, "session_end", {
       ms: Date.now() - (member.sessionStart ?? Date.now()),
     });
@@ -974,6 +1063,14 @@ export class GameService implements OnModuleDestroy {
       this.emitter?.toRoom(room.id, "events", room.events);
     }
     this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
+  }
+
+  /** Dev/test: lần rời xóm tới ghi mốc như đã vắng lâu (thử "Trong lúc bạn vắng", THEGIOI §4). */
+  private readonly debugAway = new Map<string, { minutes: number; days: number }>();
+  async debugAwaySet({ playerId }: IntentContext, minutes: number, days: number) {
+    if (process.env.NODE_ENV === "production")
+      throw new GameError("invalid_state", "Không có lệnh này");
+    this.debugAway.set(playerId, { minutes, days });
   }
 
   /** Dev/test: cộng tiền mặt cho mình (để kịch bản thử tính năng cần vốn); production không cho. */

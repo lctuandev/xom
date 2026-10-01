@@ -365,3 +365,13 @@ export function settleCash(
   if (rand() < 0.4) return { received: price, outcome: "over_returned" };
   return { received: bill - change, outcome: "over_kept" };
 }
+
+/** Nguyên liệu mà một công thức dùng tới (mọi bước, mọi lựa chọn). */
+export function recipeIngredients(recipe: Recipe): string[] {
+  const ids = new Set<string>();
+  for (const step of recipe.steps) {
+    if (step.ingredient) ids.add(step.ingredient);
+    for (const o of step.options) if (o.ingredient) ids.add(o.ingredient);
+  }
+  return [...ids];
+}

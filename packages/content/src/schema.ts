@@ -826,6 +826,8 @@ export const contentSchema = z.object({
   trafficProfiles: z.array(trafficProfileSchema),
   calendar: calendarSchema,
   districtFame: districtFameSchema,
+  /** "Trong lúc bạn vắng" (THEGIOI §4): vắng ít nhất chừng này phút thật thì mới tóm tắt. */
+  away: z.object({ minMinutes: z.number().int().positive() }),
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),

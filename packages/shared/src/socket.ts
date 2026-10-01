@@ -84,6 +84,8 @@ export interface ClientToServerEvents {
   "order:inspect": Intent<{ orderId: string; part: string }, InspectResult>;
   /** Chuyện của tôi: dòng thời gian các mốc (docs/THEGIOI.md §1). */
   "story:list": Intent<Record<string, never>, StoryEntryView[]>;
+  /** Dev/test: giả như vắng lâu (THEGIOI §4). */
+  "debug:away": Intent<{ minutes: number; days: number }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */

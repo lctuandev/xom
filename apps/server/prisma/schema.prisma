@@ -58,6 +58,9 @@ model Player {
   atmLockDay   Int?
   /// Đói / khát (UC-B11): { food, drink, at } — giảm theo giờ game, tính lại khi đọc (sim needsAt).
   needs        Json     @default("{}")
+  /// Lần cuối rời xóm (thời gian thật + ngày game) — để tóm tắt "Trong lúc bạn vắng" (THEGIOI §4).
+  lastSeenAt   DateTime?
+  lastSeenDay  Int?
   createdAt   DateTime @default(now())
 
   businesses Business[]

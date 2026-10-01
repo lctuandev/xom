@@ -14,14 +14,22 @@ import { register } from "./helpers.js";
 
 export type Client = Socket<ServerToClientEvents, ClientToServerEvents>;
 
-export async function join(url: string): Promise<{ socket: Client; snap: Snapshot }> {
+export async function join(
+  url: string,
+): Promise<{ socket: Client; snap: Snapshot; token: string }> {
   const { body } = await register(url);
+  const { socket, snap } = await connect(url, body.accessToken);
+  return { socket, snap, token: body.accessToken };
+}
+
+/** Kết nối (lại) bằng token có sẵn — vào lại game sau khi rời. */
+export function connect(url: string, token: string): Promise<{ socket: Client; snap: Snapshot }> {
   return new Promise((resolve, reject) => {
     const socket: Client = io(url, {
       path: "/socket.io",
       addTrailingSlash: false,
       transports: ["websocket"],
-      auth: { token: body.accessToken },
+      auth: { token },
     });
     socket.once("snapshot", (snap) => resolve({ socket, snap }));
     socket.once("connect_error", reject);

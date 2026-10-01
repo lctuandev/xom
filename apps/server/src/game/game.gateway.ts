@@ -19,6 +19,7 @@ import {
   buyEquipmentSchema,
   type ClientToServerEvents,
   chatTextSchema,
+  debugAwaySchema,
   debugClockSchema,
   debugGrantSchema,
   debugWeatherSchema,
@@ -453,6 +454,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, hostEventSchema, body, (ctx, p) =>
       this.game.hostEvent(ctx, p.eventId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("debug:away")
+  debugAway(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugAwaySchema, body, (ctx, p) =>
+      this.game.debugAwaySet(ctx, p.minutes, p.days),
     );
   }
 

@@ -127,6 +127,26 @@ export interface EventView {
   lotId?: string;
 }
 
+/** "Trong lúc bạn vắng…" (docs/THEGIOI.md §4): chuyện thật đã xảy ra ở xóm khi mình offline — không có tiền tự sinh. */
+export interface AwayView {
+  /** Vắng bao lâu (phút thật). */
+  minutes: number;
+  /** Số ngày game xóm đã qua (hàng xóm vẫn chơi thì xóm vẫn chạy). */
+  days: number;
+  reviews: {
+    count: number;
+    avg: number;
+    latest: { name: string; stars: number; text: string } | null;
+  };
+  /** Người mới dọn về xóm. */
+  newNeighbors: string[];
+  /** Quầy hàng xóm đang mở lúc mình vào lại. */
+  stalls: { name: string; productId: string }[];
+  projects: { done: string[]; voting: string[] };
+  /** Giá chợ đổi (nguyên liệu nghề mình), khi đã sang ngày khác. */
+  prices: { itemId: string; change: number }[];
+}
+
 export interface Snapshot {
   me: MeView;
   clock: ClockView;
@@ -139,6 +159,8 @@ export interface Snapshot {
   roster: RosterView;
   /** Sự kiện hôm nay (đang diễn ra hoặc đã báo trước). */
   events: EventView[];
+  /** Vào lại sau một lúc vắng: chuyện đã xảy ra ở xóm (chỉ có trong snapshot lúc vào). */
+  away?: AwayView;
 }
 
 // ───────── Xóm chung (Phase 2, docs/USECASES.md nhóm J) ─────────
@@ -699,6 +721,11 @@ export const debugClockSchema = z.object({
   minute: z.number().int().min(360).max(1300),
   /** Nhảy tới ngày này (thử lịch tuần: chợ đêm thứ Bảy…). */
   day: z.number().int().min(1).max(10_000).optional(),
+});
+/** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
+export const debugAwaySchema = z.object({
+  minutes: z.number().int().min(1).max(100_000),
+  days: z.number().int().min(0).max(1000),
 });
 export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
