@@ -388,9 +388,33 @@ export const economySchema = z.object({
   /** Mua sỉ từ số gói này trở lên được giảm giá. */
   bulkPacks: z.number().int().positive(),
   bulkDiscount: z.number().min(0).max(0.5),
+  /** Thanh lý hàng tồn cho chợ (đổi nghề, dư hàng): Bà Năm mua lại bằng tỉ lệ này của giá gốc. */
+  resaleRate: z.number().min(0).max(1),
   /** Thân thiết với người bán từ mức này trở lên được bớt giá (UC-D2). */
   friendDiscountAt: z.number().int().min(0).max(100),
   friendDiscount: z.number().min(0).max(0.5),
+  /**
+   * Chỗ tiêu bắt buộc (Luật 2.2): phí chợ/vệ sinh/thuế khoán mỗi ngày mở quầy (theo kiểu chỗ bán),
+   * điện nước của tiệm tính theo giờ mở cửa.
+   */
+  fees: z.object({
+    daily: z.object({
+      cart: z.number().int().nonnegative(),
+      house: z.number().int().nonnegative(),
+    }),
+    utilitiesPerHour: z.number().int().nonnegative(),
+  }),
+  /**
+   * Hao mòn xe đẩy/quầy: mỗi món bán được mòn thêm; mòn nhiều thì khách bớt ghé + làm món chậm hơn; hư hẳn thì
+   * không mở được. Sửa ở vựa xe: giá = giá thiết bị × độ mòn × repairRate.
+   */
+  maintenance: z.object({
+    wearPerServe: z.number().min(0).max(0.1),
+    slowAt: z.number().min(0).max(1),
+    slowDemand: z.number().min(0).max(1),
+    slowHold: z.number().min(1).max(3),
+    repairRate: z.number().min(0).max(1),
+  }),
   /** Ngân hàng (DESIGN §2, Luật 2.3): lãi rất nhỏ mỗi ngày, có trần; rút/gửi ở cây ATM theo bội số. */
   bank: z.object({
     interestRate: z.number().min(0).max(0.01),

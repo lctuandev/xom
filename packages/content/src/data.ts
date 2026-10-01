@@ -194,11 +194,12 @@ export const data: ContentInput = {
             label: "Đường",
             kind: "single",
             options: [
-              { id: "duong_0", label: "0%", emoji: "⚪", say: "không đường" },
-              { id: "duong_30", label: "30%", emoji: "🍬", say: "ít đường" },
-              { id: "duong_50", label: "50%", emoji: "🍬", say: "50% đường" },
-              { id: "duong_70", label: "70%", emoji: "🍬" },
-              { id: "duong_100", label: "100%", emoji: "🍯", say: "nhiều đường" },
+              // Nhãn theo cách khách nói (góp ý chơi thử: chỉ ghi % thì khó biết nhiều hay ít).
+              { id: "duong_0", label: "Không đường · 0%", emoji: "⚪", say: "không đường" },
+              { id: "duong_30", label: "Ít đường · 30%", emoji: "🍬", say: "ít đường" },
+              { id: "duong_50", label: "Nửa đường · 50%", emoji: "🍬", say: "nửa đường" },
+              { id: "duong_70", label: "Bình thường · 70%", emoji: "🍬" },
+              { id: "duong_100", label: "Ngọt nhiều · 100%", emoji: "🍯", say: "nhiều đường" },
             ],
             pick: { duong_0: 0.08, duong_30: 0.17, duong_50: 0.2, duong_70: 0.4, duong_100: 0.15 },
           },
@@ -1568,9 +1569,20 @@ export const data: ContentInput = {
     shoutCooldownMinutes: 30,
     bulkPacks: 5,
     bulkDiscount: 0.05,
+    resaleRate: 0.4,
     friendDiscountAt: 30,
     friendDiscount: 0.05,
     tipRate: 0.08,
+    // Phí chợ/thuế khoán: xe đẩy 5k/ngày, tiệm 15k/ngày; tiệm còn trả điện nước 3k mỗi giờ mở cửa.
+    fees: { daily: { cart: 5_000, house: 15_000 }, utilitiesPerHour: 3_000 },
+    // Mòn ~0,6% mỗi món: bán ~80 món là xe ọp ẹp (khách bớt 15%, giữ nút lâu hơn 60%); 100% thì phải sửa mới mở được.
+    maintenance: {
+      wearPerServe: 0.006,
+      slowAt: 0.5,
+      slowDemand: 0.85,
+      slowHold: 1.6,
+      repairRate: 0.25,
+    },
     // Lãi 0,2%/ngày cho số dư từ 100k, tối đa 3.000đ/ngày — có cũng vui, không sống bằng lãi được (Luật 2.3).
     bank: {
       interestRate: 0.002,

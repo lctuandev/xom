@@ -146,7 +146,7 @@ export async function payOrder(page: Page, short = 0) {
 export async function serveCustomer(page: Page, check?: (kitchen: Locator) => Promise<void>) {
   const cook = page.getByRole("button", { name: /Làm món cho khách/ });
   const kitchen = page.getByRole("dialog", { name: "Làm món" });
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     await expect(cook).toBeVisible({ timeout: 90_000 });
     await cook.tap();
     await expect(kitchen).toBeVisible();
@@ -154,7 +154,10 @@ export async function serveCustomer(page: Page, check?: (kitchen: Locator) => Pr
     const ok = await makeDish(page, { timeout: 15_000 })
       .then(() => payOrder(page))
       .then(() => true)
-      .catch(() => false);
+      .catch((e) => {
+        console.log(`serveCustomer: thử lại (${String(e).split("\n")[0]})`);
+        return false;
+      });
     if (ok) {
       await expect(kitchen).toHaveCount(0);
       return;

@@ -16,6 +16,7 @@ import {
   seededRandom,
   settleCash,
   validateBuild,
+  wearAfter,
   XP,
 } from "@xom/sim";
 import {
@@ -35,6 +36,8 @@ import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
 const PAY_WAIT_MS = 20_000;
+/** Chủ quầy bắt tay làm món thì khách chờ thêm ít nhất chừng này (ms). */
+const MAKING_WAIT_MS = 45_000;
 /** Người chơi thật chờ món lâu hơn khách NPC (họ còn đứng nhìn chủ quầy làm). */
 const PLAYER_PATIENCE_MS = 180_000;
 const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
@@ -191,6 +194,24 @@ export class OrderService {
     this.emit?.order(room.id, event);
   }
 
+  /**
+   * Chủ quầy bắt tay làm món: khách thấy người ta đang làm cho mình thì chờ thêm một lúc (một lần) — như ngoài đời,
+   * không bỏ đi giữa chừng khi món sắp xong (góp ý chơi thử).
+   */
+  async start(room: RoomRuntime, playerId: string, orderId: string) {
+    const order = this.requireOrder(room, playerId, orderId);
+    if (order.started) return;
+    order.started = true;
+    order.event.expiresAt = Math.max(order.event.expiresAt, Date.now() + MAKING_WAIT_MS);
+    this.emit?.update(room.id, {
+      orderId,
+      stage: "making",
+      line: "",
+      mistakes: [],
+      expiresAt: order.event.expiresAt,
+    });
+  }
+
   /** Người chơi làm xong một món: kiểm tra, trừ nguyên liệu, chấm điểm; sai thì khách phàn nàn. */
   async make(room: RoomRuntime, playerId: string, orderId: string, build: DishView) {
     const order = this.requireOrder(room, playerId, orderId);
@@ -302,7 +323,10 @@ export class OrderService {
           if (vip) rep += correct && fast && !short ? vip.repWin : -vip.repLose;
           await tx.business.update({
             where: { id: biz.id },
-            data: { reputation: Math.min(1, Math.max(0, rep)) },
+            data: {
+              reputation: Math.min(1, Math.max(0, rep)),
+              wear: wearAfter(biz.wear, 1, eco.maintenance),
+            },
           });
         }
         await tx.player.update({

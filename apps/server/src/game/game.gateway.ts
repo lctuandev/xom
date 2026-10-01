@@ -26,6 +26,7 @@ import {
   type MeView,
   makeOrderSchema,
   marketBuySchema,
+  marketSellSchema,
   menuSchema,
   moveSchema,
   orderIdSchema,
@@ -143,6 +144,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     );
   }
 
+  @SubscribeMessage("market:sell")
+  marketSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, marketSellSchema, body, (ctx, p) => this.game.marketSell(ctx, p.itemId));
+  }
+
   @SubscribeMessage("biz:update")
   updateBusiness(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, updateBusinessSchema, body, (ctx, p) =>
@@ -158,6 +164,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("biz:close")
   close(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, emptySchema, body, (ctx) => this.game.closeBusiness(ctx));
+  }
+
+  @SubscribeMessage("biz:repair")
+  repair(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, emptySchema, body, (ctx) => this.game.repair(ctx));
   }
 
   @SubscribeMessage("work:start")
@@ -250,6 +261,13 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("shop:order")
   shopOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, shopOrderSchema, body, (ctx, p) => this.game.shopOrder(ctx, p));
+  }
+
+  @SubscribeMessage("order:start")
+  startOrder(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, orderIdSchema, body, (ctx, p) =>
+      this.game.orders.start(ctx.room, ctx.playerId, p.orderId),
+    );
   }
 
   @SubscribeMessage("order:decline")

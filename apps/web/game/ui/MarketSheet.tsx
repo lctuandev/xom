@@ -1,7 +1,7 @@
 "use client";
 
 import { content, type Ingredient } from "@xom/content";
-import { marketPackPrice } from "@xom/sim";
+import { marketPackPrice, resaleValue } from "@xom/sim";
 import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
@@ -9,6 +9,8 @@ import { ingredientsOfProduct } from "../recipes";
 import { useGame } from "../store";
 import { PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
+
+const NONE: never[] = [];
 
 /**
  * Chợ đầu mối Bà Năm (UC-E1): nguyên liệu theo gói, giá mỗi ngày một khác, buổi chiều hàng tươi
@@ -60,6 +62,7 @@ export function MarketSheet() {
             ))}
           </ul>
         </details>
+        <Liquidate />
       </PlaceGate>
     </Sheet>
   );
@@ -130,5 +133,54 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
         </p>
       )}
     </li>
+  );
+}
+
+/**
+ * Thanh lý hàng tồn (góp ý chơi thử): đổi nghề hoặc dư hàng thì bán lại cho Bà Năm — giá thấp hơn giá gốc nhiều.
+ */
+export function Liquidate() {
+  const inventory = useGame((s) => s.me?.inventory ?? NONE);
+  const [busy, setBusy] = useState<string | null>(null);
+  const items = inventory.filter((i) => i.qty > 0);
+  if (items.length === 0) return null;
+  const rate = content.economy.resaleRate;
+  return (
+    <details className="mt-4" data-liquidate>
+      <summary className="mb-2 cursor-pointer text-xs font-semibold tracking-wide text-ink/60 uppercase">
+        ♻️ Thanh lý hàng tồn ({items.length})
+      </summary>
+      <p className="mb-2 text-xs text-ink/60">
+        Bà Năm mua lại {Math.round(rate * 100)}% giá gốc — dùng khi đổi nghề hoặc dư hàng.
+      </p>
+      <ul className="flex flex-col gap-1.5">
+        {items.map((i) => {
+          const ing = content.ingredient(i.itemId);
+          const value = resaleValue(ing.costPerUnit, i.qty, rate);
+          return (
+            <li
+              key={i.itemId}
+              className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
+            >
+              <span>
+                {ing.emoji} {ing.name} · {i.qty} {ing.unit}
+              </span>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={async () => {
+                  setBusy(i.itemId);
+                  await send("market:sell", { itemId: i.itemId });
+                  setBusy(null);
+                }}
+                className="h-9 rounded-lg bg-sun px-3 text-xs font-semibold disabled:opacity-40"
+              >
+                {busy === i.itemId ? "…" : `Bán lại · ${vnd(value)}`}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }

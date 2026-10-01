@@ -2,7 +2,7 @@
 
 import { content } from "@xom/content";
 import type { BusinessView } from "@xom/shared";
-import { formatClock, priceScore } from "@xom/sim";
+import { formatClock, priceScore, repairCost, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { stars, vnd, vndShort } from "../format";
 import { send } from "../net/socket";
@@ -31,7 +31,8 @@ export function BusinessSheet() {
           </button>
         )}
         <p className="mb-3 text-sm text-ink/70">
-          Xe đẩy mua ở vựa xe Ông Sáu, đầu phố phía tây. Đổi nghề thì xe cũ được bán lại nửa giá.
+          Xe đẩy mua ở vựa xe Ông Sáu, đầu phố phía tây. Đổi nghề thì xe cũ được bán lại nửa giá;
+          hàng tồn của nghề cũ đem ra chợ Bà Năm thanh lý (♻️ trong bảng chợ).
         </p>
         <button
           type="button"
@@ -93,6 +94,8 @@ export function BusinessSheet() {
           🧺 Ra chợ mua hàng
         </button>
       </div>
+
+      <WearBar biz={biz} />
 
       <PromoSection biz={biz} money={me.money} />
 
@@ -159,19 +162,25 @@ function OpenButton({
   const setGoal = useGame((s) => s.setGoal);
   const close = useGame((s) => s.openSheet);
   const lot = biz.lotId ? content.lot(biz.lotId) : null;
-  const rentDue = !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay : 0;
+  const eco = content.economy;
+  // Tiền thuê chỗ + phí chợ/thuế trả một lần mỗi ngày (Luật 2.2).
+  const rentDue =
+    !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay + eco.fees.daily[lot.kind] : 0;
+  const broken = wearState(biz.wear, eco.maintenance) === "broken";
   const cantPay = rentDue > money;
-  const hint = working
-    ? "Đang đi làm thuê — nghỉ việc để mở quầy"
-    : !lot
-      ? "Chọn chỗ bán bên dưới trước"
-      : stock === 0
-        ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
-        : cantPay
-          ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
-          : rentDue
-            ? `Tiền thuê chỗ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
-            : null;
+  const hint = broken
+    ? "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã"
+    : working
+      ? "Đang đi làm thuê — nghỉ việc để mở quầy"
+      : !lot
+        ? "Chọn chỗ bán bên dưới trước"
+        : stock === 0
+          ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
+          : cantPay
+            ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
+            : rentDue
+              ? `Thuê chỗ + phí chợ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
+              : null;
   // Phải đẩy xe tới chỗ bán, đứng sau quầy mới mở được.
   if (!biz.open && lot && !atStall) {
     return (
@@ -194,7 +203,7 @@ function OpenButton({
     <div className="mb-4">
       <button
         type="button"
-        disabled={busy || (!biz.open && (working || !lot || stock === 0 || cantPay))}
+        disabled={busy || (!biz.open && (broken || working || !lot || stock === 0 || cantPay))}
         onClick={async () => {
           setBusy(true);
           await send(biz.open ? "biz:close" : "biz:open", {});
@@ -207,6 +216,49 @@ function OpenButton({
         {busy ? "…" : biz.open ? "Đóng quầy" : "Mở quầy bán"}
       </button>
       {hint && <p className="mt-2 text-center text-sm text-ink/60">{hint}</p>}
+    </div>
+  );
+}
+
+/** Độ bền xe/quầy (Luật 2.2): bán nhiều thì mòn; ọp ẹp khách bớt ghé, làm món chậm; hư thì không mở được. */
+function WearBar({ biz }: { biz: BusinessView }) {
+  const setGoal = useGame((s) => s.setGoal);
+  const close = useGame((s) => s.openSheet);
+  const m = content.economy.maintenance;
+  const state = wearState(biz.wear, m);
+  const cost = repairCost(content.equipment(biz.equipmentId).price, biz.wear, m);
+  const left = Math.round((1 - biz.wear) * 100);
+  return (
+    <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm" data-wear={state}>
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="font-semibold">🔧 Độ bền xe</span>
+        <span className={state === "ok" ? "text-ink/60" : "font-semibold text-red"}>
+          {state === "broken" ? "Hư rồi" : state === "worn" ? `Ọp ẹp · ${left}%` : `${left}%`}
+        </span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+        <div
+          className={`h-full rounded-full ${state === "ok" ? "bg-leaf" : "bg-red"}`}
+          style={{ width: `${left}%` }}
+        />
+      </div>
+      {state !== "ok" && (
+        <p className="mt-1 text-xs text-ink/60">
+          Xe ọp ẹp: khách ngại ghé, làm món chậm hơn. Sửa ở vựa xe Ông Sáu.
+        </p>
+      )}
+      {cost > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            setGoal({ kind: "place", id: "vua_xe", open: "equipment" });
+            close(null);
+          }}
+          className="mt-2 h-10 w-full rounded-xl bg-sun text-sm font-semibold"
+        >
+          🚶 Tới vựa xe sửa · {vnd(cost)}
+        </button>
+      )}
     </div>
   );
 }

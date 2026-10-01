@@ -28,6 +28,17 @@ export function CashChange({
   const total = change.reduce((a, b) => a + b, 0);
   return (
     <div className="flex flex-col gap-2">
+      {/* Luôn hiện tổng tiền phải thu — không bắt người chơi tự nhớ (góp ý chơi thử). */}
+      <div className="grid grid-cols-2 gap-2 text-center" data-due={due}>
+        <div className="rounded-xl bg-white p-2 shadow-sm">
+          <p className="text-[11px] text-ink/60">🧾 Tổng tiền món</p>
+          <p className="text-lg font-extrabold tabular-nums">{vnd(due)}</p>
+        </div>
+        <div className="rounded-xl bg-white p-2 shadow-sm">
+          <p className="text-[11px] text-ink/60">💵 Khách đưa</p>
+          <p className="text-lg font-extrabold tabular-nums">{vnd(bill)}</p>
+        </div>
+      </div>
       <p className="text-center text-sm">
         💵 Khách đưa tờ <b className="tabular-nums">{vnd(bill)}</b>. Thối lại bao nhiêu?
       </p>

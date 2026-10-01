@@ -126,7 +126,10 @@ export function PlatePanel({
           const n = got.get(f.id) ?? 0;
           const portions = (shift.trays[f.id] ?? 0) - n;
           const refillAt = shift.refilling[f.id];
-          if (portions <= 0 && n === 0) {
+          // Khay hết (kể cả khi đã múc dở lên dĩa) → nút báo bếp; còn ít mà khách gọi nhiều hơn → vẫn múc được phần còn
+          // lại và có nút báo bếp nhỏ (góp ý chơi thử: trước đây bị kẹt, không báo bếp được, cũng không múc được).
+          const short = (want.get(f.id) ?? 0) - n > portions;
+          if (portions <= 0) {
             return (
               <button
                 key={f.id}
@@ -141,10 +144,11 @@ export function PlatePanel({
                 {refillAt
                   ? `Bếp làm… ${Math.max(0, Math.ceil((refillAt - now) / 1000))}s`
                   : `🔔 Báo bếp: hết ${f.name.toLowerCase()}`}
+                {n > 0 && <span className="text-[10px] text-ink/60">đã múc {n}</span>}
               </button>
             );
           }
-          return (
+          const tile = (
             <button
               key={f.id}
               type="button"
@@ -169,6 +173,22 @@ export function PlatePanel({
                 </span>
               )}
             </button>
+          );
+          if (!short) return tile;
+          return (
+            <div key={f.id} className="flex flex-col gap-1">
+              {tile}
+              <button
+                type="button"
+                disabled={!!refillAt}
+                onClick={() => void sendWork({ kind: "refill", foodId: f.id }, "quan_com")}
+                className="h-7 rounded-lg bg-red/10 text-[10px] font-bold text-red disabled:opacity-60"
+              >
+                {refillAt
+                  ? `Bếp làm… ${Math.max(0, Math.ceil((refillAt - now) / 1000))}s`
+                  : "🔔 Không đủ · báo bếp"}
+              </button>
+            </div>
           );
         })}
       </fieldset>

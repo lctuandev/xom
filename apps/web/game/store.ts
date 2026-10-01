@@ -310,7 +310,9 @@ export const useGame = create<GameState>((set) => ({
     set((s) => ({
       orders: s.orders.map((o) =>
         o.orderId === u.orderId
-          ? { ...o, made: u.stage, mistakes: u.mistakes, expiresAt: u.expiresAt }
+          ? u.stage === "making"
+            ? { ...o, expiresAt: u.expiresAt }
+            : { ...o, made: u.stage, mistakes: u.mistakes, expiresAt: u.expiresAt }
           : o,
       ),
     })),

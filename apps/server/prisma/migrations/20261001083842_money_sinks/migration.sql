@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Business" ADD COLUMN     "wear" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "DailyReport" ADD COLUMN     "fees" INTEGER NOT NULL DEFAULT 0;

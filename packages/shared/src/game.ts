@@ -37,6 +37,8 @@ export interface BusinessView {
   rentPaidToday: boolean;
   /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
   promoDay: number | null;
+  /** Độ mòn xe/quầy 0–1 (sửa ở vựa xe). */
+  wear: number;
 }
 
 export interface InventoryView {
@@ -55,6 +57,7 @@ export interface TodayView {
   lost: number;
   stockCost: number;
   wages: number;
+  fees: number;
 }
 
 export interface MeView {
@@ -194,7 +197,8 @@ export interface OrderEvent {
 /** Món vừa làm xong: đúng hay sai (khách phàn nàn). */
 export interface OrderUpdateEvent {
   orderId: string;
-  stage: "correct" | "wrong";
+  /** making = chủ quầy bắt tay làm món (khách chờ thêm). */
+  stage: "making" | "correct" | "wrong";
   line: string;
   mistakes: string[];
   /** Hạn chờ mới (khách đợi tính tiền). */
@@ -418,6 +422,8 @@ export interface DayReportView {
   reputation: number;
   /** Lãi ngân hàng nhận cuối ngày. */
   interest: number;
+  /** Phí chợ/thuế, điện nước, sửa xe, khai trương. */
+  fees: number;
   /** Lãi/lỗ trong ngày (gồm cả tiền vào tài khoản). */
   profit: number;
   moneyEnd: number;
@@ -435,6 +441,8 @@ export const marketBuySchema = z.object({
   itemId: contentId,
   packs: z.number().int().min(1).max(50),
 });
+/** Thanh lý hết một loại hàng tồn cho chợ. */
+export const marketSellSchema = z.object({ itemId: contentId });
 export const updateBusinessSchema = z.object({ lotId: contentId });
 export const menuSchema = z
   .object({

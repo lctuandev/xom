@@ -268,7 +268,9 @@ Cài đặt ⚙️: thanh âm lượng nhạc / hiệu ứng / giọng, nút t�
 **Luật:** món chỉ bán được khi đủ nguyên liệu; giá hợp lý theo giá tham chiếu của món; tắt hết món = không có khách.
 
 **Kiểm chứng (đã chạy):** e2e server (tắt hết món bị chặn, đổi giá); khách chỉ gọi món đủ nguyên liệu.
-### UC-F3 · Khách tới, xếp hàng ✅ (khách quen, gọi nhiều phần: ⏳)
+### UC-F3 · Khách tới, xếp hàng ✅
+> Góp ý chơi thử (10/2026): chủ quầy **bắt tay làm món** cho khách nào (mở màn làm món) thì khách đó chờ thêm ít nhất 45 giây (một lần) —
+> ngoài đời thấy người ta đang làm cho mình thì không bỏ đi giữa chừng. (khách quen, gọi nhiều phần: ⏳)
 **Luồng:** khách NPC đi tới trước quầy → khung thoại trên đầu nói yêu cầu **cụ thể**: *"Cho con ổ xíu mại, không hành, nhiều ớt nha!"* → xếp vào hàng chờ (thấy số thứ tự trên đầu).
 **Đời thật & rẽ nhánh:**
 - Mỗi khách có **kiên nhẫn** (thanh trên đầu, 30–60 giây thật tuỳ kiểu khách: học sinh vội, cô chú thong thả).
@@ -300,7 +302,9 @@ Thanh trên cùng luôn hiện yêu cầu của khách để đối chiếu.
 **Kiểm chứng:** unit test chấm điểm món; e2e server: giao món thiếu nguyên liệu bị từ chối, món sai bị trừ uy tín; Playwright: làm đúng 1 ổ theo đơn "không hành, nhiều ớt".
 
 **Kiểm chứng (đã chạy):** unit chấm món; e2e server (thiếu nguyên liệu bị từ chối, làm sai phải làm lại/giảm giá); Playwright làm đúng 3 món + làm sai 1 món trên iPhone 16 Pro & Pixel 7.
-### UC-F5 · Pha trà sữa theo đơn ✅ (UI chung với bánh mì; chưa có kịch bản Playwright riêng)
+### UC-F5 · Pha trà sữa theo đơn ✅
+> Góp ý chơi thử (10/2026): mức đường ghi bằng chữ như khách nói — *Không đường · 0%, Ít đường · 30%, Nửa đường · 50%, Bình thường · 70%, Ngọt nhiều · 100%*.
+> (UI chung với bánh mì; chưa có kịch bản Playwright riêng)
 **Luồng:** chọn **ly** (M/L) → **trà nền** (trà sữa truyền thống / trà xanh / hồng trà) → **đường** (0 / 30 / 50 / 70 / 100%) → **đá** (không / ít / bình thường) → **topping** (trân châu đen, trân châu trắng, thạch, pudding — có thể nhiều) → **lắc** (giữ nút 1 giây) → **dán nắp** → đưa khách.
 **Đời thật:** "ít ngọt, nhiều đá, thêm pudding" · hết đá khi mất điện (UC-K4) · khách đổi ý sau khi gọi ("thôi cho ít đường") — khung thoại cập nhật, món đang pha phải chỉnh theo.
 **Luật:** topping tính thêm tiền theo bảng giá của quầy; sai mức đường/đá là lỗi nhẹ (trừ ít điểm), sai topping là lỗi nặng.
@@ -442,6 +446,8 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 **Kiểm chứng:** Playwright `nguoi-moi-lam-thue.spec.ts` (vào quán, chọn vai, ra ca có phiếu lương).
 
 ### UC-W2 · Quán cơm Cô Tư — đứng quầy múc cơm ✅
+> Góp ý chơi thử (10/2026): khay còn ít mà khách gọi nhiều phần → vẫn múc được phần còn lại và có nút **🔔 Không đủ · báo bếp**;
+> khay hết giữa chừng (đã múc dở) cũng hiện nút báo bếp — không còn bị kẹt.
 **Không gian:** quầy inox dài; các khay/nồi: cơm, sườn nướng, bì, chả trứng, trứng ốp la, dưa leo–cà chua, canh; chồng dĩa; khách xếp hàng phía trước quầy.
 **Luồng một dĩa:**
 1. Khách tới đọc món (khung thoại + phiếu gọi món): *"Cơm sườn bì chả, thêm trứng, không dưa nha con"*.
@@ -458,6 +464,7 @@ Ra ca: nút "🚪 Ra ca" → phiếu lương ca (số việc, lỗi, lương c�
 **Kiểm chứng:** e2e server `work.e2e-spec.ts` (đứng quầy, bị cho nghỉ); Playwright múc đủ món theo phiếu (iPhone 16 Pro + Pixel 7).
 
 ### UC-W3 · Quán cơm — thu ngân ✅
+> Góp ý chơi thử (10/2026): bàn thối tiền luôn hiện **🧾 Tổng tiền món** và **💵 Khách đưa** — không bắt người chơi tự nhớ.
 **Không gian:** quầy tính tiền có máy tính tiền, bảng giá, ngăn kéo tiền.
 **Luồng:** khách ăn xong tới quầy, đưa phiếu → **bấm từng món trên máy tính tiền** (cơm sườn 35k, thêm trứng 6k, trà đá 3k…) → máy hiện tổng → *Báo giá* cho khách → khách trả (chuyển khoản / tiền mặt) → **thối tiền** từ ngăn kéo (như UC-F7) → *Xong*.
 **Đời thật & rẽ nhánh:**
@@ -596,6 +603,21 @@ cuối ngày lãi 0,2% cho số dư từ 100k, **tối đa 3.000đ/ngày**, làm
 **Kiểm chứng:** unit `economy.test.ts` (lãi, trần, bội số ATM); e2e server `bank.e2e-spec.ts` (chuyển khoản vào 🏦, tiền mặt vào 💵, ATM xa/gần,
 bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
 **Chưa:** phí rút ở ATM khác ngân hàng, chuyển tiền tự do giữa người chơi, trả lương nhân viên qua tài khoản.
+
+### UC-I7 · Chỗ tiêu bắt buộc: phí chợ/thuế, điện nước, hao mòn + sửa xe, thanh lý hàng ✅ (bản đầu)
+**Hệ thống:** 💸 Money sink · 🏪 Làm ăn · **Luật:** 2.2 (mỗi nguồn thu có chỗ tiêu), 7 (rủi ro làm ăn), 14 (sửa xe/thanh lý phải tới nơi).
+**Đời thật:** bán vỉa hè thì đóng phí chợ/vệ sinh cho ban quản lý; mở tiệm thì có thuế khoán và tiền điện nước hằng tháng;
+xe đẩy bán nhiều thì bánh xe rơ, kính nứt — để lâu khách ngại ghé, bán chậm, hư hẳn thì phải dắt đi sửa; đổi nghề thì đồ cũ bán đổ bán tháo.
+**Luật game:**
+- Mở quầy lần đầu trong ngày: thuê chỗ **+ phí chợ 5k (xe đẩy) / thuế khoán 15k (tiệm)** — trả một lần/ngày.
+- Tiệm (nhà mặt tiền) trả **điện nước 3k mỗi giờ mở cửa**; hết tiền mặt thì trừ tài khoản, hết cả hai thì tiệm tạm đóng.
+- **Hao mòn**: mỗi món bán xe mòn 0,6%; từ 50% là "ọp ẹp" (khách ×0,85, nút giữ lâu ×1,6); 100% là hư, không mở được.
+  Sửa ở **vựa xe Ông Sáu** (phải đứng đó, đóng quầy): giá = giá xe × độ mòn × 25%, tròn nghìn (xe bánh mì mòn 50% ≈ 40k).
+- **Thanh lý hàng tồn** ở chợ Bà Năm: bán hết một loại với 40% giá gốc (tròn 500đ).
+- Mọi khoản trên vào báo cáo cuối ngày (dòng "Phí chợ, điện nước, sửa xe, sự kiện"); `pnpm balance` tính phí ngày, điện nước,
+  tiền sửa chia theo món → lãi các nghề giảm ~20%, không chiến lược nào "giàu không giới hạn".
+**Kiểm chứng:** unit `economy.test.ts` (mòn, tình trạng, tiền sửa, thanh lý); e2e server `sinks.e2e-spec.ts`, `resale.e2e-spec.ts`;
+Playwright `thanh-ly.spec.ts`. **Chưa:** quỹ xóm nhận phí để làm công trình chung (UC-K8), lương nhân viên, xăng xe.
 
 ---
 

@@ -44,7 +44,10 @@ function runStrategy(equipment, lot, mult, serveSec) {
   const tick = eco.economyTickMinutes;
   const perTick = tick / serveSec; // số đơn làm được mỗi nhịp (1 phút game = 1 giây thật)
   for (let day = 1; day <= DAYS; day++) {
-    money -= lot.rentPerDay;
+    // Chỗ tiêu cố định mỗi ngày (Luật 2.2): thuê chỗ + phí chợ/thuế; tiệm còn trả điện nước theo giờ mở cửa.
+    money -= lot.rentPerDay + eco.fees.daily[lot.kind];
+    if (lot.kind === "house")
+      money -= (eco.fees.utilitiesPerHour * (eco.dayEndMinute - eco.dayStartMinute)) / 60;
     // Thời tiết thật của ngày (UC-B4): mưa bão xe đẩy vắng khách, tiệm có mái đông hơn.
     const sky = weatherPlan(
       content.data.weather,
@@ -89,7 +92,10 @@ function runStrategy(equipment, lot, mult, serveSec) {
       queue -= done;
       served += done;
       lost += walked;
-      money += done * (price - avgCost * (1 + WASTE));
+      // Mỗi món bán làm xe mòn: tiền sửa chia đều theo món.
+      const repairPerServe =
+        equipment.price * eco.maintenance.wearPerServe * eco.maintenance.repairRate;
+      money += done * (price - avgCost * (1 + WASTE) - repairPerServe);
       // Khách được phục vụ hài lòng theo giá; khách bỏ đi kéo uy tín xuống.
       const sat = Math.max(0, Math.min(1, 1 - (mult - 1) * 1.2)) * 0.4 + 0.6;
       reputation = nextReputation(

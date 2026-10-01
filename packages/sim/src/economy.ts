@@ -184,9 +184,43 @@ export function bankInterest(
   return Math.floor(raw / 500) * 500;
 }
 
+/** Tiền thanh lý `qty` phần hàng tồn cho chợ: rẻ hơn giá gốc nhiều, tròn 500đ (không lẻ). */
+export function resaleValue(costPerUnit: number, qty: number, rate: number): number {
+  return Math.floor((costPerUnit * qty * rate) / 500) * 500;
+}
+
 /** Số tiền rút/gửi ở ATM phải là bội số của `step` và dương. Trả về lý do nếu không hợp lệ. */
 export function atmAmountError(amount: number, step: number): string | null {
   if (!Number.isInteger(amount) || amount <= 0) return "Số tiền không hợp lệ";
   if (amount % step !== 0) return `ATM chỉ nhận bội số ${step.toLocaleString("vi-VN")}đ`;
   return null;
+}
+
+export interface Maintenance {
+  wearPerServe: number;
+  slowAt: number;
+  slowDemand: number;
+  slowHold: number;
+  repairRate: number;
+}
+
+/** Độ mòn sau khi bán thêm `served` món (0–1). */
+export function wearAfter(wear: number, served: number, m: Maintenance): number {
+  return Math.min(1, wear + served * m.wearPerServe);
+}
+
+/** Tình trạng xe/quầy theo độ mòn: tốt · ọp ẹp (khách bớt ghé, làm món chậm) · hư (không mở được). */
+export function wearState(wear: number, m: Maintenance): "ok" | "worn" | "broken" {
+  if (wear >= 1) return "broken";
+  return wear >= m.slowAt ? "worn" : "ok";
+}
+
+/** Hệ số khách do tình trạng xe/quầy. */
+export function wearDemand(wear: number, m: Maintenance): number {
+  return wearState(wear, m) === "ok" ? 1 : m.slowDemand;
+}
+
+/** Tiền sửa ở vựa xe: giá thiết bị × độ mòn × tỉ lệ, tròn 1.000đ (mòn chút ít thì miễn phí). */
+export function repairCost(price: number, wear: number, m: Maintenance): number {
+  return Math.round((price * wear * m.repairRate) / 1000) * 1000;
 }

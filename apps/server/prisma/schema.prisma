@@ -120,6 +120,8 @@ model Business {
   /// Tiền thuê chỗ trả trước khi mở hàng: ngày và lô đã trả gần nhất.
   rentPaidDay Int?
   rentLotId   String?
+  /// Độ mòn xe đẩy/quầy 0–1 (Luật 2.2): bán càng nhiều càng mòn, sửa ở vựa xe Ông Sáu.
+  wear        Float          @default(0)
   /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
   promoDay    Int?
   createdAt   DateTime       @default(now())
@@ -150,6 +152,8 @@ model DailyReport {
   tips         Int      @default(0)
   /// Lãi ngân hàng nhận cuối ngày (rất nhỏ, có trần).
   interest     Int      @default(0)
+  /// Phí chợ/thuế, điện nước, sửa xe, khai trương… (chỗ tiêu ngoài nhập hàng và thuê chỗ).
+  fees         Int      @default(0)
   stockCost    Int
   rent         Int
   wages        Int

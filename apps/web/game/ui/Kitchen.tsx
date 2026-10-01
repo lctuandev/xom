@@ -2,6 +2,7 @@
 
 import { content, type RecipeStep } from "@xom/content";
 import type { DishSelection, DishView } from "@xom/shared";
+import { wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
@@ -20,6 +21,10 @@ export function Kitchen() {
     // Khách đã đi (hết kiên nhẫn / đã tính tiền) thì đóng màn hình.
     if (orderId && !order) close(null);
   }, [orderId, order, close]);
+  useEffect(() => {
+    // Bắt tay làm món: báo server để khách thấy mà chờ thêm (một lần mỗi khách).
+    if (orderId) void send("order:start", { orderId });
+  }, [orderId]);
 
   if (!order) return null;
   return (
@@ -297,7 +302,11 @@ function HoldStep({
     if (done) return onDone(false);
     const t0 = performance.now();
     timer.current = setInterval(() => {
-      const p = Math.min(1, (performance.now() - t0) / 1000);
+      // Xe ọp ẹp (Luật 2.2) thì giữ lâu hơn mới xong.
+      const biz = useGame.getState().me?.business;
+      const m = content.economy.maintenance;
+      const slow = biz && wearState(biz.wear, m) !== "ok" ? m.slowHold : 1;
+      const p = Math.min(1, (performance.now() - t0) / (1000 * slow));
       setProgress(p);
       if (p >= 1) {
         clearInterval(timer.current);

@@ -52,10 +52,14 @@ export interface ClientToServerEvents {
   ping: (payload: PingPayload, ack: (res: Ack<PongPayload>) => void) => void;
   "equipment:buy": Intent<{ equipmentId: string }>;
   "market:buy": Intent<{ itemId: string; packs: number }>;
+  /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
+  "market:sell": Intent<{ itemId: string }>;
   "biz:update": Intent<{ lotId: string }>;
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;
+  /** Sửa xe/quầy ở vựa xe Ông Sáu (Luật 2.2). */
+  "biz:repair": Intent<Record<string, never>>;
   "work:start": Intent<{ jobId: string; role: string }, WorkResult>;
   "work:act": Intent<WorkAct, WorkResult>;
   "work:stop": Intent<Record<string, never>, WorkResult>;
@@ -66,6 +70,8 @@ export interface ClientToServerEvents {
   >;
   "order:pay": Intent<{ orderId: string; change: number | null; discount?: boolean }>;
   "order:decline": Intent<{ orderId: string }>;
+  /** Chủ quầy bắt tay làm món cho khách này (khách thấy thì chờ thêm). */
+  "order:start": Intent<{ orderId: string }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   "tutorial:set": Intent<{ step: string }>;

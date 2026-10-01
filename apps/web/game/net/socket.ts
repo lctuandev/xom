@@ -71,8 +71,10 @@ export function connectGame(onSignedOut: () => void): () => void {
     if (o.buyerId === st.me?.playerId) game.setPurchase(purchaseOf(o, st.world));
   });
   s.on("orderUpdate", (u) => {
-    orderUpdateBus.emit(u);
     game.updateOrder(u);
+    // "making" chỉ là khách chờ thêm (không có lời nói, không đổi trạng thái món).
+    if (u.stage === "making") return;
+    orderUpdateBus.emit(u);
     const buyer = buyers.get(u.orderId);
     if (!buyer) return;
     game.say({ who: buyer, text: u.line }, 4000);

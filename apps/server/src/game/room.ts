@@ -39,6 +39,8 @@ export interface PendingOrder {
   patienceMs: number;
   /** Món đã làm (lần gần nhất) và kết quả chấm. */
   dish: { build: DishView; score: number; mistakes: string[] } | null;
+  /** Chủ quầy đã bắt tay làm món (chỉ cộng thêm kiên nhẫn một lần). */
+  started?: boolean;
   /** Khách VIP: hệ số boa, uy tín được/mất (từ content.events). */
   vip?: { minMods: number; patience: number; tipMult: number; repWin: number; repLose: number };
 }

@@ -8,9 +8,13 @@ import {
   menuPriceRatio,
   nextReputation,
   priceScore,
+  repairCost,
   type ShopState,
   spoilage,
   takeFifo,
+  wearAfter,
+  wearDemand,
+  wearState,
 } from "./economy.js";
 import { formatClock, valueAt } from "./time.js";
 
@@ -146,5 +150,23 @@ describe("ngân hàng (DESIGN §2, Luật 2.3)", () => {
     expect(atmAmountError(50_000, 10_000)).toBeNull();
     expect(atmAmountError(15_000, 10_000)).toMatch(/bội số 10\.000đ/);
     expect(atmAmountError(0, 10_000)).not.toBeNull();
+  });
+});
+
+describe("hao mòn xe/quầy (Luật 2.2)", () => {
+  const m = content.economy.maintenance;
+  it("bán nhiều thì mòn; ọp ẹp thì khách bớt ghé; mòn hết là hư", () => {
+    expect(wearAfter(0, 10, m)).toBeCloseTo(0.06);
+    expect(wearAfter(0.99, 10, m)).toBe(1);
+    expect(wearState(0.2, m)).toBe("ok");
+    expect(wearState(m.slowAt, m)).toBe("worn");
+    expect(wearState(1, m)).toBe("broken");
+    expect(wearDemand(0.2, m)).toBe(1);
+    expect(wearDemand(0.8, m)).toBeLessThan(1);
+  });
+  it("tiền sửa theo độ mòn và giá xe, tròn nghìn", () => {
+    expect(repairCost(320_000, 0.5, m)).toBe(40_000);
+    expect(repairCost(320_000, 0, m)).toBe(0);
+    expect(repairCost(380_000, 1, m) % 1000).toBe(0);
   });
 });

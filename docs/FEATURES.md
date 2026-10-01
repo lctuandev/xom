@@ -25,7 +25,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 |---|---|---|---|
 | 👁️ Camera | ✅ Mọi cảnh: 1 ngón kéo xoay/nghiêng, chạm đi tới, 2 ngón thu phóng + vặn | Góc nhìn thứ nhất (sau) | — |
 | 💰 Kinh tế | ✅ Sổ cái kép, VND nguyên, thối tiền đủ tờ 1k→200k, **tách 💵 tiền mặt / 🏦 ngân hàng**, cây ATM, lãi có trần | Chuyển tiền tự do giữa người chơi, phí ATM | 3 |
-| 💸 Money sink | Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp | Thiếu **bảo trì xe/quầy, phí chợ/thuế, lương nhân viên, trang trí, xăng** | 3 |
+| 💸 Money sink | ✅ Thuê chỗ/nhà, nguyên liệu, hàng hỏng, xe đẩy, ăn ở sạp, **phí chợ/thuế khoán, điện nước tiệm, hao mòn + sửa xe, khai trương**, thanh lý hàng lỗ vốn | Lương nhân viên, trang trí, xăng; quỹ xóm cho công trình chung | 3 |
 | 📈 Tiến trình | ✅ KN từ làm thật (bán món, làm thuê, giao hàng) → cấp độ (vòng KN quanh ảnh đại diện, "🎉 Lên cấp"); danh tiếng 4 bậc | Kỹ năng; mở khoá theo cấp | 3 |
 | 🔐 Bảo mật | ✅ Đơn, ca làm, gọi món, sạp ăn, **chợ, vựa xe, nhận việc** đều kiểm đứng gần/giờ | Bắt buộc phải có vị trí (client chưa báo thì hiện vẫn cho qua) | 3 |
 | 📊 Đo lường | ✅ Ghi phiên (vào/ra + thời lượng), bước kịch bản, mở quầy, vào ca, mua sạp, chuyển xóm; `pnpm analytics` (DAU/MAU, phiên, D1/D7/D30, nơi bỏ cuộc, nghề chọn, tiền theo lý do) | Biểu đồ theo tuần | — |
@@ -112,7 +112,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Trả lương người chơi / NPC làm cho mình | ⏳ | 1.9 | UC-H2…H9 (ký quỹ) |
 | Đặt hàng trước | ⏳ | 1.9 | UC-F10 |
 | Công cụ cân bằng kinh tế | ✅ | 1 | `pnpm balance` |
-| Chống lạm phát (money sink) | ✅ cơ bản | 1 | Thuê chỗ, hàng hỏng, nguyên liệu |
+| Chống lạm phát (money sink): phí chợ/thuế, điện nước, hao mòn + sửa xe, thanh lý hàng tồn | ✅ | 1.11 | UC-I7 |
 
 ## 5. 🏪 Kinh doanh (data-driven)
 
