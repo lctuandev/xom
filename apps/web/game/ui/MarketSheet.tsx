@@ -8,7 +8,7 @@ import { send } from "../net/socket";
 import { ingredientsOfProduct } from "../recipes";
 import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
-import { PlaceGate } from "./PlaceGate";
+import { PlaceFace, PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
 import { Tabs } from "./Tabs";
 
@@ -51,7 +51,11 @@ export function MarketSheet() {
   const friend = (me.friendship.cho_dau_moi ?? 0) >= eco.friendDiscountAt;
 
   return (
-    <Sheet title="Chợ đầu mối Bà Năm" onClose={() => close(null)}>
+    <Sheet
+      title="Chợ đầu mối Bà Năm"
+      onClose={() => close(null)}
+      face={<PlaceFace placeId="cho_dau_moi" />}
+    >
       <PlaceGate placeId="cho_dau_moi" open="market">
         <p className="mb-3 text-xs text-ink/60">
           Giá ngày {clock.day}

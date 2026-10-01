@@ -113,6 +113,8 @@ interface GameState {
   /** Đơn đang mở màn hình làm món. */
   kitchen: string | null;
   bubbles: Record<string, Bubble>;
+  /** Người đang đứng đối diện trong khung chân dung (UC-E5): lời họ và mình đã ở đó, không lặp trên đầu nhân vật. */
+  facing: string | null;
   /** Đang ở bên trong nơi làm (id địa điểm) — cảnh nội thất thay cho bản đồ. */
   inside: string | null;
   shift: ShiftView | null;
@@ -231,6 +233,7 @@ export const useGame = create<GameState>((set, get) => ({
   orders: [],
   kitchen: null,
   bubbles: {},
+  facing: null,
   inside: null,
   shift: null,
   payslip: null,

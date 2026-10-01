@@ -341,6 +341,17 @@ kho nạp ngầm, lọc câu bẩn, lỗi thì quay về dữ liệu).
 **Đời thật:** chủ quầy làm sai món → mình được *đổi món* hoặc *đòi lại tiền* · chờ lâu → được bỏ đi không trả tiền · món ngon → *khen* (tăng uy tín quầy đó).
 **Luật:** ăn uống có tác dụng nhẹ: làm việc nhanh hơn 10% trong 2 giờ game (không bắt buộc, không có thanh "đói" ép chơi).
 
+### UC-E5 · Đứng trước quầy: chân dung người bán + ô thoại ✅ (bản đầu)
+**Ai:** người chơi tới mua / nói chuyện ở sạp NPC (xôi, phở…), chợ Bà Năm, vựa xe Ông Sáu, hoặc quầy của hàng xóm.
+**Luồng:** tới nơi → bottom sheet mở như cũ (thực đơn, giá, nút mua). **Phía trên sheet**, trên nền bản đồ, có **chân dung người bán** (tròn, có tên) và **ô thoại** của họ: câu rao / lời chào → chọn món ở quầy hàng xóm thì câu mình dặn ("cho mình bánh mì thịt, không hành") hiện **bên phải** (bong bóng tối), chủ quầy "xác nhận" món + giá bên trái. Nói chuyện với Bà Năm: câu hỏi của mình bên phải, câu trả lời mới nhất bên trái; các câu cũ lùi xuống lịch sử trong sheet.
+**Đời thật:** đứng trước quầy là nhìn mặt người bán, nghe họ nói — không phải đọc một danh sách khô; sạp nhỏ thì người bán rao, quầy hàng xóm thì chủ quầy chào khách.
+**Luật:**
+- Ảnh chân dung là render từ đúng model nhân vật đang đứng trong cảnh 3D (`art/blender/chan_dung.py` → `public/portraits/*.webp`, 160px, ~5KB/ảnh). Dáng người bán sạp là dữ liệu: `vendors[].seller` trong `packages/content`; hàng xóm theo `modelFor(playerId)` (cùng hàm với cảnh 3D).
+- Lời chào / xác nhận ở quầy hàng xóm là dữ liệu `counterLines` (`{dish}`, `{price}`); lời sạp NPC lấy từ `vendors[].lines`, lời Bà Năm / Ông Sáu từ `places[].keeper`.
+- Đang mở khung thì khung thoại 3D trên đầu người bán và của chính mình **ẩn đi** (tránh lặp chữ); người khác trong xóm vẫn thấy bình thường.
+- Không thêm nút lên HUD (Luật 12.1): khung chỉ hiện khi sheet đang mở và nằm trong cùng hộp thoại (trình đọc màn hình đọc "Bà Năm: …", "Bạn: …").
+**Kiểm chứng:** Playwright `an-sang` (chân dung Bà Bảy + câu rao trước sạp xôi), `ky-nang` (nói chuyện với Bà Năm: câu "Chào hỏi" bên phải, chân dung Bà Năm), `mua-cua-nhau` (chân dung An, câu dặn "không hành" bên phải, chủ quầy xác nhận món).
+
 ---
 
 ## F. Buôn bán món ăn — tự tay làm

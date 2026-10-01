@@ -229,6 +229,8 @@ export const vendorSchema = z.object({
   signColor: z.string(),
   /** Model xe/sạp trong city bundle. */
   model: z.string(),
+  /** Dáng người bán (model nhân vật) — cũng là ảnh chân dung khi đứng trước sạp (UC-E5). */
+  seller: z.string().default("character-male-c"),
   position: point,
   /** 0 = mặt quầy quay về +z. */
   facing: z.number(),
@@ -767,6 +769,12 @@ export const contentSchema = z.object({
   tutorial: z.array(tutorialStepSchema).min(1),
   /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
+  /** Câu chủ quầy hàng xóm "nói" trong khung đứng trước quầy (UC-E5); {dish} {price} được thay. */
+  counterLines: z.object({
+    hello: z.array(z.string()).min(1),
+    picked: z.array(z.string()).min(1),
+    soldOut: z.string(),
+  }),
   customerLines: customerLinesSchema,
   voice: voicesSchema,
   reviews: reviewsSchema,

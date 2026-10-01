@@ -6,7 +6,8 @@ import { grantMoney, readDialogue, register, shot } from "./helpers";
 test("đói bụng: sáng ra sạp xôi mua ăn, ngồi ghế nhựa ăn, no lại", async ({ page }) => {
   await register(page, "Sáng");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await grantMoney(page, undefined, undefined, { food: 20 });
+  // Khát đầy để chip chỉ nói chuyện đói (đồng hồ test chạy nhanh, khát tụt dần trong lúc đi).
+  await grantMoney(page, undefined, undefined, { food: 20, drink: 100 });
   const chip = page.locator("[data-needs]");
   await expect(chip).toContainText("🍚20%");
   await shot(page, "39-doi-bung");
@@ -18,6 +19,10 @@ test("đói bụng: sáng ra sạp xôi mua ăn, ngồi ghế nhựa ăn, no l�
   // Tới nơi thì bảng của sạp tự mở.
   const sap = page.getByRole("dialog", { name: "XÔI BÀ BẢY" });
   await expect(sap).toBeVisible({ timeout: 40_000 });
+  // Đứng trước sạp (UC-E5): chân dung Bà Bảy + câu rao ở trên, thực đơn ở sheet dưới.
+  await expect(sap.getByRole("img", { name: "Chân dung Bà Bảy" })).toBeVisible();
+  await expect(sap.locator("[data-line]")).toContainText(/Xôi nóng đây con!|Ăn xôi cho chắc bụng/);
+  await shot(page, "40b-truoc-sap-xoi");
   await sap.locator("li", { hasText: "Xôi gà" }).getByRole("button", { name: "Mua" }).tap();
   await expect(page.getByText("😋 Đang ăn… ngon quá!")).toBeVisible();
   await expect(page.getByText("480.000đ").first()).toBeVisible();

@@ -1149,6 +1149,7 @@ export const data: ContentInput = {
       sign: "XÔI BÀ BẢY",
       signColor: "#c0392b",
       model: "sap-phu-kien",
+      seller: "character-female-d",
       position: { x: -44, z: -3 },
       facing: 0,
       open: 330,
@@ -1167,6 +1168,7 @@ export const data: ContentInput = {
       sign: "PHỞ CHÚ HAI",
       signColor: "#8e44ad",
       model: "xe-banh-mi",
+      seller: "character-male-c",
       position: { x: -36, z: 3 },
       facing: Math.PI,
       open: 330,
@@ -1184,6 +1186,7 @@ export const data: ContentInput = {
       sign: "CÀ PHÊ CÓC",
       signColor: "#6d4c41",
       model: "xe-tra-sua",
+      seller: "character-female-a",
       position: { x: 36, z: 3 },
       facing: Math.PI,
       open: 360,
@@ -1202,6 +1205,7 @@ export const data: ContentInput = {
       sign: "NƯỚC MÍA",
       signColor: "#27ae60",
       model: "xe-tra-sua",
+      seller: "character-male-c",
       position: { x: 32, z: -3 },
       facing: 0,
       open: 600,
@@ -1218,6 +1222,7 @@ export const data: ContentInput = {
       sign: "BÁNH TRÁNG TRỘN",
       signColor: "#e67e22",
       model: "sap-phu-kien",
+      seller: "character-female-a",
       position: { x: 44, z: -3 },
       facing: 0,
       open: 840,
@@ -1235,6 +1240,7 @@ export const data: ContentInput = {
       sign: "CHÈ CÔ NĂM",
       signColor: "#d35493",
       model: "xe-tra-sua",
+      seller: "character-female-d",
       position: { x: -12, z: 17.5 },
       facing: 0,
       open: 840,
@@ -1252,6 +1258,7 @@ export const data: ContentInput = {
       sign: "ỐC ĐÊM",
       signColor: "#16a085",
       model: "sap-phu-kien",
+      seller: "character-male-c",
       position: { x: -8, z: -17.5 },
       facing: Math.PI,
       open: 1050,
@@ -1269,6 +1276,7 @@ export const data: ContentInput = {
       sign: "NƯỚNG ĐÊM",
       signColor: "#d35400",
       model: "xe-banh-mi",
+      seller: "character-male-c",
       position: { x: 12, z: 17.5 },
       facing: 0,
       open: 1080,
@@ -1563,6 +1571,17 @@ export const data: ContentInput = {
     { id: "vui", text: "😄" },
     { id: "vay_tay", text: "👋" },
   ],
+
+  // Khung đứng trước quầy hàng xóm (UC-E5): lời chào / xác nhận món hiện cạnh chân dung chủ quầy.
+  counterLines: {
+    hello: [
+      "Ghé quầy nè! Ăn gì nói mình nha 😄",
+      "Chào nha! Món nào cũng làm liền tay.",
+      "Mời ghé! Hôm nay đồ tươi lắm.",
+    ],
+    picked: ["{dish} hả? Có liền, {price} nha!", "Ok {dish}, {price} — đợi xíu là có!"],
+    soldOut: "Nay bán hết sạch rồi, ghé lại sau nha!",
+  },
 
   // Đói / khát (UC-B11): no tụt từ 100 xuống 0 trong ~10 giờ game, khát ~7 giờ; ngủ đêm chỉ tính 4 giờ.
   needs: {

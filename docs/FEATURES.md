@@ -180,6 +180,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Khung thoại trên đầu nhân vật | ✅ | 1.6 | UC-D1 |
 | Câu nói nhanh, rao hàng | ✅ | 1.6 | UC-D3 |
 | Nói chuyện với NPC (chủ đề) | ✅ | 1.6 | UC-D2 |
+| Đứng trước quầy: chân dung người bán (render Blender) + ô thoại phía trên sheet — sạp NPC, chợ, vựa xe, quầy hàng xóm, nói chuyện | ✅ | 1.11 | UC-E5 |
 | Chat cả xóm gõ chữ ✅; chat gần (local), chat nhóm, tin nhắn riêng ⏳ | 🚧 | 2 | UC-D4 |
 | Chat toàn server | 💤 | | Cần kiểm duyệt |
 | Voice chat theo khoảng cách | 💤 | 4 | |

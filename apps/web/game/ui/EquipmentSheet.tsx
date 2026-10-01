@@ -8,7 +8,7 @@ import { send } from "../net/socket";
 import { useGame } from "../store";
 import { EquipmentPicker } from "./EquipmentPicker";
 import { usePayMethod } from "./PayPicker";
-import { PlaceGate } from "./PlaceGate";
+import { PlaceFace, PlaceGate } from "./PlaceGate";
 import { Sheet } from "./Sheet";
 
 /** Vựa xe Ông Sáu: nơi duy nhất mua / đổi xe hàng. */
@@ -16,7 +16,7 @@ export function EquipmentSheet() {
   const close = useGame((s) => s.openSheet);
   const toast = useGame((s) => s.toast);
   return (
-    <Sheet title="Vựa xe Ông Sáu" onClose={() => close(null)}>
+    <Sheet title="Vựa xe Ông Sáu" onClose={() => close(null)} face={<PlaceFace placeId="vua_xe" />}>
       <PlaceGate placeId="vua_xe" open="equipment">
         <RepairBox />
         <EquipmentPicker

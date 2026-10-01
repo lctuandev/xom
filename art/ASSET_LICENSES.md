@@ -10,4 +10,5 @@ Gói tải về nằm trong `art/vendor/` (không đưa vào git). Chạy lại 
 | Mini Characters | Kenney | Kenney | CC0 | https://kenney.nl/assets/mini-characters |
 | Ghế nhựa đỏ | Tự làm (`art/blender/ghe_nhua.py`) | XÓM | Riêng | — |
 | Nhà xóm quê, cây dừa/chuối/tre, rào tre, lu nước, đống rơm, cây ATM (bundle `village`) | Tự làm (`art/blender/nha_que.py`) | XÓM | Riêng | — |
+| Ảnh chân dung nhân vật `apps/web/public/portraits/*.webp` (render từ Mini Characters) | Tự render (`art/blender/chan_dung.py`) | Kenney / XÓM | CC0 | — |
 | Font Be Vietnam Pro | Google Fonts | Lâm Bảo, Tony Le, ViệtAnh Nguyễn | SIL OFL 1.1 | https://fonts.google.com/specimen/Be+Vietnam+Pro |

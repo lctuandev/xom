@@ -9,6 +9,7 @@ import { send } from "../net/socket";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
 import { vendorOpen, vendorSeats } from "../world";
+import { Counterpart } from "./Counterpart";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { Sheet } from "./Sheet";
 
@@ -22,8 +23,11 @@ export function VendorSheet() {
   const [busy, setBusy] = useState(false);
   const check = usePayCheck();
   const pay = usePayMethod((s) => s.method);
+  // Câu rao lúc mới tới sạp; chọn một lần cho mỗi lần mở.
+  const [pick] = useState(() => Math.random());
   const v = content.data.vendors.find((x) => x.id === id);
   if (!v) return null;
+  const line = v.lines[Math.floor(pick * v.lines.length)] ?? v.lines[0];
 
   const buy = async (itemId: string) => {
     setBusy(true);
@@ -44,7 +48,13 @@ export function VendorSheet() {
   };
 
   return (
-    <Sheet title={v.sign} onClose={() => close(null)}>
+    <Sheet
+      title={v.sign}
+      onClose={() => close(null)}
+      face={
+        <Counterpart model={v.seller} name={v.name} line={line ?? ""} anchor={`vendor:${v.id}`} />
+      }
+    >
       <p className="mb-2 text-sm text-ink/60">
         {v.name} bán từ {formatClock(v.open)} tới {formatClock(v.close)} · ăn tại chỗ, ghế nhựa có
         sẵn.

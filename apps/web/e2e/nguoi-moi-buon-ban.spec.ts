@@ -90,7 +90,10 @@ test("làm sai món: khách phàn nàn, đưa luôn giảm giá; nói chuyện v
   await page.getByRole("button", { name: "Xóm", exact: true }).tap();
   await page.getByRole("button", { name: "💬 Nói chuyện" }).tap();
   await page.getByRole("button", { name: "🗞️ Hỏi chuyện xóm" }).tap();
-  await expect(page.locator('[data-bubble="cho_dau_moi"]')).toBeVisible();
+  // Câu trả lời hiện ở khung đứng đối diện (UC-E5), câu mình hỏi bên phải.
+  const talk = page.getByRole("dialog", { name: "Nói chuyện với Bà Năm" });
+  await expect(talk.locator("[data-me]")).toContainText("Hỏi chuyện xóm");
+  await expect(talk.locator("[data-line]")).not.toContainText("Hàng mới về sáng nay");
   await shot(page, "06-noi-chuyen-ba-nam");
   await page.getByRole("button", { name: "Xóm", exact: true }).tap();
   await page.getByRole("button", { name: "Ra chợ", exact: true }).tap();

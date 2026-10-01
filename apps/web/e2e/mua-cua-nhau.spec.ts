@@ -45,12 +45,17 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   const shop = b.getByRole("dialog", { name: "Quầy An" });
   await expect(shop).toBeVisible({ timeout: 30_000 });
+  // Đứng trước quầy (UC-E5): chân dung An + lời chào ở trên sheet.
+  await expect(shop.getByRole("img", { name: "Chân dung An" })).toBeVisible();
   await shop.getByRole("button", { name: /bánh mì thịt/i }).tap();
   await shop.getByRole("button", { name: "không hành" }).tap();
   await expect(shop.locator("[data-dish]")).toHaveAttribute(
     "data-dish",
     "bánh mì thịt, không hành",
   );
+  // Câu mình dặn hiện bên phải, chủ quầy "xác nhận" món + giá.
+  await expect(shop.locator("[data-me]")).toContainText("không hành");
+  await expect(shop.locator("[data-line]")).toContainText(/bánh mì thịt, không hành/i);
   await shot(b, "22-goi-mon-hang-xom");
   const moneyBefore = Number(await b.locator("[data-money]").getAttribute("data-money"));
   // Quầy đông (đủ hàng chờ) thì đợi bớt khách rồi gọi lại — như ngoài đời.

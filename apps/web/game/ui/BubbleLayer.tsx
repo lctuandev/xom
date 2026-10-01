@@ -24,6 +24,7 @@ export function BubbleLayer() {
   const myId = useGame((s) => s.me?.playerId);
   const roster = useGame((s) => s.roster);
   const inside = useGame((s) => s.inside);
+  const facing = useGame((s) => s.facing);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -31,8 +32,9 @@ export function BubbleLayer() {
     return () => clearInterval(id);
   }, []);
 
+  // Đang đứng nói chuyện trong khung chân dung thì lời hai bên đã hiện ở đó — không lặp trên đầu nhân vật.
   const list: [string, Bubble][] = Object.entries(bubbles).filter(
-    ([, b]) => !b.until || b.until > now,
+    ([k, b]) => (!b.until || b.until > now) && !(facing && (k === facing || k === myId)),
   );
   // Hàng xóm (người chơi thật): ngoài phố luôn có bảng tên trên đầu; trong quán chỉ nghe người cùng quán.
   const peers = new Map((roster?.peers ?? []).filter((p) => p.id !== myId).map((p) => [p.id, p]));
