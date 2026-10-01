@@ -99,7 +99,7 @@ Nhà cung cấp → Kho → Định giá → Tiếp thị → Khách → Đánh 
 ## 8. 🌦️ Thế giới thay đổi
 
 - **Thời gian**: sáng · chiều · tối · đêm (ánh sáng, đèn, sạp mở/dọn theo giờ).
-- **Thời tiết**: ☀️ nắng · 🌧️ mưa · ⛈️ bão · 🌫️ âm u — ảnh hưởng khách, giá, giao hàng.
+- **Thời tiết**: ☀️ nắng · 🌧️ mưa · ⛈️ bão · ☁️ âm u — ảnh hưởng khách, giá, giao hàng.
 - **Giao thông**: giờ cao điểm đường đông, kẹt xe. **Đám đông**: tối khu ăn uống đông.
 **Luật 8.1** — Thế giới thay đổi phải **buộc người chơi thích nghi** (đổi giờ bán, đổi món, đổi chỗ), không chỉ để trang trí.
 

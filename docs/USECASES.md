@@ -94,7 +94,7 @@ tự chọn tab theo máy:
 **Hệ thống:** 🌦️ Thế giới thay đổi · **Luật:** 8.1 (buộc thích nghi), 12.1 (không thêm nút), 15 (dữ liệu điều khiển), 11 (âm thanh).
 **Đời thật:** trưa nắng gắt người ta mua nước; mưa thì đường vắng, ai có mái che mới bán được; bão thì shipper chạy chậm, khách trả thêm phụ phí;
 chiều Sài Gòn hay đổ mưa, nhìn trời kéo mây là biết dọn hàng.
-**Luồng:** thanh 🕒 trên HUD hiện kiểu trời (☀️ nắng · 🌫️ âm u · 🌧️ mưa · ⛈️ bão; ban đêm trời quang là 🌙). Trời sắp đổi (trong 90 phút game)
+**Luồng:** thanh 🕒 trên HUD hiện kiểu trời (☀️ nắng · ☁️ âm u · 🌧️ mưa · ⛈️ bão; ban đêm trời quang là 🌙). Trời sắp đổi (trong 90 phút game)
 → thanh giờ hiện "→🌧️" và dải tin báo trước *"Khoảng 14:00 có mưa — chuẩn bị dời vô chỗ có mái"*. Tới giờ: thông báo
 *"Trời đổ mưa — xe đẩy vắng khách, tiệm có mái đông lên"*, hạt mưa rơi, trời xám lại, tiếng mưa rào rào; giông thì chớp + sấm, đèn đường bật.
 **Luật game:**

@@ -2169,15 +2169,15 @@ export const data: ContentInput = {
       {
         id: "cloudy",
         name: "Âm u",
-        emoji: "🌫️",
+        emoji: "☁️",
         outdoor: 0.9,
         indoor: 1,
         category: {},
         delivery: { speed: 1, surcharge: 0, damage: 1 },
         dim: 0.18,
         rain: 0,
-        news: "🌫️ Trời âm u, người ta ít ra đường hơn",
-        forecast: "🌫️ Khoảng {time} trời kéo mây âm u",
+        news: "☁️ Trời âm u, người ta ít ra đường hơn",
+        forecast: "☁️ Khoảng {time} trời kéo mây âm u",
       },
       {
         id: "rain",
