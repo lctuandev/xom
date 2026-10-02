@@ -114,6 +114,7 @@ function JobList() {
           else setGoal({ kind: "place", id: content.data.rides.stationPlaceId, open: "ride" });
         }}
       />
+      <SiteCard />
       {shopOpen && (
         <p className="mt-3 text-center text-sm text-ink/60">
           Đang mở quầy — đóng quầy rồi mới đi làm thuê được.
@@ -124,6 +125,37 @@ function JobList() {
 }
 
 /** 🛵 Xe ôm (KIENTRUC §4): tự chạy, không có chủ trả lương — thuê xe, đón khách ở trạm. */
+/** 🏗️ Công trình xóm đang thi công: Cai thầu cần người phụ hồ (UC-J6). */
+function SiteCard() {
+  const site = useGame((s) => s.world.sites?.[0]);
+  const close = useGame((s) => s.openSheet);
+  const setGoal = useGame((s) => s.setGoal);
+  if (!site) return null;
+  const c = content.data.crew;
+  const p = content.data.projects.find((x) => x.id === site.projectId);
+  return (
+    <div className="mt-3 rounded-2xl bg-white p-3 shadow-sm" data-job="phu_ho">
+      <p className="font-extrabold">
+        🏗️ Phụ hồ · {p?.emoji} {p?.name}
+      </p>
+      <p className="text-sm text-ink/60">
+        {c.keeper} cần người trộn vữa đúng định mức: {vnd(c.wagePerMix)}/mẻ (tiền công của công
+        trình). Đã {site.mixes}/{site.need} mẻ — đủ là công trình xong sớm.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          close(null);
+          setGoal({ kind: "point", x: site.x, z: site.z + 1.2, open: "site" });
+        }}
+        className="mt-2 h-11 w-full rounded-xl bg-leaf font-semibold text-cream"
+      >
+        🚶 Tới công trường
+      </button>
+    </div>
+  );
+}
+
 function RideCard({ here, rented, onGo }: { here: boolean; rented: boolean; onGo: () => void }) {
   const r = content.data.rides;
   const place = content.place(r.stationPlaceId);

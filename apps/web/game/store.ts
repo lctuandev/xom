@@ -72,7 +72,8 @@ export type SheetId =
   | "atm"
   | "board"
   | "fund"
-  | "ride";
+  | "ride"
+  | "site";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -158,6 +159,9 @@ interface GameState {
   /** Cây ATM đang đứng gần (UC-I6). */
   nearAtm: string | null;
   setNearAtm: (id: string | null) => void;
+  /** 🏗️ Công trường đang đứng gần (id dòng công trình, UC-J6). */
+  nearSite: string | null;
+  setNearSite: (id: string | null) => void;
   /** Sạp đồ ăn NPC đang đứng gần (UC-B9). */
   nearVendor: string | null;
   setNearVendor: (id: string | null) => void;
@@ -273,6 +277,8 @@ export const useGame = create<GameState>((set, get) => ({
   setNearShop: (nearShop) => set({ nearShop }),
   nearAtm: null,
   setNearAtm: (nearAtm) => set({ nearAtm }),
+  nearSite: null,
+  setNearSite: (nearSite) => set({ nearSite }),
   nearVendor: null,
   setNearVendor: (nearVendor) => set({ nearVendor }),
   eating: null,

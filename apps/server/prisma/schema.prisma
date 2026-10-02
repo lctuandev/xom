@@ -119,6 +119,8 @@ model RoomProject {
   voteMinute Int
   /// Ngày game xong thi công (khi đang BUILDING).
   doneDay    Int?
+  /// Số mẻ vữa bà con phụ hồ đã trộn đúng (UC-J6) — đủ `crewMixes` thì xong sớm.
+  mixes      Int           @default(0)
   createdAt  DateTime      @default(now())
 
   @@index([roomId, status])

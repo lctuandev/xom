@@ -796,8 +796,44 @@ export const projectSchema = z.object({
   demand: z.object({ lots: z.array(id).min(1), mult: z.number().min(1).max(1.5) }),
   /** Phải xong công trình này trước. */
   requires: id.optional(),
+  /** Chỗ dựng công trường (mặc định cạnh chỗ bán đầu tiên trong `demand.lots`). */
+  site: z.object({ x: z.number(), z: z.number() }).optional(),
+  /** Số mẻ vữa bà con phụ hồ trộn đúng thì công trình xong sớm (UC-J6). */
+  crewMixes: z.number().int().min(1).default(8),
 });
 export type Project = z.infer<typeof projectSchema>;
+
+/**
+ * 🏗️ Phụ hồ công trình xóm (NGHE §3.4, UC-J6): công trình đang thi công mở công trường, Cai thầu giao từng mẻ vữa; trộn đúng
+ * công thức thật (xi măng : cát : nước) thì được trả công từ khoản nhân công của công trình (trích trong chi phí).
+ */
+export const crewSchema = z.object({
+  keeper: z.string(),
+  /** Phần chi phí công trình dành trả công phụ hồ (giữ trong ví riêng của công trình; dư thì trả nhà thầu khi xong). */
+  laborShare: z.number().min(0).max(0.6),
+  /** Tiền công một mẻ trộn đúng. */
+  wagePerMix: vnd,
+  /** Mỗi mẻ mất bấy nhiêu phút game (không trộn dồn). */
+  mixMinutes: z.number().int().min(1),
+  /** Nước lệch trong tỉ lệ này vẫn đạt (cát ẩm / khô). */
+  waterTolerance: z.number().min(0).max(0.5),
+  /** Số bao xi măng mỗi mẻ (thấp nhất, cao nhất). */
+  bags: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+  mixes: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        /** Dùng làm gì (đời thật). */
+        use: z.string(),
+        /** Thùng cát 18 lít mỗi bao xi măng 50 kg. */
+        sandPerBag: z.number().int().min(1),
+        /** Lít nước mỗi bao. */
+        waterPerBag: z.number().int().min(1),
+      }),
+    )
+    .min(1),
+});
 export const fundSchema = z.object({
   /** Phần phí chợ / thuế khoán hằng ngày đi vào quỹ xóm (phần còn lại cho ban quản lý chợ). */
   feeShare: z.number().min(0).max(1),
@@ -1081,6 +1117,7 @@ export const contentSchema = z.object({
   projects: z.array(projectSchema).min(1),
   needs: needsSchema,
   fund: fundSchema,
+  crew: crewSchema,
   achievements: z.array(achievementSchema).min(1),
   story: z.array(storyBeatSchema).min(1),
   residents: z.array(residentSchema).min(1),

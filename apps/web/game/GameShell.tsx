@@ -39,6 +39,7 @@ import { PhotoShoot } from "./ui/PhotoShoot";
 import { QuickChat } from "./ui/QuickChat";
 import { RideSheet } from "./ui/RideSheet";
 import { ShopSheet } from "./ui/ShopSheet";
+import { SiteSheet } from "./ui/SiteSheet";
 import { TalkSheet } from "./ui/TalkSheet";
 import { FoodSheet, VendorSheet } from "./ui/VendorSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
@@ -139,6 +140,7 @@ export default function GameShell() {
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
       {sheet === "ride" && <RideSheet />}
+      {sheet === "site" && <SiteSheet />}
       <ActionBar />
       <QuickChat />
       <Kitchen />

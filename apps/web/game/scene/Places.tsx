@@ -139,6 +139,10 @@ export function ProximityWatcher() {
       if (spot && distanceTo(spot.x, spot.z) <= radius) atm = a.id;
     }
     if (atm !== s.nearAtm) s.setNearAtm(atm);
+    // Công trường đang thi công (UC-J6).
+    let site: string | null = null;
+    for (const w of s.world.sites ?? []) if (distanceTo(w.x, w.z) <= radius + 1) site = w.id;
+    if (site !== s.nearSite) s.setNearSite(site);
 
     const g = s.goal;
     const arrived =

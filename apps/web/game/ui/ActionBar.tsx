@@ -24,6 +24,7 @@ export function ActionBar() {
       <EatingChip />
       <VendorButton />
       <AtmButton />
+      <SiteButton />
       <ShopButton />
       <KitchenButton />
       <AwayChip />
@@ -32,6 +33,22 @@ export function ActionBar() {
       <EnterShopButton />
       <PlaceButton />
     </div>
+  );
+}
+
+/** Đứng ở công trường đang thi công: phụ hồ cho Cai thầu (UC-J6). */
+function SiteButton() {
+  const id = useGame((s) => s.nearSite);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!id) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("site")}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-sun px-4 font-semibold shadow-lg active:scale-[0.97]"
+    >
+      🏗️ Phụ hồ · {content.data.crew.keeper}
+    </button>
   );
 }
 

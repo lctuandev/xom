@@ -116,6 +116,39 @@ export interface LotOccupant {
 
 export interface WorldView {
   lots: LotOccupant[];
+  /** 🏗️ Công trường đang thi công (UC-J6). */
+  sites?: SiteView[];
+}
+
+/** Công trường của một công trình đang thi công (UC-J6). */
+export interface SiteView {
+  /** Id dòng công trình của xóm. */
+  id: string;
+  projectId: string;
+  x: number;
+  z: number;
+  /** Mẻ vữa đã trộn đúng / cần để xong sớm. */
+  mixes: number;
+  need: number;
+  /** Tiền công còn lại trong khoản nhân công. */
+  budget: number;
+}
+
+/** Bảng phụ hồ: lệnh trộn của Cai thầu cho mình. */
+export interface CrewView {
+  site: SiteView;
+  order: { mixId: string; bags: number };
+  /** Phút game được trộn mẻ tiếp (đang chờ mẻ trước). */
+  readyAt: number | null;
+  today: { mixes: number; earned: number };
+}
+
+export interface MixResultView {
+  ok: boolean;
+  /** Lời Cai thầu khi trộn sai. */
+  problems: string[];
+  pay: number;
+  view: CrewView;
 }
 
 /** Một sự kiện đang/sắp diễn ra trong xóm (DESIGN §9). */
@@ -944,6 +977,13 @@ export const gigPostSchema = z.object({
 export const gigShotSchema = z.object({
   id: z.string().uuid(),
   at: z.number().int().min(0).max(120_000).optional(),
+});
+export const crewViewSchema = z.object({ siteId: z.string().uuid() });
+export const crewMixSchema = z.object({
+  siteId: z.string().uuid(),
+  cement: z.number().int().min(0).max(20),
+  sand: z.number().int().min(0).max(200),
+  water: z.number().int().min(0).max(400),
 });
 export const gigReviewSchema = z.object({
   id: z.string().uuid(),

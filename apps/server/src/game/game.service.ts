@@ -188,7 +188,10 @@ export class GameService implements OnModuleDestroy {
     this.emitter = emitter;
     this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
-    this.projects.setNotifier((roomId, n) => emitter.toRoom(roomId, "notify", n));
+    this.projects.setNotifier(
+      (roomId, n) => emitter.toRoom(roomId, "notify", n),
+      (room) => this.emitWorld(room),
+    );
     this.story.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
@@ -1628,7 +1631,10 @@ export class GameService implements OnModuleDestroy {
     return {
       me: await this.me(room, playerId),
       clock: this.clockOf(room),
-      world: { lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)) },
+      world: {
+        lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)),
+        sites: await this.projects.sites(room.id),
+      },
       shift: this.work.view(room, playerId),
       roster: this.roster(room),
       events: room.events,
@@ -1730,8 +1736,8 @@ export class GameService implements OnModuleDestroy {
   }
 
   private emitWorld(room: RoomRuntime) {
-    void this.refreshOccupants(room)
-      .then((lots) => this.emitter?.toRoom(room.id, "world", { lots }))
+    void Promise.all([this.refreshOccupants(room), this.projects.sites(room.id)])
+      .then(([lots, sites]) => this.emitter?.toRoom(room.id, "world", { lots, sites }))
       .catch((err) => this.logger.warn(`không cập nhật được quầy: ${err}`));
   }
 

@@ -20,6 +20,8 @@ import {
   type ClientToServerEvents,
   chatTextSchema,
   contractIdSchema,
+  crewMixSchema,
+  crewViewSchema,
   debugAwaySchema,
   debugClockSchema,
   debugContractSchema,
@@ -551,6 +553,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       if (process.env.NODE_ENV === "production")
         throw new GameError("invalid_state", "Không có lệnh này");
       await this.game.contracts.debugPost(ctx.room, p.templateId);
+    });
+  }
+
+  @SubscribeMessage("crew:view")
+  crewView(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, crewViewSchema, body, (ctx, p) =>
+      this.game.projects.crewView(ctx.room, ctx.playerId, p.siteId),
+    );
+  }
+
+  @SubscribeMessage("crew:mix")
+  crewMix(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, crewMixSchema, body, async (ctx, p) => {
+      const r = await this.game.projects.mix(ctx.room, ctx.playerId, p.siteId, p);
+      if (r.ok) await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
     });
   }
 

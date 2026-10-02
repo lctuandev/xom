@@ -163,7 +163,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🛵 Xe ôm: xe Wave hiện dưới người khi đã thuê, khách ngồi sau lúc chở, đậu đâu cũng chờ khách được, thông báo khách vẫy bấm được + chip trên thanh hành động | ✅ | 1.21 | UC-N1 |
 | Bảng việc xóm (hợp đồng + tiền giữ escrow) | ⏳ | 1.13a | NGHE §5 |
 | Thợ chụp ảnh / review quán (hợp đồng, tăng khách cho quầy) | ⏳ | 1.13b | NGHE §3.3 |
-| Phụ hồ công trình quỹ xóm (công nhật từ quỹ) | ⏳ | 1.14a | NGHE §3.4, UC-J5 |
+| 🏗️ Phụ hồ công trình xóm: công trường trên bản đồ, Cai Lâm giao mẻ vữa, trộn đúng định mức (xi măng : cát : nước) có công từ khoản nhân công của công trình, đủ mẻ xong sớm | ✅ | 1.14a | UC-J6, NGHE §3.4 |
 | Tiệm tạp hoá + sổ ghi nợ | ⏳ | 1.14b | NGHE §3.5 |
 | Tiệm cắt tóc (đi cùng cá nhân hoá) | ⏳ | 1.15 | NGHE §3.6 |
 | Làm thuê quán cơm: đứng quầy múc cơm, thu ngân, bưng bê | ✅ | 1.7 | UC-W2…W4 |

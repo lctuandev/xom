@@ -23,6 +23,7 @@ import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
 import { Rain } from "./Rain";
+import { Sites } from "./Sites";
 import { Stalls } from "./Stalls";
 import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
@@ -129,6 +130,7 @@ function World() {
       <NightLights />
       <Stalls />
       <Atms />
+      <Sites />
       <Vendors />
       <Customers />
       <ProximityWatcher />

@@ -1852,6 +1852,39 @@ export const data: ContentInput = {
 
   // Quỹ xóm + công trình chung (UC-J5). Giá tham khảo công trình nông thôn (đã nén như mọi số tiền trong game).
   fund: { feeShare: 0.6, voteMinutes: 240, donateStep: 10_000 },
+  crew: {
+    keeper: "Cai Lâm",
+    // Ngoài đời phụ hồ 300–450k/ngày, một ngày trộn ~25–30 mẻ vữa → ~12k/mẻ.
+    laborShare: 0.25,
+    wagePerMix: 12_000,
+    mixMinutes: 10,
+    waterTolerance: 0.15,
+    bags: [1, 3],
+    // Định mức hay dùng ở công trình (1 bao xi măng 50 kg : thùng cát 18 lít : lít nước).
+    mixes: [
+      {
+        id: "vua_xay",
+        name: "Vữa xây tường",
+        use: "xây tường 110, 220",
+        sandPerBag: 9,
+        waterPerBag: 20,
+      },
+      {
+        id: "vua_trat",
+        name: "Vữa trát tường",
+        use: "tô trát mặt tường",
+        sandPerBag: 8,
+        waterPerBag: 20,
+      },
+      {
+        id: "vua_mac75",
+        name: "Vữa mác 75",
+        use: "tường chịu lực nhẹ, lót nền",
+        sandPerBag: 10,
+        waterPerBag: 22,
+      },
+    ],
+  },
   projects: [
     {
       id: "lat_hem_12",
@@ -2340,6 +2373,7 @@ export const data: ContentInput = {
       emoji: "📣",
       text: "Lần đầu thuê {name} chụp ảnh quầy — ảnh đăng lên nhóm xóm",
     },
+    { id: "first_crew", emoji: "🏗️", text: "Lần đầu đi phụ hồ: trộn vữa cho {name}" },
   ],
 
   achievements: [

@@ -3,6 +3,7 @@ import type {
   AtmReceipt,
   ClockView,
   ContractBoardView,
+  CrewView,
   DayReportView,
   EventView,
   FundView,
@@ -10,6 +11,7 @@ import type {
   InspectResult,
   MakeResult,
   MeView,
+  MixResultView,
   MovePayload,
   MyStatsView,
   NotifyEvent,
@@ -126,6 +128,11 @@ export interface ClientToServerEvents {
   "contract:drop": Intent<{ id: string }, ContractBoardView>;
   /** Dev/test: đăng ngay một việc theo mẫu. */
   "debug:contract": Intent<{ templateId: string }>;
+  "crew:view": Intent<{ siteId: string }, CrewView>;
+  "crew:mix": Intent<
+    { siteId: string; cement: number; sand: number; water: number },
+    MixResultView
+  >;
   "gig:list": Intent<Record<string, never>, GigBoardView>;
   "gig:post": Intent<{ kind: "photo"; reward: number; hours: number }, GigBoardView>;
   "gig:cancel": Intent<{ id: string }, GigBoardView>;

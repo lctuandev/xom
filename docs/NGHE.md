@@ -145,6 +145,7 @@ chấm theo giờ server), nộp 3 tấm đẹp nhất, chủ nghiệm thu + ch�
 **Luồng:** công trình quỹ xóm đang thi công (cầu, đường, ao) mở **ca phụ hồ**: trộn hồ (đúng tỉ lệ cát/xi măng/nước),
 khiêng gạch (xếp đúng chỗ), đẩy xe rùa. Mỗi ca rút ngắn thời gian thi công; trả **công nhật từ quỹ xóm**.
 **Ý nghĩa:** người mới không vốn vẫn góp sức cho công trình chung — gắn với vòng "sự kiện chung".
+**Đã làm (UC-J6):** trộn vữa theo định mức thật ở công trường, công trả từ khoản nhân công trích trong chi phí công trình, đủ mẻ thì xong sớm. Chưa có: khiêng gạch, xe rùa.
 **Âm thanh:** xẻng xúc cát, máy trộn quay, búa gõ, tiếng hò "một hai ba lên!".
 
 ### 3.5 🏪 Tiệm tạp hoá — RETAIL mở rộng

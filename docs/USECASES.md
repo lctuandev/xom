@@ -851,6 +851,27 @@ tổ trưởng giữ quỹ, thuê thợ làm vài ngày rồi cả xóm ra nghi�
 **Kiểm chứng:** unit `projects.test.ts`; e2e server `projects.e2e-spec.ts`; Playwright `quy-xom.spec.ts`.
 **Chưa:** công trình hiện trên bản đồ 3D (đường lát, đèn, cầu), mở rộng đất/lô bán mới, hạng mục "Người vì xóm" trong Bảng xóm.
 
+### UC-J6 · 🏗️ Phụ hồ công trình xóm ✅ (1.14a)
+**Nhân vật:** **Cai Lâm** — cai thầu công trình của xóm, đứng ở công trường chỉ việc.
+**Đời thật (đã tra):** phụ hồ trộn vữa theo định mức — vữa xây tường 1 bao xi măng 50 kg : ~9 thùng cát 18 lít, vữa trát 1 : 8,
+vữa mác 75 1 : 10; ~18–22 lít nước mỗi bao tuỳ độ ẩm cát. Công nhật phụ hồ 300–450k/ngày (TP HCM cao hơn tỉnh).
+**Luồng:** xóm khởi công một công trình (UC-J5) → thông báo *"🏗️ Khởi công … Cai Lâm cần người phụ hồ"* (bấm mở Việc làm) →
+công trường hiện trên bản đồ cạnh chỗ bán liên quan (đống cát, bao xi măng, thùng trộn, rào sọc, biển *"x/8 mẻ"*, Cai Lâm) →
+Việc làm › 💼 Làm thuê › **🏗️ Phụ hồ** → **🚶 Tới công trường** (tới nơi bảng tự mở) → Cai giao *"Trộn 2 bao vữa xây tường"* + bảng
+định mức → đổ **🧱 xi măng (bao) / ⛱️ cát (thùng, +5) / 💧 nước (lít, +20)** → **🪣 Trộn** → đạt: *"Vữa ngon!"* +12k, công trường
+thêm một mẻ; sai: Cai nói lỗi (*"ít cát quá, vữa dễ nứt"*, *"nhão quá, chảy hết"*…), đổ bỏ, trộn lại mẻ đó. Mỗi mẻ ~10 phút game.
+Đủ số mẻ (8) → **nghiệm thu sớm** *"nhờ bà con phụ hồ"*.
+**Luật game:** tiền công **không sinh mới**: khi khởi công, 25% chi phí công trình giữ trong ví `escrow:project:<id>` làm khoản
+nhân công, phần còn lại trả nhà thầu; xong công trình mà còn dư thì trả nốt nhà thầu; hết khoản nhân công thì Cai không thuê nữa.
+Server kiểm đứng ở công trường, không đang mở quầy / trong ca khác, đợi mẻ trước; xi măng + cát phải đúng, nước lệch ≤ 15%.
+Sổ cái: `project`, `project_labor`, `crew_wage`, `project_labor_left`; đo lường `crew_mix` (đạt / hỏng).
+**Dữ liệu:** `content.crew` (keeper, laborShare, wagePerMix, mixMinutes, waterTolerance, bags, mixes); `projects[].crewMixes / site`;
+`RoomProject.mixes`; `WorldView.sites`; sim `mixOrder`, `mixTarget`, `checkMix`, `laborBudget`, `siteOf`.
+**Kiểm chứng:** sim `crew.test.ts`; e2e server `crew.e2e-spec.ts` (khởi công → công trường trong `world` → đứng xa bị từ chối → trộn
+thiếu cát bị bắt làm lại, không tiền → trộn đúng có công, ví nhân công giảm → chưa xong mẻ trước không trộn tiếp → đủ mẻ xong sớm,
+ví nhân công về 0); Playwright `phu-ho.spec.ts`.
+**Sau này:** khiêng gạch, đẩy xe rùa; nhiều người cùng làm một ca (Cai chia việc); kỹ năng *tay nghề phụ hồ* lên thợ hồ.
+
 ---
 
 ## K. Sự kiện đời sống
