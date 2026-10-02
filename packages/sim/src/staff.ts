@@ -16,7 +16,10 @@ export type StaffDef = Content["data"]["staff"]["people"][number];
 
 export interface StaffShiftInput {
   content: Content;
+  /** Một người (bản đầu) — hoặc dùng `team` cho cả nhóm nhân viên trong ca. */
   staff: StaffDef;
+  /** Nhóm nhân viên cùng ca (docs/IA.md bước E): sức làm cộng dồn, mỗi món do một người làm theo tay nghề người đó. */
+  team?: StaffDef[];
   productId: string;
   lotId: string;
   /** Món đang bán + giá (thực đơn của chủ). */
@@ -49,6 +52,8 @@ export interface StaffShiftResult {
   demandCarry: number;
   /** Sức làm dư (truyền vào nhịp sau). */
   capacity: number;
+  /** Từng người làm được gì (phiếu ca theo người) — lương theo số phút có mặt. */
+  byStaff: { staffId: string; served: number; wrong: number; revenue: number; wages: number }[];
 }
 
 const round500 = (n: number) => Math.round(n / 500) * 500;
@@ -74,7 +79,11 @@ export function staffWageCarry(
 
 /** Nhân viên bán từ `fromMinute` tới `toMinute`: chạy từng nhịp kinh tế như quầy thường, phục vụ tối đa theo tốc độ tay. */
 export function staffShift(p: StaffShiftInput): StaffShiftResult {
-  const { content, staff } = p;
+  const { content } = p;
+  const team = p.team?.length ? p.team : [p.staff];
+  // Sức làm cả nhóm = tổng tốc độ từng người (món / phút); dư tối đa 3 món mỗi người.
+  const rate = team.reduce((r, m) => r + 1 / m.serveMinutes, 0);
+  const per = new Map(team.map((m) => [m.id, { served: 0, wrong: 0, revenue: 0 }]));
   const recipe = content.product(p.productId).recipe;
   const step = content.economy.economyTickMinutes;
   const stock = new Map(p.stock);
@@ -115,7 +124,7 @@ export function staffShift(p: StaffShiftInput): StaffShiftResult {
       ],
     });
     carry = arr?.demandCarry ?? 0;
-    capacity = Math.min(capacity + minutes / staff.serveMinutes, 3);
+    capacity = Math.min(capacity + minutes * rate, 3 * team.length);
     for (let k = 0; k < (arr?.arrivals ?? 0); k++) {
       const rand = seededRandom("staff", p.seed, p.day, t, k);
       // Chỉ bán món còn đủ nguyên liệu (món chuẩn).
@@ -130,13 +139,33 @@ export function staffShift(p: StaffShiftInput): StaffShiftResult {
         stock.set(id, (stock.get(id) ?? 0) - q);
         used.set(id, (used.get(id) ?? 0) + q);
       }
-      if (rand() < staff.accuracy) {
+      // Ai làm món này: người tay nhanh nhận nhiều món hơn (theo tỉ lệ tốc độ).
+      let pick = rand() * rate;
+      let who = team[team.length - 1] as StaffDef;
+      for (const m of team) {
+        pick -= 1 / m.serveMinutes;
+        if (pick <= 0) {
+          who = m;
+          break;
+        }
+      }
+      const mine = per.get(who.id);
+      if (rand() < who.accuracy) {
         out.served++;
         out.revenue += order.price;
+        if (mine) {
+          mine.served++;
+          mine.revenue += order.price;
+        }
       } else {
         // Làm sai: khách phàn nàn, nhân viên giảm nửa giá.
+        const half = Math.round(order.price / 2 / 1000) * 1000;
         out.wrong++;
-        out.revenue += Math.round(order.price / 2 / 1000) * 1000;
+        out.revenue += half;
+        if (mine) {
+          mine.wrong++;
+          mine.revenue += half;
+        }
       }
     }
   }
@@ -146,9 +175,14 @@ export function staffShift(p: StaffShiftInput): StaffShiftResult {
     used,
     minutes,
     soldOut,
-    wages: staffWage(staff, minutes),
+    wages: team.reduce((w, m) => w + staffWage(m, minutes), 0),
     demandCarry: carry,
     capacity,
+    byStaff: team.map((m) => ({
+      staffId: m.id,
+      ...(per.get(m.id) ?? { served: 0, wrong: 0, revenue: 0 }),
+      wages: staffWage(m, minutes),
+    })),
   };
 }
 
@@ -156,4 +190,33 @@ export function staffShift(p: StaffShiftInput): StaffShiftResult {
 export function shiftAt(content: Content, shiftId: string, minute: number): boolean {
   const s = content.data.staff.shifts.find((x) => x.id === shiftId);
   return !!s && minute >= s.from && minute < s.to;
+}
+
+/** Nhân viên đang trong ca lúc `minute`. */
+export function onDutyTeam<E extends { shiftId: string }>(
+  content: Content,
+  employees: readonly E[],
+  minute: number,
+): E[] {
+  return employees.filter((e) => shiftAt(content, e.shiftId, minute));
+}
+
+export type ShopLevel = Content["data"]["shopLevels"][number];
+
+/** Cấp tiệm hiện tại (docs/IA.md bước E). */
+export function shopLevel(content: Content, level: number): ShopLevel {
+  const levels = content.data.shopLevels;
+  return levels.find((l) => l.level === level) ?? (levels[0] as ShopLevel);
+}
+
+/** Cấp kế tiếp nâng được (null = đã cao nhất, hoặc xe đẩy vỉa hè không lên cấp nhà mặt tiền). */
+export function nextShopLevel(
+  content: Content,
+  level: number,
+  lotKind: "cart" | "house" | null,
+): ShopLevel | null {
+  const next = content.data.shopLevels.find((l) => l.level === level + 1);
+  if (!next) return null;
+  if (next.houseOnly && lotKind !== "house") return null;
+  return next;
 }

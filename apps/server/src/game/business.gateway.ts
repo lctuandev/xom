@@ -7,6 +7,7 @@ import {
 import {
   attendSchema,
   bizSelectSchema,
+  bizUpgradeSchema,
   emptySchema,
   hostEventSchema,
   menuSchema,
@@ -21,6 +22,7 @@ import {
   shopLeaseSchema,
   shopOrderSchema,
   shopRegisterSchema,
+  staffFireSchema,
   staffHireSchema,
   stockTransferSchema,
   updateBusinessSchema,
@@ -193,8 +195,8 @@ export class BusinessGateway {
 
   @SubscribeMessage("staff:fire")
   staffFire(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handleWith(c, emptySchema, body, async (ctx) => {
-      const r = await this.game.staff.fire(ctx.playerId);
+    return this.handleWith(c, staffFireSchema, body, async (ctx, p) => {
+      const r = await this.game.staff.fire(ctx.playerId, p.employeeId);
       await this.game.pushMe(ctx.room, ctx.playerId);
       return r;
     });
@@ -238,5 +240,10 @@ export class BusinessGateway {
     return this.handle(c, stockTransferSchema, body, (ctx, p) =>
       this.game.biz.transferStock(ctx, p),
     );
+  }
+
+  @SubscribeMessage("biz:upgrade")
+  bizUpgrade(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, bizUpgradeSchema, body, (ctx, p) => this.game.biz.upgrade(ctx, p.pay));
   }
 }

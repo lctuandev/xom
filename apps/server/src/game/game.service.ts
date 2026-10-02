@@ -28,13 +28,14 @@ import {
   menuPriceRatio,
   needsAt,
   needsFrom,
+  onDutyTeam,
   overrideWeather,
   type PaySource,
   projectDemand,
   recipeIngredients,
   type SkillPoints,
   seededRandom,
-  shiftAt,
+  shopLevel,
   spoilage,
   wearDemand,
   weatherDemand,
@@ -840,16 +841,14 @@ export class GameService implements OnModuleDestroy {
     const all = (
       await this.prisma.business.findMany({
         where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
-        include: { employee: true },
+        include: { employees: true },
       })
     ).filter((b) => room.attendsAt(b.ownerId, b.id));
     // Nhân viên đang trong ca mà chủ không giành bán: nhân viên bán (StaffService), khách không vào bếp của chủ.
     const businesses = all.filter(
       (b) =>
         !(
-          b.employee &&
-          shiftAt(content, b.employee.shiftId, room.minute) &&
-          !room.selfSell.has(b.ownerId)
+          onDutyTeam(content, b.employees, room.minute).length > 0 && !room.selfSell.has(b.ownerId)
         ),
     );
     if (businesses.length === 0) return;
@@ -879,6 +878,8 @@ export class GameService implements OnModuleDestroy {
           // Ảnh quầy thợ ảnh chụp, đăng lên nhóm xóm (UC-M8).
           this.gigs.adOf(room, b) *
           wearDemand(b.wear, eco.maintenance) *
+          // Cấp tiệm: tiệm to hơn, đông khách hơn (docs/IA.md bước E).
+          shopLevel(content, b.level).trafficMul *
           projectDemand(content, built, b.lotId ?? "") *
           // Sự kiện cả xóm theo nhóm hàng (chợ đêm thứ Bảy: ăn vặt, đồ uống, phụ kiện đông hẳn).
           eventCategoryDemand(content, xomEvents, content.product(b.productId).category) *
@@ -1092,7 +1093,14 @@ export class GameService implements OnModuleDestroy {
             rentPaidToday: biz.rentPaidDay === room.day && biz.rentLotId === biz.lotId,
             promoDay: biz.promoDay,
             wear: biz.wear,
-            staff: staffView(biz.employee, room.minute, ownerSells(room, playerId)),
+            // Nhân viên tiêu biểu (đang trong ca trước) cho HUD; cả nhóm xem ở 👩‍🍳 Nhân viên.
+            staff: staffView(
+              onDutyTeam(content, biz.employees, room.minute)[0] ?? biz.employees[0] ?? null,
+              room.minute,
+              ownerSells(room, playerId),
+            ),
+            staffCount: biz.employees.length,
+            level: biz.level,
             selfSell: room.selfSell.has(playerId),
             leaseLotId: lease?.lotId ?? null,
           }
@@ -1105,7 +1113,7 @@ export class GameService implements OnModuleDestroy {
         lotId: b.lotId,
         name: b.shopName,
         open: b.status === "OPEN",
-        staffOnDuty: !!b.employee && !!shiftAt(content, b.employee.shiftId, room.minute),
+        staffOnDuty: onDutyTeam(content, b.employees, room.minute).length > 0,
         active: b.id === biz?.id,
       })),
       friendship: Object.fromEntries(relations.map((r) => [r.npcId, r.friendship])),

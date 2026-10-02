@@ -132,7 +132,9 @@ function runStrategy(equipment, lot, mult, serveSec) {
  * Tiệm có nhân viên đứng cả ngày (UC-M6): nhân viên bán theo sức tay, chủ trả lương giờ + tiền nhà + điện nước + thuế.
  * Kho đủ hàng (chủ nhập mỗi sáng), giá = giá hợp lý của chỗ đó.
  */
-function runStaff(equipment, lot, person) {
+function runStaff(equipment, lot, person, level = 1) {
+  const lv = content.data.shopLevels.find((l) => l.level === level) ?? content.data.shopLevels[0];
+  const team = content.data.staff.people.slice(0, lv.maxStaff);
   const product = content.product(equipment.products[0]);
   const recipe = product.recipe;
   const menu = recipe.variants.map((v) => ({
@@ -157,6 +159,7 @@ function runStaff(equipment, lot, person) {
     const r = staffShift({
       content,
       staff: person,
+      ...(level > 1 ? { team, boost: lv.trafficMul } : {}),
       productId: product.id,
       lotId: lot.id,
       menu,
@@ -313,6 +316,30 @@ if (ride.profitPerDay < Math.min(...wages) * 0.8)
   );
 if (ride.profitPerDay > wage * 3)
   warnings.push(`xe ôm lãi quá cao (${k(ride.profitPerDay)}/ngày, > 3 lần làm thuê)`);
+
+// Tiệm lớn (cấp cao nhất) đủ nhân viên (docs/IA.md bước E): thu nhập do nhân viên vẫn phải có trần — chủ tự nhập hàng mỗi
+// ngày, trả lương từng người, tiền nâng cấp. Bậc tiến trình cao nhất: trần 8 lần làm thuê (xe đẩy 5, tiệm 6,5).
+const top = content.data.shopLevels.at(-1);
+console.log(
+  `\n🏢 ${top.name} (cấp ${top.level}, ${top.maxStaff} nhân viên, khách ×${top.trafficMul}):`,
+);
+for (const e of content.data.equipment) {
+  const best = houses
+    .map((lot) => runStaff(e, lot, content.data.staff.people[0], top.level))
+    .reduce((a, b) => (b.profitPerDay > a.profitPerDay ? b : a));
+  const payback = Math.ceil(
+    content.data.shopLevels.reduce((n, l) => n + l.upgradeCost, 0) / Math.max(1, best.profitPerDay),
+  );
+  console.log(
+    `  ${e.id.padEnd(15)} ${k(best.profitPerDay).padStart(6)}/ngày ở ${best.lot} · ${best.servedPerDay} món · hoàn vốn nâng cấp ~${payback} ngày`,
+  );
+  if (best.profitPerDay > wage * 8)
+    warnings.push(
+      `${e.id}: tiệm lớn đủ nhân viên lãi quá cao (${k(best.profitPerDay)}/ngày) — thu nhập thụ động`,
+    );
+  if (best.profitPerDay <= 0)
+    warnings.push(`${e.id}: tiệm lớn đủ nhân viên vẫn lỗ — nâng cấp vô ích`);
+}
 
 const vua = content.data.equipment.map((e) =>
   Math.max(

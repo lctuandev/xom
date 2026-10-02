@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { content } from "@xom/content";
-import { shiftAt } from "@xom/sim";
+import { onDutyTeam } from "@xom/sim";
 import type { Tx } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -70,7 +70,7 @@ export class BusinessRepo {
   openWithEmployee(playerId: string) {
     return this.prisma.business.findMany({
       where: { ownerId: playerId, status: "OPEN", lotId: { not: null } },
-      include: { employee: true },
+      include: { employees: true },
     });
   }
 
@@ -81,9 +81,9 @@ export class BusinessRepo {
   async ownerTied(playerId: string, minute: number): Promise<Business | null> {
     const open = await this.prisma.business.findMany({
       where: { ownerId: playerId, status: "OPEN" },
-      include: { employee: true },
+      include: { employees: true },
     });
-    return open.find((b) => !b.employee || !shiftAt(content, b.employee.shiftId, minute)) ?? null;
+    return open.find((b) => onDutyTeam(content, b.employees, minute).length === 0) ?? null;
   }
 
   /** Cửa hàng đang quản lý, kèm nhân viên. */
@@ -91,7 +91,7 @@ export class BusinessRepo {
     const list = await this.prisma.business.findMany({
       where: { ownerId: playerId },
       orderBy: { createdAt: "asc" },
-      include: { employee: true },
+      include: { employees: true },
     });
     const id = await this.activeId(playerId, this.prisma, list);
     return list.find((b) => b.id === id) ?? null;
@@ -102,7 +102,7 @@ export class BusinessRepo {
     return this.prisma.business.findMany({
       where: { ownerId: playerId },
       orderBy: { createdAt: "asc" },
-      include: { employee: true },
+      include: { employees: true },
     });
   }
 }

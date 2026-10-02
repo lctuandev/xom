@@ -157,7 +157,9 @@ export interface ClientToServerEvents {
   /** Nhân viên đứng quầy thay (KIENTRUC §2). */
   "staff:view": Intent<Record<string, never>, StaffView>;
   "staff:hire": Intent<{ staffId: string; shiftId: string }, StaffView>;
-  "staff:fire": Intent<Record<string, never>, StaffView>;
+  "staff:fire": Intent<{ employeeId?: string }, StaffView>;
+  /** ⬆️ Nâng cấp cửa hàng đang quản lý lên cấp kế tiếp (tốn tiền; cần nhà mặt tiền). */
+  "biz:upgrade": Intent<{ pay?: PayMethod }>;
   "npc:talk": Intent<{ npcId: string; topic: "greet" | "price" | "gossip" }, TalkResult>;
   "chat:say": Intent<{ phraseId: string }>;
   /** Chat tự gõ: hiện trên đầu nhân vật cho cả xóm (UC-D4). */

@@ -55,6 +55,10 @@ export interface BusinessView {
   wear: number;
   /** Nhà mặt tiền đang thuê theo hợp đồng (UC-F12) — tiền nhà tính mỗi ngày dù mở hay đóng. */
   leaseLotId?: string | null;
+  /** Cấp tiệm (content.shopLevels — docs/IA.md bước E). */
+  level?: number;
+  /** Số nhân viên đang thuê. */
+  staffCount?: number;
 }
 
 export interface InventoryView {
@@ -865,7 +869,15 @@ export interface StaffShiftView {
 
 /** Nhân viên của quầy mình + vài phiếu ca gần nhất. */
 export interface StaffView {
-  employee: { staffId: string; shiftId: string; hiredDay: number } | null;
+  /** Người đang thuê ở cửa hàng đang quản lý (nhiều người — tối đa theo cấp tiệm). */
+  employees: { id: string; staffId: string; shiftId: string; hiredDay: number }[];
+  /** Thuê tối đa bao nhiêu người ở cấp tiệm hiện tại. */
+  maxStaff: number;
+  /** Cấp tiệm hiện tại + cấp kế tiếp nâng được (null = cao nhất / xe đẩy). */
+  level: number;
+  next: { level: number; name: string; cost: number; maxStaff: number; trafficMul: number } | null;
+  /** Người đang làm ở cửa hàng khác của mình (một người một chỗ). */
+  busyElsewhere: string[];
   recent: StaffShiftView[];
 }
 
@@ -1084,6 +1096,10 @@ export const gigReviewSchema = z.object({
 /** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
 export const debugContractSchema = z.object({ templateId: contentId });
 export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
+/** ⬆️ Nâng cấp tiệm. */
+export const bizUpgradeSchema = z.object({ pay: payMethodSchema.optional() });
+/** Cho một người nghỉ (id dòng Employee); bỏ trống = cho nghỉ hết (bản cũ). */
+export const staffFireSchema = z.object({ employeeId: z.string().uuid().optional() });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
 export const debugAwaySchema = z.object({
   minutes: z.number().int().min(1).max(100_000),

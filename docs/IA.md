@@ -162,7 +162,7 @@ Khi làm nhiều cửa hàng (bước D), các sheet nhóm 🏪 nhận `shopId` 
 | **B** ✅ | **Tách mỗi chức năng một sheet** (registry, 35 sheet) + Menu ☰ + icon neo + nút ngữ cảnh; bỏ thanh dưới 5 mục | đổi UI | Playwright cập nhật locator + kịch bản `menu-chinh` |
 | **C** ✅ (phần sổ) | 📊 Sổ sách: thu / chi theo khoản (nhập hàng, tiền nhà/chỗ, lương NV, điện nước, phí) hôm nay & 7 ngày, lãi/lỗ, khoản chi lớn nhất; DailyReport tách `staffWages`, `utilities`. Tổng quan nhiều cửa hàng làm cùng bước D | đổi UI | e2e staff (lương ghi riêng), sinks (điện nước), Playwright bang-xom |
 | **D** ✅ | Nhiều cửa hàng + kho riêng từng tiệm (`InventoryItem.businessId`, `Player.activeBusinessId`, `StockTransfer`), cửa hàng đang quản lý (`biz:select`), chuyển kho có thời gian, mở thêm / đổi nghề, 🏬 Các cửa hàng. Còn: thuê nhiều nhà mặt tiền | đổi luật | e2e shops, Playwright nhieu-cua-hang |
-| **E** (½ ✅) | ✅ Chủ tự do khi có nhân viên (`ownerTied`) · ⏳ nhiều nhân viên theo cấp tiệm | đổi luật | e2e staff mới, `pnpm balance` |
+| **E** ✅ | Chủ tự do khi có nhân viên (`ownerTied`) · cấp tiệm (`shopLevels`, `biz:upgrade`) + nhiều nhân viên cùng ca | đổi luật | e2e staff, Playwright cap-tiem, `pnpm balance` |
 | **F** | Tiếp backlog: nội thất theo nghề (3.6), khách ra vào tiệm (3.7), xóm chung (3.8), admin (3.9), nét vẽ toon + đô thị hoá (đã có bản nháp) | | |
 
 Ước lượng: A 1 phiên · B 1 phiên · C 1 phiên · D 1–2 phiên · E 1 phiên.

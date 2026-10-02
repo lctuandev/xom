@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import { content } from "@xom/content";
 import type { MeView, MyStatsView, NotifyEvent, StaffView, StoryEntryView } from "@xom/shared";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import { connect, emit, next, openBanhMiStall } from "./client.js";
@@ -34,13 +35,13 @@ describe("Thuê nhân viên (e2e)", () => {
     expect(bad.ok).toBe(false);
     const hired = await emit<StaffView>(socket, "staff:hire", { staffId: "thu", shiftId: "toi" });
     if (!hired.ok) throw new Error(hired.message);
-    expect(hired.data.employee).toMatchObject({ staffId: "thu", shiftId: "toi" });
+    expect(hired.data.employees).toMatchObject([{ staffId: "thu", shiftId: "toi" }]);
     const story = await emit<StoryEntryView[]>(socket, "story:list", {});
     expect(
       story.ok && story.data.some((s) => s.text === "Thuê người đầu tiên: Thu đứng quầy phụ"),
     ).toBe(true);
     const fired = await emit<StaffView>(socket, "staff:fire", {});
-    expect(fired.ok && fired.data.employee).toBeNull();
+    expect(fired.ok && fired.data.employees).toEqual([]);
     socket.disconnect();
   });
 
@@ -109,6 +110,68 @@ describe("Thuê nhân viên (e2e)", () => {
     // Chủ vào ca làm thuê (rời quầy) — Khoa đứng bán thay.
     await emit(socket, "biz:attend", { on: false });
     await sold;
+    socket.disconnect();
+  });
+
+  it("cấp tiệm: xe đẩy chỉ 1 người, không nâng cấp; tiệm cấp 2 thuê 2 người cùng ca, cả nhóm bán, phiếu theo người", async () => {
+    const { socket, me } = await openBanhMiStall(url);
+    await emit(socket, "debug:clock", { minute: 18 * 60 });
+    await emit(socket, "debug:grant", { money: 3_000_000 });
+    // Xe đẩy: thuê người thứ 2 bị từ chối; không nâng cấp được.
+    await emit(socket, "staff:hire", { staffId: "thu", shiftId: "toi" });
+    const second = await emit(socket, "staff:hire", { staffId: "khoa_phu", shiftId: "toi" });
+    expect(second.ok).toBe(false);
+    if (!second.ok) expect(second.message).toContain("nâng cấp tiệm");
+    await emit(socket, "biz:close", {});
+    expect((await emit(socket, "biz:upgrade", {})).ok).toBe(false);
+
+    // Sang nhà mặt tiền (đủ giấy tờ bằng lệnh dev) rồi nâng lên cấp 2: trả đúng tiền nâng cấp.
+    await new Promise((r) => setTimeout(r, 1_100));
+    expect((await emit(socket, "debug:shop", { lotId: "nha_so_10" })).ok).toBe(true);
+    const lv2 = content.data.shopLevels.find((l) => l.level === 2);
+    const before = await emit<MeView>(socket, "biz:attend", { on: false });
+    const up = await emit<MeView>(socket, "biz:upgrade", {});
+    if (!up.ok || !before.ok) throw new Error("không nâng cấp được");
+    expect(before.data.money + before.data.bank - (up.data.money + up.data.bank)).toBe(
+      lv2?.upgradeCost,
+    );
+    expect(up.data.business?.level).toBe(2);
+    const two = await emit<StaffView>(socket, "staff:hire", {
+      staffId: "khoa_phu",
+      shiftId: "toi",
+    });
+    if (!two.ok) throw new Error(two.message);
+    expect(two.data.employees.map((e) => e.staffId).sort()).toEqual(["khoa_phu", "thu"]);
+    expect(two.data.maxStaff).toBe(2);
+
+    // Một người không làm hai cửa hàng: mở thêm cửa hàng rồi thuê Thu bên đó → từ chối.
+    // (Cả nhóm bán thay khi chủ rời quầy.)
+    const sold = next(
+      socket,
+      "notify",
+      (n: NotifyEvent) =>
+        n.text.includes("Thu") && n.text.includes("Khoa") && n.text.includes("vừa bán"),
+    );
+    await emit(socket, "biz:attend", { on: true });
+    const opened = await emit(socket, "biz:open", {});
+    if (!opened.ok) throw new Error(opened.message);
+    await emit(socket, "biz:attend", { on: false });
+    await sold;
+    const v = await emit<StaffView>(socket, "staff:view", {});
+    const people = v.ok ? new Set(v.data.recent.map((r) => r.staffId)) : new Set();
+    expect(people.has("thu") && people.has("khoa_phu")).toBe(true);
+    expect(me.playerId).toBeTruthy();
+    socket.disconnect();
+  });
+
+  it("một người chỉ làm cho một cửa hàng của mình", async () => {
+    const { socket } = await openBanhMiStall(url);
+    await emit(socket, "debug:grant", { money: 3_000_000 });
+    await emit(socket, "staff:hire", { staffId: "thu", shiftId: "sang" });
+    await emit(socket, "equipment:buy", { equipmentId: "xe_tra_sua" });
+    const again = await emit(socket, "staff:hire", { staffId: "thu", shiftId: "toi" });
+    expect(again.ok).toBe(false);
+    if (!again.ok) expect(again.message).toContain("cửa hàng khác");
     socket.disconnect();
   });
 });

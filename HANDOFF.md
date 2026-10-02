@@ -66,7 +66,7 @@ Không có code đang viết dở — cây làm việc sạch. Dưới đây là
 - **Còn lại theo docs/IA.md:** C (sổ sách lãi/lỗ theo khoản + tổng quan), D (nhiều cửa hàng + kho riêng + chuyển kho có thời gian),
   E (chủ tự do khi có nhân viên + cấp tiệm → số nhân viên). `ActionBar` (nút ngữ cảnh) chưa gom về một nút chính.
 
-### 3.2 👩‍🍳 Nhiều nhân viên theo quy mô cửa hàng
+### 3.2 👩‍🍳 Nhiều nhân viên theo quy mô cửa hàng — ✅ XONG (UC-M9: cấp tiệm 1–3, 1/2/3 người)
 Yêu cầu: thuê **cùng lúc nhiều nhân viên** để bán nhanh hơn, **giới hạn theo quy mô** (xe đẩy nhỏ ít người, tiệm lớn nhiều).
 Hướng làm: `Employee` hiện `@unique businessId` → bỏ unique, thêm `id`; content `staff.capacity` theo loại chỗ/cấp tiệm (gợi ý: xe
 đẩy 1, tiệm nhà mặt tiền 2, tiệm lớn/nâng cấp 3); sim `staffShift` nhận **danh sách** người trong ca (sức làm cộng dồn, tỉ lệ sai

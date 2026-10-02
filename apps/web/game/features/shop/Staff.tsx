@@ -29,12 +29,15 @@ function StaffBoard() {
   useEffect(() => {
     void send("staff:view", {}).then((r) => r.ok && setView(r.data));
   }, []);
+  const firstShift = view?.employees[0]?.shiftId;
   useEffect(() => {
-    if (view?.employee) setShift(view.employee.shiftId);
-  }, [view?.employee]);
+    if (firstShift) setShift(firstShift);
+  }, [firstShift]);
   if (!view) return <p className="text-sm text-ink/50">Đang hỏi Anh Tám…</p>;
   const { people, shifts } = content.data.staff;
-  const emp = view.employee;
+  const emps = view.employees;
+  const emp = emps[0];
+  const full = emps.length >= view.maxStaff;
   const person = (id: string) => people.find((p) => p.id === id);
   const act = async (fn: () => Promise<{ ok: boolean; data?: StaffView }>) => {
     setBusy(true);
@@ -50,14 +53,21 @@ function StaffBoard() {
           data?: StaffView;
         }>,
     );
-  const fire = () =>
-    act(() => send("staff:fire", {}) as Promise<{ ok: boolean; data?: StaffView }>);
+  const fire = (employeeId: string) =>
+    act(() => send("staff:fire", { employeeId }) as Promise<{ ok: boolean; data?: StaffView }>);
   const hours = (id: string) => {
     const s = shifts.find((x) => x.id === id);
     return s ? (s.to - s.from) / 60 : 0;
   };
-  const empShift = emp ? shifts.find((s) => s.id === emp.shiftId) : undefined;
-  const onDuty = !!empShift && minute >= empShift.from && minute < empShift.to;
+  const shiftOf = (id: string) => shifts.find((s) => s.id === id);
+  const onDutyNames = emps
+    .filter((e) => {
+      const sh = shiftOf(e.shiftId);
+      return !!sh && minute >= sh.from && minute < sh.to;
+    })
+    .map((e) => person(e.staffId)?.name);
+  const onDuty = onDutyNames.length > 0;
+  const empShift = emp ? shiftOf(emp.shiftId) : undefined;
   const picked = shifts.find((s) => s.id === shift);
   const pickedNow = !!picked && minute >= picked.from && minute < picked.to;
   return (
@@ -84,42 +94,47 @@ function StaffBoard() {
           </li>
         </ol>
       </details>
+      <p className="text-xs font-semibold" data-staff-count={emps.length}>
+        Đang thuê {emps.length}/{view.maxStaff} người · tiệm cấp {view.level}
+        {full && view.next && " — nâng cấp tiệm (🏪 Quầy của tôi) để thuê thêm"}
+      </p>
       {emp && empShift && (
         <p
           className={`rounded-xl px-3 py-2 text-xs font-semibold ${onDuty ? "bg-leaf/15 text-leaf" : "bg-red/10 text-red"}`}
           data-staff-status={onDuty ? "on" : "off"}
         >
           {onDuty
-            ? `Bây giờ ${formatClock(minute)}: ${person(emp.staffId)?.name} đang trong ca (${empShift.name}) — bạn rời quầy là có người bán thay.`
-            : `Bây giờ ${formatClock(minute)}: ${person(emp.staffId)?.name} ngoài giờ làm (${empShift.name}) — rời quầy lúc này thì quầy vắng chủ. Đổi sang ca đang diễn ra nếu cần.`}
+            ? `Bây giờ ${formatClock(minute)}: ${onDutyNames.join(", ")} đang trong ca — bạn rời quầy là có người bán thay.`
+            : `Bây giờ ${formatClock(minute)}: ${emps.map((e) => person(e.staffId)?.name).join(", ")} ngoài giờ làm (${empShift.name}) — rời quầy lúc này thì quầy vắng chủ. Đổi sang ca đang diễn ra nếu cần.`}
         </p>
       )}
-      {emp && (
+      {emps.map((e) => (
         <div
+          key={e.id}
           className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm"
-          data-employee={emp.staffId}
+          data-employee={e.staffId}
         >
           <span aria-hidden className="text-2xl">
             👩‍🍳
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold">
-              {person(emp.staffId)?.name} đang làm cho bạn
+              {person(e.staffId)?.name} đang làm cho bạn
             </span>
             <span className="block text-xs text-ink/60">
-              {shifts.find((s) => s.id === emp.shiftId)?.name} · từ ngày {emp.hiredDay}
+              {shiftOf(e.shiftId)?.name} · từ ngày {e.hiredDay}
             </span>
           </span>
           <button
             type="button"
             disabled={busy}
-            onClick={() => void fire()}
+            onClick={() => void fire(e.id)}
             className="rounded-full bg-ink/10 px-3 py-1.5 text-xs font-semibold text-ink"
           >
             Cho nghỉ
           </button>
         </div>
-      )}
+      ))}
       <fieldset>
         <legend className="mb-1 text-xs font-semibold text-ink/70">Ca làm</legend>
         <div className="grid grid-cols-2 gap-1.5">
@@ -146,7 +161,18 @@ function StaffBoard() {
       )}
       <ul className="flex flex-col gap-1.5">
         {people.map((p) => {
-          const mine = emp?.staffId === p.id && emp.shiftId === shift;
+          const here = emps.find((e) => e.staffId === p.id);
+          const mine = !!here && here.shiftId === shift;
+          const elsewhere = view.busyElsewhere.includes(p.id);
+          const label = mine
+            ? "Đang làm"
+            : here
+              ? "Đổi ca"
+              : elsewhere
+                ? "Ở quầy khác"
+                : full
+                  ? "Đủ người"
+                  : "Thuê";
           return (
             <li key={p.id} className="rounded-xl bg-white px-3 py-2 shadow-sm" data-staff={p.id}>
               <div className="flex items-center gap-2">
@@ -156,11 +182,11 @@ function StaffBoard() {
                 </span>
                 <button
                   type="button"
-                  disabled={busy || mine}
+                  disabled={busy || mine || elsewhere || (full && !here)}
                   onClick={() => void hire(p.id)}
                   className="shrink-0 rounded-full bg-red px-3 py-1.5 text-xs font-bold text-cream disabled:opacity-40"
                 >
-                  {mine ? "Đang làm" : emp ? "Đổi người" : "Thuê"}
+                  {label}
                 </button>
               </div>
               <p className="mt-1 flex gap-3 text-[11px] text-ink/70 tabular-nums">

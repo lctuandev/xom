@@ -190,8 +190,10 @@ model Business {
   /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
   promoDay    Int?
   createdAt   DateTime        @default(now())
-  /// Nhân viên đang thuê (KIENTRUC §2), mỗi quầy một người ở bản đầu.
-  employee    Employee?
+  /// Nhân viên đang thuê (KIENTRUC §2) — nhiều người, tối đa theo cấp tiệm (docs/IA.md bước E).
+  employees   Employee[]
+  /// Cấp tiệm (content.shopLevels): nâng cấp → đông khách hơn, thuê thêm người.
+  level       Int             @default(1)
   /// Kho riêng của cửa hàng.
   inventory   InventoryItem[]
   /// Mở tiệm (UC-F12): tên quán đăng ký hộ kinh doanh; phút game tuyệt đối hồ sơ được duyệt (null = chưa nộp).
@@ -246,7 +248,7 @@ model Lease {
 /// Nhân viên NPC đứng quầy thay khi chủ rời quầy / thoát game (docs/KIENTRUC.md §2).
 model Employee {
   id         String   @id @default(uuid(7)) @db.Uuid
-  businessId String   @unique @db.Uuid
+  businessId String   @db.Uuid
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   /// Id người trong content.staff.people.
   staffId    String
@@ -254,6 +256,8 @@ model Employee {
   shiftId    String
   hiredDay   Int
   createdAt  DateTime @default(now())
+
+  @@index([businessId])
 }
 
 /// Một phiên bán thay của nhân viên (để báo "Trong lúc bạn vắng" + phiếu ca).

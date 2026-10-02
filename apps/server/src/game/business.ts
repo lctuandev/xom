@@ -7,10 +7,11 @@ import {
   feeToFund,
   hostCost,
   levelOf,
+  nextShopLevel,
+  onDutyTeam,
   openDue,
   type PaySource,
   repairCost,
-  shiftAt,
   takeFifo,
   unlockLevel,
   wearState,
@@ -210,13 +211,13 @@ export class BusinessService {
         ownerId: { in: online },
         status: "CLOSED",
         lotId: { not: null },
-        employee: { isNot: null },
+        employees: { some: {} },
       },
-      include: { employee: true },
+      include: { employees: true },
     });
     for (const biz of closed) {
-      const e = biz.employee;
-      if (!e || !shiftAt(content, e.shiftId, room.minute)) continue;
+      const e = onDutyTeam(content, biz.employees, room.minute)[0];
+      if (!e) continue;
       const key = `${biz.id}:${room.day}`;
       // Mỗi ngày nhân viên chỉ mở một lần (chủ đóng giữa chừng thì thôi).
       if (this.staffOpened.has(key)) continue;
@@ -448,5 +449,58 @@ export class BusinessService {
       this.broadcast.me(id);
     }
     this.broadcast.stockChanged(room);
+  }
+
+  /**
+   * ⬆️ Nâng cấp tiệm (docs/IA.md bước E): mở rộng, sửa sang — tốn tiền (money sink) → đông khách hơn, thuê thêm người.
+   * Chỉ nhà mặt tiền đang thuê, đóng cửa mới sửa được.
+   */
+  async upgrade({ room, playerId }: IntentContext, pay?: PayMethod) {
+    const biz = await this.businesses.require(playerId);
+    const lotKind = biz.lotId ? content.lot(biz.lotId).kind : null;
+    const next = nextShopLevel(content, biz.level, lotKind);
+    if (!next)
+      throw new GameError(
+        "invalid_state",
+        lotKind === "house"
+          ? "Tiệm đã ở cấp cao nhất rồi"
+          : "Xe đẩy vỉa hè không nâng cấp được — thuê nhà mặt tiền trước (🏠 Thuê nhà & giấy tờ)",
+      );
+    if (biz.status === "OPEN")
+      throw new GameError("invalid_state", "Đóng cửa rồi mới sửa sang tiệm");
+    let src: PaySource = "cash";
+    await this.prisma.$transaction(async (tx) => {
+      src = await this.payment.payOut(
+        tx,
+        playerId,
+        next.upgradeCost,
+        SYSTEM.supplier,
+        "shop_upgrade",
+        biz.id,
+        pay,
+      );
+      await tx.business.update({ where: { id: biz.id }, data: { level: next.level } });
+      await addToReport(tx, playerId, room.day, { fees: next.upgradeCost });
+      await tx.gameEvent.create({
+        data: {
+          playerId,
+          type: "shop_upgrade",
+          payload: { level: next.level, cost: next.upgradeCost },
+        },
+      });
+    });
+    this.broadcast.paidBy(playerId, src, next.upgradeCost);
+    this.broadcast.notify(playerId, {
+      kind: "good",
+      text: `${next.emoji} Tiệm lên cấp ${next.level}: ${next.name} — khách đông hơn, thuê được ${next.maxStaff} người`,
+    });
+    await this.story.note(
+      playerId,
+      "shop_level",
+      room.day,
+      { name: next.name },
+      { suffix: `${biz.id}:${next.level}` },
+    );
+    this.broadcast.world(room);
   }
 }

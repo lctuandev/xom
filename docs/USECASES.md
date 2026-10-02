@@ -1072,6 +1072,24 @@ trong giờ ca, đừng đóng quầy) và dòng trạng thái *đang trong ca /
 thay — tới 22:00"** thay vì "Quầy vắng chủ" (ngoài ca thì ghi rõ *Thu ngoài giờ làm*).
 **Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
 
+
+### UC-M9 · Cấp tiệm + nhiều nhân viên ✅ (bản đầu)
+> Góp ý: "nhân viên dựa vào level của tiệm: nâng cấp tiệm → to hơn, nhiều khách hơn → cần nhiều nhân viên hơn". docs/IA.md bước E.
+
+**Luồng:** 🏪 Quầy của tôi → **⬆️ Nâng cấp tiệm** (chỉ nhà mặt tiền đang thuê, đóng cửa mới sửa): Quầy nhỏ (cấp 1, 1 người) →
+**Tiệm mở rộng** (1,5tr, khách ×1,25, 2 người) → **Tiệm lớn** (3,5tr, khách ×1,45, 3 người). 👩‍🍳 Nhân viên: danh sách người đang
+làm (cho nghỉ từng người), "Đang thuê n/tối đa", nút Thuê / Đổi ca / **Đủ người** / **Ở quầy khác**. Bảng tuyển có 5 người (thêm
+Chị Hoa, Tuấn Anh).
+
+**Luật game:** cả nhóm trong ca bán chung — sức làm cộng dồn theo tốc độ từng người, mỗi món do một người làm theo tay nghề
+người đó; lương + phiếu ca theo từng người; **một người chỉ làm cho một cửa hàng của mình**. Không có ai trong ca thì chủ phải đứng
+quầy. `pnpm balance` có bảng "Tiệm lớn đủ nhân viên" với trần 8 lần làm thuê (trà sữa ~1,18tr/ngày sau khi cân lại khách
+×1,3/×1,6 → ×1,25/×1,45).
+
+**Kiểm chứng:** sim `staff.test.ts` (2 người bán nhiều hơn 1, lương = tổng, phiếu theo người; luật cấp) · e2e `staff.e2e-spec.ts`
+(xe đẩy 1 người + không nâng cấp; tiệm cấp 2 thuê 2 người, cả nhóm bán, phiếu theo người; một người một chỗ) · Playwright
+`cap-tiem`.
+
 ### UC-M7 · Bảng việc xóm + 🤝 điểm tin cậy ✅ (bản đầu: việc NPC đặt)
 **Nhân vật:** **Chú Hai tổ trưởng** giữ bảng, ghi sổ; người đặt việc là cư dân: *Cô Hạnh giáo viên* (bánh mì cho đội bóng),
 *Chú tài xế tuyến 19*, *Chị Thảo kế toán* (trà sữa họp chiều), *Bà Năm chợ đầu mối*, *Bé Su lớp 5* (quà sinh nhật), và việc lớn

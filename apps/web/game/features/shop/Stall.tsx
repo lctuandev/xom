@@ -2,12 +2,13 @@
 
 import { content } from "@xom/content";
 import type { BusinessView } from "@xom/shared";
-import { openDue, repairCost, wearState } from "@xom/sim";
+import { nextShopLevel, openDue, repairCost, shopLevel, wearState } from "@xom/sim";
 import { useState } from "react";
 import { stars, vnd, vndShort } from "../../format";
 import { send } from "../../net/socket";
 import { makeableCount } from "../../recipes";
 import { useGame } from "../../store";
+import { usePayMethod } from "../../ui/PayPicker";
 import { Section } from "../../ui/Sheet";
 import { GoToRow } from "../FeatureSheet";
 import { ShopFeature, Stat } from "./common";
@@ -168,10 +169,60 @@ export function StallSheet() {
                 <Stat label="Tiền boa" value={vndShort(me.today.tips)} />
               </div>
             </Section>
+            <UpgradeBox biz={biz} />
             <GoToRow to={["dishes", "stock", "lot", "staff", "promo", "recipes"]} />
           </>
         );
       }}
     </ShopFeature>
+  );
+}
+
+/**
+ * ⬆️ Nâng cấp tiệm (docs/IA.md bước E): cấp hiện tại, cấp kế tiếp (khách đông hơn ×, thuê tối đa mấy người, giá). Xe đẩy vỉa
+ * hè không lên cấp — phải thuê nhà mặt tiền.
+ */
+function UpgradeBox({ biz }: { biz: BusinessView }) {
+  const [busy, setBusy] = useState(false);
+  const pay = usePayMethod((s) => s.method);
+  const level = biz.level ?? 1;
+  const cur = shopLevel(content, level);
+  const lotKind = biz.lotId ? content.lot(biz.lotId).kind : null;
+  const next = nextShopLevel(content, level, lotKind);
+  return (
+    <section
+      aria-label="Nâng cấp tiệm"
+      className="mb-3 rounded-2xl bg-white p-3 shadow-sm"
+      data-level={level}
+    >
+      <p className="text-sm font-extrabold">
+        {cur.emoji} Cấp {level}: {cur.name}
+      </p>
+      <p className="text-xs text-ink/60">
+        Thuê tối đa {cur.maxStaff} nhân viên · khách ×{cur.trafficMul}
+      </p>
+      {next ? (
+        <button
+          type="button"
+          disabled={busy || biz.open}
+          onClick={async () => {
+            setBusy(true);
+            await send("biz:upgrade", { pay });
+            setBusy(false);
+          }}
+          className="mt-2 h-11 w-full rounded-xl bg-sun text-sm font-semibold disabled:opacity-40"
+        >
+          {biz.open
+            ? "Đóng cửa rồi mới sửa sang tiệm"
+            : `⬆️ Lên ${next.name} · ${vnd(next.upgradeCost)} (khách ×${next.trafficMul}, ${next.maxStaff} người)`}
+        </button>
+      ) : (
+        <p className="mt-1 text-xs text-ink/60">
+          {lotKind === "house"
+            ? "Tiệm đã ở cấp cao nhất."
+            : "Xe đẩy vỉa hè không lên cấp — thuê nhà mặt tiền (🏠 Thuê nhà & giấy tờ) để mở rộng."}
+        </p>
+      )}
+    </section>
   );
 }
