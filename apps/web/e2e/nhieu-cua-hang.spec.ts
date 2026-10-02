@@ -1,6 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { content } from "@xom/content";
-import { grantMoney, openBanhMiStall, openFeature, register, setClock, shot } from "./helpers";
+import {
+  closeSheet,
+  grantMoney,
+  openBanhMiStall,
+  openFeature,
+  register,
+  setClock,
+  shot,
+} from "./helpers";
 
 // Nhiều cửa hàng + kho riêng (docs/USECASES.md UC-F14, docs/IA.md bước D): đang có xe bánh mì → ra vựa Ông Sáu
 // "🏪 Mở thêm cửa hàng" trà sữa (không thay xe bánh mì) → 🏬 Các cửa hàng có 2 → quản lý lại quầy bánh mì → 📦 Kho
@@ -27,9 +35,29 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
   const list = page.getByRole("dialog", { name: "🏬 Các cửa hàng" });
   await expect(list.locator("[data-shop-card]")).toHaveCount(2);
   await shot(page, "140-cac-cua-hang");
-  const banhMi = list.locator("[data-shop-card]").filter({ hasText: "Bánh mì" });
-  await banhMi.getByRole("button", { name: /Quản lý cửa hàng này/ }).tap();
-  await expect(page.getByRole("dialog", { name: "🏪 Quầy của tôi" })).toBeVisible();
+  await closeSheet(page);
+
+  // Đi bộ về quầy bánh mì (Đầu hẻm 12): tới quầy nào thì tự quản lý quầy đó — mở lại quầy bánh mì được ngay, không cần
+  // vào 🏬 chọn lại (lỗi cũ: nhiều cửa hàng không chạy cùng lúc được).
+  const lot = content.lot("dau_hem");
+  const back = lot.facing === 0 ? -1 : 1;
+  await page.evaluate(
+    ([x, z]) =>
+      (window as unknown as { xomDebug: { walk: (x: number, z: number) => void } }).xomDebug.walk(
+        x,
+        z,
+      ),
+    [lot.position.x, lot.position.z + back * 0.9],
+  );
+  await expect(page.getByText(/Đang ở Bánh mì — quản lý cửa hàng này/).first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await openFeature(page, "stall");
+  await page
+    .getByRole("button", { name: /Mở quầy/ })
+    .first()
+    .tap();
+  await expect(page.getByRole("button", { name: "Đóng quầy" })).toBeVisible();
 
   // 📦 Kho quầy bánh mì: có thanh chọn cửa hàng + chuyển 1 phần sang quầy trà sữa.
   await openFeature(page, "stock");

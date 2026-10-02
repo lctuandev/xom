@@ -584,9 +584,12 @@ cho: …".
 cửa hàng đó; chưa có quầy thì không nhập hàng. Chủ **tự đứng bán một cửa hàng một lúc** (`room.attending`: chủ → cửa hàng),
 cửa hàng khác bán được khi có nhân viên trong ca; khách réo / nhân viên bán thay tính theo từng cửa hàng. Đang chở thì hàng
 chưa bán được ở đâu. Hiện mỗi người thuê **một** nhà mặt tiền (các cửa hàng khác ở vỉa hè).
+**Đi tới quầy nào thì quản lý quầy đó** (2026-10-03, sửa lỗi "nhiều cửa hàng không chạy cùng lúc được"): trước đây chỉ quầy đang
+chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không mở / bán được. Giờ đứng ở quầy của cửa hàng khác thì tự chọn cửa hàng đó
+(toast "🏬 Đang ở … — quản lý cửa hàng này"), mở quầy, bán; quầy cũ có nhân viên trong ca vẫn bán tiếp.
 
 **Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
-khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang`.
+khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang` (+ đi về quầy bánh mì tự chuyển cửa hàng, mở lại).
 
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
