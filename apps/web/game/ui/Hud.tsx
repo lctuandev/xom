@@ -353,26 +353,31 @@ function JobBadge() {
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   const dismiss = useGame((s) => s.dismissToast);
+  if (!toasts.length) return null;
   return (
-    // Nằm trên mọi sheet/modal để thông báo lỗi không bị che.
+    // Một khối duy nhất đè tạm lên thanh trạng thái + dải tin (3,5 giây), mới nhất trên cùng — không còn các mẩu rời căn
+    // giữa chồng lên dải tin / thanh nhiệm vụ (góp ý chơi thử). Nằm trên mọi sheet/modal để lỗi không bị che.
     <div
-      className="pointer-events-none fixed inset-x-3 top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] z-60 flex flex-col items-center gap-2"
+      className="pointer-events-none fixed inset-x-3 top-[max(env(safe-area-inset-top),0.75rem)] z-60 flex flex-col overflow-hidden rounded-2xl bg-cream shadow-lg ring-1 ring-ink/10"
       aria-live="polite"
+      data-toasts={toasts.length}
     >
-      {toasts.map((t) => (
+      {[...toasts].reverse().map((t, i) => (
         <button
           key={t.id}
           type="button"
           onClick={() => dismiss(t.id)}
-          className={`pointer-events-auto rounded-xl px-3 py-2 text-left text-sm font-semibold shadow-md ${
+          className={`pointer-events-auto flex items-start gap-2 border-l-4 px-3 py-2 text-left text-sm leading-snug font-semibold ${
+            i > 0 ? "border-t border-t-ink/10 text-ink/75" : ""
+          } ${
             t.kind === "warn"
-              ? "bg-red text-cream"
+              ? "border-l-red bg-red/10"
               : t.kind === "good"
-                ? "bg-leaf text-cream"
-                : "bg-cream"
+                ? "border-l-leaf bg-leaf/10"
+                : "border-l-sun"
           }`}
         >
-          {t.text}
+          <span className="line-clamp-2">{t.text}</span>
         </button>
       ))}
     </div>

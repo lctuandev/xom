@@ -648,8 +648,16 @@ function RegularBook() {
  * thay — theo tay nghề, không tự nhập hàng, lương trả theo giờ từ ví mình.
  */
 function StaffBoard() {
+  const minute = useGame((s) => s.clock?.minute ?? 0);
   const [view, setView] = useState<StaffView | null>(null);
-  const [shift, setShift] = useState(content.data.staff.shifts[0]?.id ?? "");
+  // Mặc định chọn ca đang diễn ra (thuê là bán thay được ngay).
+  const [shift, setShift] = useState(
+    () =>
+      content.data.staff.shifts.find((s) => minute >= s.from && minute < s.to && s.id !== "ca_ngay")
+        ?.id ??
+      content.data.staff.shifts[0]?.id ??
+      "",
+  );
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     void send("staff:view", {}).then((r) => r.ok && setView(r.data));
@@ -681,12 +689,43 @@ function StaffBoard() {
     const s = shifts.find((x) => x.id === id);
     return s ? (s.to - s.from) / 60 : 0;
   };
+  const empShift = emp ? shifts.find((s) => s.id === emp.shiftId) : undefined;
+  const onDuty = !!empShift && minute >= empShift.from && minute < empShift.to;
+  const picked = shifts.find((s) => s.id === shift);
+  const pickedNow = !!picked && minute >= picked.from && minute < picked.to;
   return (
     <section aria-label="Nhân viên" className="mb-3 flex flex-col gap-3">
-      <p className="text-xs text-ink/60">
-        Trong ca, bạn rời quầy hay thoát game thì nhân viên đứng bán thay: tiền bán vào ví bạn,
-        lương trả theo giờ. Họ <b>không tự nhập hàng</b> — hết hàng là dọn quầy về.
-      </p>
+      <details className="rounded-2xl bg-sun/20 p-3 text-xs" open={!emp} data-staff-guide>
+        <summary className="cursor-pointer text-sm font-extrabold">📘 Cách dùng nhân viên</summary>
+        <ol className="mt-1.5 flex list-decimal flex-col gap-1 pl-4">
+          <li>
+            <b>Chọn ca</b> — nhân viên chỉ làm trong giờ ca (cần cả ngày thì chọn{" "}
+            <i>Cả ngày 6–22h</i>).
+          </li>
+          <li>
+            <b>Nhập đủ hàng</b> rồi <b>mở quầy</b> như thường — nhân viên không tự nhập hàng, hết
+            hàng là dọn về.
+          </li>
+          <li>
+            Trong giờ ca, bạn <b>rời quầy</b> (đi chợ, đi làm thuê, chạy xe ôm) hoặc{" "}
+            <b>thoát game</b> — nhân viên đứng bán thay. <b>Đừng đóng quầy</b>: quầy đóng thì không
+            ai bán.
+          </li>
+          <li>
+            Tiền bán vào ví bạn, lương trừ theo giờ; xem kết quả ở <i>Phiếu ca</i> bên dưới.
+          </li>
+        </ol>
+      </details>
+      {emp && empShift && (
+        <p
+          className={`rounded-xl px-3 py-2 text-xs font-semibold ${onDuty ? "bg-leaf/15 text-leaf" : "bg-red/10 text-red"}`}
+          data-staff-status={onDuty ? "on" : "off"}
+        >
+          {onDuty
+            ? `Bây giờ ${formatClock(minute)}: ${person(emp.staffId)?.name} đang trong ca (${empShift.name}) — bạn rời quầy là có người bán thay.`
+            : `Bây giờ ${formatClock(minute)}: ${person(emp.staffId)?.name} ngoài giờ làm (${empShift.name}) — rời quầy lúc này thì quầy vắng chủ. Đổi sang ca đang diễn ra nếu cần.`}
+        </p>
+      )}
       {emp && (
         <div
           className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm"
@@ -731,6 +770,12 @@ function StaffBoard() {
           ))}
         </div>
       </fieldset>
+      {picked && !pickedNow && (
+        <p className="-mt-1 text-[11px] text-ink/60" data-shift-later>
+          ⏰ {picked.name} chưa tới / đã qua giờ — thuê ca này thì {formatClock(picked.from)} nhân
+          viên mới vào làm.
+        </p>
+      )}
       <ul className="flex flex-col gap-1.5">
         {people.map((p) => {
           const mine = emp?.staffId === p.id && emp.shiftId === shift;

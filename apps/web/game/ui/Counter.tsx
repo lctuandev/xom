@@ -19,6 +19,7 @@ function stockOf(itemId: string | undefined): number {
 }
 
 const shortLabel = (label: string) => label.split(" · ")[0] ?? label;
+const capitalize = (t: string) => t.charAt(0).toLocaleUpperCase("vi") + t.slice(1);
 
 export function Counter({ order }: { order: OrderState }) {
   const product = content.product(order.productId);
@@ -45,23 +46,48 @@ export function Counter({ order }: { order: OrderState }) {
     if (res.ok && !res.data.correct) setBuild({});
   };
 
+  // Bước kế tiếp theo thứ tự công thức (ly → trà → đường → đá → topping → lắc → dán nắp): tô sáng khu đó
+  // và dải bước trên đầu — người chơi khỏi phải dò cả quầy (góp ý chơi thử: quầy khó dùng).
+  const next = recipe.steps.find((st) => build[st.id] === undefined)?.id;
+  const hot = (id: string) =>
+    id === next ? "rounded-2xl ring-2 ring-sun ring-offset-2 ring-offset-cream" : "";
+
   return (
     <div className="flex flex-col gap-2.5 py-3" data-counter data-inventory={inventory?.length}>
-      <p className="w-fit rounded-md bg-[#c98b57] px-2 py-0.5 text-[11px] font-extrabold text-cream shadow-sm">
-        {layout.title}
-      </p>
+      <ol
+        className="flex flex-wrap items-center gap-1"
+        aria-label="Các bước pha"
+        data-next-step={next}
+      >
+        {recipe.steps.map((st, i) => {
+          const done = build[st.id] !== undefined;
+          return (
+            <li
+              key={st.id}
+              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                done
+                  ? "bg-leaf/15 text-leaf"
+                  : st.id === next
+                    ? "bg-sun text-ink"
+                    : "bg-ink/5 text-ink/50"
+              }`}
+            >
+              {done ? "✓" : `${i + 1}.`} {capitalize(shortLabel(st.label).replace(/^Chọn /, ""))}
+            </li>
+          );
+        })}
+      </ol>
 
-      {/* Hàng trên: ly · bình trà · máy dán. */}
+      {/* Hàng trên: ly · bình trà. */}
       <div className="flex items-end gap-2 rounded-2xl bg-[#f3e2c7] p-2 shadow-inner">
         {zone("cups").map((z) => (
-          <Cups
-            key={z.step}
-            step={step(z.step)}
-            value={build[z.step]}
-            onPick={(v) => set(z.step, v)}
-          />
+          <div key={z.step} className={hot(z.step)}>
+            <Cups step={step(z.step)} value={build[z.step]} onPick={(v) => set(z.step, v)} />
+          </div>
         ))}
-        <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+        <div
+          className={`flex min-w-0 flex-1 gap-1 overflow-x-auto p-0.5 ${zone("jars").some((z) => z.step === next) ? hot(next ?? "") : ""}`}
+        >
           {zone("jars").map((z) => (
             <Jars
               key={z.step}
@@ -71,14 +97,6 @@ export function Counter({ order }: { order: OrderState }) {
             />
           ))}
         </div>
-        {zone("sealer").map((z) => (
-          <Sealer
-            key={z.step}
-            step={step(z.step)}
-            done={build[z.step] === true}
-            onDone={(d) => set(z.step, d ? true : undefined)}
-          />
-        ))}
       </div>
 
       {/* Ô pha ly + đường/đá. */}
@@ -86,59 +104,68 @@ export function Counter({ order }: { order: OrderState }) {
         <CupPreview product={product} build={build} />
         <div className="flex min-w-0 flex-col gap-1.5">
           {zone("chips").map((z) => (
-            <Chips
-              key={z.step}
-              step={step(z.step)}
-              value={build[z.step]}
-              onPick={(v) => set(z.step, v)}
-            />
+            <div key={z.step} className={`p-0.5 ${hot(z.step)}`}>
+              <Chips step={step(z.step)} value={build[z.step]} onPick={(v) => set(z.step, v)} />
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Lưới khay topping. */}
+      {/* Khay topping: chỉ những món đang bán (không còn ô khoá trống chiếm chỗ). */}
       {zone("grid").map((z) => (
-        <Grid
-          key={z.step}
-          step={step(z.step)}
-          slots={z.slots ?? 12}
-          value={build[z.step]}
-          onChange={(v) => set(z.step, v)}
-        />
+        <div key={z.step} className={hot(z.step)}>
+          <Grid step={step(z.step)} value={build[z.step]} onChange={(v) => set(z.step, v)} />
+        </div>
       ))}
 
-      <div className="grid grid-cols-2 gap-2">
+      {/* Cuối quy trình: lắc → dán nắp → giao. */}
+      <div className="flex gap-2">
         {zone("shaker").map((z) => (
-          <Shaker
-            key={z.step}
-            step={step(z.step)}
-            done={build[z.step] === true}
-            onDone={(d) => set(z.step, d ? true : undefined)}
-          />
+          <div key={z.step} className={`min-w-0 flex-1 ${hot(z.step)}`}>
+            <Shaker
+              step={step(z.step)}
+              done={build[z.step] === true}
+              onDone={(d) => set(z.step, d ? true : undefined)}
+            />
+          </div>
         ))}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={deliver}
-          className="h-14 rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98] disabled:opacity-50"
-        >
-          {busy ? "…" : "🤲 Giao món cho khách"}
-        </button>
+        {zone("sealer").map((z) => (
+          <div key={z.step} className={hot(z.step)}>
+            <Sealer
+              step={step(z.step)}
+              done={build[z.step] === true}
+              onDone={(d) => set(z.step, d ? true : undefined)}
+            />
+          </div>
+        ))}
       </div>
       <button
         type="button"
-        onClick={() => setBuild({})}
-        className="h-9 text-xs font-semibold text-ink/50"
+        disabled={busy}
+        onClick={deliver}
+        className={`h-14 rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98] disabled:opacity-50 ${
+          next ? "" : "ring-2 ring-sun ring-offset-2 ring-offset-cream"
+        }`}
       >
-        🗑️ Đổ ly, làm lại
+        {busy ? "…" : next ? "🤲 Giao món cho khách" : "✓ Xong rồi — 🤲 Giao món cho khách"}
       </button>
-      <button
-        type="button"
-        onClick={() => void send("order:decline", { orderId: order.orderId })}
-        className="h-10 text-sm font-semibold text-ink/60"
-      >
-        🙏 Xin lỗi, hết món này rồi
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setBuild({})}
+          className="h-10 rounded-xl bg-ink/5 text-xs font-semibold text-ink/60"
+        >
+          🗑️ Đổ ly, làm lại
+        </button>
+        <button
+          type="button"
+          aria-label="🙏 Xin lỗi, hết món này rồi"
+          onClick={() => void send("order:decline", { orderId: order.orderId })}
+          className="h-10 rounded-xl bg-ink/5 text-xs font-semibold text-ink/60"
+        >
+          🙏 Hết món này rồi
+        </button>
+      </div>
     </div>
   );
 }
@@ -255,15 +282,13 @@ function Chips({
   );
 }
 
-/** Lưới khay topping (như khay inox): ô có món + số còn lại; ô trống khoá 🔒 (chưa mở bán). */
+/** Lưới khay topping (như khay inox): ô có món + số còn lại; hết hàng thì mờ. */
 function Grid({
   step,
-  slots,
   value,
   onChange,
 }: {
   step: RecipeStep;
-  slots: number;
   value: DishSelection | undefined;
   onChange: (v: string[] | undefined) => void;
 }) {
@@ -271,19 +296,7 @@ function Grid({
   return (
     <section aria-label={step.label} className="rounded-2xl bg-[#c9ced3] p-1.5 shadow-inner">
       <div className="grid grid-cols-4 gap-1.5">
-        {Array.from({ length: slots }, (_, i) => {
-          const o = step.options[i];
-          if (!o)
-            return (
-              <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: ô khay cố định
-                key={i}
-                aria-hidden
-                className="flex h-14 items-center justify-center rounded-lg bg-white/40 text-sm opacity-60"
-              >
-                🔒
-              </div>
-            );
+        {step.options.map((o) => {
           const left = stockOf(o.ingredient);
           const on = picked.includes(o.id);
           return (
@@ -342,7 +355,7 @@ function Sealer({
         aria-pressed={done}
         disabled={!done && stockOf(step.ingredient) < 1}
         onClick={() => onDone(!done)}
-        className="flex h-20 w-14 flex-col items-center justify-center rounded-lg bg-gradient-to-b from-[#ffb36b] to-[#7f8a96] text-[10px] font-extrabold text-cream shadow-sm aria-pressed:ring-2 aria-pressed:ring-leaf disabled:opacity-35"
+        className="flex h-14 w-24 items-center justify-center gap-1 rounded-2xl bg-gradient-to-b from-[#ffb36b] to-[#7f8a96] text-xs font-extrabold text-cream shadow-sm aria-pressed:ring-2 aria-pressed:ring-leaf disabled:opacity-35"
       >
         <span className="text-xl" aria-hidden>
           {done ? "✅" : "🔒"}

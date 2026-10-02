@@ -325,7 +325,10 @@ export const useGame = create<GameState>((set, get) => ({
   openSheet: (sheet) => set({ sheet }),
   toast: (n) => {
     const id = ++toastId;
-    set((s) => ({ toasts: [...s.toasts.slice(-2), { ...n, id }] }));
+    // Trùng câu đang hiện thì làm mới chứ không thêm dòng (khỏi dồn thông báo giống nhau).
+    set((s) => ({
+      toasts: [...s.toasts.filter((t) => t.text !== n.text).slice(-2), { ...n, id }],
+    }));
     sfx(n.kind === "warn" ? "error" : n.kind === "good" && n.text.startsWith("+") ? "coin" : "pop");
     setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
   },

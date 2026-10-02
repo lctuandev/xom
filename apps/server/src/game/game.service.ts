@@ -124,6 +124,21 @@ export interface GameEmitter {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Nhân viên của quầy cho MeView: tên, ca, có đang trong ca không (để HUD báo "đang bán thay"). */
+function staffView(e: { staffId: string; shiftId: string } | null, minute: number) {
+  if (!e) return null;
+  const person = content.data.staff.people.find((p) => p.id === e.staffId);
+  const shift = content.data.staff.shifts.find((s) => s.id === e.shiftId);
+  if (!person || !shift) return null;
+  return {
+    name: person.name,
+    shift: shift.name,
+    from: shift.from,
+    to: shift.to,
+    onDuty: minute >= shift.from && minute < shift.to,
+  };
+}
+
 /** Dời mọi mốc "ngày" của người chơi theo độ lệch ngày giữa hai xóm (khóa unique → dời qua số âm). */
 async function rebaseDays(tx: Tx, playerId: string, offset: number) {
   await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -("batchDay" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
@@ -1620,7 +1635,7 @@ export class GameService implements OnModuleDestroy {
   async me(room: RoomRuntime, playerId: string): Promise<MeView> {
     const [player, biz, inventory, report, money, bank, relations, served] = await Promise.all([
       this.prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
-      this.businessOf(playerId),
+      this.prisma.business.findFirst({ where: { ownerId: playerId }, include: { employee: true } }),
       inventoryView(this.prisma, playerId, room.day),
       this.prisma.dailyReport.findUnique({ where: { playerId_day: { playerId, day: room.day } } }),
       this.ledger.balance(this.prisma, playerWallet(playerId)),
@@ -1656,6 +1671,7 @@ export class GameService implements OnModuleDestroy {
             rentPaidToday: biz.rentPaidDay === room.day && biz.rentLotId === biz.lotId,
             promoDay: biz.promoDay,
             wear: biz.wear,
+            staff: staffView(biz.employee, room.minute),
           }
         : null,
       inventory,

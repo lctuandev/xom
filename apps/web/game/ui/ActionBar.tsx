@@ -1,6 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
+import { formatClock } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { send, sendWork } from "../net/socket";
 import { useGame } from "../store";
@@ -160,12 +161,37 @@ function KitchenButton() {
 
 function AwayChip() {
   const open = useGame((s) => s.me?.business?.open ?? false);
+  const staff = useGame((s) => s.me?.business?.staff);
+  const minute = useGame((s) => s.clock?.minute ?? 0);
   const atStall = useGame((s) => s.atStall);
   const setGoal = useGame((s) => s.setGoal);
   if (!open || atStall) return null;
+  // Nhân viên trong ca thì quầy vẫn bán (KIENTRUC §2) — báo rõ, không giục chủ về.
+  const onDuty = !!staff && minute >= staff.from && minute < staff.to;
+  if (staff && onDuty)
+    return (
+      <div
+        className="pointer-events-auto flex w-full max-w-xs items-center gap-2 rounded-2xl bg-leaf/90 py-2 pr-2 pl-3 text-cream shadow-lg"
+        data-staff-duty="on"
+      >
+        <span className="text-xs font-semibold">
+          👩‍🍳 {staff.name} đang bán thay — tới {formatClock(staff.to)}
+        </span>
+      </div>
+    );
   return (
-    <div className="pointer-events-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg">
-      <span className="text-xs font-semibold">Quầy vắng chủ — khách không mua được</span>
+    <div
+      className="pointer-events-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg"
+      data-staff-duty={staff ? "off" : undefined}
+    >
+      <span className="text-xs font-semibold">
+        Quầy vắng chủ — khách không mua được
+        {staff && (
+          <span className="block text-[11px] font-normal text-cream/80">
+            {staff.name} ngoài giờ làm ({staff.shift})
+          </span>
+        )}
+      </span>
       <button
         type="button"
         onClick={() => setGoal({ kind: "stall" })}

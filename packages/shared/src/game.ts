@@ -35,6 +35,8 @@ export interface BusinessView {
   reputation: number;
   /** Đã trả tiền thuê chỗ hiện tại cho hôm nay chưa (mở lại trong ngày không mất thêm). */
   rentPaidToday: boolean;
+  /** Nhân viên đang thuê (KIENTRUC §2): ai, ca mấy giờ, bây giờ có đang trong ca không. */
+  staff?: { name: string; shift: string; from: number; to: number; onDuty: boolean } | null;
   /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
   promoDay: number | null;
   /** Độ mòn xe/quầy 0–1 (sửa ở vựa xe). */

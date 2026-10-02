@@ -5,9 +5,11 @@ import type { DishSelection, DishView } from "@xom/shared";
 import { holdFactor, needsHold, remembersOrders, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { vnd } from "../format";
+import { modelFor } from "../looks";
 import { send } from "../net/socket";
 import { type OrderState, useGame } from "../store";
 import { Counter } from "./Counter";
+import { Counterpart } from "./Counterpart";
 
 /**
  * Màn hình làm món theo đơn (docs/USECASES.md UC-F4…F7): làm từng bước → giao món →
@@ -29,27 +31,54 @@ export function Kitchen() {
 
   if (!order) return null;
   return (
-    <div
-      className="pointer-events-auto fixed inset-x-0 top-[12dvh] bottom-0 z-45 flex flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.2)]"
-      role="dialog"
-      aria-label="Làm món"
-      data-spec={JSON.stringify(order.spec)}
-      data-order={order.orderId}
-    >
-      <OrderHeader order={order} onClose={() => close(null)} />
-      <div className="pb-safe min-h-0 flex-1 overflow-y-auto px-4">
-        {order.made === "correct" ? (
-          <Payment key="pay" order={order} discount={false} />
-        ) : order.made === "wrong" ? (
-          <Wrong key="wrong" order={order} />
-        ) : content.product(order.productId).counter ? (
-          <Counter key="counter" order={order} />
-        ) : (
-          <Build key="build" order={order} />
-        )}
+    <>
+      {/* Nền mờ phía sau (như sheet): chân dung + lời khách nổi rõ, không lẫn với thanh nhiệm vụ trên bản đồ. */}
+      <div aria-hidden className="pointer-events-auto fixed inset-0 z-44 bg-ink/35" />
+      <div
+        className="pointer-events-auto fixed inset-x-0 top-[calc(max(env(safe-area-inset-top),0.75rem)+5.25rem)] bottom-0 z-45 flex flex-col justify-end"
+        role="dialog"
+        aria-label="Làm món"
+        data-spec={JSON.stringify(order.spec)}
+        data-order={order.orderId}
+      >
+        {/* Khách đứng trước quầy: chân dung + lời gọi món (UC-E5, đồng bộ với chợ / sạp). */}
+        <CustomerFace order={order} />
+        <div className="flex min-h-0 flex-1 flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.2)]">
+          <OrderHeader order={order} onClose={() => close(null)} />
+          <div className="pb-safe min-h-0 flex-1 overflow-y-auto px-4">
+            {order.made === "correct" ? (
+              <Payment key="pay" order={order} discount={false} />
+            ) : order.made === "wrong" ? (
+              <Wrong key="wrong" order={order} />
+            ) : content.product(order.productId).counter ? (
+              <Counter key="counter" order={order} />
+            ) : (
+              <Build key="build" order={order} />
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
+}
+
+/** Chân dung khách (dáng theo kiểu khách / hàng xóm) + ô thoại gọi món, nằm trên mép màn làm món. */
+function CustomerFace({ order }: { order: OrderState }) {
+  const npc = content.data.npcs.find((n) => n.id === order.archetype);
+  const name = order.buyerName ?? order.residentName ?? npc?.name ?? "Khách";
+  const model = order.buyerId ? modelFor(order.buyerId) : (npc?.model ?? "character-male-c");
+  const tag = order.buyerName
+    ? "hàng xóm"
+    : order.regular
+      ? "❤️ khách quen"
+      : order.vip
+        ? "VIP · boa đậm"
+        : order.residentName && (order.visits ?? 0) > 0
+          ? `ghé lần ${(order.visits ?? 0) + 1}`
+          : order.promo
+            ? "🎉 giá khai trương"
+            : undefined;
+  return <Counterpart model={model} name={name} tag={tag} line={`“${order.ask}”`} />;
 }
 
 function useLeft(order: OrderState) {
@@ -64,24 +93,13 @@ function useLeft(order: OrderState) {
 
 function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => void }) {
   const left = useLeft(order);
-  const npc = content.data.npcs.find((n) => n.id === order.archetype);
   return (
     <header className="border-b border-ink/10 px-4 pt-3 pb-2">
       <div className="flex items-start gap-2">
-        <span
-          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-sun text-lg"
-          aria-hidden
-        >
-          {order.vip ? "🕴️" : "🧑"}
-        </span>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-ink/60">
-            {order.buyerName
-              ? `👤 ${order.buyerName} (hàng xóm)`
-              : order.residentName
-                ? order.residentName
-                : (npc?.name ?? "Khách")}
-            {/* Khách quen (KIENTRUC §1): ❤️ hoặc ghé lần thứ mấy. */}
+            🧾 Khách gọi
+            {/* Khách quen (KIENTRUC §1) / VIP / khai trương — chi tiết ở chân dung phía trên. */}
             {order.regular ? (
               <span className="ml-1 rounded-full bg-red/15 px-1.5 text-red" data-regular>
                 ❤️ khách quen
@@ -94,9 +112,8 @@ function OrderHeader({ order, onClose }: { order: OrderState; onClose: () => voi
                 VIP · boa đậm
               </span>
             )}
-            {order.promo && <span className="ml-1 text-red">🎉 giá khai trương</span>} nói:
+            {order.promo && <span className="ml-1 text-red">🎉 giá khai trương</span>}
           </p>
-          <p className="text-[15px] leading-snug font-semibold">“{order.ask}”</p>
           <OrderNotes dish={order.dish} />
         </div>
         <button

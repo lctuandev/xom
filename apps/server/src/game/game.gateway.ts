@@ -558,14 +558,20 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("staff:hire")
   staffHire(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handleWith(c, staffHireSchema, body, (ctx, p) =>
-      this.game.staff.hire(ctx.room, ctx.playerId, p.staffId, p.shiftId),
-    );
+    return this.handleWith(c, staffHireSchema, body, async (ctx, p) => {
+      const r = await this.game.staff.hire(ctx.room, ctx.playerId, p.staffId, p.shiftId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
   }
 
   @SubscribeMessage("staff:fire")
   staffFire(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handleWith(c, emptySchema, body, (ctx) => this.game.staff.fire(ctx.playerId));
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.staff.fire(ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
   }
 
   @SubscribeMessage("debug:regulars")

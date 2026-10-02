@@ -29,6 +29,7 @@ test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", 
   await page.getByRole("tab", { name: "📈 Kỹ năng" }).tap();
   const skills = page.getByRole("region", { name: "Kỹ năng" });
   await expect(skills.locator('[data-skill="an_noi"]')).toBeVisible();
-  await expect(skills.getByText("🔒 Cấp 3: Thuê nhà mặt tiền mở tiệm")).toBeVisible();
+  // Nhà mặt tiền giờ mở bằng vốn + giấy tờ (UC-F12); còn khoá theo cấp: tổ chức khai trương.
+  await expect(skills.getByText(/Cấp 2: Tổ chức khai trương/)).toBeVisible();
   await shot(page, "95-ky-nang");
 });

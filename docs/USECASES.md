@@ -945,6 +945,10 @@ sức làm theo phút/món, kho, đúng/sai); báo cáo ngày cộng lương và
 **Kiểm chứng:** sim `staff.test.ts` (bán + lương, hết hàng về sớm, người kỹ ít sai, nhịp 5 phút vẫn bán); e2e server
 `staff.e2e-spec.ts` (thuê/cho nghỉ/Chuyện, bán thay khi rời quầy, thoát game → "Trong lúc bạn vắng" có doanh thu + lương);
 Playwright `thue-nguoi.spec.ts`.
+**Bản 2 (góp ý chơi thử: "đi vắng mà nhân viên không bán, vẫn báo về quầy"):** thêm ca **Cả ngày 6–22h**; mặc định chọn ca
+đang diễn ra; báo trước khi chọn ca chưa tới giờ; tab Nhân viên có **📘 Cách dùng** (chọn ca → nhập hàng + mở quầy → rời quầy
+trong giờ ca, đừng đóng quầy) và dòng trạng thái *đang trong ca / ngoài giờ làm*; rời quầy thì thanh dưới báo **"👩‍🍳 Thu đang bán
+thay — tới 22:00"** thay vì "Quầy vắng chủ" (ngoài ca thì ghi rõ *Thu ngoài giờ làm*).
 **Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
 
 ### UC-M7 · Bảng việc xóm + 🤝 điểm tin cậy ✅ (bản đầu: việc NPC đặt)

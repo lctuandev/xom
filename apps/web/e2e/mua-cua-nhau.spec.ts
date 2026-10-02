@@ -73,7 +73,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
     await cook.tap();
     const kitchen = page.getByRole("dialog", { name: "Làm món" });
     await expect(kitchen).toBeVisible();
-    if (!(await kitchen.getByText(/Bình \(hàng xóm\)/).isVisible())) {
+    if (!(await kitchen.locator("[data-counterpart=Bình]").isVisible())) {
       await kitchen.getByRole("button", { name: /Xin lỗi, hết món này rồi/ }).tap();
       await expect(kitchen).toHaveCount(0);
       continue;

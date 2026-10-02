@@ -2252,6 +2252,7 @@ export const data: ContentInput = {
       { id: "trua", name: "Ca trưa 11–14h", from: 11 * 60, to: 14 * 60 },
       { id: "chieu", name: "Ca chiều 14–18h", from: 14 * 60, to: 18 * 60 },
       { id: "toi", name: "Ca tối 18–22h", from: 18 * 60, to: 22 * 60 },
+      { id: "ca_ngay", name: "Cả ngày 6–22h", from: 6 * 60, to: 22 * 60 },
     ],
     people: [
       {
