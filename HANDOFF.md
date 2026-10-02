@@ -84,7 +84,7 @@ một lúc**, chỗ khác phải có nhân viên. Mua đồ nghề mới không 
 Thêm **📊 Tổng quan cửa hàng**: doanh thu / lãi hôm nay & 7 ngày, nhân viên trong ca, tồn kho sắp hết, tiền nhà sắp tới hạn
 (yêu cầu "bảng thống kê doanh thu, nhân viên… của các cửa hàng").
 
-### 3.4 🚶 Có nhân viên thì chủ đi làm việc khác / mở tiệm khác tự bán
+### 3.4 🚶 Có nhân viên thì chủ đi làm việc khác / mở tiệm khác tự bán — ✅ phần "đi làm việc khác" XONG (`ownerTied`); "mở tiệm khác tự bán" chờ bước D
 Yêu cầu: tiệm đã có nhân viên bán thì user **đi làm nghề khác** hoặc **mở tiệm khác và vào tự bán**.
 Hiện chặn ở 3 chỗ: `work.ts:261` (làm thuê), `rides.ts:192` (xe ôm), `projects.ts:147` (phụ hồ) — "Đang mở quầy — đóng quầy rồi
 mới…". Sửa: chỉ chặn khi có cửa hàng **đang mở mà không có nhân viên trong ca** (helper chung `ownerTied(playerId)`), và

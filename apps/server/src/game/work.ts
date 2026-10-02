@@ -256,9 +256,11 @@ export class WorkService {
     if (!job || !r || !place) throw new GameError("invalid_payload", "Không có việc này");
     if (room.shifts.has(playerId))
       throw new GameError("invalid_state", "Đang trong ca — ra ca rồi mới đổi việc");
-    const openBiz = await this.businesses.openOf(playerId);
-    if (openBiz)
-      throw new GameError("invalid_state", "Đang mở quầy — đóng quầy rồi mới đi làm thuê được");
+    if (await this.businesses.ownerTied(playerId, room.minute))
+      throw new GameError(
+        "invalid_state",
+        "Quầy đang mở mà không có nhân viên trong ca — đóng quầy hoặc thuê người bán thay (👩‍🍳 Nhân viên) rồi mới đi làm thuê",
+      );
     const trays: Record<string, number> = {};
     for (const f of R().foods) trays[f.id] = R().trayPortions;
     const shift: Shift = {

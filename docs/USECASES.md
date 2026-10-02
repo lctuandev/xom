@@ -1037,6 +1037,7 @@ Khoa bán* để trả quầy. **Tới ca mà quầy đang đóng thì nhân vi�
 chủ mở; báo *"🔓 Khoa tới ca, mở cửa giúp bạn"*); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
 **Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
 viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
+**Chủ tự do (2026-10-02):** quầy đang mở mà **có nhân viên trong ca** thì chủ đi làm thuê, chạy xe ôm, phụ hồ được (nhân viên bán thay); không có nhân viên trong ca thì phải đóng quầy hoặc thuê người trước (`BusinessRepo.ownerTied`).
 **Luật game (không thu nhập thụ động không trần):** nhân viên **không tự nhập hàng, không tự mở quầy**; doanh thu có trần = kho
 hàng × lãi − lương; lương theo giờ đi qua sổ cái (`staff_wage` → employer), tiền bán (`staff_sale`) vào ví chủ; uy tín quầy thay
 đổi theo tay nghề nhân viên; mỗi quầy một người, một ca/ngày.

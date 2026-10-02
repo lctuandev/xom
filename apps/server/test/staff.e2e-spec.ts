@@ -88,4 +88,22 @@ describe("Thuê nhân viên (e2e)", () => {
     expect(back.snap.me.business?.open).toBe(false);
     back.socket.disconnect();
   });
+  it("có nhân viên trong ca thì chủ đi làm thuê được, quầy vẫn bán; không có nhân viên thì bị chặn", async () => {
+    const { socket } = await openBanhMiStall(url);
+    await emit(socket, "debug:clock", { minute: 18 * 60 });
+    const tied = await emit(socket, "work:start", { jobId: "phu_quan_com", role: "dung_quay" });
+    expect(tied.ok).toBe(false);
+    if (!tied.ok) expect(tied.message).toContain("không có nhân viên trong ca");
+    await emit(socket, "staff:hire", { staffId: "khoa_phu", shiftId: "toi" });
+    const sold = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("👩‍🍳 Khoa vừa bán"));
+    const free = await emit<MeView>(socket, "work:start", {
+      jobId: "phu_quan_com",
+      role: "dung_quay",
+    });
+    expect(free.ok).toBe(true);
+    // Chủ vào ca làm thuê (rời quầy) — Khoa đứng bán thay.
+    await emit(socket, "biz:attend", { on: false });
+    await sold;
+    socket.disconnect();
+  });
 });

@@ -24,6 +24,7 @@ import {
 } from "@xom/sim";
 import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { ContractService } from "./contracts.js";
 import { PaymentService } from "./payment.js";
 import { addToReport } from "./report.js";
@@ -76,6 +77,7 @@ export class RideService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
     private readonly payment: PaymentService,
     private readonly story: StoryService,
@@ -190,8 +192,11 @@ export class RideService {
     if (player.bikeRentDay !== room.day)
       throw new GameError("invalid_state", "Thuê xe của Chú Lực trước đã");
     if (room.shifts.has(playerId)) throw new GameError("invalid_state", "Đang trong ca làm thuê");
-    const open = await this.prisma.business.count({ where: { ownerId: playerId, status: "OPEN" } });
-    if (open) throw new GameError("invalid_state", "Đang mở quầy — đóng quầy rồi mới chạy xe ôm");
+    if (await this.businesses.ownerTied(playerId, room.minute))
+      throw new GameError(
+        "invalid_state",
+        "Quầy đang mở mà không có nhân viên trong ca — đóng quầy hoặc thuê người bán thay (👩‍🍳 Nhân viên) rồi mới chạy xe ôm",
+      );
     const s = this.state(playerId);
     if (s.stage !== "idle") throw new GameError("invalid_state", "Đang có khách rồi");
     s.stage = "waiting";

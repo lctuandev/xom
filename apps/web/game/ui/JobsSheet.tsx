@@ -44,7 +44,11 @@ function JobList() {
   const setGoal = useGame((s) => s.setGoal);
   const setInside = useGame((s) => s.setInside);
   if (!me) return null;
-  const shopOpen = me.business?.open ?? false;
+  // Quầy đang mở mà không có nhân viên trong ca thì chủ phải đứng bán (có nhân viên thì đi làm việc khác được).
+  const minute = useGame.getState().clock?.minute ?? 0;
+  const staff = me.business?.staff;
+  const staffOnDuty = !!staff && minute >= staff.from && minute < staff.to;
+  const shopOpen = (me.business?.open ?? false) && !staffOnDuty;
   return (
     <>
       <p className="mb-3 text-sm text-ink/60">
@@ -93,7 +97,8 @@ function JobList() {
       </ul>
       {shopOpen && (
         <p className="mt-3 text-center text-sm text-ink/60">
-          Đang mở quầy — đóng quầy rồi mới đi làm thuê được.
+          Quầy đang mở mà không có nhân viên trong ca — đóng quầy hoặc thuê người bán thay (👩‍🍳
+          Nhân viên) rồi mới đi làm thuê được.
         </p>
       )}
     </>

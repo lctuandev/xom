@@ -19,6 +19,7 @@ import {
   SYSTEM,
 } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
@@ -59,6 +60,7 @@ export class ProjectService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
     private readonly story: StoryService,
   ) {}
@@ -143,8 +145,11 @@ export class ProjectService {
       throw new GameError("invalid_state", "Ra tận công trường mới trộn hồ được");
     if (room.shifts.has(playerId))
       throw new GameError("invalid_state", "Đang trong ca làm thuê khác");
-    const open = await this.prisma.business.count({ where: { ownerId: playerId, status: "OPEN" } });
-    if (open) throw new GameError("invalid_state", "Đang mở quầy — đóng quầy rồi mới đi phụ hồ");
+    if (await this.businesses.ownerTied(playerId, room.minute))
+      throw new GameError(
+        "invalid_state",
+        "Quầy đang mở mà không có nhân viên trong ca — đóng quầy hoặc thuê người bán thay (👩‍🍳 Nhân viên) rồi mới đi phụ hồ",
+      );
     const c = this.crewOf(room, playerId, site);
     const now = room.day * DAY + room.minute;
     if (c.readyAt > now)

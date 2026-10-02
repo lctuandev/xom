@@ -1,4 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { content } from "@xom/content";
+import { shiftAt } from "@xom/sim";
 import type { Tx } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -41,6 +43,18 @@ export class BusinessRepo {
       where: { ownerId: playerId, status: "OPEN", lotId: { not: null } },
       include: { employee: true },
     });
+  }
+
+  /**
+   * Chủ có bị "trói" ở quầy không (HANDOFF 3.4, docs/IA.md bước E): có quầy đang mở mà KHÔNG có nhân viên trong ca → phải
+   * đứng bán, không đi làm việc khác được. Có nhân viên trong ca thì chủ tự do đi làm thuê, chạy xe ôm, phụ hồ.
+   */
+  async ownerTied(playerId: string, minute: number): Promise<Business | null> {
+    const open = await this.prisma.business.findMany({
+      where: { ownerId: playerId, status: "OPEN" },
+      include: { employee: true },
+    });
+    return open.find((b) => !b.employee || !shiftAt(content, b.employee.shiftId, minute)) ?? null;
   }
 
   /** Cửa hàng kèm nhân viên. */
