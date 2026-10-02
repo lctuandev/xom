@@ -378,6 +378,10 @@ export interface ReviewView {
 }
 
 export interface ReviewsView {
+  /** Mỗi cửa hàng một sổ đánh giá (góp ý đợt 2). */
+  businessId: string;
+  /** Tên cửa hàng: tên quán đã đăng ký, không thì tên món. */
+  shopName: string;
   ownerId: string;
   ownerName: string;
   avg: number;
@@ -1127,9 +1131,9 @@ export const debugWeatherSchema = z.object({
 });
 
 const reviewText = z.string().trim().min(1).max(140);
-export const reviewListSchema = z.object({ ownerId: z.string().uuid() });
+export const reviewListSchema = z.object({ businessId: z.string().uuid() });
 export const reviewWriteSchema = z.object({
-  ownerId: z.string().uuid(),
+  businessId: z.string().uuid(),
   stars: z.number().int().min(1).max(5),
   text: reviewText,
 });

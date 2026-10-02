@@ -4,7 +4,6 @@ import type { NotifyEvent, OrderEvent, ReviewsView } from "@xom/shared";
 import { addSkill, maskText, reviewSummary, type SkillPoints, seededRandom } from "@xom/sim";
 import { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { BusinessRepo } from "./business-repo.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { VoiceAiService } from "./voice-ai.js";
 
@@ -16,7 +15,7 @@ const pick = <T>(list: readonly T[], rand: () => number): T =>
 /**
  * Sổ đánh giá quầy (docs/USECASES.md UC-F11): khách NPC thỉnh thoảng chấm sao + viết vài chữ theo đúng chuyện vừa xảy ra;
  * hàng xóm đã mua thì được đánh giá (mỗi ngày một lần mỗi quầy); chủ quầy trả lời một lần, trả lời khéo đánh giá xấu
- * thì gỡ lại chút uy tín. Gắn với chủ quầy — đổi nghề vẫn giữ tiếng.
+ * thì gỡ lại chút uy tín. Mỗi cửa hàng một sổ riêng (góp ý đợt 2) — đổi món ở cùng cửa hàng vẫn giữ tiếng.
  */
 @Injectable()
 export class ReviewService {
@@ -24,7 +23,6 @@ export class ReviewService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly businesses: BusinessRepo,
     private readonly ai: VoiceAiService,
   ) {}
 
@@ -60,6 +58,7 @@ export class ReviewService {
     await this.prisma.review.create({
       data: {
         ownerId: e.ownerId,
+        businessId: e.businessId,
         productId: e.productId,
         authorName: who,
         stars,
@@ -78,20 +77,23 @@ export class ReviewService {
   async write(
     room: RoomRuntime,
     author: { id: string; name: string },
-    ownerId: string,
+    businessId: string,
     stars: number,
     text: string,
   ) {
+    const biz = await this.prisma.business.findUnique({ where: { id: businessId } });
+    if (!biz) throw new GameError("invalid_payload", "Không có quầy này");
+    const ownerId = biz.ownerId;
     if (author.id === ownerId) throw new GameError("invalid_state", "Tự khen quầy mình thì ai tin");
-    if (!room.purchases.has(purchaseKey(author.id, ownerId, room.day)))
+    if (!room.purchases.has(purchaseKey(author.id, businessId, room.day)))
       throw new GameError("invalid_state", "Mua ở quầy này rồi mới đánh giá được");
-    const biz = await this.businesses.of(ownerId);
     const clean = maskText(text.trim(), content.data.reviews.banned);
     try {
       await this.prisma.review.create({
         data: {
           ownerId,
-          productId: biz?.productId ?? "",
+          businessId,
+          productId: biz.productId,
           authorId: author.id,
           authorName: author.name,
           stars,
@@ -110,12 +112,17 @@ export class ReviewService {
     });
   }
 
-  /** Chủ quầy trả lời (một lần). Đánh giá ≤ 3 sao mà trả lời đàng hoàng thì gỡ chút uy tín + ăn nói. */
-  async reply(ownerId: string, reviewId: string, text: string) {
+  /**
+   * Chủ quầy trả lời (một lần). Đánh giá ≤ 3 sao mà trả lời đàng hoàng thì gỡ chút uy tín (của đúng cửa hàng đó) + ăn nói.
+   * Trả về id cửa hàng của đánh giá.
+   */
+  async reply(ownerId: string, reviewId: string, text: string): Promise<string> {
     const r = await this.prisma.review.findUnique({ where: { id: reviewId } });
     if (!r || r.ownerId !== ownerId)
       throw new GameError("invalid_state", "Không phải đánh giá quầy mình");
     if (r.reply) throw new GameError("invalid_state", "Đã trả lời rồi");
+    if (!r.businessId) throw new GameError("invalid_state", "Cửa hàng này không còn nữa");
+    const businessId = r.businessId;
     const clean = maskText(text.trim(), content.data.reviews.banned);
     await this.prisma.$transaction(async (tx) => {
       await tx.review.update({
@@ -123,7 +130,7 @@ export class ReviewService {
         data: { reply: clean, repliedAt: new Date() },
       });
       if (r.stars > 3) return;
-      const biz = await this.businesses.of(ownerId, tx);
+      const biz = await tx.business.findUnique({ where: { id: businessId } });
       if (biz)
         await tx.business.update({
           where: { id: biz.id },
@@ -137,36 +144,43 @@ export class ReviewService {
         data: { skills: addSkill(content, (player.skills ?? {}) as SkillPoints, "an_noi") },
       });
     });
+    return businessId;
   }
 
-  /** Sổ đánh giá của một chủ quầy: điểm trung bình, phân bố sao, 20 đánh giá mới nhất. */
+  /** Sổ đánh giá của một cửa hàng: điểm trung bình, phân bố sao, 20 đánh giá mới nhất. */
   async list(
     room: RoomRuntime | undefined,
     viewerId: string,
-    ownerId: string,
+    businessId: string,
   ): Promise<ReviewsView> {
-    const [owner, all, latest, mineToday] = await Promise.all([
-      this.prisma.player.findUnique({ where: { id: ownerId } }),
-      this.prisma.review.findMany({ where: { ownerId }, select: { stars: true } }),
+    const biz = await this.prisma.business.findUnique({
+      where: { id: businessId },
+      include: { owner: { select: { displayName: true } } },
+    });
+    if (!biz) throw new GameError("invalid_payload", "Không có quầy này");
+    const ownerId = biz.ownerId;
+    const [all, latest, mineToday] = await Promise.all([
+      this.prisma.review.findMany({ where: { businessId }, select: { stars: true } }),
       this.prisma.review.findMany({
-        where: { ownerId },
+        where: { businessId },
         orderBy: { createdAt: "desc" },
         take: LATEST,
       }),
       room
-        ? this.prisma.review.findFirst({ where: { ownerId, authorId: viewerId, day: room.day } })
+        ? this.prisma.review.findFirst({ where: { businessId, authorId: viewerId, day: room.day } })
         : null,
     ]);
-    if (!owner) throw new GameError("invalid_payload", "Không có quầy này");
     const sum = reviewSummary(all.map((r) => r.stars));
     return {
+      businessId,
+      shopName: biz.shopName ?? content.product(biz.productId).name,
       ownerId,
-      ownerName: owner.displayName,
+      ownerName: biz.owner.displayName,
       ...sum,
       canWrite:
         viewerId !== ownerId &&
         !mineToday &&
-        !!room?.purchases.has(purchaseKey(viewerId, ownerId, room.day)),
+        !!room?.purchases.has(purchaseKey(viewerId, businessId, room.day)),
       items: latest.map((r) => ({
         id: r.id,
         authorName: r.authorName,
@@ -180,5 +194,6 @@ export class ReviewService {
   }
 }
 
-export const purchaseKey = (buyerId: string, ownerId: string, day: number) =>
-  `${buyerId}:${ownerId}:${day}`;
+/** Khách đã mua ở cửa hàng nào hôm nay (mua rồi mới được đánh giá cửa hàng đó). */
+export const purchaseKey = (buyerId: string, businessId: string, day: number) =>
+  `${buyerId}:${businessId}:${day}`;

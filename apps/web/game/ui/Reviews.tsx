@@ -20,14 +20,14 @@ export function RatingLine({ view }: { view: ReviewsView | null }) {
   );
 }
 
-/** Tải sổ đánh giá một chủ quầy; `reload` gọi lại sau khi viết/trả lời. */
-export function useReviews(ownerId: string | null | undefined) {
+/** Tải sổ đánh giá một cửa hàng (mỗi tiệm / quầy một sổ); `reload` gọi lại sau khi viết/trả lời. */
+export function useReviews(businessId: string | null | undefined) {
   const [view, setView] = useState<ReviewsView | null>(null);
   const reload = useCallback(async () => {
-    if (!ownerId) return;
-    const res = await send("review:list", { ownerId });
+    if (!businessId) return;
+    const res = await send("review:list", { businessId });
     if (res.ok) setView(res.data);
-  }, [ownerId]);
+  }, [businessId]);
   useEffect(() => {
     void reload();
   }, [reload]);
@@ -39,16 +39,16 @@ export function useReviews(ownerId: string | null | undefined) {
  * Chủ quầy trả lời từng đánh giá (một lần); hàng xóm vừa mua thì viết đánh giá.
  */
 export function ReviewBook({
-  ownerId,
+  businessId,
   owner,
   onChange,
 }: {
-  ownerId: string;
+  businessId: string;
   owner: boolean;
   /** Báo sổ mới (để dòng tóm tắt bên ngoài cập nhật theo). */
   onChange?: (v: ReviewsView) => void;
 }) {
-  const { view, setView: set } = useReviews(ownerId);
+  const { view, setView: set } = useReviews(businessId);
   const setView = (v: ReviewsView) => {
     set(v);
     onChange?.(v);
@@ -80,7 +80,7 @@ export function ReviewBook({
           })}
         </ul>
       </div>
-      {view.canWrite && <WriteBox ownerId={ownerId} onDone={setView} />}
+      {view.canWrite && <WriteBox businessId={businessId} onDone={setView} />}
       {view.items.length === 0 && (
         <p className="text-sm text-ink/60">
           {owner ? "Chưa ai đánh giá — bán kỹ, khách sẽ ghi sổ." : "Chưa có đánh giá nào."}
@@ -196,7 +196,13 @@ function ReplyBox({ r, onDone }: { r: ReviewView; onDone: (v: ReviewsView) => vo
   );
 }
 
-function WriteBox({ ownerId, onDone }: { ownerId: string; onDone: (v: ReviewsView) => void }) {
+function WriteBox({
+  businessId,
+  onDone,
+}: {
+  businessId: string;
+  onDone: (v: ReviewsView) => void;
+}) {
   const [stars, setStars] = useState(0);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -233,7 +239,7 @@ function WriteBox({ ownerId, onDone }: { ownerId: string; onDone: (v: ReviewsVie
           disabled={busy || stars === 0 || !text.trim()}
           onClick={async () => {
             setBusy(true);
-            const res = await send("review:write", { ownerId, stars, text });
+            const res = await send("review:write", { businessId, stars, text });
             setBusy(false);
             if (res.ok) onDone(res.data);
           }}

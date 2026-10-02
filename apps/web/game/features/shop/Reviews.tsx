@@ -3,11 +3,11 @@
 import { ReviewBook } from "../../ui/Reviews";
 import { ShopFeature } from "./common";
 
-/** 📒 Đánh giá: khách chấm sao, mình trả lời. */
+/** 📒 Đánh giá của cửa hàng đang quản lý (mỗi cửa hàng một sổ — đổi cửa hàng ở thanh chọn phía trên). */
 export function ReviewsSheet() {
   return (
     <ShopFeature id="reviews">
-      {(_biz, me) => <ReviewBook ownerId={me.playerId} owner />}
+      {(biz) => <ReviewBook key={biz.id} businessId={biz.id} owner />}
     </ShopFeature>
   );
 }
