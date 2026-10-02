@@ -46,6 +46,7 @@ function JobList() {
   const me = useGame((s) => s.me);
   const shift = useGame((s) => s.shift);
   const nearPlace = useGame((s) => s.nearPlace);
+  const rented = useGame((s) => !!s.ride?.bikeToday);
   const close = useGame((s) => s.openSheet);
   const setGoal = useGame((s) => s.setGoal);
   const setInside = useGame((s) => s.setInside);
@@ -99,9 +100,11 @@ function JobList() {
       </ul>
       <RideCard
         here={nearPlace === content.data.rides.stationPlaceId}
+        rented={rented}
         onGo={() => {
           close(null);
-          if (nearPlace === content.data.rides.stationPlaceId) close("ride");
+          // Đã thuê xe: đứng đâu cũng chạy được, mở thẳng bảng xe ôm.
+          if (rented || nearPlace === content.data.rides.stationPlaceId) close("ride");
           else setGoal({ kind: "place", id: content.data.rides.stationPlaceId, open: "ride" });
         }}
       />
@@ -115,22 +118,22 @@ function JobList() {
 }
 
 /** 🛵 Xe ôm (KIENTRUC §4): tự chạy, không có chủ trả lương — thuê xe, đón khách ở trạm. */
-function RideCard({ here, onGo }: { here: boolean; onGo: () => void }) {
+function RideCard({ here, rented, onGo }: { here: boolean; rented: boolean; onGo: () => void }) {
   const r = content.data.rides;
   const place = content.place(r.stationPlaceId);
   return (
     <div className="mt-3 rounded-2xl bg-white p-3 shadow-sm" data-job="xe_om">
       <p className="font-extrabold">🛵 Chạy xe ôm · {place.name}</p>
       <p className="text-sm text-ink/60">
-        Thuê xe của {place.keeper.name} {vnd(r.bikeRentPerDay)}/ngày, đón khách ở trạm, trả giá,
-        chọn đường lớn hay hẻm. Xăng tự trả, khách chấm sao.
+        Thuê xe của {place.keeper.name} {vnd(r.bikeRentPerDay)}/ngày ở trạm, rồi đậu xe đâu ngoài
+        đường cũng đón được khách: trả giá, chọn đường lớn hay hẻm. Xăng tự trả, khách chấm sao.
       </p>
       <button
         type="button"
         onClick={onGo}
         className="mt-2 h-11 w-full rounded-xl bg-leaf font-semibold text-cream"
       >
-        {here ? place.action : `🚶 Đi tới ${place.name}`}
+        {rented ? "🛵 Chạy xe ôm (đã thuê xe)" : here ? place.action : `🚶 Đi tới ${place.name}`}
       </button>
     </div>
   );

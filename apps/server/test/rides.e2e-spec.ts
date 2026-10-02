@@ -1,10 +1,10 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { MeView, RideView, StoryEntryView } from "@xom/shared";
+import type { MeView, NotifyEvent, RideView, StoryEntryView } from "@xom/shared";
 import { emit, join, next } from "./client.js";
 import { startApp } from "./helpers.js";
 
-// Xe ôm (docs/KIENTRUC.md §4, docs/USECASES.md UC-N1): thuê xe → chờ khách ở trạm → trả giá → chọn đường → chạy thật tới
+// Xe ôm (docs/KIENTRUC.md §4, docs/USECASES.md UC-N1): thuê xe ở trạm → đứng đâu ngoài đường cũng chờ khách → trả giá → chọn đường → chạy thật tới
 // nơi (server kiểm vị trí + thời gian) → thu tiền / thối → sao + boa, trừ xăng.
 
 describe("Xe ôm (e2e)", () => {
@@ -40,7 +40,7 @@ describe("Xe ôm (e2e)", () => {
     return offered;
   };
 
-  it("chưa thuê xe / đứng xa trạm thì không chờ khách được", async () => {
+  it("chưa thuê xe thì không chờ khách được; thuê xe phải ra trạm", async () => {
     const { socket } = await join(url);
     await moveTo(socket, station.x, station.z);
     const noBike = await emit(socket, "ride:wait", {});
@@ -118,6 +118,45 @@ describe("Xe ôm (e2e)", () => {
           s.text.startsWith(`Chạy cuốc xe ôm đầu tiên: chở ${offer.passenger?.name}`),
         ),
     ).toBe(true);
+    socket.disconnect();
+  });
+
+  it("đã thuê xe thì đứng đâu cũng có khách vẫy: đón tại chỗ, báo bấm được, phải quay lại chỗ đón mới chạy", async () => {
+    const { socket } = await join(url);
+    await emit(socket, "debug:clock", { minute: 13 * 60 });
+    await emit(socket, "debug:weather", { kind: "sunny", minutes: 600 });
+    await moveTo(socket, station.x, station.z);
+    await ride(socket, "ride:rent");
+    // Chạy xe ra đường lớn giữa xóm, xa trạm.
+    const spot = { x: 10, z: 0 };
+    await moveTo(socket, spot.x, spot.z);
+    const hail = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("🙋"));
+    const offer = await passenger(socket);
+    const n = await hail;
+    expect(n.open).toBe("ride");
+    expect(n.text).toContain(offer.passenger?.name ?? "?");
+    expect(offer.passenger?.model).toBeTruthy();
+    const dest = offer.dest;
+    if (!dest) throw new Error("không có nơi tới");
+    // Nơi tới tính từ chỗ đón, không phải từ trạm.
+    expect(Math.hypot(dest.x - spot.x, dest.z - spot.z)).toBeGreaterThanOrEqual(
+      content.data.rides.minMeters,
+    );
+    let deal = await ride(socket, "ride:offer", { ratio: 1 });
+    for (let i = 0; i < 5 && deal.stage !== "route"; i++) {
+      await ride(socket, "ride:quit");
+      await passenger(socket);
+      deal = await ride(socket, "ride:offer", { ratio: 1 });
+    }
+    expect(deal.stage).toBe("route");
+    // Bỏ khách đứng đó mà chạy chỗ khác thì không xuất phát được.
+    await moveTo(socket, station.x, station.z);
+    const away = await emit(socket, "ride:go", { route: "road" });
+    expect(away.ok).toBe(false);
+    if (!away.ok) expect(away.message).toContain("chỗ khách");
+    await moveTo(socket, spot.x, spot.z);
+    const going = await ride(socket, "ride:go", { route: "road" });
+    expect(going.stage).toBe("riding");
     socket.disconnect();
   });
 

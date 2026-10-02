@@ -119,9 +119,13 @@ export function connectGame(onSignedOut: () => void): () => void {
   };
   document.addEventListener("visibilitychange", onVisible);
   const stopPresence = startPresence(s);
-  // Bản dev: kịch bản Playwright gọi lệnh thử nghiệm (ép thời tiết…) qua đây; server production từ chối.
+  // Bản dev: kịch bản Playwright gọi lệnh thử nghiệm (ép thời tiết…) qua đây; server production từ chối. `walk` cho nhân vật
+  // tự đi tới một điểm (như chạm lên đường) để thử các việc phụ thuộc vị trí.
   if (process.env.NODE_ENV !== "production")
-    (window as unknown as { xomDebug: unknown }).xomDebug = { send };
+    (window as unknown as { xomDebug: unknown }).xomDebug = {
+      send,
+      walk: (x: number, z: number) => useGame.getState().setGoal({ kind: "point", x, z }),
+    };
 
   return () => {
     stopPresence();

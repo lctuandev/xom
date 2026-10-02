@@ -982,21 +982,28 @@ tận nhà, chấm sao người nhận, tin cậy mở chợ người chơi.
 **Nhân vật:** **Chú Lực** — trưởng trạm xe ôm gốc me (đầu đường, gần ngã tư phía tây), cho người mới thuê *Wave cũ*; khách là
 cư dân có tên (Bé Su, Bà Tư vé số, Chị Thảo kế toán…).
 **Luồng:** Việc làm → 💼 Làm thuê → **🛵 Chạy xe ôm** → đi tới trạm (tới nơi tự mở sheet) → **Thuê xe 30k/ngày** →
-**🙋 Đứng chờ khách** (giờ cao điểm khách tới nhanh, giữa trưa / khuya chờ lâu gấp 3) → khách vẫy: *"Chú ơi, chở tui tới Nhà số 15
+**xe Wave hiện dưới người** (cả ngày, đi đâu cũng ngồi trên xe) → chạy ra chỗ đông người (đầu hẻm, ngã tư, cổng chợ — như xe ôm
+ngoài đời đậu chờ bất cứ góc phố nào, trạm chỉ là nơi thuê xe) → chip **🛵 Đậu xe ở đây chờ khách** → **🙋 Đậu xe ở đây chờ khách**
+(giờ cao điểm khách tới nhanh, giữa trưa / khuya chờ lâu gấp 3; đi đâu tuỳ ý, ở trong nhà / trong tiệm thì khách chưa thấy) →
+khách vẫy **ngay chỗ mình đứng**: thông báo *"🙋 Chị Mai vẫy xe … — bấm để trả giá"* (bấm là mở bảng) + chip đỏ nhấp nháy trên thanh
+hành động → *"Chú ơi, chở tui tới Nhà số 15
 bao nhiêu?"* (quãng đường, giá chuẩn = 12k + 8k/100 m) → **trả giá**: *Bớt chút ×0,9 · Giá chuẩn · Nhích lên ×1,25 · Nói thách
 ×1,6* (nói thách thì khách hay *"Mắc quá, thôi tui đi bộ"*; mưa bão khách dễ chịu giá) → **chọn đường**: 🛣️ *đường lớn* (nhanh lúc
 vắng, giờ cao điểm kẹt cứng — chậm tới 60%) hay 🏘️ *đi hẻm* (không kẹt, mưa thì trơn, xóc) — sheet báo ước số giây mỗi đường +
-độ kẹt → **chạy thật** theo đường đã chọn (tìm đường A* có trọng số loại ô) → tới nơi **🛬 Tới nơi rồi** → khách chấm sao (nhanh
+độ kẹt → khách **ngồi sau xe** → **chạy thật** theo đường đã chọn (tìm đường A* có trọng số loại ô) → tới nơi **🛬 Tới nơi rồi** → khách chấm sao (nhanh
 hơn mong đợi 5⭐, chậm quá 1–2⭐; đi hẻm lúc mưa −1⭐) + boa (5⭐: 2–5k) → **thu tiền**: chuyển khoản, đưa đủ, hoặc tờ lớn phải
-**thối tiền** (thối thiếu: −2⭐, mất boa, 🤝 −2) → **trừ xăng** (1k/100 m, cả lượt về trạm) → về trạm chờ khách tiếp.
-**Luật game:** tiền chỉ có khi chở thật — server kiểm đứng ở trạm, tới đúng nơi và **không tới nhanh hơn tốc độ xe cho phép**
+**thối tiền** (thối thiếu: −2⭐, mất boa, 🤝 −2) → **trừ xăng** (1k/100 m, cả lượt về trạm) → đậu luôn chỗ vừa trả khách chờ cuốc tiếp.
+**Luật game:** tiền chỉ có khi chở thật — server kiểm thuê xe ở trạm, xuất phát đúng **chỗ khách vẫy** (nơi tới
+tính từ chỗ đón, ≥ 18 m), tới đúng nơi và **không tới nhanh hơn tốc độ xe cho phép**
 (×1,4 sai số); đang mở quầy / đang trong ca làm thuê thì không chạy xe ôm; money sink: thuê xe + xăng; mọi đồng tiền qua sổ cái
 (`bike_rent`, `ride_fare`, `ride_tip`, `fuel`), đo lường `ride_rent`, `ride_haggle`, `ride_done`, `ride_abandon`.
 **Dữ liệu:** `content.rides` (giá, xăng, mức trả giá, tốc độ đường, câu thoại, sao); `Player.bikeRentDay / rides / rideStars`;
 sim `congestion`, `rideFare`, `rideFuel`, `haggleChance`, `routeSpeed`, `rideStars`, `rideTip`, `passengerWait`,
 `Grid.path(…, ROUTE_WEIGHTS)`.
-**Kiểm chứng:** sim `rides.test.ts`; e2e server `rides.e2e-spec.ts` (chưa thuê / đứng xa bị từ chối; cuốc đủ bước: tiền thuê,
-giá, tới nhanh quá bị từ chối, thu tiền + xăng, Chuyện; nói thách bị từ chối); Playwright `xe-om.spec.ts`.
+**Kiểm chứng:** sim `rides.test.ts`; e2e server `rides.e2e-spec.ts` (chưa thuê / thuê xa trạm bị từ chối; đậu giữa xóm vẫn có khách, thông báo
+`open: "ride"`, khách có model, rời chỗ đón thì không xuất phát được; cuốc đủ bước: tiền thuê,
+giá, tới nhanh quá bị từ chối, thu tiền + xăng, Chuyện; nói thách bị từ chối); Playwright `xe-om.spec.ts` (thuê xe → xe dưới người → ra đường lớn giữa xóm đậu chờ → bấm
+thông báo / chip → trả giá → khách ngồi sau xe → tới nơi, thu tiền).
 **Sau này:** khách quen gọi riêng xe ôm uy tín, xe hao mòn → tiệm sửa xe, mua xe riêng, chở hàng thuê, giao thông 3D (UC-N2).
 
 ### UC-N2 · Giao thông trên đường ✅ (bản đầu)

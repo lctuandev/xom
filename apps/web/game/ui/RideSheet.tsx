@@ -54,9 +54,9 @@ export function RideSheet() {
 
   return (
     <Sheet
-      title="Trạm xe ôm gốc me"
+      title={ride?.bikeToday ? "🛵 Chạy xe ôm" : "Trạm xe ôm gốc me"}
       onClose={() => close(null)}
-      face={ride?.stage === "idle" || !ride ? <PlaceFace placeId={station} /> : undefined}
+      face={!ride?.bikeToday ? <PlaceFace placeId={station} /> : undefined}
     >
       {!ride ? (
         <p className="text-sm text-ink/50">Đang ra trạm…</p>
@@ -67,7 +67,10 @@ export function RideSheet() {
           {ride.stage === "waiting" && (
             <div className="rounded-2xl bg-white p-3 text-sm shadow-sm">
               {ride.comment && <p className="mb-1.5 text-red">{ride.comment}</p>}
-              <p className="font-semibold">⏳ Đang đứng trạm chờ khách…</p>
+              <p className="font-semibold">⏳ Đang đậu xe chờ khách…</p>
+              <p className="text-xs text-ink/60">
+                Cứ đi đâu tuỳ ý (ở ngoài đường) — khách vẫy sẽ có thông báo, bấm vào để trả giá.
+              </p>
               {ride.readyAt !== undefined && (
                 <p className="text-xs text-ink/60">
                   Khoảng {formatClock(ride.readyAt)} sẽ có người vẫy.
@@ -201,8 +204,11 @@ function Idle({
         onClick={() => void onAct("ride:wait")}
         className="mt-2 h-11 w-full rounded-xl bg-leaf font-semibold text-cream disabled:opacity-40"
       >
-        🙋 Đứng chờ khách
+        🙋 Đậu xe ở đây chờ khách
       </button>
+      <p className="mt-1.5 text-xs text-ink/60">
+        Đã có xe thì đậu đâu cũng đón được: đầu hẻm, ngã tư, cổng chợ… Khách vẫy sẽ hiện thông báo.
+      </p>
     </div>
   );
 }

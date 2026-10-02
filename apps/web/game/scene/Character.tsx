@@ -77,11 +77,14 @@ export function Character({
   model,
   walker,
   pose = "auto",
+  lift = 0,
 }: {
   model: CharacterModel;
   walker: Walker;
-  /** "sit" = ngồi (khách trong quán); mặc định đi/đứng theo chuyển động. */
-  pose?: "auto" | "sit";
+  /** "sit" = ngồi (khách trong quán); "ride" = ngồi trên yên xe cả lúc chạy; mặc định đi/đứng theo chuyển động. */
+  pose?: "auto" | "sit" | "ride";
+  /** Nâng người lên (m), vd. ngồi trên yên xe máy. */
+  lift?: number;
 }) {
   const group = useRef<Group>(null);
   const { scene, animations } = useGLTF(CHARACTER_URLS[model]);
@@ -111,13 +114,14 @@ export function Character({
     if (!g) return;
     const moving = walker.step(Math.min(dt, 0.1));
     g.position.copy(walker.position);
+    g.position.y += lift;
     // Xoay mượt về hướng đi, đi theo đường ngắn nhất quanh vòng tròn.
     const diff = Math.atan2(
       Math.sin(walker.yaw - g.rotation.y),
       Math.cos(walker.yaw - g.rotation.y),
     );
     g.rotation.y += diff * Math.min(1, dt * 12);
-    play(moving ? "walk" : pose === "sit" ? "sit" : "idle");
+    play(pose === "ride" ? "sit" : moving ? "walk" : pose === "sit" ? "sit" : "idle");
   });
 
   return (
@@ -129,6 +133,26 @@ export function Character({
       </mesh>
     </group>
   );
+}
+
+/** Người ngồi sau xe: bám theo người lái, lùi sau yên một khoảng theo hướng xe. */
+export class Pillion extends Walker {
+  constructor(
+    private readonly leader: Walker,
+    private readonly back = 0.55,
+  ) {
+    super(leader.position.x, leader.position.z);
+  }
+
+  override step(): boolean {
+    this.yaw = this.leader.yaw;
+    this.position.set(
+      this.leader.position.x - Math.sin(this.yaw) * this.back,
+      0,
+      this.leader.position.z - Math.cos(this.yaw) * this.back,
+    );
+    return false;
+  }
 }
 
 /** NPC đi dạo: tới một chỗ ngẫu nhiên (theo đường xá), dừng nghỉ vài giây rồi đi tiếp. */

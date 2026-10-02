@@ -627,7 +627,14 @@ export interface RideView {
   rating: { rides: number; avg: number };
   /** Phút game khách tới (khi đang chờ). */
   readyAt?: number;
-  passenger?: { residentId: string; name: string; bio: string; line: string };
+  passenger?: {
+    residentId: string;
+    name: string;
+    bio: string;
+    line: string;
+    /** Model nhân vật (theo kiểu khách) để vẽ khách ngồi sau xe. */
+    model?: string;
+  };
   dest?: { kind: "address" | "lot"; id: string; label: string; x: number; z: number };
   /** Quãng đường (m) theo đường lớn — để báo giá. */
   meters?: number;
@@ -709,6 +716,8 @@ export interface StoryEntryView {
 export interface NotifyEvent {
   kind: "info" | "good" | "warn";
   text: string;
+  /** Bấm vào thông báo thì mở bảng này (vd. "ride" khi khách vẫy xe). */
+  open?: string;
 }
 
 const contentId = z.string().regex(/^[a-z0-9_]+$/);

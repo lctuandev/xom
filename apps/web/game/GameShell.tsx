@@ -16,7 +16,7 @@ import {
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
 import ShopInterior from "./interior/ShopInterior";
-import { connectGame } from "./net/socket";
+import { connectGame, send } from "./net/socket";
 import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
@@ -63,6 +63,7 @@ export default function GameShell() {
   useNews();
   useEventNews();
   useSound();
+  useRideSync();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
   useEffect(() => {
@@ -153,6 +154,17 @@ export default function GameShell() {
  * Link mời /play?xom=… (UC-J1): nhớ mã, đợi vào game xong (và không đang hội thoại) thì mở bảng Xóm
  * để người chơi tự bấm vào — không tự chuyển xóm khi chưa hỏi.
  */
+/** Xe ôm (UC-N1): nạp trạng thái xe khi vào game / sang ngày mới — đã thuê xe thì vẽ xe dưới người và hiện chip chạy xe. */
+function useRideSync() {
+  const online = useGame((s) => s.status === "online" && !!s.me);
+  const day = useGame((s) => s.clock?.day);
+  const setRide = useGame((s) => s.setRide);
+  useEffect(() => {
+    if (!online || day === undefined) return;
+    void send("ride:view", {}).then((r) => r.ok && setRide(r.data));
+  }, [online, day, setRide]);
+}
+
 function useInvite() {
   const roster = useGame((s) => s.roster);
   const invite = useGame((s) => s.invite);

@@ -36,7 +36,7 @@ import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
 
-/** Đứng cách trạm / nơi tới trong khoảng này (mét). */
+/** Đứng cách trạm / chỗ đón / nơi tới trong khoảng này (mét). */
 const REACH = 6;
 /** Chạy nhanh hơn tốc độ cho phép bấy nhiêu lần là gian lận (chừa sai số đi tắt, giật lag). */
 const SPEED_SLACK = 1.4;
@@ -48,6 +48,8 @@ interface RideState {
   readyAt?: number;
   passenger?: NonNullable<RideView["passenger"]>;
   archetype?: string;
+  /** Chỗ khách vẫy (người chạy đang đứng đâu thì đón ở đó). */
+  pickup?: { x: number; z: number };
   dest?: RideDest;
   meters?: number;
   fare?: number;
@@ -66,7 +68,8 @@ interface RideState {
 }
 
 /**
- * 🛵 Xe ôm (docs/KIENTRUC.md §4, UC-N1): thuê xe Wave của Chú Lực theo ngày → đứng trạm chờ khách → khách hỏi giá, mình
+ * 🛵 Xe ôm (docs/KIENTRUC.md §4, UC-N1): thuê xe Wave của Chú Lực theo ngày (ở trạm) → đứng đâu ngoài đường cũng chờ
+ * khách được (xe ôm truyền thống đậu đầu hẻm, ngã tư, chợ…; trạm chỉ là nơi thuê xe) → khách vẫy, hỏi giá, mình
  * trả giá (nói thách quá thì khách đi bộ) → chọn đường lớn (kẹt giờ cao điểm) hay hẻm (trơn khi mưa) → chạy thật tới nơi
  * (server kiểm vị trí + thời gian chạy) → khách trả tiền (thối tiền), chấm sao, boa → trừ xăng. Tiền chỉ có khi chạy thật.
  */
@@ -148,7 +151,7 @@ export class RideService {
       tip: s.tip,
     };
     if (s.stage === "route" && s.dest) {
-      const st = this.station();
+      const st = s.pickup ?? this.station();
       const jam = congestion(content, room.minute);
       const wet = this.wet(room);
       const secs = (route: RideRoute) =>
@@ -177,9 +180,10 @@ export class RideService {
     return this.view(room, playerId);
   }
 
-  /** Đứng trạm chờ khách. */
+  /** Dừng xe chờ khách — ở đâu ngoài đường cũng được (không phải trong nhà / trong tiệm). */
   async wait(room: RoomRuntime, playerId: string) {
-    this.atStation(room, playerId);
+    if (room.members.get(playerId)?.pos?.inside)
+      throw new GameError("invalid_state", "Ra ngoài đường mới đón khách được");
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
     if (player.bikeRentDay !== room.day)
       throw new GameError("invalid_state", "Thuê xe của Chú Lực trước đã");
@@ -198,22 +202,31 @@ export class RideService {
   async tick(room: RoomRuntime) {
     for (const [playerId, s] of this.states) {
       if (s.stage !== "waiting" || (s.readyAt ?? 0) > room.minute) continue;
-      if (!room.members.has(playerId)) continue;
-      this.newPassenger(room, playerId, s);
+      const pos = room.members.get(playerId)?.pos;
+      if (!pos) continue;
+      // Đang trong nhà / trong tiệm thì khách chưa thấy xe — ra đường mới có người vẫy.
+      if (pos.inside) continue;
+      this.newPassenger(room, playerId, s, { x: pos.x, z: pos.z });
+      if ((s.stage as RideState["stage"]) !== "offer") continue;
       this.notify?.(playerId, {
         kind: "info",
-        text: `🙋 ${s.passenger?.name} vẫy xe ở trạm: "${s.passenger?.line}"`,
+        text: `🙋 ${s.passenger?.name} vẫy xe: "${s.passenger?.line}" — bấm để trả giá`,
+        open: "ride",
       });
       this.push?.(playerId, await this.view(room, playerId));
     }
   }
 
-  private newPassenger(room: RoomRuntime, playerId: string, s: RideState) {
+  private newPassenger(
+    room: RoomRuntime,
+    playerId: string,
+    s: RideState,
+    st: { x: number; z: number },
+  ) {
     s.n += 1;
     const rand = seededRandom("ride", playerId, room.day, room.minute, s.n);
     const people = content.data.residents.filter((r) => r.id !== "chu_luc");
     const who = people[Math.floor(rand() * people.length)] ?? people[0];
-    const st = this.station();
     const dests = rideDestinations(content, st);
     const dest = dests[Math.floor(rand() * dests.length)] ?? dests[0];
     if (!who || !dest) return;
@@ -224,8 +237,10 @@ export class RideService {
       name: who.name,
       bio: who.bio,
       line: rideLine(content, "ask", rand, dest.label),
+      model: content.data.npcs.find((n) => n.id === who.archetype)?.model,
     };
     s.archetype = who.archetype;
+    s.pickup = { x: st.x, z: st.z };
     s.dest = dest;
     s.meters = Math.round(meters);
     s.fare = rideFare(content, meters);
@@ -265,8 +280,10 @@ export class RideService {
     const s = this.state(playerId);
     if (s.stage !== "route" || !s.dest)
       throw new GameError("invalid_state", "Chưa chốt giá với khách");
-    this.atStation(room, playerId);
-    const st = this.station();
+    const st = s.pickup ?? this.station();
+    // Khách đứng chỗ vẫy xe — phải quay lại đón chứ không chạy từ chỗ khác.
+    if (!this.near(room, playerId, st.x, st.z))
+      throw new GameError("invalid_state", "Quay lại chỗ khách đang đứng chờ đã");
     const wet = this.wet(room);
     const jam = congestion(content, room.minute);
     s.route = route;

@@ -353,6 +353,7 @@ function JobBadge() {
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   const dismiss = useGame((s) => s.dismissToast);
+  const openSheet = useGame((s) => s.openSheet);
   if (!toasts.length) return null;
   return (
     // Một khối duy nhất đè tạm lên thanh trạng thái + dải tin (3,5 giây), mới nhất trên cùng — không còn các mẩu rời căn
@@ -366,7 +367,11 @@ export function Toasts() {
         <button
           key={t.id}
           type="button"
-          onClick={() => dismiss(t.id)}
+          onClick={() => {
+            dismiss(t.id);
+            if (t.open) openSheet(t.open as SheetId);
+          }}
+          data-toast-open={t.open}
           className={`pointer-events-auto flex items-start gap-2 border-l-4 px-3 py-2 text-left text-sm leading-snug font-semibold ${
             i > 0 ? "border-t border-t-ink/10 text-ink/75" : ""
           } ${
@@ -377,7 +382,8 @@ export function Toasts() {
                 : "border-l-sun"
           }`}
         >
-          <span className="line-clamp-2">{t.text}</span>
+          <span className="line-clamp-2 flex-1">{t.text}</span>
+          {t.open && <span className="shrink-0 self-center text-xs text-red">Xem ›</span>}
         </button>
       ))}
     </div>

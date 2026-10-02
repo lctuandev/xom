@@ -26,6 +26,7 @@ export function ActionBar() {
       <ShopButton />
       <KitchenButton />
       <AwayChip />
+      <RideChip />
       <OpenStallButton />
       <EnterShopButton />
       <PlaceButton />
@@ -155,6 +156,40 @@ function KitchenButton() {
       👨‍🍳 Làm món cho khách
       {orders.length > 1 && <span className="ml-1 opacity-80">· {orders.length} khách chờ</span>}
       <Countdown left={left} />
+    </button>
+  );
+}
+
+/**
+ * 🛵 Xe ôm (UC-N1): đã thuê xe thì đứng đâu cũng mở được bảng chạy xe; khách vẫy thì chip đỏ nhấp nháy, bấm vào để trả giá.
+ * Một chip duy nhất theo từng bước (chờ khách → trả giá → chọn đường → chở → thu tiền).
+ */
+function RideChip() {
+  const ride = useGame((s) => s.ride);
+  const inside = useGame((s) => s.inside);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!ride?.bikeToday || inside) return null;
+  const who = ride.passenger?.name ?? "khách";
+  const [text, tone] =
+    ride.stage === "offer"
+      ? [`🙋 ${who} vẫy xe — bấm để trả giá`, "bg-red text-cream animate-pulse"]
+      : ride.stage === "route"
+        ? [`🛵 Chốt giá với ${who} — chọn đường`, "bg-red text-cream"]
+        : ride.stage === "riding"
+          ? [`🛵 Chở ${who} tới ${ride.dest?.label ?? ""}`, "bg-ink/85 text-cream"]
+          : ride.stage === "pay"
+            ? [`💵 Tới nơi — thu tiền ${who}`, "bg-leaf text-cream"]
+            : ride.stage === "waiting"
+              ? ["⏳ Đang đậu xe chờ khách…", "bg-ink/85 text-cream"]
+              : ["🛵 Đậu xe ở đây chờ khách", "bg-cream text-ink"];
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("ride")}
+      data-ride-chip={ride.stage}
+      className={`pointer-events-auto h-11 w-full max-w-xs truncate rounded-2xl px-4 text-sm font-semibold shadow-lg active:scale-[0.97] ${tone}`}
+    >
+      {text}
     </button>
   );
 }

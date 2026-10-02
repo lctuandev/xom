@@ -330,7 +330,11 @@ export const useGame = create<GameState>((set, get) => ({
       toasts: [...s.toasts.filter((t) => t.text !== n.text).slice(-2), { ...n, id }],
     }));
     sfx(n.kind === "warn" ? "error" : n.kind === "good" && n.text.startsWith("+") ? "coin" : "pop");
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
+    // Thông báo bấm được (khách vẫy xe…) để lâu hơn cho kịp bấm.
+    setTimeout(
+      () => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+      n.open ? 7000 : 3500,
+    );
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   setProximity: (nearPlace, atStall) => set({ nearPlace, atStall }),
