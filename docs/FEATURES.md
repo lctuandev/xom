@@ -302,3 +302,17 @@ Chụp ảnh/quay trong game, đăng lên "XÓM Social", thích/bình luận, tr
 | Deploy Docker cổng 5555, tự chạy lại, backup | ✅ / ⏳ backup | 1 | |
 | Cloudflare Tunnel | ⏳ | 4 | |
 | Log sự kiện game (thay analytics) | ✅ | 1 | Bảng `GameEvent` |
+
+## Tồn đọng (xem HANDOFF.md §3)
+
+| Tính năng | Trạng thái | Ở đâu |
+|---|---|---|
+| Tái cấu trúc chức năng / menu / nút, tách service + component lớn | ⏳ | HANDOFF §3.1 |
+| Nhiều nhân viên cùng lúc, giới hạn theo quy mô cửa hàng | ⏳ | HANDOFF §3.2 |
+| Nhiều cửa hàng cùng lúc + bảng tổng quan cửa hàng | ⏳ | HANDOFF §3.3 |
+| Có nhân viên thì chủ đi làm việc khác / tự bán tiệm khác | ⏳ | HANDOFF §3.4 |
+| Đòi tiền nhà: nhắc trước hạn, hẹn ngày, chủ nhà dẹp tiệm, modal chân dung NPC | ⏳ | HANDOFF §3.5 |
+| Nội thất riêng theo nghề | ⏳ | HANDOFF §3.6 |
+| Khách ra vào tiệm (ngoài phố + trong tiệm, cả khi nhân viên bán) | ⏳ | HANDOFF §3.7 |
+| Xóm chung: tự xếp xóm, danh sách xóm, bảng tin xóm | ⏳ | HANDOFF §3.8 |
+| Trang admin `/quan-tri` | ⏳ (đã có plan) | docs/ADMIN.md |
