@@ -4,6 +4,11 @@ import {
   needsFoodCert,
   nextShopStep,
   normalizeShopName,
+  rentLateFee,
+  rentOwed,
+  rentPromiseOptions,
+  rentShouldRemind,
+  rentVerdict,
   shopEstimate,
   shopNameError,
 } from "./shop.js";
@@ -45,5 +50,76 @@ describe("mở tiệm theo quy trình (UC-F12)", () => {
     expect(
       nextShopStep({ ...base, leased: true, licensed: true, certified: true, signed: true }),
     ).toBe("ready");
+  });
+});
+
+describe("đòi tiền nhà (UC-F13)", () => {
+  const rent = content.lot("nha_so_10").rentPerDay;
+  const r = content.data.shopSetup.rent;
+  const base = {
+    day: 5,
+    minute: r.dueMinute,
+    rentPerDay: rent,
+    paidDay: 4,
+    promiseDay: null,
+    strikes: 0,
+    depositLeft: rent * 3,
+    online: true,
+  };
+
+  it("nợ tính từ sau ngày đã trả tới hôm nay; phí trễ làm tròn lên nghìn", () => {
+    expect(rentOwed(base)).toEqual({ days: 1, amount: rent });
+    expect(rentOwed({ ...base, paidDay: 5 }).amount).toBe(0);
+    expect(rentOwed({ ...base, paidDay: 2 }).days).toBe(3);
+    expect(rentLateFee(content, 105_000)).toBe(11_000);
+    expect(rentLateFee(content, 0)).toBe(0);
+    // Hẹn càng xa phí trễ càng cao; không nợ thì không có gì để hẹn.
+    expect(rentPromiseOptions(content, 5, 105_000)).toEqual([
+      { day: 6, fee: 11_000 },
+      { day: 7, fee: 22_000 },
+    ]);
+    expect(rentPromiseOptions(content, 5, 0)).toEqual([]);
+  });
+
+  it("chủ nhà tới nhắc từ giờ nhắc khi còn nợ; đang trong hẹn hoặc chủ tiệm vắng thì không", () => {
+    const at = { ...base, minute: r.remindMinute };
+    expect(rentShouldRemind(content, at)).toBe(true);
+    expect(rentShouldRemind(content, { ...at, minute: r.remindMinute - 1 })).toBe(false);
+    expect(rentShouldRemind(content, { ...at, paidDay: 5 })).toBe(false);
+    expect(rentShouldRemind(content, { ...at, promiseDay: 6 })).toBe(false);
+    // Tới ngày hẹn thì nhắc lại.
+    expect(rentShouldRemind(content, { ...at, promiseDay: 5 })).toBe(true);
+    expect(rentShouldRemind(content, { ...at, online: false })).toBe(false);
+  });
+
+  it("quá hạn: trừ cọc + phí trễ; trễ lần thứ 3 hoặc cọc không đủ thì dẹp tiệm", () => {
+    expect(rentVerdict(content, { ...base, minute: r.dueMinute - 1 })).toEqual({ kind: "none" });
+    expect(rentVerdict(content, base)).toEqual({ kind: "collect", owed: rent, fee: 11_000 });
+    expect(rentVerdict(content, { ...base, strikes: r.evictAfterStrikes - 1 })).toEqual({
+      kind: "evict",
+      reason: "strikes",
+    });
+    expect(rentVerdict(content, { ...base, depositLeft: rent })).toEqual({
+      kind: "evict",
+      reason: "deposit",
+    });
+  });
+
+  it("hẹn theo ngày: cả ngày hẹn vẫn trả được (không có giờ chót); qua ngày hẹn là thất hẹn, tính trễ dù chủ tiệm vắng", () => {
+    expect(rentVerdict(content, { ...base, promiseDay: 6 }).kind).toBe("none");
+    expect(rentVerdict(content, { ...base, promiseDay: 5, minute: 21 * 60 + 59 }).kind).toBe(
+      "none",
+    );
+    expect(
+      rentVerdict(content, { ...base, day: 6, minute: 6 * 60, promiseDay: 5, online: false }).kind,
+    ).toBe("collect");
+  });
+
+  it("chủ tiệm vắng, chưa hẹn: nợ cộng dồn, không tính trễ — chỉ dẹp khi nợ vượt cọc", () => {
+    expect(rentVerdict(content, { ...base, online: false })).toEqual({ kind: "wait" });
+    expect(rentVerdict(content, { ...base, online: false, paidDay: 0 })).toEqual({
+      kind: "evict",
+      reason: "deposit",
+    });
   });
 });

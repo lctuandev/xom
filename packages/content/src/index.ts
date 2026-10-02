@@ -220,6 +220,16 @@ export function loadContent(raw: unknown): Content {
     if (!lotIds.has(t.lotId)) errors.push(`việc ${t.id}: không có chỗ ${t.lotId}`);
     if (t.qty[0] > t.qty[1]) errors.push(`việc ${t.id}: số lượng ${t.qty.join("–")} ngược`);
   }
+  // Chủ nhà (UC-F13): mỗi nhà mặt tiền đúng một chủ nhà; chủ nhà chỉ giữ nhà mặt tiền.
+  for (const lot of parsed.lots.filter((l) => l.kind === "house")) {
+    const owners = parsed.shopSetup.rent.landlords.filter((l) => l.lotIds.includes(lot.id));
+    if (owners.length !== 1)
+      errors.push(`nhà ${lot.id}: cần đúng một chủ nhà (đang có ${owners.length})`);
+  }
+  for (const ll of parsed.shopSetup.rent.landlords)
+    for (const lotId of ll.lotIds)
+      if (parsed.lots.find((l) => l.id === lotId)?.kind !== "house")
+        errors.push(`chủ nhà ${ll.id}: ${lotId} không phải nhà mặt tiền`);
   if (errors.length) throw new Error(`Nội dung game không hợp lệ:\n- ${errors.join("\n- ")}`);
   return new Content(parsed);
 }
@@ -280,6 +290,14 @@ export class Content {
   }
   lot(id: string) {
     return must(this.lotById.get(id), "lot", id);
+  }
+  /** Chủ nhà của một nhà mặt tiền (UC-F13). */
+  landlordOf(lotId: string) {
+    return must(
+      this.data.shopSetup.rent.landlords.find((l) => l.lotIds.includes(lotId)),
+      "landlord of",
+      lotId,
+    );
   }
   traffic(id: string) {
     return must(this.trafficById.get(id), "traffic", id);

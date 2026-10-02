@@ -50,6 +50,8 @@ import {
   pingSchema,
   projectProposeSchema,
   projectVoteSchema,
+  rentPaySchema,
+  rentPromiseSchema,
   repairSchema,
   reviewListSchema,
   reviewReplySchema,
@@ -376,6 +378,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       await this.game.pushMe(ctx.room, ctx.playerId);
       return r;
     });
+  }
+
+  @SubscribeMessage("rent:pay")
+  rentPay(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, rentPaySchema, body, async (ctx, p) => {
+      const r = await this.game.shops.rentPay(ctx.room, ctx.playerId, p.pay);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("rent:promise")
+  rentPromise(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, rentPromiseSchema, body, (ctx, p) =>
+      this.game.shops.rentPromise(ctx.room, ctx.playerId, p.day),
+    );
   }
 
   @SubscribeMessage("shop:unlease")

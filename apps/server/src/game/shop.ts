@@ -1,13 +1,20 @@
 import { Injectable } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { NotifyEvent, ShopSetupView } from "@xom/shared";
+import type { LandlordEvent, NotifyEvent, PayMethod, RentView, ShopSetupView } from "@xom/shared";
 import {
   absMinute,
+  choosePayment,
   needsFoodCert,
   nextShopStep,
   normalizeShopName,
+  type RentState,
+  rentOwed,
+  rentPromiseOptions,
+  rentShouldRemind,
+  rentVerdict,
   shopEstimate,
   shopNameError,
+  trustAfter,
 } from "@xom/sim";
 import {
   bankWallet,
@@ -28,18 +35,26 @@ export const depositWallet = (leaseId: string) => `escrow:lease:${leaseId}`;
 const REACH = 6;
 const DAY = 1440;
 const at = (abs: number) => ({ day: Math.floor(abs / DAY), minute: abs % DAY });
+const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
+/** "Thứ Tư, ngày 7" — hẹn theo ngày, không theo giờ. */
+export const rentDayLabel = (day: number) => `${content.weekday(day).name}, ngày ${day}`;
 
 /**
  * 🏪 Mở tiệm trong nhà mặt tiền theo quy trình đời thật (docs/USECASES.md UC-F12):
  * 1. Ký hợp đồng thuê nhà — đặt cọc (hoàn khi trả nhà) và phải còn vốn dự phòng; tiền nhà tính mỗi ngày dù mở hay đóng.
  * 2. Đăng ký hộ kinh doanh ở UBND phường — đặt tên quán (không trùng trong xóm), lệ phí, chờ xét vài giờ.
  * 3. Quán ăn uống: tập huấn ATTP rồi hẹn đoàn kiểm tra; đoàn tới thì chủ phải có mặt ở tiệm, vắng thì hẹn lại.
- * 4. Làm biển hiệu tên quán → mới được mở tiệm. Hết tiền trả tiền nhà thì trừ cọc; hết cọc thì chủ nhà lấy lại nhà.
+ * 4. Làm biển hiệu tên quán → mới được mở tiệm.
+ * Tiền nhà (UC-F13): chủ nhà tới đòi — trả ngay / hẹn ngày (phí trễ) / để sau; quá hạn trừ cọc + tính lần trễ; trễ nhiều lần
+ * hoặc hết cọc thì dẹp tiệm.
  */
 @Injectable()
 export class ShopService {
   private notify?: (playerId: string, n: NotifyEvent) => void;
   private onWorld?: (room: RoomRuntime) => void;
+  private notifyRoom?: (roomId: string, n: NotifyEvent) => void;
+  private landlord?: (playerId: string, e: LandlordEvent) => void;
+  private pushMe?: (room: RoomRuntime, playerId: string) => Promise<void>;
   /** Đã báo (hồ sơ xong / đoàn tới) — tránh báo lại mỗi phút. */
   private readonly told = new Set<string>();
 
@@ -49,12 +64,18 @@ export class ShopService {
     private readonly story: StoryService,
   ) {}
 
-  setNotifier(
-    notify: (playerId: string, n: NotifyEvent) => void,
-    onWorld: (room: RoomRuntime) => void,
-  ) {
-    this.notify = notify;
-    this.onWorld = onWorld;
+  setNotifier(fns: {
+    notify: (playerId: string, n: NotifyEvent) => void;
+    onWorld: (room: RoomRuntime) => void;
+    notifyRoom: (roomId: string, n: NotifyEvent) => void;
+    landlord: (playerId: string, e: LandlordEvent) => void;
+    pushMe: (room: RoomRuntime, playerId: string) => Promise<void>;
+  }) {
+    this.pushMe = fns.pushMe;
+    this.notify = fns.notify;
+    this.onWorld = fns.onWorld;
+    this.notifyRoom = fns.notifyRoom;
+    this.landlord = fns.landlord;
   }
 
   private now(room: RoomRuntime) {
@@ -97,6 +118,7 @@ export class ShopService {
       lease: lease
         ? { lotId: lease.lotId, deposit: lease.deposit, signedDay: lease.signedDay }
         : null,
+      rent: lease ? await this.rentView(room, lease) : null,
       shopName: biz?.shopName ?? null,
       license: !biz?.licenseAt ? "none" : licensed ? "done" : "pending",
       licenseReady: biz?.licenseAt ? at(biz.licenseAt) : null,
@@ -164,6 +186,8 @@ export class ShopService {
           ownerId: playerId,
           deposit: est.deposit,
           signedDay: room.day,
+          // Ngày ký không tính tiền nhà (có thể đã trả tiền chỗ xe đẩy hôm nay).
+          paidDay: room.day,
         },
       });
       await this.pay(
@@ -190,6 +214,32 @@ export class ShopService {
     const biz = await this.business(playerId);
     if (biz.status === "OPEN" && biz.lotId === lease.lotId)
       throw new GameError("invalid_state", "Đóng tiệm rồi mới trả nhà");
+    // Còn nợ tiền nhà thì chủ nhà trừ vào cọc trước, còn bao nhiêu mới hoàn.
+    const owed = rentOwed({
+      day: room.day,
+      paidDay: lease.paidDay,
+      rentPerDay: content.lot(lease.lotId).rentPerDay,
+    }).amount;
+    const due = owed + (owed > 0 ? lease.lateFee : 0);
+    if (due > 0) {
+      const left = await this.ledger.balance(this.prisma, depositWallet(lease.id));
+      if (left < due)
+        throw new GameError(
+          "invalid_state",
+          `Còn nợ tiền nhà ${vnd(due)} mà cọc chỉ còn ${vnd(left)} — trả tiền nhà trước rồi mới trả nhà`,
+        );
+      await this.prisma.$transaction(async (tx) => {
+        await this.ledger.transfer(
+          tx,
+          depositWallet(lease.id),
+          SYSTEM.landlord,
+          due,
+          "rent_from_deposit",
+          lease.id,
+        );
+        await addToReport(tx, playerId, room.day, { rent: due });
+      });
+    }
     await this.end(room, lease, "ENDED");
     return this.view(room, playerId);
   }
@@ -341,6 +391,7 @@ export class ShopService {
     const now = this.now(room);
     const members = [...room.members.keys()];
     if (!members.length) return;
+    await this.rentTick(room);
     const list = await this.prisma.business.findMany({
       where: {
         ownerId: { in: members },
@@ -375,45 +426,253 @@ export class ShopService {
     }
   }
 
-  /** Cuối ngày: nhà thuê tính tiền dù mở hay đóng; không đủ thì trừ cọc; hết cọc thì chủ nhà lấy lại nhà. */
-  async endDay(room: RoomRuntime) {
+  // ───────────── 🏠 Đòi tiền nhà (UC-F13) ─────────────
+
+  async rentView(room: RoomRuntime, lease: Lease): Promise<RentView> {
+    const r = content.data.shopSetup.rent;
+    const ll = content.landlordOf(lease.lotId);
+    const rentPerDay = content.lot(lease.lotId).rentPerDay;
+    const owed = rentOwed({ day: room.day, paidDay: lease.paidDay, rentPerDay });
+    return {
+      lotId: lease.lotId,
+      landlord: { id: ll.id, name: ll.name, tag: ll.tag, model: ll.model },
+      rentPerDay,
+      paidDay: lease.paidDay,
+      owedDays: owed.days,
+      owed: owed.amount,
+      lateFee: owed.amount > 0 ? lease.lateFee : 0,
+      promiseDay: owed.amount > 0 ? lease.promiseDay : null,
+      promiseOptions:
+        lease.promiseDay === null ? rentPromiseOptions(content, room.day, owed.amount) : [],
+      strikes: lease.strikes,
+      maxStrikes: r.evictAfterStrikes,
+      depositLeft: await this.ledger.balance(this.prisma, depositWallet(lease.id)),
+      remindMinute: r.remindMinute,
+      dueMinute: r.dueMinute,
+    };
+  }
+
+  private async myLease(playerId: string) {
+    const lease = await this.activeLease(playerId);
+    if (!lease) throw new GameError("invalid_state", "Đang không thuê nhà nào");
+    return lease;
+  }
+
+  /** 💵 Trả hết tiền nhà đang nợ (cộng phí trễ đã chốt nếu có hẹn). Trả trước trong ngày cũng được. */
+  async rentPay(room: RoomRuntime, playerId: string, method: PayMethod = "auto") {
+    const lease = await this.myLease(playerId);
+    const owed = rentOwed({
+      day: room.day,
+      paidDay: lease.paidDay,
+      rentPerDay: content.lot(lease.lotId).rentPerDay,
+    }).amount;
+    if (owed <= 0) throw new GameError("invalid_state", "Tiền nhà trả đủ tới hôm nay rồi");
+    const fee = lease.lateFee;
+    await this.prisma.$transaction(async (tx) => {
+      const [cash, bank] = await Promise.all([
+        this.ledger.balance(tx, playerWallet(playerId)),
+        this.ledger.balance(tx, bankWallet(playerId)),
+      ]);
+      const src = choosePayment({
+        amount: owed + fee,
+        cash,
+        bank,
+        method,
+        cashOnly: false,
+        cashFirstBelow: content.economy.bank.cashFirstBelow,
+      });
+      if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
+      const from = src === "cash" ? playerWallet(playerId) : bankWallet(playerId);
+      await this.ledger.transfer(tx, from, SYSTEM.landlord, owed, "rent", lease.id);
+      if (fee > 0)
+        await this.ledger.transfer(tx, from, SYSTEM.landlord, fee, "rent_late_fee", lease.id);
+      await tx.lease.update({
+        where: { id: lease.id },
+        data: { paidDay: room.day, promiseDay: null, lateFee: 0 },
+      });
+      await addToReport(tx, playerId, room.day, { rent: owed, fees: fee });
+      await tx.gameEvent.create({
+        data: { playerId, type: "rent_pay", payload: { owed, fee, via: src } },
+      });
+    });
+    const fresh = await this.prisma.lease.findUniqueOrThrow({ where: { id: lease.id } });
+    const view = await this.rentView(room, fresh);
+    this.say(playerId, fresh, "paid", view, { owed, fee });
+    return view;
+  }
+
+  /** 🗓️ Xin hẹn trả tới ngày `day` (hẹn theo ngày, cả ngày đó trả lúc nào cũng được); phí trễ chốt ngay lúc hẹn. */
+  async rentPromise(room: RoomRuntime, playerId: string, day: number) {
+    const lease = await this.myLease(playerId);
+    const owed = rentOwed({
+      day: room.day,
+      paidDay: lease.paidDay,
+      rentPerDay: content.lot(lease.lotId).rentPerDay,
+    }).amount;
+    if (owed <= 0) throw new GameError("invalid_state", "Có nợ tiền nhà đâu mà hẹn");
+    if (lease.promiseDay !== null)
+      throw new GameError(
+        "invalid_state",
+        `Đã hẹn tới ngày ${lease.promiseDay} rồi — hẹn thì phải giữ lời`,
+      );
+    const opt = rentPromiseOptions(content, room.day, owed).find((o) => o.day === day);
+    if (!opt)
+      throw new GameError(
+        "invalid_payload",
+        `Chỉ hẹn được tối đa ${content.data.shopSetup.rent.maxPromiseDays} ngày`,
+      );
+    const fresh = await this.prisma.lease.update({
+      where: { id: lease.id },
+      data: { promiseDay: opt.day, lateFee: opt.fee },
+    });
+    void this.log(playerId, "rent_promise", { days: opt.day - room.day, owed, fee: opt.fee });
+    const view = await this.rentView(room, fresh);
+    this.say(playerId, fresh, "promise", view, { owed, fee: opt.fee, day: opt.day });
+    return view;
+  }
+
+  /** Mỗi phút từ giờ nhắc: chủ nhà tới nhắc (một lần/ngày); quá hạn / thất hẹn thì trừ cọc; quá đáng thì dẹp tiệm. */
+  private async rentTick(room: RoomRuntime) {
     const leases = await this.prisma.lease.findMany({
       where: { roomId: room.id, status: "ACTIVE" },
     });
     for (const lease of leases) {
-      // Tiền nhà tính theo hợp đồng, mỗi cuối ngày dù mở hay đóng — từ ngày sau ngày ký (ngày ký có thể đã trả tiền chỗ
-      // xe đẩy). Mở tiệm không trả "tiền chỗ" nữa nên không bao giờ trả trùng.
-      if (lease.signedDay >= room.day) continue;
-      const rent = content.lot(lease.lotId).rentPerDay;
-      let evicted = false;
-      await this.prisma.$transaction(async (tx) => {
-        try {
-          await this.pay(tx, lease.ownerId, rent, SYSTEM.landlord, "rent", "");
-          await addToReport(tx, lease.ownerId, room.day, { rent });
-        } catch (err) {
-          if (!(err instanceof GameError)) throw err;
-          const left = await this.ledger.balance(tx, depositWallet(lease.id));
-          if (left >= rent) {
-            await this.ledger.transfer(
-              tx,
-              depositWallet(lease.id),
-              SYSTEM.landlord,
-              rent,
-              "rent_from_deposit",
-              lease.id,
-            );
-            await addToReport(tx, lease.ownerId, room.day, { rent });
-          } else evicted = true;
-        }
-      });
-      if (evicted) {
-        await this.end(room, lease, "EVICTED");
-        this.notify?.(lease.ownerId, {
-          kind: "warn",
-          text: `🏠 Hết tiền nhà, cọc cũng trừ hết — chủ nhà lấy lại ${content.lot(lease.lotId).name}`,
-        });
+      const rentPerDay = content.lot(lease.lotId).rentPerDay;
+      const owed = rentOwed({ day: room.day, paidDay: lease.paidDay, rentPerDay }).amount;
+      if (owed <= 0) continue;
+      const state: RentState = {
+        day: room.day,
+        minute: room.minute,
+        rentPerDay,
+        paidDay: lease.paidDay,
+        promiseDay: lease.promiseDay,
+        strikes: lease.strikes,
+        depositLeft: await this.ledger.balance(this.prisma, depositWallet(lease.id)),
+        online: (room.members.get(lease.ownerId)?.sockets.size ?? 0) > 0,
+      };
+      const verdict = rentVerdict(content, state);
+      if (verdict.kind === "collect") await this.collectLate(room, lease, verdict);
+      else if (verdict.kind === "evict") await this.evict(room, lease);
+      else if (rentShouldRemind(content, state)) {
+        const key = `rent:${lease.id}:${room.day}`;
+        if (this.told.has(key)) continue;
+        this.told.add(key);
+        const promisedToday = lease.promiseDay !== null && lease.promiseDay <= room.day;
+        this.say(
+          lease.ownerId,
+          lease,
+          promisedToday ? "promised" : "remind",
+          await this.rentView(room, lease),
+          { owed, fee: promisedToday ? lease.lateFee : 0 },
+        );
       }
     }
+  }
+
+  /** Quá hạn / thất hẹn: trừ (nợ + phí trễ) vào cọc, tính một lần trễ, trừ 🤝 tin cậy. */
+  private async collectLate(room: RoomRuntime, lease: Lease, v: { owed: number; fee: number }) {
+    const fresh = await this.prisma.$transaction(async (tx) => {
+      await this.ledger.transfer(
+        tx,
+        depositWallet(lease.id),
+        SYSTEM.landlord,
+        v.owed,
+        "rent_from_deposit",
+        lease.id,
+      );
+      if (v.fee > 0)
+        await this.ledger.transfer(
+          tx,
+          depositWallet(lease.id),
+          SYSTEM.landlord,
+          v.fee,
+          "rent_late_fee",
+          lease.id,
+        );
+      const player = await tx.player.findUniqueOrThrow({ where: { id: lease.ownerId } });
+      await tx.player.update({
+        where: { id: lease.ownerId },
+        data: { trust: trustAfter(content, player.trust, "rent_late") },
+      });
+      await addToReport(tx, lease.ownerId, room.day, { rent: v.owed, fees: v.fee });
+      await tx.gameEvent.create({
+        data: {
+          playerId: lease.ownerId,
+          type: "rent_late",
+          payload: { owed: v.owed, fee: v.fee, strikes: lease.strikes + 1 },
+        },
+      });
+      return tx.lease.update({
+        where: { id: lease.id },
+        data: { paidDay: room.day, promiseDay: null, lateFee: 0, strikes: { increment: 1 } },
+      });
+    });
+    const view = await this.rentView(room, fresh);
+    await this.pushMe?.(room, lease.ownerId);
+    this.say(lease.ownerId, fresh, "late", view, { owed: v.owed + v.fee, fee: v.fee });
+    this.notify?.(lease.ownerId, {
+      kind: "warn",
+      text: `🏠 Trễ tiền nhà: ${content.landlordOf(lease.lotId).name} trừ ${vnd(v.owed + v.fee)} vào cọc · trễ ${fresh.strikes}/${view.maxStrikes} lần · 🤝 −${content.data.shopSetup.rent.trustLate}`,
+    });
+  }
+
+  /** Dẹp tiệm: mất cọc còn lại, đóng tiệm, dọn đồ nghề ra, mất nhà; cả xóm biết. */
+  private async evict(room: RoomRuntime, lease: Lease) {
+    const ll = content.landlordOf(lease.lotId);
+    const lot = content.lot(lease.lotId);
+    const view = await this.rentView(room, lease);
+    await this.prisma.$transaction(async (tx) => {
+      const left = await this.ledger.balance(tx, depositWallet(lease.id));
+      if (left > 0)
+        await this.ledger.transfer(
+          tx,
+          depositWallet(lease.id),
+          SYSTEM.landlord,
+          left,
+          "rent_from_deposit",
+          lease.id,
+        );
+    });
+    const [biz, owner] = await Promise.all([
+      this.prisma.business.findFirst({ where: { ownerId: lease.ownerId, lotId: lease.lotId } }),
+      this.prisma.player.findUnique({
+        where: { id: lease.ownerId },
+        select: { displayName: true },
+      }),
+    ]);
+    await this.end(room, lease, "EVICTED");
+    await this.pushMe?.(room, lease.ownerId);
+    this.say(lease.ownerId, lease, "evict", { ...view, depositLeft: 0 }, { owed: view.owed });
+    this.notify?.(lease.ownerId, {
+      kind: "warn",
+      text: `📦 ${ll.name} dẹp tiệm, lấy lại ${lot.name} — mất cọc. Đồ nghề dọn ra rồi, muốn bán tiếp thì ra vỉa hè`,
+    });
+    const shop = biz?.shopName ? `"${biz.shopName}"` : "tiệm";
+    this.notifyRoom?.(room.id, {
+      kind: "info",
+      text: `📦 ${ll.name} dẹp ${shop} của ${owner?.displayName ?? "hàng xóm"} ở ${lot.name} vì nợ tiền nhà`,
+    });
+    await this.story.note(lease.ownerId, "evicted", room.day, {
+      landlord: ll.name,
+      lot: lot.name,
+    });
+  }
+
+  /** Gửi lời chủ nhà (modal chân dung) cho người thuê. */
+  private say(
+    playerId: string,
+    lease: Lease,
+    mood: LandlordEvent["mood"],
+    rent: RentView,
+    vars: { owed: number; fee?: number; day?: number },
+  ) {
+    const lines = content.landlordOf(lease.lotId).lines[mood];
+    const raw = lines[Math.floor(Math.random() * lines.length)] ?? "";
+    const line = raw
+      .replaceAll("{owed}", vnd(vars.owed))
+      .replaceAll("{fee}", vnd(vars.fee ?? 0))
+      .replaceAll("{day}", vars.day ? rentDayLabel(vars.day) : "");
+    this.landlord?.(playerId, { mood, line, rent });
   }
 
   /** Dev/test: thuê nhà + đủ giấy tờ ngay (tên quán mặc định nếu chưa có). */

@@ -246,6 +246,51 @@ export const regularsSchema = z.object({
  * Mở tiệm trong nhà mặt tiền theo quy trình đời thật (UC-F12): thuê nhà (đặt cọc + vốn dự phòng) → đăng ký hộ kinh doanh
  * (đặt tên quán, chờ xét) → ATTP cho quán ăn uống (tập huấn + đoàn kiểm tra tới tận tiệm) → biển hiệu → mở tiệm.
  */
+/** Chủ nhà (UC-F13): tới nhắc trước hạn, cho hẹn, dẹp tiệm khi quá hạn nhiều lần. */
+export const landlordSchema = z.object({
+  id,
+  name: z.string(),
+  /** Chữ nhỏ dưới tên trong khung chân dung. */
+  tag: z.string(),
+  /** Model nhân vật (chân dung /portraits/{model}.webp). */
+  model: z.string(),
+  /** Nhà mặt tiền của người này. */
+  lotIds: z.array(id).min(1),
+  /** Câu thoại theo tình huống ({owed} = số nợ, {day} = ngày hẹn — "Thứ Tư, ngày 7", {fee} = phí trễ). */
+  lines: z.object({
+    /** Tới nhắc trước hạn. */
+    remind: z.array(z.string()).min(1),
+    /** Hôm nay tới ngày hẹn. */
+    promised: z.array(z.string()).min(1),
+    /** Đồng ý cho hẹn. */
+    promise: z.array(z.string()).min(1),
+    /** Nhận đủ tiền. */
+    paid: z.array(z.string()).min(1),
+    /** Quá hạn: trừ vào cọc. */
+    late: z.array(z.string()).min(1),
+    /** Dẹp tiệm. */
+    evict: z.array(z.string()).min(1),
+  }),
+});
+
+export const rentSchema = z
+  .object({
+    /** Phút trong ngày chủ nhà tới nhắc (nếu còn nợ). */
+    remindMinute: z.number().int().min(0).max(1439),
+    /** Chưa hẹn: hạn trả trong ngày; quá hạn thì trừ cọc + tính một lần trễ. Đã hẹn thì hẹn theo ngày, không theo giờ. */
+    dueMinute: z.number().int().min(0).max(1439),
+    /** Hẹn được tối đa bấy nhiêu ngày. */
+    maxPromiseDays: z.number().int().min(1).max(7),
+    /** Phí trễ (% số nợ, làm tròn lên nghìn) — khi xin hẹn hoặc bị trừ cọc. */
+    lateFeePct: z.number().int().min(0).max(100),
+    /** Trễ tới lần thứ bấy nhiêu thì dẹp tiệm. */
+    evictAfterStrikes: z.number().int().min(1),
+    /** 🤝 tin cậy bị trừ mỗi lần trễ. */
+    trustLate: z.number().int().min(0),
+    landlords: z.array(landlordSchema).min(1),
+  })
+  .refine((r) => r.remindMinute < r.dueMinute, "Chủ nhà phải nhắc trước hạn trả");
+
 export const shopSetupSchema = z.object({
   /** Cọc = bấy nhiêu ngày tiền thuê (ngoài đời 3–6 tháng); trả nhà thì hoàn cọc. */
   depositDays: z.number().int().min(1),
@@ -268,6 +313,7 @@ export const shopSetupSchema = z.object({
   }),
   signFee: vnd,
   name: z.object({ min: z.number().int().min(1), max: z.number().int().max(40) }),
+  rent: rentSchema,
 });
 
 /** Xe ôm (docs/KIENTRUC.md §4) + kẹt xe (§5). Tốc độ tính bằng mét/giây trong cảnh 3D. */
@@ -1140,6 +1186,7 @@ export type Product = z.infer<typeof productSchema>;
 export type Equipment = z.infer<typeof equipmentSchema>;
 export type TrafficProfile = z.infer<typeof trafficProfileSchema>;
 export type Lot = z.infer<typeof lotSchema>;
+export type Landlord = z.infer<typeof landlordSchema>;
 export type NpcArchetype = z.infer<typeof npcArchetypeSchema>;
 export type Job = z.infer<typeof jobSchema>;
 export type JobRole = z.infer<typeof jobRoleSchema>;

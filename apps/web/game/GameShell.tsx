@@ -37,6 +37,7 @@ import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
 import { PhotoShoot } from "./ui/PhotoShoot";
 import { QuickChat } from "./ui/QuickChat";
+import { RentModal } from "./ui/RentModal";
 import { RideSheet } from "./ui/RideSheet";
 import { ShopSheet } from "./ui/ShopSheet";
 import { SiteSheet } from "./ui/SiteSheet";
@@ -150,6 +151,7 @@ export default function GameShell() {
       <Dialogue />
       <DaySummary />
       <AwayModal />
+      <RentModal />
     </div>
   );
 }

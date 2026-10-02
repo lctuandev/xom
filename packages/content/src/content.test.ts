@@ -31,6 +31,16 @@ describe("content", () => {
     expect(() => loadContent(broken)).toThrow(/pho_bo/);
   });
 
+  it("mỗi nhà mặt tiền phải có đúng một chủ nhà", () => {
+    expect(content.landlordOf("nha_so_10").name).toBe("Cô Tư Hường");
+    const broken = structuredClone(content.data) as typeof content.data;
+    broken.shopSetup.rent.landlords[0]?.lotIds.push("nha_so_24");
+    expect(() => loadContent(broken)).toThrow(/nha_so_24: cần đúng một chủ nhà/);
+    const notHouse = structuredClone(content.data) as typeof content.data;
+    notHouse.shopSetup.rent.landlords[0]?.lotIds.push("cong_truong");
+    expect(() => loadContent(notHouse)).toThrow(/cong_truong không phải nhà mặt tiền/);
+  });
+
   it("báo lỗi tham chiếu sai", () => {
     const broken = structuredClone(content.data) as typeof content.data;
     broken.equipment[0]?.products.push("khong_ton_tai");

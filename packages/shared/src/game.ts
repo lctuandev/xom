@@ -631,9 +631,38 @@ export interface RegularView {
 }
 
 /** 🏪 Mở tiệm trong nhà mặt tiền theo quy trình (UC-F12). */
+/** 🏠 Tiền nhà (UC-F13): đã trả tới đâu, đang nợ bao nhiêu, hẹn, số lần trễ. */
+export interface RentView {
+  lotId: string;
+  landlord: { id: string; name: string; tag: string; model: string };
+  rentPerDay: number;
+  paidDay: number;
+  owedDays: number;
+  owed: number;
+  /** Phí trễ đã chốt lúc xin hẹn (trả cùng tiền nhà). */
+  lateFee: number;
+  promiseDay: number | null;
+  /** Ngày được xin hẹn (rỗng = đang hẹn rồi hoặc không nợ). */
+  promiseOptions: { day: number; fee: number }[];
+  strikes: number;
+  maxStrikes: number;
+  depositLeft: number;
+  remindMinute: number;
+  dueMinute: number;
+}
+
+/** Chủ nhà tới (UC-F13): modal chân dung + bong bóng thoại. */
+export interface LandlordEvent {
+  mood: "remind" | "promised" | "promise" | "paid" | "late" | "evict";
+  line: string;
+  rent: RentView;
+}
+
 export interface ShopSetupView {
   /** Nhà mình đang thuê. */
   lease: { lotId: string; deposit: number; signedDay: number } | null;
+  /** Tiền nhà của căn đang thuê. */
+  rent: RentView | null;
   shopName: string | null;
   /** Hộ kinh doanh: chưa nộp / đang xét (xong lúc readyAt) / đã có. */
   license: "none" | "pending" | "done";
@@ -977,6 +1006,8 @@ export const debugClockSchema = z.object({
 /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
 export const shopLeaseSchema = z.object({ lotId: contentId });
 export const shopRegisterSchema = z.object({ name: z.string().min(1).max(60) });
+export const rentPaySchema = z.object({ pay: payMethodSchema.optional() });
+export const rentPromiseSchema = z.object({ day: z.number().int().min(1).max(100_000) });
 export const rideRentSchema = z.object({ pay: payMethodSchema.optional() });
 export const rideOfferSchema = z.object({ ratio: z.number().min(0.5).max(3) });
 export const rideGoSchema = z.object({ route: z.enum(["road", "alley"]) });

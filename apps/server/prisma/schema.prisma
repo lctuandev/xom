@@ -36,61 +36,61 @@ model Session {
 
 /// Nhân vật trong game của một tài khoản.
 model Player {
-  id          String   @id @default(uuid(7)) @db.Uuid
-  userId      String   @unique @db.Uuid
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName String
-  roomId      String?  @db.Uuid
-  room        Room?    @relation(fields: [roomId], references: [id])
+  id           String    @id @default(uuid(7)) @db.Uuid
+  userId       String    @unique @db.Uuid
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName  String
+  roomId       String?   @db.Uuid
+  room         Room?     @relation(fields: [roomId], references: [id])
   /// Việc làm thuê đang làm (content job id), null = không đi làm.
-  jobId       String?
+  jobId        String?
   /// Bước kịch bản người mới đang ở (content tutorial step id).
-  tutorial    String   @default("gap_chu_bay")
+  tutorial     String    @default("gap_chu_bay")
   /// Kinh nghiệm tích luỹ từ làm thật (docs/DESIGN.md §4) — cấp độ suy ra từ đây.
-  xp          Int      @default(0)
+  xp           Int       @default(0)
   /// Điểm kỹ năng (DESIGN §4): { tay_nhanh, nho_mon, an_noi } — tăng nhờ làm thật.
-  skills      Json     @default("{}")
+  skills       Json      @default("{}")
   /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
-  achievements Json    @default("{}")
+  achievements Json      @default("{}")
   /// Mã PIN thẻ ATM (băm sha256 kèm id người chơi) — null = chưa tạo (UC-I6).
   atmPin       String?
   /// Sai PIN quá số lần cho phép: máy giữ thẻ tới hết ngày game này.
   atmLockDay   Int?
   /// Đói / khát (UC-B11): { food, drink, at } — giảm theo giờ game, tính lại khi đọc (sim needsAt).
-  needs        Json     @default("{}")
+  needs        Json      @default("{}")
   /// Lần cuối rời xóm (thời gian thật + ngày game) — để tóm tắt "Trong lúc bạn vắng" (THEGIOI §4).
   lastSeenAt   DateTime?
   lastSeenDay  Int?
   /// 🤝 Điểm tin cậy 0–100 (KIENTRUC §3) — tách khỏi uy tín quầy; lên khi giữ lời, xuống khi bỏ việc / thối thiếu.
-  trust        Int      @default(50)
+  trust        Int       @default(50)
   /// Tin cậy quá thấp: khoá nhận việc trên bảng việc xóm tới hết ngày game này.
   trustLockDay Int?
   /// 🛵 Xe ôm (KIENTRUC §4): ngày game đã thuê xe Wave của Chú Lực; số cuốc đã chạy; tổng sao khách chấm.
   bikeRentDay  Int?
-  rides        Int      @default(0)
-  rideStars    Int      @default(0)
+  rides        Int       @default(0)
+  rideStars    Int       @default(0)
   /// Việc người chơi thuê (UC-M8): số việc đã được nghiệm thu + tổng sao người thuê chấm.
-  gigs         Int      @default(0)
-  gigStars     Int      @default(0)
-  createdAt   DateTime @default(now())
+  gigs         Int       @default(0)
+  gigStars     Int       @default(0)
+  createdAt    DateTime  @default(now())
 
-  businesses Business[]
-  relations  NpcRelation[]
-  inventory  InventoryItem[]
-  reports    DailyReport[]
-  reviews    Review[]       @relation("ReviewsReceived")
-  stories    StoryEntry[]
+  businesses     Business[]
+  relations      NpcRelation[]
+  inventory      InventoryItem[]
+  reports        DailyReport[]
+  reviews        Review[]        @relation("ReviewsReceived")
+  stories        StoryEntry[]
   residentVisits ResidentVisit[]
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
 model Room {
-  id        String   @id @default(uuid(7)) @db.Uuid
-  code      String   @unique
-  day       Int      @default(1)
+  id        String        @id @default(uuid(7)) @db.Uuid
+  code      String        @unique
+  day       Int           @default(1)
   /// Phút trong ngày (game).
   minute    Int
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   players   Player[]
   projects  RoomProject[]
 }
@@ -217,15 +217,23 @@ enum LeaseStatus {
 
 /// Hợp đồng thuê nhà mặt tiền (UC-F12): cọc giữ trong ví "deposit:<id>", tiền nhà tính mỗi ngày dù mở hay đóng.
 model Lease {
-  id        String      @id @default(uuid(7)) @db.Uuid
-  roomId    String      @db.Uuid
-  lotId     String
-  ownerId   String      @db.Uuid
-  deposit   Int
-  signedDay Int
-  endedDay  Int?
-  status    LeaseStatus @default(ACTIVE)
-  createdAt DateTime    @default(now())
+  id         String      @id @default(uuid(7)) @db.Uuid
+  roomId     String      @db.Uuid
+  lotId      String
+  ownerId    String      @db.Uuid
+  deposit    Int
+  signedDay  Int
+  endedDay   Int?
+  status     LeaseStatus @default(ACTIVE)
+  /// Đòi tiền nhà (UC-F13): đã trả tiền nhà tới hết ngày này.
+  paidDay    Int
+  /// Ngày hẹn trả (hạn trong ngày theo content.shopSetup.rent.dueMinute); null = chưa hẹn.
+  promiseDay Int?
+  /// Phí trễ đã chốt lúc xin hẹn, trả cùng tiền nhà.
+  lateFee    Int         @default(0)
+  /// Số lần trễ hạn (đủ evictAfterStrikes thì dẹp tiệm).
+  strikes    Int         @default(0)
+  createdAt  DateTime    @default(now())
 
   @@index([roomId, lotId, status])
   @@index([ownerId, status])
@@ -457,15 +465,15 @@ model StoryEntry {
 
 /// Khách quen (docs/KIENTRUC.md §1): cư dân có tên đã mua ở quầy của người chơi bao nhiêu lần.
 model ResidentVisit {
-  id           String  @id @default(uuid(7)) @db.Uuid
-  ownerId      String  @db.Uuid
-  owner        Player  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id           String @id @default(uuid(7)) @db.Uuid
+  ownerId      String @db.Uuid
+  owner        Player @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   /// Id cư dân trong content.residents.
   residentId   String
-  visits       Int     @default(0)
-  lastDay      Int     @default(0)
+  visits       Int    @default(0)
+  lastDay      Int    @default(0)
   /// Bị làm sai / bỏ về liên tiếp (khách quen giận khi đủ chuỗi).
-  streakWrong  Int     @default(0)
+  streakWrong  Int    @default(0)
   /// Ngày thành khách quen ❤️ (null = chưa / đã giận).
   regularSince Int?
 

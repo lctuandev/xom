@@ -1,14 +1,11 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
 import type { MeView, NotifyEvent, ShopSetupView, StoryEntryView, WorldView } from "@xom/shared";
-import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../src/economy/ledger.service.js";
-import { depositWallet } from "../src/game/shop.js";
-import { PrismaService } from "../src/prisma/prisma.service.js";
 import { emit, join, next } from "./client.js";
 import { startApp } from "./helpers.js";
 
 // Mở tiệm theo quy trình đời thật (docs/USECASES.md UC-F12): thuê nhà (cọc + vốn dự phòng) → đăng ký hộ kinh doanh, đặt tên
-// quán → ATTP (tập huấn, đoàn kiểm tra tới tận tiệm) → biển hiệu → mở tiệm. Tiền nhà tính mỗi ngày; hết cọc thì mất nhà.
+// quán → ATTP (tập huấn, đoàn kiểm tra tới tận tiệm) → biển hiệu → mở tiệm.
 
 describe("Mở tiệm (e2e)", () => {
   let app: INestApplication;
@@ -123,38 +120,5 @@ describe("Mở tiệm (e2e)", () => {
     expect(snap.me.playerId).toBeTruthy();
     socket.disconnect();
   });
-
-  it("hết tiền trả tiền nhà: trừ cọc; cọc không đủ thì chủ nhà lấy lại nhà", async () => {
-    const { socket, snap } = await join(url);
-    const id = snap.me.playerId;
-    await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
-    await shop(socket, "shop:lease", { lotId: "nha_so_10" });
-    const prisma = app.get(PrismaService);
-    const ledger = app.get(LedgerService);
-    const lease = await prisma.lease.findFirstOrThrow({ where: { ownerId: id, status: "ACTIVE" } });
-    // Tiền nhà tính từ ngày sau ngày ký: coi như đã ký từ hôm qua.
-    await prisma.lease.update({
-      where: { id: lease.id },
-      data: { signedDay: lease.signedDay - 1 },
-    });
-    // Tiêu hết tiền mặt + tài khoản, cọc chỉ còn 50k (< tiền nhà một ngày).
-    await prisma.$transaction(async (tx) => {
-      for (const w of [playerWallet(id), bankWallet(id)]) {
-        const bal = await ledger.balance(tx, w);
-        if (bal > 0) await ledger.transfer(tx, w, SYSTEM.market, bal, "test");
-      }
-      const dep = await ledger.balance(tx, depositWallet(lease.id));
-      await ledger.transfer(tx, depositWallet(lease.id), SYSTEM.landlord, dep - 50_000, "test");
-    });
-    const evicted = next(socket, "notify", (n: NotifyEvent) =>
-      n.text.startsWith("🏠 Hết tiền nhà"),
-    );
-    await emit(socket, "debug:clock", { minute: content.economy.dayEndMinute - 2 });
-    await evicted;
-    const v = await shop(socket, "shop:view");
-    expect(v.lease).toBeNull();
-    const row = await prisma.lease.findUniqueOrThrow({ where: { id: lease.id } });
-    expect(row.status).toBe("EVICTED");
-    socket.disconnect();
-  });
+  // Tiền nhà, hẹn ngày, trễ, dẹp tiệm: rent.e2e-spec.ts (UC-F13).
 });

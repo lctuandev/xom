@@ -7,6 +7,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { RentPanel } from "./RentModal";
 
 type ShopIntent =
   | "shop:view"
@@ -72,12 +73,17 @@ export function ShopSetup() {
               Đang thuê <b>{house.name}</b> · cọc {vnd(v.lease.deposit)} (hoàn khi trả nhà).
             </p>
             <p className="text-ink/60" data-lease-rules>
-              Tiền nhà {vnd(house.rentPerDay)}/ngày tính <b>từ ngày sau ngày ký</b>, trừ mỗi tối{" "}
-              <b>dù mở hay đóng</b>; hết tiền thì trừ cọc, hết cọc chủ nhà lấy lại nhà. Mở tiệm{" "}
-              <b>không trả tiền chỗ</b> nữa, chỉ thuế khoán{" "}
+              Tiền nhà tính <b>từ ngày sau ngày ký</b>, mỗi ngày <b>dù mở hay đóng</b>. Chiều{" "}
+              {formatClock(content.data.shopSetup.rent.remindMinute)} chủ nhà tới đòi — trả ngay,
+              hoặc hẹn ngày (có phí trễ). Mở tiệm <b>không trả tiền chỗ</b> nữa, chỉ thuế khoán{" "}
               {vndShort(content.economy.fees.daily.house)}/ngày có mở. Đang thuê nhà thì không ra
-              vỉa hè bán được — muốn ra thì trả nhà.
+              vỉa hè bán được — muốn ra thì trả nhà (còn nợ tiền nhà thì trừ vào cọc).
             </p>
+            {v.rent && (
+              <div className="mt-1.5">
+                <RentPanel rent={v.rent} onDone={load} />
+              </div>
+            )}
             <button
               type="button"
               disabled={busy}
