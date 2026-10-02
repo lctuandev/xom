@@ -26,7 +26,7 @@ export function MarketSheet() {
   if (!me || !clock) return null;
 
   const mine = me.business ? ingredientsOfProduct(me.business.productId) : [];
-  // Tab theo nghề (góp ý UX: list dài chia tab): quầy của mình trước, rồi từng nghề khác, cuối cùng là thanh lý.
+  // Tab theo nghề (góp ý UX: list dài chia tab): quầy của mình trước, rồi từng nghề khác. Thanh lý là sheet riêng (♻️).
   const groups: { id: string; label: string; items: string[] }[] = [];
   if (me.business) {
     const p = content.product(me.business.productId);
@@ -41,8 +41,7 @@ export function MarketSheet() {
   const rest = content.data.ingredients.map((i) => i.id).filter((id) => !seen.has(id));
   if (rest.length) groups.push({ id: "khac", label: "🧺 Khác", items: rest });
   const leftovers = me.inventory.filter((i) => i.qty > 0).length;
-  const current =
-    groups.some((g) => g.id === tab) || (tab === "sell" && leftovers) ? tab : groups[0]?.id;
+  const current = groups.some((g) => g.id === tab) ? tab : groups[0]?.id;
   // Tiền thuê chỗ còn phải trả hôm nay: nhắc chừa lại để không kẹt vốn.
   const biz = me.business;
   const reserve =
@@ -63,19 +62,32 @@ export function MarketSheet() {
           {` · mua từ ${eco.bulkPacks} gói bớt ${Math.round(eco.bulkDiscount * 100)}%`}
           {friend && ` · thân với Bà Năm bớt thêm ${Math.round(eco.friendDiscount * 100)}%`}
         </p>
+        {me.shops.length > 1 && biz && (
+          <p
+            className="mb-2 rounded-xl bg-sun/25 px-3 py-2 text-xs font-semibold"
+            data-market-for={biz.id}
+          >
+            📦 Nhập hàng cho: {content.product(biz.productId).emoji}{" "}
+            {me.shops.find((x) => x.active)?.name ?? content.product(biz.productId).name} — đổi cửa
+            hàng ở 🏬 Các cửa hàng
+          </p>
+        )}
+        {!me.business && (
+          <p
+            className="mb-2 rounded-xl bg-red/10 px-3 py-2 text-xs font-semibold"
+            data-market-noshop
+          >
+            🛒 Hàng nhập về kho của quầy — mua xe hàng ở vựa Ông Sáu trước rồi mới nhập hàng được.
+          </p>
+        )}
         <PayPicker />
         <Tabs
           label="Quầy hàng ở chợ"
           value={current ?? "sell"}
           onChange={setTab}
-          tabs={[
-            ...groups.map((g) => ({ id: g.id, label: g.label })),
-            ...(leftovers ? [{ id: "sell", label: "♻️ Thanh lý", badge: leftovers }] : []),
-          ]}
+          tabs={groups.map((g) => ({ id: g.id, label: g.label }))}
         />
-        {current === "sell" ? (
-          <Liquidate />
-        ) : (
+        {current === "sell" ? null : (
           <ul className="flex flex-col gap-2" data-group={current}>
             {groups
               .find((g) => g.id === current)
@@ -83,6 +95,15 @@ export function MarketSheet() {
                 <Row key={id} ing={content.ingredient(id)} reserve={reserve} friend={friend} />
               ))}
           </ul>
+        )}
+        {leftovers > 0 && (
+          <button
+            type="button"
+            onClick={() => close("liquidate")}
+            className="mt-3 h-11 w-full rounded-xl bg-white font-semibold shadow-sm"
+          >
+            ♻️ Thanh lý hàng tồn ({leftovers}) ›
+          </button>
         )}
       </PlaceGate>
     </Sheet>
@@ -140,7 +161,7 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
         </div>
         <button
           type="button"
-          disabled={busy || typeof src !== "string"}
+          disabled={busy || typeof src !== "string" || !me.business}
           onClick={async () => {
             setBusy(true);
             await send("market:buy", { itemId: ing.id, packs, pay });
@@ -182,6 +203,7 @@ export function Liquidate() {
           return (
             <li
               key={i.itemId}
+              data-liquidate-item={i.itemId}
               className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
             >
               <span>

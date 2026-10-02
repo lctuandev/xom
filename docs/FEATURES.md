@@ -144,6 +144,13 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🏪 Mở tiệm như ngoài đời: hợp đồng thuê (cọc 3 ngày + vốn dự phòng, tiền nhà tính cả ngày đóng, hết cọc mất nhà), hộ kinh doanh + đặt tên quán, ATTP (tập huấn + đón đoàn kiểm tra), biển hiệu tên quán; bỏ khoá cấp 3 | ✅ | 1.22 | UC-F12 |
 | 🏠 Đòi tiền nhà: chủ nhà NPC (chân dung + thoại) tới nhắc 17h, trả ngay / hẹn **ngày** (phí trễ theo số ngày) / để sau; quá hạn trừ cọc + 🤝, trễ lần 3 hoặc hết cọc thì dẹp tiệm (cả xóm biết); offline chưa hẹn không tính trễ | ✅ | 1.23 | UC-F13 |
 | ⚖️ Cân lại kinh tế tiệm: mặt tiền đông khách hơn + khách chịu giá cao hơn ~20% (`priceTolerance`), nhân viên tay ngang người chơi, sửa lương làm tròn mỗi nhịp (10k→12k/giờ); `pnpm balance` có bảng Tiệm + cảnh báo tiệm thua xe đẩy / nhân viên lỗ / nhân viên hơn chủ | ✅ | 1.23 | UC-F12, UC-M6 |
+| 🧭 Tổ chức lại giao diện: **mỗi chức năng một sheet riêng** (35 chức năng, registry), ☰ Menu lưới icon 5 nhóm + chấm đỏ, cột neo trái tự ghim tối đa 4, bỏ thanh dưới 5 mục; tách Làm ăn 9 tab, Hồ sơ 5 tab, Việc làm 3 tab, Hàng xóm, Thanh lý | ✅ | 1.24 | docs/IA.md, DESIGN Luật 12.3–12.6 |
+| 🏗️ Tách server theo miền (BusinessRepo, PaymentService, Broadcast, Bank/Needs/Market/BusinessService, gateway theo nhóm + IntentRunner) — không đổi hành vi | ✅ | 1.24 | docs/IA.md bước A |
+| 📊 Sổ sách: thu/chi theo từng khoản (lương nhân viên, điện nước tách khỏi phí), lãi/lỗ hôm nay & 7 ngày, chỉ ra khoản chi lớn nhất; Tổng kết ngày tính đủ khoản | ✅ | 1.24 | docs/IA.md bước C |
+| 🚶 Chủ tự do khi có nhân viên: quầy mở mà có nhân viên trong ca thì chủ đi làm thuê / xe ôm / phụ hồ được (chỉ chặn khi không ai bán) | ✅ | 1.24 | UC-M6, HANDOFF 3.4 |
+| 🛵 Xe ôm trong `pnpm balance` + cân lại nhịp khách (lãi ~gấp 2 làm thuê thay vì gấp 4); tắt server sạch (chờ tick dở, Prisma đóng sau cùng) | ✅ | 1.24 | UC-N1, HANDOFF §4 |
+| 🏬 Nhiều cửa hàng (không giới hạn) + kho riêng từng tiệm + chuyển kho 30 phút game; chọn cửa hàng đang quản lý (chip trên sheet 🏪, 🏬 Các cửa hàng); mở thêm / đổi nghề giữ kho; đứng quầy theo cửa hàng | ✅ | 1.24 | UC-F14, docs/IA.md bước D |
+| ⬆️ Cấp tiệm (Quầy nhỏ → Tiệm mở rộng → Tiệm lớn: khách ×1,25/×1,45, thuê 1/2/3 người) + nhiều nhân viên cùng ca (sức làm cộng dồn, lương & phiếu theo người, một người một chỗ) | ✅ | 1.24 | UC-M9, docs/IA.md bước E |
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |

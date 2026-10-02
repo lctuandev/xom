@@ -136,6 +136,7 @@ describe("Xóm chung (e2e)", () => {
   it("chuyển sang xóm lệch ngày: hàng tồn và sổ sách dời theo ngày xóm mới", async () => {
     const prisma = app.get(PrismaService);
     const b = await join(url);
+    await emit(b.socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
     const bought = await emit(b.socket, "market:buy", { itemId: "banh_mi_phoi", packs: 1 });
     expect(bought.ok).toBe(true);
     const before = await prisma.inventoryItem.findFirstOrThrow({

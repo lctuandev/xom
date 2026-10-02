@@ -17,6 +17,7 @@ describe("Thanh lý hàng tồn (e2e)", () => {
 
   it("phải đứng ở chợ; bán hết một loại với giá thấp hơn giá gốc; hết hàng thì báo", async () => {
     const { socket } = await join(url);
+    await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
     const bought = await emit<MeView>(socket, "market:buy", { itemId: "pate", packs: 1 });
     if (!bought.ok) throw new Error("không mua được");
     const ing = content.ingredient("pate");

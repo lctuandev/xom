@@ -12,7 +12,12 @@ export interface DayStat {
   wages: number;
   stockCost: number;
   rent: number;
+  /** Phí chợ/thuế, giấy tờ, sửa xe, khai trương, cọc mất… */
   fees: number;
+  /** Lương nhân viên bán thay. */
+  staffWages?: number;
+  /** Điện nước tiệm. */
+  utilities?: number;
   served: number;
 }
 
@@ -27,8 +32,22 @@ export interface Contender {
   friendly: number;
 }
 
-/** Lãi buôn bán một ngày: doanh thu + boa − tiền hàng − thuê chỗ − phí (không tính tiền công làm thuê). */
-export const profitOf = (d: DayStat) => d.revenue + d.tips - d.stockCost - d.rent - d.fees;
+/** Chi phí buôn bán một ngày theo từng khoản (Sổ sách — docs/IA.md bước C). */
+export function costsOf(d: DayStat) {
+  return {
+    stock: d.stockCost,
+    rent: d.rent,
+    staff: d.staffWages ?? 0,
+    utilities: d.utilities ?? 0,
+    fees: d.fees,
+  };
+}
+
+/** Lãi buôn bán một ngày: doanh thu + boa − mọi khoản chi (không tính tiền công làm thuê). */
+export const profitOf = (d: DayStat) => {
+  const c = costsOf(d);
+  return d.revenue + d.tips - c.stock - c.rent - c.staff - c.utilities - c.fees;
+};
 
 const inWindow = (days: DayStat[], from: number, to: number) =>
   days.filter((d) => d.day >= from && d.day <= to);

@@ -55,6 +55,10 @@ export interface BusinessView {
   wear: number;
   /** Nhà mặt tiền đang thuê theo hợp đồng (UC-F12) — tiền nhà tính mỗi ngày dù mở hay đóng. */
   leaseLotId?: string | null;
+  /** Cấp tiệm (content.shopLevels — docs/IA.md bước E). */
+  level?: number;
+  /** Số nhân viên đang thuê. */
+  staffCount?: number;
 }
 
 export interface InventoryView {
@@ -73,7 +77,25 @@ export interface TodayView {
   lost: number;
   stockCost: number;
   wages: number;
+  /** Phí chợ/thuế, giấy tờ, sửa xe, khai trương… */
   fees: number;
+  /** Lương nhân viên bán thay đã trả hôm nay. */
+  staffWages: number;
+  /** Điện nước tiệm hôm nay. */
+  utilities: number;
+}
+
+/** Một cửa hàng trong danh sách "Cửa hàng của tôi". */
+export interface ShopSummary {
+  id: string;
+  equipmentId: string;
+  productId: string;
+  lotId: string | null;
+  /** Tên quán (tiệm đã đăng ký hộ kinh doanh). */
+  name: string | null;
+  open: boolean;
+  staffOnDuty: boolean;
+  active: boolean;
 }
 
 export interface MeView {
@@ -95,7 +117,10 @@ export interface MeView {
   /** Chủ đang đứng ở quầy (quầy chỉ bán khi có chủ). */
   attending: boolean;
   business: BusinessView | null;
+  /** Kho của cửa hàng đang quản lý (kho riêng từng cửa hàng — docs/IA.md bước D). */
   inventory: InventoryView[];
+  /** Mọi cửa hàng của mình (không giới hạn); `active` = cửa hàng đang quản lý (`business`). */
+  shops: ShopSummary[];
   /** Độ thân thiết với NPC (id địa điểm → 0–100). */
   friendship: Record<string, number>;
   today: TodayView;
@@ -390,7 +415,16 @@ export interface AchievementView {
 
 /** Số liệu của mình: 7 ngày gần nhất + trung bình quầy cùng món trong xóm + thành tựu. */
 export interface MyStatsView {
-  days: { day: number; revenue: number; profit: number; served: number; wages: number }[];
+  days: {
+    day: number;
+    revenue: number;
+    tips: number;
+    profit: number;
+    served: number;
+    wages: number;
+    /** Chi theo khoản (Sổ sách): nhập hàng, tiền nhà/chỗ, lương nhân viên, điện nước, phí/thuế & khác. */
+    costs: { stock: number; rent: number; staff: number; utilities: number; fees: number };
+  }[];
   avg: { stalls: number; revenue: number; served: number; rating: number } | null;
   achievements: AchievementView[];
 }
@@ -613,8 +647,12 @@ export interface DayReportView {
   reputation: number;
   /** Lãi ngân hàng nhận cuối ngày. */
   interest: number;
-  /** Phí chợ/thuế, điện nước, sửa xe, khai trương. */
+  /** Phí chợ/thuế, giấy tờ, sửa xe, khai trương… */
   fees: number;
+  /** Lương nhân viên bán thay. */
+  staffWages: number;
+  /** Điện nước tiệm. */
+  utilities: number;
   /** Lãi/lỗ trong ngày (gồm cả tiền vào tài khoản). */
   profit: number;
   moneyEnd: number;
@@ -831,7 +869,15 @@ export interface StaffShiftView {
 
 /** Nhân viên của quầy mình + vài phiếu ca gần nhất. */
 export interface StaffView {
-  employee: { staffId: string; shiftId: string; hiredDay: number } | null;
+  /** Người đang thuê ở cửa hàng đang quản lý (nhiều người — tối đa theo cấp tiệm). */
+  employees: { id: string; staffId: string; shiftId: string; hiredDay: number }[];
+  /** Thuê tối đa bao nhiêu người ở cấp tiệm hiện tại. */
+  maxStaff: number;
+  /** Cấp tiệm hiện tại + cấp kế tiếp nâng được (null = cao nhất / xe đẩy). */
+  level: number;
+  next: { level: number; name: string; cost: number; maxStaff: number; trafficMul: number } | null;
+  /** Người đang làm ở cửa hàng khác của mình (một người một chỗ). */
+  busyElsewhere: string[];
   recent: StaffShiftView[];
 }
 
@@ -855,7 +901,18 @@ const contentId = z.string().regex(/^[a-z0-9_]+$/);
 export const payMethodSchema = z.enum(["auto", "cash", "bank"]).default("auto");
 export type PayMethod = "auto" | "cash" | "bank";
 
-export const buyEquipmentSchema = z.object({ equipmentId: contentId, pay: payMethodSchema });
+export const bizSelectSchema = z.object({ businessId: z.string().uuid() });
+export const stockTransferSchema = z.object({
+  toId: z.string().uuid(),
+  itemId: contentId,
+  qty: z.number().int().min(1).max(10_000),
+});
+export const buyEquipmentSchema = z.object({
+  equipmentId: contentId,
+  pay: payMethodSchema,
+  /** new = mở thêm cửa hàng (mặc định); replace = đổi nghề cửa hàng đang quản lý. */
+  mode: z.enum(["new", "replace"]).default("new"),
+});
 export const marketBuySchema = z.object({
   itemId: contentId,
   packs: z.number().int().min(1).max(50),
@@ -1039,6 +1096,10 @@ export const gigReviewSchema = z.object({
 /** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
 export const debugContractSchema = z.object({ templateId: contentId });
 export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
+/** ⬆️ Nâng cấp tiệm. */
+export const bizUpgradeSchema = z.object({ pay: payMethodSchema.optional() });
+/** Cho một người nghỉ (id dòng Employee); bỏ trống = cho nghỉ hết (bản cũ). */
+export const staffFireSchema = z.object({ employeeId: z.string().uuid().optional() });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
 export const debugAwaySchema = z.object({
   minutes: z.number().int().min(1).max(100_000),

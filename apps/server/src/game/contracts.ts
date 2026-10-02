@@ -20,6 +20,7 @@ import {
 } from "../economy/ledger.service.js";
 import type { Contract } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { consume, stockMap } from "./inventory.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
@@ -42,6 +43,7 @@ export class ContractService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
     private readonly story: StoryService,
   ) {}
@@ -147,7 +149,7 @@ export class ContractService {
     });
     if (active > 0)
       throw new GameError("invalid_state", "Xong việc đang nhận rồi hẵng nhận việc mới");
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.of(playerId);
     if (!biz || !content.equipment(biz.equipmentId).products.includes(t.productId))
       throw new GameError(
         "invalid_state",
@@ -208,7 +210,7 @@ export class ContractService {
   async prepare(room: RoomRuntime, playerId: string, id: string) {
     const c = await this.mineActive(playerId, id);
     if (c.status !== "TAKEN") throw new GameError("invalid_state", "Hàng đã làm xong rồi");
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.require(playerId);
     const pos = room.members.get(playerId)?.pos;
     const lot = biz?.lotId ? content.lot(biz.lotId).position : null;
     const atStall =
@@ -218,14 +220,14 @@ export class ContractService {
     const t = this.template(c.templateId);
     const need = contractIngredients(content, t, c.qty);
     await this.prisma.$transaction(async (tx) => {
-      const stock = await stockMap(tx, playerId);
+      const stock = await stockMap(tx, biz.id);
       const missing = [...need].filter(([itemId, q]) => (stock.get(itemId) ?? 0) < q);
       if (missing.length)
         throw new GameError(
           "invalid_state",
           `Thiếu ${missing.map(([itemId, q]) => `${content.ingredient(itemId).name.toLowerCase()} (cần ${q})`).join(", ")} — ra chợ mua thêm`,
         );
-      await consume(tx, playerId, need);
+      await consume(tx, biz.id, need);
       await tx.contract.update({ where: { id }, data: { status: "READY" } });
     });
     return this.board(room, playerId);

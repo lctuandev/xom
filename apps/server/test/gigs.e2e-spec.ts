@@ -109,7 +109,7 @@ describe("Việc người chơi đăng — thợ ảnh (e2e)", () => {
     const taken = next(
       a.socket,
       "notify",
-      (n: NotifyEvent) => n.text.startsWith("📸") && n.open === "jobs:gigs",
+      (n: NotifyEvent) => n.text.startsWith("📸") && n.open === "gigs",
     );
     const bBefore = await money(b.socket);
     await ok(b.socket, "gig:take", { id: gig.id });

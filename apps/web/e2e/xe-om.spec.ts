@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
-import { giveChange, readDialogue, register, setClock, setWeather, shot } from "./helpers";
+import {
+  giveChange,
+  openFeature,
+  readDialogue,
+  register,
+  setClock,
+  setWeather,
+  shot,
+} from "./helpers";
 
 // Xe ôm (docs/KIENTRUC.md §4, docs/USECASES.md UC-N1): Việc làm → 🛵 Chạy xe ôm → tới trạm gốc me → thuê xe (xe hiện dưới
 // người) → chạy ra đường lớn giữa xóm, đậu xe chờ khách ở đó → khách vẫy: thông báo bấm được → báo giá chuẩn → chọn
@@ -22,11 +30,8 @@ test("chạy một cuốc xe ôm: thuê xe, đón khách, trả giá, chọn đ�
   await setClock(page, 13 * 60);
   await setWeather(page, "sunny");
 
-  await page.getByRole("button", { name: "Việc làm" }).tap();
-  await page
-    .locator("[data-job=xe_om]")
-    .getByRole("button", { name: /Đi tới Trạm xe ôm gốc me/ })
-    .tap();
+  // ☰ Menu → 🛵 Xe ôm: chưa thuê xe thì tự đi tới trạm.
+  await openFeature(page, "ride");
   const sheet = page.getByRole("dialog", { name: "Trạm xe ôm gốc me" });
   await expect(sheet).toBeVisible({ timeout: 60_000 });
   await sheet.getByRole("button", { name: /Thuê xe · 30k/ }).tap();

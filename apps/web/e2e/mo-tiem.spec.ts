@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, setClock, shot } from "./helpers";
+import { openBanhMiStall, openFeature, register, setClock, shot } from "./helpers";
 
 // Mở tiệm theo quy trình đời thật (docs/USECASES.md UC-F12): Làm ăn → 🏪 Mở tiệm → ký hợp đồng thuê nhà (cọc) → đặt tên quán,
 // nộp hồ sơ hộ kinh doanh → tập huấn ATTP → hẹn đoàn kiểm tra, về tiệm đón đoàn → làm biển hiệu → mở tiệm.
@@ -9,16 +9,14 @@ test("mở tiệm: thuê nhà, hộ kinh doanh, ATTP, biển hiệu rồi khai t
   await openBanhMiStall(page);
   await setClock(page, 7 * 60);
 
-  const biz = () => page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
   const tab = async () => {
-    await biz();
-    await page.getByRole("tab", { name: "🏪 Mở tiệm" }).tap();
+    await openFeature(page, "lease");
     return page.getByRole("region", { name: "Mở tiệm" });
   };
   // Đang bán ở xe đẩy: đóng quầy trước khi dọn sang nhà.
-  await biz();
+  await openFeature(page, "stall");
   await page.getByRole("button", { name: "Đóng quầy" }).tap();
-  await page.getByRole("tab", { name: "🏪 Mở tiệm" }).tap();
+  await openFeature(page, "lease");
   const shop = page.getByRole("region", { name: "Mở tiệm" });
   await expect(shop).toHaveAttribute("data-shop-step", "lease");
   await shot(page, "100-mo-tiem-du-toan");

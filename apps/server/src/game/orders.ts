@@ -148,7 +148,7 @@ export class OrderService {
   ): Promise<{ created: number; lost: number }> {
     const product = content.product(biz.productId);
     const queueSize = content.equipment(biz.equipmentId).queueSize;
-    const stock = await stockMap(this.prisma, biz.ownerId);
+    const stock = await stockMap(this.prisma, biz.id);
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     let waiting = this.waitingAt(room, biz.id);
     // Ăn nói khéo (kỹ năng) thì khách kiên nhẫn hơn.
@@ -253,7 +253,7 @@ export class OrderService {
     if (biz.ownerId === buyer.id) throw new GameError("invalid_state", "Quầy của mình mà");
     if (biz.status !== "OPEN" || !biz.lotId)
       throw new GameError("invalid_state", "Quầy chưa mở hàng");
-    if (!room.attending.has(biz.ownerId))
+    if (!room.attendsAt(biz.ownerId, biz.id))
       throw new GameError("invalid_state", "Chủ quầy đang vắng, đợi chút nha");
     for (const o of room.orders.values())
       if (o.event.buyerId === buyer.id)
@@ -261,7 +261,7 @@ export class OrderService {
     const product = content.product(biz.productId);
     if (this.waitingAt(room, biz.id) >= content.equipment(biz.equipmentId).queueSize)
       throw new GameError("invalid_state", "Quầy đang đông, đợi bớt khách nha");
-    const stock = await stockMap(this.prisma, biz.ownerId);
+    const stock = await stockMap(this.prisma, biz.id);
     const menu = availableMenu(biz.productId, menuOf(biz), stock);
     const order = customOrder(product.recipe, menu, choice.variantId, choice.picks, choice.mods);
     if (typeof order === "string") throw new GameError("invalid_state", order);
@@ -353,12 +353,14 @@ export class OrderService {
     const invalid = validateBuild(recipe, build);
     if (invalid) throw new GameError("invalid_payload", invalid);
     const need = ingredientsFor(recipe, build);
-    const missing = hasIngredients(need, await stockMap(this.prisma, playerId));
+    // Làm món cho quầy nào thì trừ kho quầy đó (kho riêng từng cửa hàng).
+    const shopId = order.event.businessId;
+    const missing = hasIngredients(need, await stockMap(this.prisma, shopId));
     if (missing.length) {
       const names = missing.map((id) => content.ingredient(id).name.toLowerCase()).join(", ");
       throw new GameError("invalid_state", `Thiếu ${names} — ra chợ mua thêm hoặc xin lỗi khách`);
     }
-    await this.prisma.$transaction((tx) => consume(tx, playerId, need));
+    await this.prisma.$transaction((tx) => consume(tx, shopId, need));
 
     const { score, mistakes } = scoreDish(recipe, order.event.spec, build);
     order.dish = { build, score, mistakes };

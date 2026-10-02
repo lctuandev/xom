@@ -62,7 +62,7 @@ export function Objective() {
       {!target && (
         <button
           type="button"
-          onClick={() => openSheet("business")}
+          onClick={() => openSheet(step.until === "has_lot" ? "lot" : "stall")}
           className="h-9 shrink-0 rounded-xl bg-sun px-3 text-sm font-semibold text-ink"
         >
           Mở

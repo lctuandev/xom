@@ -231,7 +231,7 @@ const TIPS = [
   "Kéo một ngón để xoay góc nhìn trong quán, chụm hai ngón để thu/phóng.",
   "Sáng có xôi, phở; tối có ốc, nướng — ghé 🍜 Ăn uống xem sạp nào đang bày.",
   "Múc cơm đủ các món trong phiếu 'Cần múc' mới được tiền việc.",
-  "Mời bạn vào xóm bằng nút 👥 Hàng xóm → 📨 Mời bạn.",
+  "Mời bạn vào xóm: ☰ Menu → 👥 Hàng xóm → 📨 Mời bạn.",
   "Tối trời, đèn đường bật sáng — xóm đêm cũng đông khách lắm.",
 ];
 

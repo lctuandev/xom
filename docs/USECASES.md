@@ -78,6 +78,24 @@ tự chọn tab theo máy:
 
 ## B. Thế giới, di chuyển, thời gian
 
+
+### UC-A6 · Tìm chức năng: ☰ Menu + icon neo tự ghim ✅
+> Góp ý: "làm ăn đang gộp chung đi làm thuê, thuê nhân viên, kho, mở tiệm/thuê… khó dùng — mỗi tính năng nên tách ra một
+> modal/bottom-sheet riêng". Kế hoạch: docs/IA.md.
+
+**Luồng:** màn hình chính chỉ còn thanh số liệu, cột icon neo trái, ⚙️, nút ngữ cảnh, 💬 và **☰ Menu**. Bấm ☰ Menu → lưới icon
+chia 5 nhóm (🏪 Cửa hàng · 🧺 Mua bán · 💼 Việc làm · 🏘️ Xóm · 🙂 Tôi), mỗi icon mở **đúng một sheet** của chức năng đó (35
+chức năng: Quầy của tôi, Thực đơn & giá, Kho hàng, Chỗ bán, Thuê nhà & giấy tờ, Nhân viên, Sổ sách, Khách quen, Đánh giá, Khai
+trương, …). Icon có **chấm đỏ** khi có việc cần làm (hết hàng, chưa chọn chỗ, chưa có xe, đói/khát). **📌 Ghim**: chọn tối đa 4
+chức năng hay dùng → hiện ở cột neo trái (mặc định Ăn uống · Chợ · Quầy của tôi · Làm thuê); ghim thứ 5 bị từ chối.
+Chức năng phải dùng tại chỗ (Chợ, Vựa xe, ATM, Phụ hồ, Xe ôm khi chưa thuê xe) → nhân vật tự đi tới rồi mở.
+Trong mỗi sheet có nút **"›"** chuyển sang chức năng liên quan (Quầy của tôi → Thực đơn, Kho, Chỗ bán, Nhân viên…).
+
+**Luật giao diện:** DESIGN Luật 12.3–12.6. Thêm chức năng = một dòng trong `game/features/registry.ts` + một file sheet.
+
+**Kiểm chứng:** Playwright `menu-chinh` (mở Menu, đủ nhóm; ghim Bảng xóm lên cột neo, ghim quá 4 bị từ chối; mở chức năng
+từ icon neo và từ nút "›") + mọi kịch bản cũ chuyển sang `openFeature(page, id)`.
+
 ### UC-B1 · Đi lại trong xóm ✅
 **Luồng:** chạm xuống đất → nhân vật đi tới; chụm 2 ngón để zoom.
 **Luật:** chỉ đi trên vỉa hè/đường trong phạm vi xóm; chạm tay thì hủy mọi lộ trình tự động.
@@ -541,6 +559,26 @@ nặng; người thuê "lặn" → chủ nhà giữ cọc, cho người khác th
 **Kiểm chứng:** sim `shop.test.ts` (nợ, phí, hẹn theo ngày, offline, trễ/dẹp) · e2e `rent.e2e-spec.ts` (nhắc → trả; trả nhà khi
 nợ trừ cọc; hẹn → cả ngày hẹn không bị đòi → thất hẹn trừ cọc + tin cậy; để sau mãi → trễ 3 lần dẹp tiệm, cả xóm biết, 📖) ·
 Playwright `doi-tien-nha` (modal chân dung → hẹn ngày → trả ở 🏪 Mở tiệm).
+
+
+### UC-F14 · Nhiều cửa hàng, kho riêng từng tiệm, chuyển kho ✅ (bản đầu)
+> Góp ý: "đủ tiền thì mở nhiều cửa hàng khác nhau (không phải đổi nghề)"; chốt: **không giới hạn số cửa hàng**, **kho riêng
+> từng tiệm**, chuyển kho **bấm chuyển, chờ thời gian**. Kế hoạch: docs/IA.md bước D.
+
+**Luồng:** ở vựa Ông Sáu, đã có quầy thì mỗi đồ nghề có 2 nút: **🏪 Mở thêm cửa hàng** (giữ các quầy cũ, quầy mới thành quầy
+đang quản lý) · **🔄 Đổi nghề quầy đang chọn** (bán lại đồ nghề cũ nửa giá, giữ cửa hàng + kho cũ để thanh lý). ☰ Menu →
+**🏬 Các cửa hàng**: thẻ từng cửa hàng (món, chỗ, đang bán/đóng, có nhân viên trong ca không) → **Quản lý cửa hàng này**. Mọi
+sheet nhóm 🏪 (Quầy, Thực đơn, Kho, Chỗ bán, Nhân viên…) có **hàng chip chọn cửa hàng** trên đầu. **📦 Kho → 🚚 Chuyển sang
+cửa hàng khác**: chọn cửa hàng nhận, món, số phần → hàng tới sau **30 phút game** (báo 📦 khi tới). Ở chợ ghi rõ "Nhập hàng
+cho: …".
+
+**Luật game:** kho thuộc cửa hàng — nhập chợ vào cửa hàng đang quản lý, làm món / nhân viên bán / làm hàng việc xóm trừ kho
+cửa hàng đó; chưa có quầy thì không nhập hàng. Chủ **tự đứng bán một cửa hàng một lúc** (`room.attending`: chủ → cửa hàng),
+cửa hàng khác bán được khi có nhân viên trong ca; khách réo / nhân viên bán thay tính theo từng cửa hàng. Đang chở thì hàng
+chưa bán được ở đâu. Hiện mỗi người thuê **một** nhà mặt tiền (các cửa hàng khác ở vỉa hè).
+
+**Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
+khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang`.
 
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
@@ -1019,6 +1057,7 @@ Khoa bán* để trả quầy. **Tới ca mà quầy đang đóng thì nhân vi�
 chủ mở; báo *"🔓 Khoa tới ca, mở cửa giúp bạn"*); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
 **Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
 viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
+**Chủ tự do (2026-10-02):** quầy đang mở mà **có nhân viên trong ca** thì chủ đi làm thuê, chạy xe ôm, phụ hồ được (nhân viên bán thay); không có nhân viên trong ca thì phải đóng quầy hoặc thuê người trước (`BusinessRepo.ownerTied`).
 **Luật game (không thu nhập thụ động không trần):** nhân viên **không tự nhập hàng, không tự mở quầy**; doanh thu có trần = kho
 hàng × lãi − lương; lương theo giờ đi qua sổ cái (`staff_wage` → employer), tiền bán (`staff_sale`) vào ví chủ; uy tín quầy thay
 đổi theo tay nghề nhân viên; mỗi quầy một người, một ca/ngày.
@@ -1032,6 +1071,24 @@ Playwright `thue-nguoi.spec.ts`.
 trong giờ ca, đừng đóng quầy) và dòng trạng thái *đang trong ca / ngoài giờ làm*; rời quầy thì thanh dưới báo **"👩‍🍳 Thu đang bán
 thay — tới 22:00"** thay vì "Quầy vắng chủ" (ngoài ca thì ghi rõ *Thu ngoài giờ làm*).
 **Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
+
+
+### UC-M9 · Cấp tiệm + nhiều nhân viên ✅ (bản đầu)
+> Góp ý: "nhân viên dựa vào level của tiệm: nâng cấp tiệm → to hơn, nhiều khách hơn → cần nhiều nhân viên hơn". docs/IA.md bước E.
+
+**Luồng:** 🏪 Quầy của tôi → **⬆️ Nâng cấp tiệm** (chỉ nhà mặt tiền đang thuê, đóng cửa mới sửa): Quầy nhỏ (cấp 1, 1 người) →
+**Tiệm mở rộng** (1,5tr, khách ×1,25, 2 người) → **Tiệm lớn** (3,5tr, khách ×1,45, 3 người). 👩‍🍳 Nhân viên: danh sách người đang
+làm (cho nghỉ từng người), "Đang thuê n/tối đa", nút Thuê / Đổi ca / **Đủ người** / **Ở quầy khác**. Bảng tuyển có 5 người (thêm
+Chị Hoa, Tuấn Anh).
+
+**Luật game:** cả nhóm trong ca bán chung — sức làm cộng dồn theo tốc độ từng người, mỗi món do một người làm theo tay nghề
+người đó; lương + phiếu ca theo từng người; **một người chỉ làm cho một cửa hàng của mình**. Không có ai trong ca thì chủ phải đứng
+quầy. `pnpm balance` có bảng "Tiệm lớn đủ nhân viên" với trần 8 lần làm thuê (trà sữa ~1,18tr/ngày sau khi cân lại khách
+×1,3/×1,6 → ×1,25/×1,45).
+
+**Kiểm chứng:** sim `staff.test.ts` (2 người bán nhiều hơn 1, lương = tổng, phiếu theo người; luật cấp) · e2e `staff.e2e-spec.ts`
+(xe đẩy 1 người + không nâng cấp; tiệm cấp 2 thuê 2 người, cả nhóm bán, phiếu theo người; một người một chỗ) · Playwright
+`cap-tiem`.
 
 ### UC-M7 · Bảng việc xóm + 🤝 điểm tin cậy ✅ (bản đầu: việc NPC đặt)
 **Nhân vật:** **Chú Hai tổ trưởng** giữ bảng, ghi sổ; người đặt việc là cư dân: *Cô Hạnh giáo viên* (bánh mì cho đội bóng),

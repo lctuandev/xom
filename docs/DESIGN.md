@@ -124,17 +124,19 @@ Sau này: **âm thanh theo khoảng cách** (đứng gần nghe rõ, đi xa nh�
 - HUD **tối giản**: tiền · nhân vật ở giữa · bản đồ / túi đồ · nút **Tương tác** theo ngữ cảnh.
 - Hệ thống phức tạp (Làm ăn, Kho, Bản đồ, Xã hội…) nằm trong **menu / sheet**, không bày ra màn hình chính.
 **Luật 12.1** — Thêm nút lên màn hình chính phải bỏ/gộp một nút khác. **Luật 12.2** — Mọi thao tác chính trong vùng ngón cái, 360×640 dùng được.
-**Luật 12.3** — Sheet có list dài (quá ~1,5 màn hình) thì chia **tab dính** trên đầu vùng cuộn (component `Tabs`):
-phần quyết định chính (nút Mở quầy, cách trả tiền…) để trên tab, mỗi tab một nhóm; tab mặc định theo ngữ cảnh
-(vd. chưa chọn chỗ bán thì mở tab Chỗ bán). Đang áp: chợ đầu mối (theo nghề + Thanh lý), Làm ăn, Hồ sơ, Bảng xóm.
-**Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** — nhìn là biết (tô phở = Ăn uống,
-rổ rau = Chợ, cúp = Bảng xóm, bánh răng = Cài đặt, bong bóng = Chat); tên đầy đủ ở `aria-label`/`title`; class `icon-halo`
-(quầng trắng + bóng) để nổi trên mọi nền 3D. Cột neo trái tối đa 3 icon (Luật 12.1).
+**Luật 12.3 — Mỗi chức năng một sheet riêng (2026-10-02, docs/IA.md §4):** không nhồi nhiều chức năng vào một sheet
+nhiều tab. Mỗi chức năng = một sheet + một file + một icon, đăng ký trong `game/features/registry.ts` (id, tên, icon, nhóm)
+và `game/features/sheets.tsx`. Chức năng liên quan nhau thì có nút chuyển (`GoTo`/`GoToRow` "›"), không nhúng nội dung
+của nhau. Tab chỉ dùng khi **cùng một việc** có list dài (chợ theo nghề, Bảng xóm các kiểu xếp hạng) — component `Tabs`.
+Chức năng phải dùng tại chỗ (chợ, vựa xe, ATM, công trường, trạm xe ôm) mở qua `openFeature`: đứng đó thì mở, chưa thì tự đi tới.
+**Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** (không có SVG thì emoji của chức năng);
+tên đầy đủ ở `aria-label`/`title`; class `icon-halo` để nổi trên mọi nền 3D. **Cột neo trái = tối đa 4 chức năng người
+chơi tự ghim** trong ☰ Menu (📌 Ghim; mặc định Ăn uống · Chợ · Quầy của tôi · Làm thuê); phải = ⚙️ Cài đặt.
 **Luật 12.6 — Thanh trên & thanh dưới:** thanh trạng thái chỉ chứa *số liệu* (tiền, uy tín, no/khát khi thấp, ngày · trời · giờ),
 trải tới mép phải, icon SVG cùng bộ (`IconCash`, `IconStar`, `IconRice`, `IconDrop`, `IconWeather`); tiền dưới 100 nghìn ghi đủ, từ 100 nghìn ghi "138k", từ 1 triệu
-thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo: trái = ăn uống, chợ, bảng xóm;
-phải = cài đặt. Thanh điều hướng dưới **không nền** (nổi trên bản đồ như cột neo, quầng `icon-halo`), icon vẽ tay cỡ lớn **có nhãn chữ đè nhẹ ở chân icon** (mục đang mở: icon nổi lên, nhãn đỏ;
-Nhiệm vụ ở giữa to nhất). Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
+thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo (Luật 12.4).
+Thanh dưới **chỉ còn nút ☰ Menu** (lưới icon mọi chức năng chia 5 nhóm Cửa hàng · Mua bán · Việc làm · Xóm · Tôi, chấm đỏ
+khi có việc cần làm) — bỏ thanh 5 mục cũ. Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
 **Luật 12.5 — Sheet hay Modal:** *bottom sheet* cho thao tác trong lúc chơi, cần vẫn thấy bản đồ (chợ, làm ăn, quầy hàng xóm…);
 *modal* giữa màn hình (`Modal`) cho nội dung xem trọn vẹn, cần tập trung (bảng xếp hạng, hướng dẫn cài đặt). Bảng xếp hạng
 có bục vinh danh 2–1–3: hạng 1 khung vàng + vương miện + viền sáng xoay (tắt khi máy bật giảm chuyển động), hạng 2 bạc, hạng 3 đồng.

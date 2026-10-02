@@ -2,18 +2,26 @@
 
 import { content } from "@xom/content";
 import { useState } from "react";
-import { vnd } from "../format";
+import { vnd, vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 
-/** Chọn nghề = chọn thiết bị. Đổi nghề thì thiết bị cũ được bán lại nửa giá. */
+/** Chọn nghề = chọn thiết bị: mở thêm cửa hàng, hoặc đổi nghề quầy đang chọn (thiết bị cũ bán lại nửa giá). */
 export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
   const me = useGame((s) => s.me);
   const [busy, setBusy] = useState<string | null>(null);
   const current = me?.business?.equipmentId;
+  const hasShop = (me?.shops.length ?? 0) > 0;
+  const activeOpen = me?.business?.open ?? false;
   const check = usePayCheck();
   const pay = usePayMethod((s) => s.method);
+  const buy = async (equipmentId: string, mode: "new" | "replace") => {
+    setBusy(equipmentId);
+    const res = await send("equipment:buy", { equipmentId, pay, mode });
+    setBusy(null);
+    if (res.ok) onDone?.();
+  };
 
   return (
     <ul className="flex flex-col gap-3">
@@ -40,26 +48,43 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              disabled={owned || !affordable || busy !== null}
-              onClick={async () => {
-                setBusy(eq.id);
-                const res = await send("equipment:buy", { equipmentId: eq.id, pay });
-                setBusy(null);
-                if (res.ok) onDone?.();
-              }}
-              className="mt-3 h-12 w-full rounded-xl bg-red text-base font-semibold text-cream disabled:bg-ink/15 disabled:text-ink/50"
-            >
-              {owned ? "Đang dùng" : busy === eq.id ? "Đang mua…" : `Mua · ${vnd(eq.price)}`}
-            </button>
+            {!hasShop ? (
+              <button
+                type="button"
+                disabled={!affordable || busy !== null}
+                onClick={() => void buy(eq.id, "new")}
+                className="mt-3 h-12 w-full rounded-xl bg-red text-base font-semibold text-cream disabled:bg-ink/15 disabled:text-ink/50"
+              >
+                {busy === eq.id ? "Đang mua…" : `Mua · ${vnd(eq.price)}`}
+              </button>
+            ) : (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={!affordable || busy !== null}
+                  onClick={() => void buy(eq.id, "new")}
+                  className="h-12 rounded-xl bg-red px-2 text-sm font-semibold text-cream disabled:bg-ink/15 disabled:text-ink/50"
+                >
+                  🏪 Mở thêm cửa hàng · {vndShort(eq.price)}
+                </button>
+                <button
+                  type="button"
+                  disabled={owned || activeOpen || !affordable || busy !== null}
+                  onClick={() => void buy(eq.id, "replace")}
+                  className="h-12 rounded-xl bg-white px-2 text-sm font-semibold shadow-sm disabled:opacity-40"
+                >
+                  {owned ? "Quầy đang chọn là nghề này" : "🔄 Đổi nghề quầy đang chọn"}
+                </button>
+              </div>
+            )}
           </li>
         );
       })}
       {current && (
         <p className="text-sm text-ink/60">
-          Đổi nghề: {content.equipment(current).name} cũ được bán lại nửa giá. Hàng trong kho vẫn
-          giữ.
+          🏪 Mở thêm cửa hàng: giữ nguyên các quầy đang có (không giới hạn số cửa hàng). 🔄 Đổi
+          nghề: {content.equipment(current).name} của quầy đang chọn được bán lại nửa giá, kho hàng
+          cũ vẫn giữ để thanh lý.
         </p>
       )}
     </ul>

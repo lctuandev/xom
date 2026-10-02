@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   achievementProgress,
   type Contender,
+  costsOf,
   type DayStat,
   marketShare,
   priceMoves,
@@ -64,6 +65,24 @@ describe("bảng giải của xóm", () => {
         day(1, { revenue: 100_000, tips: 5_000, stockCost: 40_000, rent: 25_000, fees: 5_000 }),
       ),
     ).toBe(35_000);
+  });
+  it("sổ sách: lương nhân viên + điện nước là khoản chi riêng, trừ vào lãi", () => {
+    const d = day(1, {
+      revenue: 300_000,
+      stockCost: 100_000,
+      rent: 105_000,
+      fees: 15_000,
+      staffWages: 160_000,
+      utilities: 48_000,
+    });
+    expect(costsOf(d)).toEqual({
+      stock: 100_000,
+      rent: 105_000,
+      staff: 160_000,
+      utilities: 48_000,
+      fees: 15_000,
+    });
+    expect(profitOf(d)).toBe(300_000 - 100_000 - 105_000 - 160_000 - 48_000 - 15_000);
   });
   it("thị phần theo món", () => {
     const [bm] = marketShare(

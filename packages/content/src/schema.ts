@@ -490,6 +490,23 @@ export const staffSchema = z.object({
     .min(1),
 });
 
+/**
+ * Cấp tiệm (docs/IA.md bước E): nâng cấp (mở rộng, sửa sang — tốn tiền) thì tiệm to hơn, đông khách hơn, thuê được nhiều
+ * nhân viên hơn. Xe đẩy vỉa hè chỉ cấp 1; cấp cao cần nhà mặt tiền (`houseOnly`).
+ */
+export const shopLevelSchema = z.object({
+  level: z.number().int().min(1),
+  name: z.string(),
+  emoji: z.string(),
+  /** Nhân lưu lượng khách tới quầy. */
+  trafficMul: z.number().min(1),
+  /** Số nhân viên thuê cùng lúc tối đa. */
+  maxStaff: z.number().int().min(1),
+  /** Tiền nâng lên cấp này (từ cấp dưới); cấp 1 = 0. */
+  upgradeCost: z.number().int().min(0),
+  houseOnly: z.boolean().default(false),
+});
+
 export const npcArchetypeSchema = z.object({
   id,
   name: z.string(),
@@ -944,6 +961,8 @@ export const economySchema = z.object({
   shoutCooldownMinutes: z.number().int().positive(),
   /** Mua sỉ từ số gói này trở lên được giảm giá. */
   bulkPacks: z.number().int().positive(),
+  /** Chuyển hàng giữa hai cửa hàng của mình: hàng tới sau bấy nhiêu phút game (docs/IA.md bước D). */
+  transferMinutes: z.number().int().positive(),
   bulkDiscount: z.number().min(0).max(0.5),
   /** Thanh lý hàng tồn cho chợ (đổi nghề, dư hàng): Bà Năm mua lại bằng tỉ lệ này của giá gốc. */
   resaleRate: z.number().min(0).max(1),
@@ -1174,6 +1193,7 @@ export const contentSchema = z.object({
   residents: z.array(residentSchema).min(1),
   regulars: regularsSchema,
   staff: staffSchema,
+  shopLevels: z.array(shopLevelSchema).min(1),
   contracts: contractsSchema,
   gigs: gigsSchema,
   rides: ridesSchema,

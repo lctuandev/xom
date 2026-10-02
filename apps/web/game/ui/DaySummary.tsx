@@ -14,8 +14,10 @@ export function DaySummary() {
     ["Lương làm thuê", report.wages, "in"],
     ["🏦 Lãi ngân hàng", report.interest, "in"],
     ["Nhập hàng", report.stockCost, "out"],
-    ["Thuê chỗ", report.rent, "out"],
-    ["Phí chợ, điện nước, sửa xe, sự kiện, lương nhân viên", report.fees, "out"],
+    ["Tiền nhà / chỗ", report.rent, "out"],
+    ["Lương nhân viên", report.staffWages, "out"],
+    ["Điện nước", report.utilities, "out"],
+    ["Phí, thuế, sửa xe, sự kiện", report.fees, "out"],
   ];
 
   return (

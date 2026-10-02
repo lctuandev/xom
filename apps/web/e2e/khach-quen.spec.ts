@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, serveCustomer, shot } from "./helpers";
+import { openBanhMiStall, openFeature, register, serveCustomer, shot } from "./helpers";
 
 // Khách quen (docs/KIENTRUC.md §1, docs/USECASES.md UC-M5): khách là cư dân có tên; đã ghé 4 lần (lệnh dev) mà bán đúng lần
 // thứ 5 thì ❤️ thành khách quen; Làm ăn → ❤️ Khách quen có sổ.
@@ -33,8 +33,7 @@ test("khách quen: bán đúng cho cư dân đã ghé 4 lần → ❤️, có tr
   await expect(heart).toBeVisible({ timeout: 10_000 });
   await shot(page, "88-khach-quen");
 
-  await page.getByRole("button", { name: "Làm ăn" }).tap();
-  await page.getByRole("tab", { name: "❤️ Khách quen" }).tap();
+  await openFeature(page, "regulars");
   const book = page.getByRole("region", { name: "Sổ khách quen" });
   await expect(book.getByText("❤️").first()).toBeVisible();
   await expect(book.getByText("5 lần").first()).toBeVisible();

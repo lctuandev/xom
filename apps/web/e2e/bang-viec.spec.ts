@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, setClock, shot } from "./helpers";
+import { openBanhMiStall, openFeature, register, setClock, shot } from "./helpers";
 
 // Bảng việc xóm (docs/KIENTRUC.md §3, docs/USECASES.md UC-M7): Việc làm → 📋 Việc xóm → nhận việc của Cô Hạnh (đặt cọc) →
 // làm 5 phần ở quầy (trừ nguyên liệu) → đi tới Cổng trường → giao → nhận thưởng + lại cọc, 🤝 tin cậy 50 → 55.
@@ -20,8 +20,7 @@ test("nhận việc giao bánh mì cho trường → làm hàng → mang tới C
   });
   expect(posted).toBe(true);
 
-  await page.getByRole("button", { name: "Việc làm" }).tap();
-  await page.getByRole("tab", { name: "📋 Việc xóm" }).tap();
+  await openFeature(page, "contracts");
   const board = page.getByRole("region", { name: "Bảng việc xóm" });
   await expect(board.locator("[data-trust]")).toContainText("50/100");
   const job = board.locator("[data-contract=truong_banh_mi]").last();

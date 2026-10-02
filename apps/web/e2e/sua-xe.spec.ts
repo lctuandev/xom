@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { content } from "@xom/content";
 import {
   buyIngredients,
+  closeSheet,
   grantMoney,
   makeDish,
   payOrder,
@@ -39,7 +40,7 @@ test("tiệm sửa xe: nghe triệu chứng, kiểm tra, sửa sai rồi sửa �
   await buyIngredients(page, [first]);
   box = await readDialogue(page);
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
-  await page.getByRole("button", { name: "Ra chợ", exact: true }).tap();
+  await page.locator('[data-anchor="market"]').tap();
   await buyIngredients(page, rest);
   await shot(page, "60-phu-tung");
   await page
@@ -51,7 +52,7 @@ test("tiệm sửa xe: nghe triệu chứng, kiểm tra, sửa sai rồi sửa �
   await setClock(page, 7 * 60);
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: /Đầu hẻm 12/ }).tap();
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
   await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
   box = await readDialogue(page);

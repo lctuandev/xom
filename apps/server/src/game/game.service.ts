@@ -1,21 +1,14 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
 import { content, type SkillId } from "@xom/content";
 import type {
-  AtmReceipt,
   AwayView,
   ClockView,
-  DayReportView,
-  EventView,
-  LandlordEvent,
   MeView,
   MovePayload,
-  NotifyEvent,
   PayMethod,
   PeerPos,
-  RideView,
   RosterView,
-  SayEvent,
   Snapshot,
   TalkResult,
   WeatherIdView,
@@ -24,40 +17,27 @@ import type {
 import {
   absMinute,
   addSkill,
-  atmAmountError,
   bankInterest,
-  canHost,
   chanceIn,
-  choosePayment,
   customerArrivals,
-  eat,
   eventCategoryDemand,
   fameOf,
-  feeToFund,
-  hostCost,
   levelOf,
   marketMovesSince,
-  marketPackPrice,
   maskText,
   menuPriceRatio,
-  needsAlert,
   needsAt,
   needsFrom,
-  openDue,
+  onDutyTeam,
   overrideWeather,
   type PaySource,
-  pinError,
   projectDemand,
   recipeIngredients,
-  repairCost,
-  resaleValue,
   type SkillPoints,
   seededRandom,
-  shiftAt,
+  shopLevel,
   spoilage,
-  unlockLevel,
   wearDemand,
-  wearState,
   weatherDemand,
 } from "@xom/sim";
 import {
@@ -69,19 +49,26 @@ import {
   SYSTEM,
   type Tx,
 } from "../economy/ledger.service.js";
-import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BankService } from "./bank.js";
+import { Broadcast, type GameEmitter } from "./broadcast.js";
+import { BusinessService } from "./business.js";
+import { BusinessRepo } from "./business-repo.js";
 import { ContractService } from "./contracts.js";
 import { GigService } from "./gigs.js";
-import { addItems, inventoryView, stockMap } from "./inventory.js";
-import { availableMenu, menuOf, patchMenu } from "./menu.js";
+import { inventoryView, stockMap } from "./inventory.js";
+import { MarketService } from "./market.js";
+import { availableMenu, menuOf } from "./menu.js";
+import { NeedsService } from "./needs.js";
 import { OrderService } from "./orders.js";
+import { PaymentService } from "./payment.js";
+import { addFriendship, friendship as friendshipOf, ORDER_REACH } from "./place.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
-import { addToReport, emptyReport } from "./report.js";
+import { emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { RideService } from "./rides.js";
-import { GameError, RoomRuntime } from "./room.js";
+import { GameError, type IntentContext, RoomRuntime } from "./room.js";
 import { ShopService } from "./shop.js";
 import { StaffService } from "./staff.js";
 import { StatsService } from "./stats.js";
@@ -93,11 +80,11 @@ const TICK_MS = Number(process.env.GAME_TICK_MS ?? 1000);
 /** Rời game quá thời gian này thì quầy tự đóng. */
 /** Ân hạn khi mất kết nối trước khi dọn quầy (test được rút ngắn qua env). */
 const leaveGraceMs = () => Number(process.env.LEAVE_GRACE_MS ?? 30_000);
-const EQUIPMENT_RESALE = 0.5;
+const _EQUIPMENT_RESALE = 0.5;
 /** Người bán ở chợ (thân thiết tăng khi mua hàng). */
-const MARKET_KEEPER = "cho_dau_moi";
+const _MARKET_KEEPER = "cho_dau_moi";
 /** Băm PIN ATM kèm id người chơi (không lưu PIN thô). */
-const pinHash = (playerId: string, pin: string) =>
+const _pinHash = (playerId: string, pin: string) =>
   createHash("sha256").update(`xom-atm:${playerId}:${pin}`).digest("hex");
 /** Khoảng cách tối thiểu giữa hai tin chat của một người. */
 const CHAT_GAP_MS = 1500;
@@ -105,27 +92,8 @@ const CHAT_GAP_MS = 1500;
 export const MAX_MEMBERS = 8;
 /** Nhịp phát vị trí người chơi cho cả xóm. */
 const PEER_FLUSH_MS = 100;
-/** Khoảng cách tối đa (m) tới quầy để gọi món. */
-const ORDER_REACH = 6;
 /** Khoảng cách tối đa (m) tới cây ATM. */
-const ATM_REACH = 3;
-
-/** Cổng phát sự kiện ra socket; gateway cung cấp để service không phụ thuộc Socket.IO. */
-export interface GameEmitter {
-  toRoom(roomId: string, event: "clock", data: ClockView): void;
-  toRoom(roomId: string, event: "world", data: WorldView): void;
-  toRoom(roomId: string, event: "notify", data: NotifyEvent): void;
-  toRoom(roomId: string, event: "say", data: SayEvent): void;
-  toRoom(roomId: string, event: "roster", data: RosterView): void;
-  toRoom(roomId: string, event: "peers", data: PeerPos[]): void;
-  toRoom(roomId: string, event: "events", data: EventView[]): void;
-  toPlayer(playerId: string, event: "me", data: MeView): void;
-  toPlayer(playerId: string, event: "dayEnd", data: DayReportView): void;
-  toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
-  toPlayer(playerId: string, event: "notify", data: NotifyEvent): void;
-  toPlayer(playerId: string, event: "ride", data: RideView): void;
-  toPlayer(playerId: string, event: "landlord", data: LandlordEvent): void;
-}
+const _ATM_REACH = 3;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -169,10 +137,8 @@ async function rebaseDays(tx: Tx, playerId: string, offset: number) {
 const pick = <T>(list: readonly T[], rand: () => number): T =>
   list[Math.floor(rand() * list.length)] ?? (list[0] as T);
 
-export interface IntentContext {
-  room: RoomRuntime;
-  playerId: string;
-}
+export type { GameEmitter } from "./broadcast.js";
+export type { IntentContext } from "./room.js";
 
 @Injectable()
 export class GameService implements OnModuleDestroy {
@@ -180,13 +146,13 @@ export class GameService implements OnModuleDestroy {
   private readonly rooms = new Map<string, RoomRuntime>();
   private readonly roomOfPlayer = new Map<string, string>();
   private readonly occupantsCache = new Map<string, WorldView["lots"]>();
-  /** Nhân viên đã tự mở cửa hôm nay (`businessId:day`) — chủ đóng giữa chừng thì không mở lại. */
-  private readonly staffOpened = new Set<string>();
   private emitter?: GameEmitter;
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
+    private readonly payment: PaymentService,
     readonly orders: OrderService,
     readonly work: WorkService,
     readonly reviews: ReviewService,
@@ -199,10 +165,20 @@ export class GameService implements OnModuleDestroy {
     readonly gigs: GigService,
     readonly rides: RideService,
     readonly shops: ShopService,
+    readonly bank: BankService,
+    readonly needs: NeedsService,
+    readonly market: MarketService,
+    readonly broadcast: Broadcast,
+    readonly biz: BusinessService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
     this.emitter = emitter;
+    this.broadcast.bind(emitter, {
+      me: (playerId) => this.emitMe(playerId),
+      world: (room) => this.emitWorld(room),
+    });
+    this.biz.bindOccupants((roomId) => this.occupantsCache.get(roomId) ?? []);
     this.reviews.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.stats.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.projects.setNotifier(
@@ -296,7 +272,7 @@ export class GameService implements OnModuleDestroy {
         where: { roomId: room.id, status: "VOTING", createdAt: { gt: since } },
         select: { projectId: true },
       }),
-      this.businessOf(player.id),
+      this.businesses.of(player.id),
       this.prisma.staffShift.findMany({ where: { ownerId: player.id, createdAt: { gt: since } } }),
     ]);
     const latest = reviews[0];
@@ -375,7 +351,7 @@ export class GameService implements OnModuleDestroy {
           if (member.sockets.size > 0) return;
           // Có nhân viên trong ca thì bán nốt tới hết ca rồi mới dọn quầy (KIENTRUC §2).
           await this.staff.finishShift(room, playerId);
-          await this.closeAllFor(room, playerId);
+          await this.biz.closeAllFor(room, playerId);
           await this.work.end(room, playerId, "left");
           this.rides.clear(playerId);
           await this.prisma.player.update({ where: { id: playerId }, data: { jobId: null } });
@@ -388,10 +364,18 @@ export class GameService implements OnModuleDestroy {
     }, leaveGraceMs());
   }
 
+  /**
+   * Tắt server: dừng nhịp + hẹn giờ rời xóm, CHỜ nhịp / intent đang chạy dở xong rồi mới lưu đồng hồ — trước đây nhịp đang
+   * chạy chạm DB sau khi Prisma đóng ("Cannot use a pool after calling end", HANDOFF §4).
+   */
   async onModuleDestroy() {
     for (const room of this.rooms.values()) {
       clearInterval(room.timer);
       clearInterval(room.peerTimer);
+      for (const m of room.members.values()) clearTimeout(m.leaveTimer);
+    }
+    for (const room of this.rooms.values()) {
+      await room.drain();
       await this.persistClock(room);
     }
   }
@@ -491,7 +475,7 @@ export class GameService implements OnModuleDestroy {
     const offset = to.day - from.day;
 
     await from.run(async () => {
-      const biz = await this.businessOf(playerId);
+      const biz = await this.businesses.of(playerId);
       if (biz?.status === "OPEN")
         throw new GameError("invalid_state", "Dọn quầy (đóng quầy) trước khi chuyển xóm");
       if (from.shifts.has(playerId))
@@ -513,7 +497,7 @@ export class GameService implements OnModuleDestroy {
 
     await to.run(async () => {
       // Chỗ bán đã có hàng xóm dùng → phải chọn chỗ khác.
-      const biz = await this.businessOf(playerId);
+      const biz = await this.businesses.of(playerId);
       if (!biz?.lotId) return;
       const lots = await this.refreshOccupants(to);
       if (lots.some((o) => o.lotId === biz.lotId && o.businessId !== biz.id)) {
@@ -523,123 +507,6 @@ export class GameService implements OnModuleDestroy {
     this.logger.log(`người chơi ${playerId} chuyển xóm ${from.id} → ${to.id}`);
     void this.log(playerId, "xom_join", { from: from.id, to: to.id });
     return { from: from.id, to: to.id };
-  }
-
-  /**
-   * Người chơi trả tiền (DESIGN §2): 💵 / 🏦 theo lựa chọn, hoặc tự chọn (lặt vặt trả tiền mặt, khoản lớn chuyển khoản).
-   * Trả về nguồn đã dùng; thiếu tiền thì báo cách gỡ (rút ATM, chọn ví kia).
-   */
-  private async payOut(
-    tx: Tx,
-    playerId: string,
-    amount: number,
-    to: string,
-    reason: string,
-    refId?: string,
-    method: PayMethod = "auto",
-    cashOnly = false,
-  ): Promise<PaySource> {
-    const [cash, bank] = await Promise.all([
-      this.ledger.balance(tx, playerWallet(playerId)),
-      this.ledger.balance(tx, bankWallet(playerId)),
-    ]);
-    const src = choosePayment({
-      amount,
-      cash,
-      bank,
-      method,
-      cashOnly,
-      cashFirstBelow: content.economy.bank.cashFirstBelow,
-    });
-    if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
-    const from = src === "cash" ? playerWallet(playerId) : bankWallet(playerId);
-    await this.ledger.transfer(tx, from, to, amount, reason, refId);
-    return src;
-  }
-
-  /** Ăn / uống (UC-B11): cộng vào mức no / khát hiện tại. */
-  async feed(tx: Tx, room: RoomRuntime, playerId: string, add: { food?: number; drink?: number }) {
-    const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
-    const now = absMinute(room.day, room.minute);
-    const next = eat(content, needsFrom(player.needs), now, add);
-    await tx.player.update({ where: { id: playerId }, data: { needs: { ...next } } });
-    room.needsAlert.delete(playerId);
-  }
-
-  /**
-   * Mỗi giờ game: ai vừa đói / khát thì nhắc một lần (không khoá gì — chỉ tay chậm đi chút).
-   * Người mới (chưa có mốc) được tính là vừa ăn sáng.
-   */
-  private async needsTick(room: RoomRuntime) {
-    const now = absMinute(room.day, room.minute);
-    const players = await this.prisma.player.findMany({
-      where: { id: { in: [...room.members.keys()] } },
-    });
-    for (const p of players) {
-      const n = needsFrom(p.needs);
-      if (!n.at) {
-        await this.prisma.player.update({
-          where: { id: p.id },
-          data: { needs: { food: n.food, drink: n.drink, at: now } },
-        });
-        continue;
-      }
-      const a = needsAlert(content, needsAt(content, n, now));
-      const key = `${a.food}:${a.drink}`;
-      if (key === "ok:ok" || room.needsAlert.get(p.id) === key) continue;
-      room.needsAlert.set(p.id, key);
-      const text =
-        a.food !== "ok" && a.drink !== "ok"
-          ? "🍚💧 Vừa đói vừa khát — ghé 🍜 Ăn uống làm tô phở, ly nước mía đi (tay đang chậm hẳn)"
-          : a.food !== "ok"
-            ? a.food === "empty"
-              ? "🍚 Đói lả rồi! Ghé 🍜 Ăn uống kiếm gì bỏ bụng (tay đang chậm)"
-              : "🍚 Bụng réo rồi — ghé 🍜 Ăn uống kiếm gì bỏ bụng"
-            : a.drink === "empty"
-              ? "💧 Khô cổ quá! Làm ly cà phê đá, nước mía đi (tay đang chậm)"
-              : "💧 Khát nước rồi — ghé 🍜 Ăn uống làm ly gì mát mát";
-      this.emitter?.toPlayer(p.id, "notify", { kind: "warn", text });
-      void this.emitMe(p.id).catch(() => undefined);
-    }
-  }
-
-  /**
-   * Quầy đang mở mà chủ đi vắng (đi ăn, đi chợ…): khách tới réo "có ai bán không" — chủ được báo để chạy về
-   * (UC-B11). Mỗi quầy réo tối đa một lần mỗi 20 phút game.
-   */
-  private async calloutTick(room: RoomRuntime) {
-    const away = [...room.members.keys()].filter((id) => !room.attending.has(id));
-    if (!away.length) return;
-    const open = await this.prisma.business.findMany({
-      where: { ownerId: { in: away }, status: "OPEN", lotId: { not: null } },
-    });
-    const lines = content.data.needs.callouts;
-    for (const b of open) {
-      if ((room.calloutAt.get(b.id) ?? -999) > room.minute - 20) continue;
-      // Nhân viên đang trong ca thì khách có người bán, không réo chủ.
-      if (await this.staff.onDuty(b.id, room.minute)) continue;
-      const rand = seededRandom("callout", b.id, room.day, room.minute);
-      if (rand() > 0.6) continue;
-      room.calloutAt.set(b.id, room.minute);
-      const lot = content.lot(b.lotId ?? "");
-      this.emitter?.toRoom(room.id, "say", {
-        who: `lot:${lot.id}`,
-        text: lines[Math.floor(rand() * lines.length)] ?? "Có ai bán không?",
-      });
-      this.emitter?.toPlayer(b.ownerId, "notify", {
-        kind: "warn",
-        text: `🔔 Khách đang réo ở quầy ${lot.name} — chạy về bán thôi!`,
-      });
-    }
-  }
-
-  /** Báo cho người chơi khoản vừa trả đi bằng ví nào (chuyển khoản thì có "ting ting"). */
-  private paidBy(playerId: string, src: PaySource, amount: number) {
-    if (src !== "bank") return;
-    this.emitter?.toPlayer(playerId, "notify", {
-      kind: "info",
-      text: `🏦 Đã chuyển khoản ${amount.toLocaleString("vi-VN")}đ`,
-    });
   }
 
   // ───────────────────────── Intent ─────────────────────────
@@ -664,282 +531,6 @@ export class GameService implements OnModuleDestroy {
       await fn(ctx);
       return this.me(ctx.room, ctx.playerId);
     });
-  }
-
-  /**
-   * Rút / gửi tiền ở cây ATM (DESIGN §2, UC-I6): phải đứng ngay cây ATM (server kiểm vị trí), số tiền là bội số
-   * mệnh giá; tiền chỉ chuyển giữa 💵 ví và 🏦 tài khoản của chính mình qua sổ cái (không sinh tiền).
-   */
-  /** Phải đứng ở cây ATM (server kiểm vị trí). */
-  private requireAtm(room: RoomRuntime, playerId: string, atmId: string) {
-    const atm = content.atms.find((a) => a.id === atmId);
-    if (!atm) throw new GameError("invalid_payload", "Không có cây ATM này");
-    const pos = room.members.get(playerId)?.pos;
-    if (pos && (pos.inside || Math.hypot(pos.x - atm.x, pos.z - atm.z) > ATM_REACH))
-      throw new GameError("invalid_state", "Tới tận cây ATM mới rút/gửi tiền được");
-    return atm;
-  }
-
-  /**
-   * Kiểm PIN thẻ ATM (UC-I6): chưa tạo PIN thì báo; sai thì trừ lượt, hết lượt thì máy giữ thẻ tới hết ngày game.
-   * Đúng thì xoá đếm sai.
-   */
-  private async checkPin(room: RoomRuntime, playerId: string, pin: string) {
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
-    if (player.atmLockDay !== null && player.atmLockDay >= room.day)
-      throw new GameError("invalid_state", "Máy đang giữ thẻ của bạn — mai thẻ mới được trả lại");
-    if (!player.atmPin) throw new GameError("invalid_state", "Thẻ chưa có mã PIN — tạo PIN trước");
-    if (player.atmPin === pinHash(playerId, pin)) {
-      room.atmTries.delete(playerId);
-      return;
-    }
-    const max = content.economy.bank.pinTries;
-    const tries = (room.atmTries.get(playerId) ?? 0) + 1;
-    room.atmTries.set(playerId, tries);
-    if (tries >= max) {
-      room.atmTries.delete(playerId);
-      await this.prisma.player.update({ where: { id: playerId }, data: { atmLockDay: room.day } });
-      void this.emitMe(playerId).catch(() => undefined);
-      throw new GameError("invalid_state", `Sai PIN ${max} lần — máy giữ thẻ, mai mới trả lại`);
-    }
-    throw new GameError("invalid_state", `Sai mã PIN — còn ${max - tries} lần thử`);
-  }
-
-  /** Nhập PIN ở màn hình ATM. */
-  async atmAuth({ room, playerId }: IntentContext, atmId: string, pin: string) {
-    this.requireAtm(room, playerId, atmId);
-    await this.checkPin(room, playerId, pin);
-  }
-
-  /** Tạo PIN lần đầu (không cần PIN cũ) hoặc đổi PIN (phải nhập đúng PIN cũ). */
-  async atmSetPin({ room, playerId }: IntentContext, atmId: string, pin: string, old?: string) {
-    this.requireAtm(room, playerId, atmId);
-    const bad = pinError(pin);
-    if (bad) throw new GameError("invalid_payload", bad);
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
-    if (player.atmPin) {
-      if (!old) throw new GameError("invalid_state", "Nhập mã PIN cũ để đổi");
-      await this.checkPin(room, playerId, old);
-    }
-    await this.prisma.player.update({
-      where: { id: playerId },
-      data: { atmPin: pinHash(playerId, pin) },
-    });
-    void this.log(playerId, player.atmPin ? "atm_pin_change" : "atm_pin_set", {});
-  }
-
-  /** Rút / nộp tiền ở cây ATM (UC-I6): phải đứng ở cây, đúng PIN; rút mất phí; trả biên lai. */
-  async useAtm(
-    { room, playerId }: IntentContext,
-    p: { atmId: string; action: "deposit" | "withdraw"; amount: number; pin: string },
-  ): Promise<AtmReceipt> {
-    const atm = this.requireAtm(room, playerId, p.atmId);
-    await this.checkPin(room, playerId, p.pin);
-    const bank = content.economy.bank;
-    const step = p.action === "withdraw" ? bank.withdrawStep : bank.depositStep;
-    const bad = atmAmountError(p.amount, step);
-    if (bad) throw new GameError("invalid_payload", bad);
-    const deposit = p.action === "deposit";
-    const fee = deposit ? 0 : bank.withdrawFee;
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.ledger.transfer(
-          tx,
-          deposit ? playerWallet(playerId) : bankWallet(playerId),
-          deposit ? bankWallet(playerId) : playerWallet(playerId),
-          p.amount,
-          deposit ? "atm_deposit" : "atm_withdraw",
-          atm.id,
-        );
-        if (fee > 0)
-          await this.ledger.transfer(tx, bankWallet(playerId), SYSTEM.bank, fee, "atm_fee", atm.id);
-      });
-    } catch (err) {
-      if (err instanceof InsufficientFundsError)
-        throw new GameError(
-          "insufficient_funds",
-          deposit
-            ? "Không đủ tiền mặt để nộp"
-            : `Tài khoản không đủ số dư (cần thêm phí ${fee.toLocaleString("vi-VN")}đ)`,
-        );
-      throw err;
-    }
-    void this.log(playerId, deposit ? "atm_deposit" : "atm_withdraw", { amount: p.amount, fee });
-    const balance = await this.ledger.balance(this.prisma, bankWallet(playerId));
-    return {
-      code: `FT${room.day.toString().padStart(3, "0")}${randomUUID().slice(0, 6).toUpperCase()}`,
-      atmId: atm.id,
-      action: p.action,
-      amount: p.amount,
-      fee,
-      balance,
-      day: room.day,
-      minute: room.minute,
-    };
-  }
-
-  /** Người chơi phải đứng ở địa điểm này (gần người đứng quầy, hoặc đang ở trong) — server kiểm, không tin client. */
-  requireAt(room: RoomRuntime, playerId: string, placeId: string, message: string) {
-    const pos = room.members.get(playerId)?.pos;
-    if (!pos) return; // chưa báo vị trí (vừa kết nối) — các bước sau vẫn kiểm tiền, hàng
-    const p = content.place(placeId).position;
-    if (pos.inside === placeId) return;
-    if (pos.inside || Math.hypot(pos.x - p.x, pos.z - p.z) > ORDER_REACH)
-      throw new GameError("invalid_state", message);
-  }
-
-  async buyEquipment({ room, playerId }: IntentContext, equipmentId: string, pay?: PayMethod) {
-    const eq = content.equipmentById.get(equipmentId);
-    if (!eq) throw new GameError("invalid_payload", "Không có thiết bị này");
-    this.requireAt(room, playerId, "vua_xe", "Tới vựa xe Ông Sáu mới mua xe được");
-    const current = await this.businessOf(playerId);
-    if (current?.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy trước khi đổi nghề");
-    if (current?.equipmentId === equipmentId)
-      throw new GameError("invalid_state", `Bạn đã có ${eq.name}`);
-    let src: PaySource = "cash";
-    await this.prisma.$transaction(async (tx) => {
-      if (current) {
-        // Đổi nghề: bán lại thiết bị cũ với nửa giá.
-        const old = content.equipment(current.equipmentId);
-        const resale = Math.round((old.price * EQUIPMENT_RESALE) / 1000) * 1000;
-        await this.ledger.transfer(
-          tx,
-          SYSTEM.supplier,
-          playerWallet(playerId),
-          resale,
-          "equipment_resale",
-          current.id,
-        );
-        await tx.business.delete({ where: { id: current.id } });
-      }
-      src = await this.payOut(tx, playerId, eq.price, SYSTEM.supplier, "equipment_buy", eq.id, pay);
-      await tx.business.create({
-        data: {
-          ownerId: playerId,
-          equipmentId: eq.id,
-          productId: eq.products[0] ?? "",
-          reputation: content.economy.startingReputation,
-        },
-      });
-      await this.event(tx, playerId, "equipment_buy", {
-        equipmentId,
-        replaced: current?.equipmentId ?? null,
-      });
-    });
-    this.paidBy(playerId, src, eq.price);
-    // Chuyện của tôi: chiếc xe đầu tiên, hoặc đổi nghề (mỗi nghề ghi một lần).
-    if (current)
-      await this.story.note(
-        playerId,
-        "switch_trade",
-        room.day,
-        { equipment: eq.name },
-        { suffix: eq.id },
-      );
-    else await this.story.note(playerId, "first_cart", room.day, { equipment: eq.name });
-    this.emitWorld(room);
-  }
-
-  /** Mua nguyên liệu theo gói (UC-E1): mua sỉ và thân với Bà Năm được bớt giá. */
-  async marketBuy(
-    { room, playerId }: IntentContext,
-    itemId: string,
-    packs: number,
-    pay?: PayMethod,
-  ) {
-    const ing = content.ingredientById.get(itemId);
-    if (!ing) throw new GameError("invalid_payload", "Chợ không bán món này");
-    this.requireAt(room, playerId, MARKET_KEEPER, "Ra chợ Bà Năm mới mua được");
-    const eco = content.economy;
-    const friendship = await this.friendship(playerId, MARKET_KEEPER);
-    let total = marketPackPrice(ing, room.day, room.minute, eco) * packs;
-    if (packs >= eco.bulkPacks) total *= 1 - eco.bulkDiscount;
-    if (friendship >= eco.friendDiscountAt) total *= 1 - eco.friendDiscount;
-    total = Math.max(500, Math.round(total / 500) * 500);
-    let src: PaySource = "cash";
-    await this.prisma.$transaction(async (tx) => {
-      src = await this.payOut(tx, playerId, total, SYSTEM.market, "market_buy", itemId, pay);
-      await addItems(tx, playerId, itemId, room.day, ing.packSize * packs);
-      await addToReport(tx, playerId, room.day, { stockCost: total });
-      await this.addFriendship(tx, playerId, MARKET_KEEPER, 1);
-    });
-    this.paidBy(playerId, src, total);
-    this.stockChanged(room);
-  }
-
-  /**
-   * Thanh lý hàng tồn (góp ý chơi thử: đổi nghề thì kẹt hàng cũ): bán hết một loại cho Bà Năm với giá thấp
-   * (resaleRate × giá gốc), phải đứng ở chợ; tiền qua sổ cái, ghi bớt vào chi phí nhập hàng hôm nay.
-   */
-  async marketSell({ room, playerId }: IntentContext, itemId: string) {
-    const ing = content.ingredientById.get(itemId);
-    if (!ing) throw new GameError("invalid_payload", "Chợ không mua món này");
-    this.requireAt(room, playerId, MARKET_KEEPER, "Ra chợ Bà Năm mới thanh lý được");
-    const rows = await this.prisma.inventoryItem.findMany({ where: { playerId, itemId } });
-    const qty = rows.reduce((s, r) => s + r.qty, 0);
-    if (qty <= 0) throw new GameError("invalid_state", "Không còn hàng này trong kho");
-    const value = resaleValue(ing.costPerUnit, qty, content.economy.resaleRate);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.inventoryItem.deleteMany({ where: { playerId, itemId } });
-      if (value > 0)
-        await this.ledger.transfer(
-          tx,
-          SYSTEM.market,
-          playerWallet(playerId),
-          value,
-          "resale",
-          itemId,
-        );
-    });
-    void this.log(playerId, "market_sell", { itemId, qty, value });
-    this.emitter?.toRoom(room.id, "say", {
-      who: MARKET_KEEPER,
-      text:
-        value > 0
-          ? `Ừ, Bà lấy hết ${qty} ${ing.unit} ${ing.name.toLowerCase()}, gửi con ${value.toLocaleString("vi-VN")}đ.`
-          : "Ít quá Bà lấy giùm, khỏi tính tiền nha.",
-    });
-    this.stockChanged(room);
-  }
-
-  /** Kho của ai đó đổi: hàng xóm cần biết món nào còn làm được (chỉ khi xóm có người khác). */
-  stockChanged(room: RoomRuntime) {
-    if (room.members.size > 1) this.emitWorld(room);
-  }
-
-  async updateLot({ room, playerId }: IntentContext, lotId: string) {
-    const biz = await this.requireBusiness(playerId);
-    if (lotId === biz.lotId) return;
-    if (!content.lotById.has(lotId)) throw new GameError("invalid_payload", "Không có chỗ này");
-    // Nhà mặt tiền: phải ký hợp đồng thuê trước (UC-F12) — mở bằng vốn, không khoá theo cấp.
-    if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
-    // Đang thuê nhà mà dọn ra vỉa hè: tiền nhà vẫn tính mỗi ngày + trả thêm tiền chỗ — chặn, trả nhà trước.
-    else await this.shops.requireNoLease(playerId);
-    if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
-    const taken = (this.occupantsCache.get(room.id) ?? []).find((o) => o.lotId === lotId);
-    if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
-    await this.prisma.business.update({ where: { id: biz.id }, data: { lotId } });
-    this.emitWorld(room);
-  }
-
-  /** Bật/tắt món, đổi giá trong thực đơn (UC-F2). */
-  async setMenu(
-    { room, playerId }: IntentContext,
-    variantId: string,
-    patch: { on?: boolean; price?: number },
-  ) {
-    const biz = await this.requireBusiness(playerId);
-    const recipe = content.product(biz.productId).recipe;
-    if (!recipe.variants.some((v) => v.id === variantId))
-      throw new GameError("invalid_payload", "Không có món này");
-    const next = patchMenu(biz, variantId, patch);
-    if (!menuOf({ ...biz, menu: next }).some((m) => m.on)) {
-      throw new GameError("invalid_state", "Phải bán ít nhất một món");
-    }
-    await this.prisma.business.update({ where: { id: biz.id }, data: { menu: next } });
-    // Hàng xóm thấy thực đơn/giá mới.
-    this.emitWorld(room);
   }
 
   /** Gọi món ở quầy hàng xóm (UC-J3): phải đứng gần quầy đó. */
@@ -977,9 +568,17 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_payload", `Góp theo bội số ${step.toLocaleString("vi-VN")}đ`);
     let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
-      src = await this.payOut(tx, playerId, amount, fundWallet(room.id), "donate", room.id, pay);
+      src = await this.payment.payOut(
+        tx,
+        playerId,
+        amount,
+        fundWallet(room.id),
+        "donate",
+        room.id,
+        pay,
+      );
     });
-    this.paidBy(playerId, src, amount);
+    this.broadcast.paidBy(playerId, src, amount);
     void this.log(playerId, "fund_donate", { amount });
     await this.story.note(playerId, "first_donate", room.day, {
       money: `${amount.toLocaleString("vi-VN")}đ`,
@@ -1040,103 +639,6 @@ export class GameService implements OnModuleDestroy {
     return this.reviews.list(room, playerId, playerId);
   }
 
-  /**
-   * Mua đồ ăn ở sạp NPC (UC-B9, B10): sạp phải đang bày (đúng giờ), mình phải đứng gần; tiền đi qua sổ cái.
-   * Người bán nói một câu, thân thiết +1.
-   */
-  async vendorBuy(
-    { room, playerId }: IntentContext,
-    vendorId: string,
-    itemId: string,
-    pay?: PayMethod,
-  ) {
-    const v = content.data.vendors.find((x) => x.id === vendorId);
-    const item = v?.items.find((i) => i.id === itemId);
-    if (!v || !item) throw new GameError("invalid_payload", "Sạp không bán món này");
-    if (room.minute < v.open || room.minute >= v.close)
-      throw new GameError("invalid_state", `${v.sign} chưa bày hàng hoặc đã dọn rồi`);
-    const pos = room.members.get(playerId)?.pos;
-    if (pos && (pos.inside || Math.hypot(pos.x - v.position.x, pos.z - v.position.z) > ORDER_REACH))
-      throw new GameError("invalid_state", "Lại gần sạp mới mua được");
-    let src: PaySource = "cash";
-    await this.prisma.$transaction(async (tx) => {
-      src = await this.payOut(
-        tx,
-        playerId,
-        item.price,
-        SYSTEM.market,
-        "food",
-        v.id,
-        pay,
-        v.cashOnly,
-      );
-      await this.addFriendship(tx, playerId, v.id, 1);
-      await this.feed(tx, room, playerId, { food: item.food, drink: item.drink });
-    });
-    this.paidBy(playerId, src, item.price);
-    void this.log(playerId, "vendor_buy", { vendorId: v.id, itemId: item.id, price: item.price });
-    const line = v.lines[Math.floor(Math.random() * v.lines.length)] ?? "Cảm ơn con!";
-    this.emitter?.toRoom(room.id, "say", { who: `vendor:${v.id}`, text: `${line} (${item.name})` });
-  }
-
-  /**
-   * Người chơi tự tổ chức sự kiện (DESIGN §9, UC-B5): khai trương — phải đang đứng quầy đang mở; trả tiền pháo, bong bóng,
-   * băng rôn (money sink, Luật 2.2); đổi lại quầy đông khách + giảm giá trong X giờ game, cả xóm thấy tin.
-   */
-  async hostEvent({ room, playerId }: IntentContext, eventId: string, pay?: PayMethod) {
-    const def = content.data.events.find((e) => e.id === eventId);
-    if (!def || def.trigger.kind !== "player")
-      throw new GameError("invalid_payload", "Không có sự kiện này");
-    const biz = await this.requireBusiness(playerId);
-    if (biz.status !== "OPEN" || !biz.lotId || !room.attending.has(playerId))
-      throw new GameError("invalid_state", "Mở quầy và đứng ở quầy rồi mới khai trương được");
-    if (room.activeEvents(biz.id).length)
-      throw new GameError("invalid_state", "Quầy đang khai trương rồi mà");
-    await this.requireLevel(playerId, "event_host");
-    const why = canHost(def, biz.promoDay, room.day);
-    if (why) throw new GameError("invalid_state", why);
-    const end = Math.min(content.economy.dayEndMinute, room.minute + def.minutes);
-    if (end - room.minute < 30)
-      throw new GameError("invalid_state", "Sắp hết ngày rồi — mai khai trương cho đông");
-    const cost = hostCost(def);
-    let src: PaySource = "cash";
-    await this.prisma.$transaction(async (tx) => {
-      src = await this.payOut(tx, playerId, cost, SYSTEM.market, "event", def.id, pay);
-      await tx.business.update({ where: { id: biz.id }, data: { promoDay: room.day } });
-      await addToReport(tx, playerId, room.day, { fees: cost });
-      await this.event(tx, playerId, "event_host", { eventId: def.id, cost, lotId: biz.lotId });
-    });
-    this.paidBy(playerId, src, cost);
-    const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
-    room.events.push({
-      key: `${def.id}:${biz.id}:${room.day}`,
-      eventId: def.id,
-      from: room.minute,
-      to: end,
-      ownerId: playerId,
-      ownerName: name,
-      businessId: biz.id,
-      lotId: biz.lotId,
-    });
-    this.emitter?.toRoom(room.id, "events", room.events);
-    this.emitter?.toRoom(room.id, "say", {
-      who: playerId,
-      text: "🎉 Khai trương! Ghé ủng hộ nha!",
-    });
-  }
-
-  /** Hệ số khách + giảm giá từ sự kiện đang diễn ra ở một quầy. */
-  private promoOf(room: RoomRuntime, businessId: string) {
-    let demand = 1;
-    let discount = 0;
-    for (const e of room.activeEvents(businessId)) {
-      const fx = content.event(e.eventId).effects;
-      demand *= fx.demand ?? 1;
-      discount = Math.max(discount, fx.discount ?? 0);
-    }
-    return { demand, discount };
-  }
-
   /** Dev/test: đặt giờ trong ngày của xóm mình; production không cho. */
   async debugClock({ room }: IntentContext, minute: number, day?: number) {
     if (process.env.NODE_ENV === "production")
@@ -1185,19 +687,6 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Cấp hiện tại của người chơi (mở khoá theo cấp, Luật 4.2). */
-  private async requireLevel(playerId: string, id: "event_host") {
-    const need = unlockLevel(content, id);
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
-    const level = levelOf(player.xp).level;
-    if (level < need) {
-      const label = content.data.unlocks.find((u) => u.id === id)?.label ?? "Việc này";
-      throw new GameError(
-        "invalid_state",
-        `${label}: cần cấp ${need} (đang cấp ${level}) — làm thêm cho lên cấp nha`,
-      );
-    }
-  }
-
   /** Cộng điểm kỹ năng (làm thật mới lên). */
   async gainSkill(tx: Tx, playerId: string, id: SkillId, amount = 1) {
     const player = await tx.player.findUniqueOrThrow({ where: { id: playerId } });
@@ -1224,189 +713,6 @@ export class GameService implements OnModuleDestroy {
     this.emitter?.toPlayer(playerId, "me", await this.me(room, playerId));
   }
 
-  async openBusiness({ room, playerId }: IntentContext) {
-    const biz = await this.requireBusiness(playerId);
-    if (biz.status === "OPEN") return;
-    if (!biz.lotId) throw new GameError("invalid_state", "Chọn chỗ bán trước đã");
-    if (!room.attending.has(playerId))
-      throw new GameError("invalid_state", "Tới tận quầy rồi mới mở hàng được");
-    const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
-    if (player.jobId || room.shifts.has(playerId))
-      throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở quầy");
-    await this.doOpen(room, playerId, biz);
-  }
-
-  /** Có nhân viên trong ca: chủ tự đứng bán hay để nhân viên bán (chủ vẫn ở tiệm coi). */
-  async setSelfSell({ room, playerId }: IntentContext, on: boolean) {
-    if (on) room.selfSell.add(playerId);
-    else room.selfSell.delete(playerId);
-  }
-
-  /**
-   * Nhân viên tới ca thì mở cửa giúp chủ (KIENTRUC §2): quầy đã có chỗ, đủ giấy tờ (tiệm), còn hàng làm được ít nhất một
-   * món, chủ đang online. Tiền chỗ / phí ngày trừ như chủ tự mở; thiếu tiền thì thôi, báo chủ.
-   */
-  private async staffAutoOpen(room: RoomRuntime) {
-    const online = [...room.members.values()]
-      .filter((m) => m.sockets.size > 0)
-      .map((m) => m.playerId);
-    if (!online.length) return;
-    const closed = await this.prisma.business.findMany({
-      where: {
-        ownerId: { in: online },
-        status: "CLOSED",
-        lotId: { not: null },
-        employee: { isNot: null },
-      },
-      include: { employee: true },
-    });
-    for (const biz of closed) {
-      const e = biz.employee;
-      if (!e || !shiftAt(content, e.shiftId, room.minute)) continue;
-      const key = `${biz.id}:${room.day}`;
-      // Mỗi ngày nhân viên chỉ mở một lần (chủ đóng giữa chừng thì thôi).
-      if (this.staffOpened.has(key)) continue;
-      this.staffOpened.add(key);
-      const stock = await stockMap(this.prisma, biz.ownerId);
-      if (!availableMenu(biz.productId, menuOf(biz), stock).length) continue;
-      const name = content.data.staff.people.find((p) => p.id === e.staffId)?.name ?? "Nhân viên";
-      try {
-        await this.doOpen(room, biz.ownerId, biz);
-        this.emitter?.toPlayer(biz.ownerId, "notify", {
-          kind: "good",
-          text: `🔓 ${name} tới ca, mở cửa ${content.lot(biz.lotId ?? "").kind === "house" ? "tiệm" : "quầy"} giúp bạn rồi`,
-        });
-        this.emitter?.toPlayer(biz.ownerId, "me", await this.me(room, biz.ownerId));
-      } catch (err) {
-        if (!(err instanceof GameError)) throw err;
-        this.emitter?.toPlayer(biz.ownerId, "notify", {
-          kind: "warn",
-          text: `🔒 ${name} tới ca mà không mở cửa được: ${err.message}`,
-        });
-      }
-    }
-  }
-
-  /** Mở cửa: trả tiền chỗ (xe đẩy) / tiền nhà hôm nay (tiệm) + phí ngày nếu chưa trả hôm nay. */
-  private async doOpen(room: RoomRuntime, playerId: string, biz: Business) {
-    if (!biz.lotId) throw new GameError("invalid_state", "Chọn chỗ bán trước đã");
-    const lot = content.lot(biz.lotId);
-    if (lot.kind === "house") await this.shops.requireReady(room, biz, lot.id);
-    const eco = content.economy;
-    if (wearState(biz.wear, eco.maintenance) === "broken")
-      throw new GameError("invalid_state", "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã");
-    await this.prisma.$transaction(async (tx) => {
-      const paid = biz.rentPaidDay === room.day && biz.rentLotId === lot.id;
-      if (!paid) {
-        // Xe đẩy trả tiền chỗ vỉa hè theo ngày khi mở; tiệm trong nhà thì tiền nhà đã tính theo hợp đồng (UC-F12).
-        // Phí chợ/vệ sinh (xe đẩy) hoặc thuế khoán (tiệm) mỗi ngày — Luật 2.2.
-        const { rent, fee } = openDue(content, lot.id);
-        if (rent > 0) await this.payOut(tx, playerId, rent, SYSTEM.landlord, "rent", lot.id);
-        // Phí chợ thu tận tay; một phần vào quỹ xóm làm công trình chung (UC-J5), còn lại cho ban quản lý chợ.
-        if (fee > 0) {
-          const toFund = feeToFund(fee, content.data.fund.feeShare);
-          if (toFund > 0)
-            await this.payOut(tx, playerId, toFund, fundWallet(room.id), "fee", lot.id);
-          if (fee - toFund > 0)
-            await this.payOut(tx, playerId, fee - toFund, SYSTEM.landlord, "fee", lot.id);
-        }
-        await addToReport(tx, playerId, room.day, { rent, fees: fee });
-      }
-      await tx.business.update({
-        where: { id: biz.id },
-        data: { status: "OPEN", rentPaidDay: room.day, rentLotId: lot.id },
-      });
-    });
-    void this.log(playerId, "biz_open", {
-      lotId: lot.id,
-      productId: biz.productId,
-      kind: lot.kind,
-    });
-    // Chuyện của tôi: lần đầu mở quầy; lần đầu mở tiệm trong nhà mặt tiền.
-    const product = content.product(biz.productId).name.toLowerCase();
-    await this.story.note(playerId, "first_open", room.day, { product, lot: lot.name });
-    if (lot.kind === "house")
-      await this.story.note(playerId, "first_shop", room.day, { lot: lot.name });
-    this.emitWorld(room);
-  }
-
-  /**
-   * Sửa xe/quầy ở vựa xe Ông Sáu (Luật 2.2): tiền sửa theo độ mòn; sửa xong như mới.
-   */
-  async repair({ room, playerId }: IntentContext, pay?: PayMethod) {
-    this.requireAt(room, playerId, "vua_xe", "Đẩy xe tới vựa xe Ông Sáu mới sửa được");
-    const biz = await this.requireBusiness(playerId);
-    if (biz.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy rồi mới đem xe đi sửa");
-    const m = content.economy.maintenance;
-    const cost = repairCost(content.equipment(biz.equipmentId).price, biz.wear, m);
-    if (cost <= 0) throw new GameError("invalid_state", "Xe còn tốt mà, chưa cần sửa đâu con");
-    let src: PaySource = "cash";
-    await this.prisma.$transaction(async (tx) => {
-      src = await this.payOut(tx, playerId, cost, SYSTEM.supplier, "repair", biz.id, pay);
-      await tx.business.update({ where: { id: biz.id }, data: { wear: 0 } });
-      await addToReport(tx, playerId, room.day, { fees: cost });
-    });
-    this.paidBy(playerId, src, cost);
-    void this.log(playerId, "repair", { cost, wear: biz.wear });
-    this.emitter?.toRoom(room.id, "say", {
-      who: "vua_xe",
-      text: `Sửa xong rồi, chạy ngon như mới! Hết ${cost.toLocaleString("vi-VN")}đ nha con.`,
-    });
-  }
-
-  /**
-   * Điện nước của tiệm (Luật 2.2): mỗi giờ tiệm (nhà mặt tiền) mở cửa trả một khoản; hết tiền mặt thì trừ tài khoản;
-   * hết cả hai thì tiệm phải đóng cửa.
-   */
-  private async chargeUtilities(room: RoomRuntime) {
-    const perHour = content.economy.fees.utilitiesPerHour;
-    if (perHour <= 0) return;
-    const open = await this.prisma.business.findMany({
-      where: { ownerId: { in: [...room.members.keys()] }, status: "OPEN", lotId: { not: null } },
-    });
-    for (const b of open) {
-      if (content.lot(b.lotId ?? "").kind !== "house") continue;
-      let paid = false;
-      for (const from of [playerWallet(b.ownerId), bankWallet(b.ownerId)]) {
-        try {
-          await this.prisma.$transaction(async (tx) => {
-            await this.ledger.transfer(tx, from, SYSTEM.landlord, perHour, "utilities", b.id);
-            await addToReport(tx, b.ownerId, room.day, { fees: perHour });
-          });
-          paid = true;
-          break;
-        } catch (err) {
-          if (!(err instanceof InsufficientFundsError)) throw err;
-        }
-      }
-      if (!paid) {
-        await this.closeAllFor(room, b.ownerId);
-        this.emitWorld(room);
-        this.emitter?.toPlayer(b.ownerId, "notify", {
-          kind: "warn",
-          text: "Hết tiền đóng điện nước — tiệm phải tạm đóng cửa.",
-        });
-      }
-      this.emitter?.toPlayer(b.ownerId, "me", await this.me(room, b.ownerId));
-    }
-  }
-
-  async closeBusiness({ room, playerId }: IntentContext) {
-    const biz = await this.requireBusiness(playerId);
-    // Chủ tự đóng thì nhân viên không mở lại trong ngày (tới ca hôm sau mới mở).
-    this.staffOpened.add(`${biz.id}:${room.day}`);
-    await this.prisma.business.update({ where: { id: biz.id }, data: { status: "CLOSED" } });
-    this.orders.dropFor(room, biz.id);
-    this.emitWorld(room);
-  }
-
-  /** Client báo nhân vật đang đứng ở quầy hay đã đi chỗ khác. */
-  async attend({ room, playerId }: IntentContext, on: boolean) {
-    if (on) room.attending.add(playerId);
-    else room.attending.delete(playerId);
-  }
-
   /** Lưu tiến độ kịch bản người mới. */
   async setTutorial({ playerId }: IntentContext, step: string) {
     if (!content.stepById.has(step))
@@ -1427,7 +733,7 @@ export class GameService implements OnModuleDestroy {
     const place = content.placeById.get(npcId);
     if (!place) throw new GameError("invalid_payload", "Không có người này");
     const rand = seededRandom("talk", playerId, npcId, room.day, room.minute, topic);
-    let friendship = await this.friendship(playerId, npcId);
+    let friendship = await friendshipOf(this.prisma, playerId, npcId);
     let line: string;
     if (topic === "greet") {
       const rel = await this.prisma.npcRelation.findUnique({
@@ -1436,7 +742,7 @@ export class GameService implements OnModuleDestroy {
       if (!rel || rel.lastGreetDay !== room.day) {
         friendship = await this.prisma.$transaction(async (tx) => {
           await this.gainSkill(tx, playerId, "an_noi");
-          return this.addFriendship(tx, playerId, npcId, 2, room.day);
+          return addFriendship(tx, playerId, npcId, 2, room.day);
         });
         // Kỹ năng ăn nói vừa nhích lên: gửi lại hồ sơ.
         void this.emitMe(playerId).catch(() => undefined);
@@ -1472,7 +778,7 @@ export class GameService implements OnModuleDestroy {
     if (!phrase) throw new GameError("invalid_payload", "Không có câu này");
     this.emitter?.toRoom(room.id, "say", { who: playerId, text: phrase.text });
     if (!phrase.shout) return;
-    const biz = await this.businessOf(playerId);
+    const biz = await this.businesses.of(playerId);
     if (!biz || biz.status !== "OPEN" || !room.attending.has(playerId)) return;
     const eco = content.economy;
     const ready = room.shoutReadyAt.get(playerId) ?? 0;
@@ -1501,22 +807,23 @@ export class GameService implements OnModuleDestroy {
         await this.endDay(room);
       } else {
         if (room.minute % eco.economyTickMinutes === 0) {
-          await this.staffAutoOpen(room);
+          await this.biz.staffAutoOpen(room);
           await this.customerTick(room);
           for (const owner of await this.staff.tickLive(room))
             this.emitter?.toPlayer(owner, "me", await this.me(room, owner));
-          await this.calloutTick(room);
+          await this.needs.calloutTick(room);
           await this.contracts.tick(room);
           await this.gigs.tick(room);
           await this.projects.tick(room);
         }
         if (room.minute % 60 === 0) {
-          await this.chargeUtilities(room);
-          await this.needsTick(room);
+          await this.biz.chargeUtilities(room);
+          await this.needs.needsTick(room);
         }
         await this.work.tick(room);
         await this.rides.tick(room);
         await this.shops.tick(room);
+        await this.biz.deliverTransfers(room);
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }
@@ -1529,18 +836,19 @@ export class GameService implements OnModuleDestroy {
   /** Khách dừng lại ở các quầy đang mở và có người đứng (UC-F3). */
   private async customerTick(room: RoomRuntime) {
     const eco = content.economy;
-    const staffed = [...room.members.keys()].filter((id) => room.attending.has(id));
-    const all = await this.prisma.business.findMany({
-      where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
-      include: { employee: true },
-    });
+    // Khách vào quầy chủ tự đứng: đúng cửa hàng chủ đang đứng (nhiều cửa hàng: chỉ một quầy một lúc).
+    const staffed = [...room.attending.keys()];
+    const all = (
+      await this.prisma.business.findMany({
+        where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
+        include: { employees: true },
+      })
+    ).filter((b) => room.attendsAt(b.ownerId, b.id));
     // Nhân viên đang trong ca mà chủ không giành bán: nhân viên bán (StaffService), khách không vào bếp của chủ.
     const businesses = all.filter(
       (b) =>
         !(
-          b.employee &&
-          shiftAt(content, b.employee.shiftId, room.minute) &&
-          !room.selfSell.has(b.ownerId)
+          onDutyTeam(content, b.employees, room.minute).length > 0 && !room.selfSell.has(b.ownerId)
         ),
     );
     if (businesses.length === 0) return;
@@ -1566,10 +874,12 @@ export class GameService implements OnModuleDestroy {
         reputation: b.reputation,
         boost:
           ((room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1) *
-          this.promoOf(room, b.id).demand *
+          this.biz.promoOf(room, b.id).demand *
           // Ảnh quầy thợ ảnh chụp, đăng lên nhóm xóm (UC-M8).
           this.gigs.adOf(room, b) *
           wearDemand(b.wear, eco.maintenance) *
+          // Cấp tiệm: tiệm to hơn, đông khách hơn (docs/IA.md bước E).
+          shopLevel(content, b.level).trafficMul *
           projectDemand(content, built, b.lotId ?? "") *
           // Sự kiện cả xóm theo nhóm hàng (chợ đêm thứ Bảy: ăn vặt, đồ uống, phụ kiện đông hẳn).
           eventCategoryDemand(content, xomEvents, content.product(b.productId).category) *
@@ -1588,7 +898,7 @@ export class GameService implements OnModuleDestroy {
         where: { id: b.id },
         data: { demandCarry: r.demandCarry },
       });
-      const { discount } = this.promoOf(room, b.id);
+      const { discount } = this.biz.promoOf(room, b.id);
       // Khách VIP (sự kiện cá nhân): thỉnh thoảng ghé quầy đang mở.
       const vip = content.data.events.find((e) => e.effects.vip && e.trigger.kind === "per_hour");
       if (vip?.trigger.kind === "per_hour" && vip.effects.vip) {
@@ -1623,7 +933,7 @@ export class GameService implements OnModuleDestroy {
     room.atmTries.clear();
     room.calloutAt.clear();
     for (const playerId of room.members.keys()) {
-      await this.closeAllFor(room, playerId);
+      await this.biz.closeAllFor(room, playerId);
       const report = await this.prisma.$transaction(async (tx) => {
         await tx.player.update({ where: { id: playerId }, data: { jobId: null } });
         const batches = await tx.inventoryItem.findMany({ where: { playerId } });
@@ -1643,7 +953,7 @@ export class GameService implements OnModuleDestroy {
         );
         if (interest > 0)
           await this.ledger.transfer(tx, SYSTEM.bank, bankWallet(playerId), interest, "interest");
-        const biz = await tx.business.findFirst({ where: { ownerId: playerId } });
+        const biz = await this.businesses.of(playerId, tx);
         const moneyEnd = BigInt(await this.ledger.balance(tx, playerWallet(playerId)));
         const row = await tx.dailyReport.upsert({
           where: { playerId_day: { playerId, day } },
@@ -1688,6 +998,8 @@ export class GameService implements OnModuleDestroy {
         reputation: report.reputation,
         interest: report.interest,
         fees: report.fees,
+        staffWages: report.staffWages,
+        utilities: report.utilities,
         profit:
           report.revenue +
           report.tips +
@@ -1695,7 +1007,9 @@ export class GameService implements OnModuleDestroy {
           report.interest -
           report.stockCost -
           report.rent -
-          report.fees,
+          report.fees -
+          report.staffWages -
+          report.utilities,
         moneyEnd: Number(report.moneyEnd),
       });
       // Thành tựu (UC-P2): cuối ngày xem có cái nào vừa đủ.
@@ -1736,16 +1050,18 @@ export class GameService implements OnModuleDestroy {
   }
 
   async me(room: RoomRuntime, playerId: string): Promise<MeView> {
-    const [player, biz, inventory, report, money, bank, relations, served] = await Promise.all([
+    const [player, biz, shops, report, money, bank, relations, served] = await Promise.all([
       this.prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
-      this.prisma.business.findFirst({ where: { ownerId: playerId }, include: { employee: true } }),
-      inventoryView(this.prisma, playerId, room.day),
+      this.businesses.withEmployee(playerId),
+      this.businesses.listWithEmployee(playerId),
       this.prisma.dailyReport.findUnique({ where: { playerId_day: { playerId, day: room.day } } }),
       this.ledger.balance(this.prisma, playerWallet(playerId)),
       this.ledger.balance(this.prisma, bankWallet(playerId)),
       this.prisma.npcRelation.findMany({ where: { playerId } }),
       this.prisma.dailyReport.aggregate({ where: { playerId }, _sum: { served: true } }),
     ]);
+    // Kho riêng từng cửa hàng: MeView mang kho của cửa hàng đang quản lý.
+    const inventory = biz ? await inventoryView(this.prisma, biz.id, room.day) : [];
     const lease = biz
       ? await this.prisma.lease.findFirst({ where: { ownerId: playerId, status: "ACTIVE" } })
       : null;
@@ -1777,12 +1093,29 @@ export class GameService implements OnModuleDestroy {
             rentPaidToday: biz.rentPaidDay === room.day && biz.rentLotId === biz.lotId,
             promoDay: biz.promoDay,
             wear: biz.wear,
-            staff: staffView(biz.employee, room.minute, ownerSells(room, playerId)),
+            // Nhân viên tiêu biểu (đang trong ca trước) cho HUD; cả nhóm xem ở 👩‍🍳 Nhân viên.
+            staff: staffView(
+              onDutyTeam(content, biz.employees, room.minute)[0] ?? biz.employees[0] ?? null,
+              room.minute,
+              ownerSells(room, playerId),
+            ),
+            staffCount: biz.employees.length,
+            level: biz.level,
             selfSell: room.selfSell.has(playerId),
             leaseLotId: lease?.lotId ?? null,
           }
         : null,
       inventory,
+      shops: shops.map((b) => ({
+        id: b.id,
+        equipmentId: b.equipmentId,
+        productId: b.productId,
+        lotId: b.lotId,
+        name: b.shopName,
+        open: b.status === "OPEN",
+        staffOnDuty: onDutyTeam(content, b.employees, room.minute).length > 0,
+        active: b.id === biz?.id,
+      })),
       friendship: Object.fromEntries(relations.map((r) => [r.npcId, r.friendship])),
       progress: {
         xp: player.xp,
@@ -1801,6 +1134,8 @@ export class GameService implements OnModuleDestroy {
         stockCost: report?.stockCost ?? 0,
         wages: report?.wages ?? 0,
         fees: report?.fees ?? 0,
+        staffWages: report?.staffWages ?? 0,
+        utilities: report?.utilities ?? 0,
       },
     };
   }
@@ -1812,7 +1147,7 @@ export class GameService implements OnModuleDestroy {
       where: { ownerId: { in: [...room.members.keys()] }, lotId: { not: null } },
       include: { owner: true },
     });
-    const stocks = await Promise.all(businesses.map((b) => stockMap(this.prisma, b.ownerId)));
+    const stocks = await Promise.all(businesses.map((b) => stockMap(this.prisma, b.id)));
     const lots = businesses.map((b, i) => ({
       lotId: b.lotId ?? "",
       businessId: b.id,
@@ -1837,60 +1172,6 @@ export class GameService implements OnModuleDestroy {
       .catch((err) => this.logger.warn(`không cập nhật được quầy: ${err}`));
   }
 
-  private async closeAllFor(room: RoomRuntime, playerId: string) {
-    const open = await this.prisma.business.findMany({
-      where: { ownerId: playerId, status: "OPEN" },
-    });
-    for (const b of open) this.orders.dropFor(room, b.id);
-    await this.prisma.business.updateMany({
-      where: { ownerId: playerId, status: "OPEN" },
-      data: { status: "CLOSED" },
-    });
-  }
-
-  private businessOf(playerId: string): Promise<Business | null> {
-    return this.prisma.business.findFirst({ where: { ownerId: playerId } });
-  }
-
-  private async requireBusiness(playerId: string): Promise<Business> {
-    const biz = await this.businessOf(playerId);
-    if (!biz) throw new GameError("invalid_state", "Bạn chưa có quầy hàng");
-    return biz;
-  }
-
-  private async friendship(playerId: string, npcId: string): Promise<number> {
-    const rel = await this.prisma.npcRelation.findUnique({
-      where: { playerId_npcId: { playerId, npcId } },
-    });
-    return rel?.friendship ?? 0;
-  }
-
-  /** Cộng thân thiết (tối đa 100); `greetDay` ghi nhận ngày đã chào. Trả về mức mới. */
-  private async addFriendship(
-    tx: Tx,
-    playerId: string,
-    npcId: string,
-    amount: number,
-    greetDay?: number,
-  ) {
-    const rel = await tx.npcRelation.upsert({
-      where: { playerId_npcId: { playerId, npcId } },
-      create: { playerId, npcId, friendship: Math.min(100, amount), lastGreetDay: greetDay ?? 0 },
-      update: {
-        friendship: { increment: amount },
-        ...(greetDay ? { lastGreetDay: greetDay } : {}),
-      },
-    });
-    if (rel.friendship > 100)
-      await tx.npcRelation.update({
-        where: { playerId_npcId: { playerId, npcId } },
-        data: { friendship: 100 },
-      });
-    return Math.min(100, rel.friendship);
-  }
-
-  /** Ghi sự kiện đo lường (DESIGN §16), không chặn luồng chơi nếu lỗi. */
-  /** Gửi MeView mới cho người chơi (sau intent không trả MeView mà đổi tiền / kho). */
   async pushMe(room: RoomRuntime, playerId: string) {
     this.emitter?.toPlayer(playerId, "me", await this.me(room, playerId));
   }

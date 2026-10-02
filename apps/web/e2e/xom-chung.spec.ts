@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { readDialogue, register, shot } from "./helpers";
+import { openFeature, readDialogue, register, shot } from "./helpers";
 
 // Xóm chung (docs/USECASES.md UC-J1, J2): An mời Bình bằng link; Bình vào xóm An,
 // hai người thấy nhau đi lại (bảng tên trên đầu) và nghe nhau nói.
@@ -8,11 +8,11 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   // An: vào game, bỏ qua lời Chú Bảy, mở bảng Xóm lấy mã.
   await register(page, "An");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
+  await openFeature(page, "neighbors");
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   expect(code).toMatch(/^[0-9a-f]{8}$/);
   await page
-    .getByRole("dialog", { name: "Xóm" })
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
     .getByRole("button", { name: "Đóng" })
     .last()
     .tap();
@@ -22,14 +22,14 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   const bPage = await ctx.newPage();
   await register(bPage, "Bình", `/play?xom=${code}`);
   await (await readDialogue(bPage)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  const sheet = bPage.getByRole("dialog", { name: "Xóm" });
+  const sheet = bPage.getByRole("dialog", { name: "👥 Hàng xóm" });
   await expect(sheet.getByText(/Bạn được mời vào xóm/)).toBeVisible();
   await sheet.getByRole("button", { name: "Vào xóm" }).tap();
   await expect(bPage.getByText(/Đã vào xóm mới/)).toBeVisible();
-  await expect(bPage.getByRole("button", { name: /^Hàng xóm: 2 người online/ })).toBeVisible();
+  await expect(bPage.locator("[data-online]")).toHaveAttribute("data-online", "2");
 
   // An thấy Bình: số người online + bảng tên trên đầu.
-  await expect(page.getByRole("button", { name: /^Hàng xóm: 2 người online/ })).toBeVisible();
+  await expect(page.locator("[data-online]")).toHaveAttribute("data-online", "2");
   const tag = page.locator("[data-bubble]").filter({ hasText: /^Bình$/ });
   await expect(tag).toBeVisible();
   await shot(page, "20-thay-ban");
@@ -51,5 +51,6 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
 
   // Bình rời game → An thấy xóm còn 1 người.
   await ctx.close();
-  await expect(page.getByRole("button", { name: /^Hàng xóm: 1 người online/ })).toBeVisible();
+  await openFeature(page, "neighbors");
+  await expect(page.getByRole("dialog", { name: "👥 Hàng xóm" })).toContainText("Đang online (1/");
 });

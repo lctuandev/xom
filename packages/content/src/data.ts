@@ -1770,7 +1770,7 @@ export const data: ContentInput = {
       lines: [
         "Giờ chọn chỗ bán. Chỗ đông khách thì thuê đắt — mới làm nên thử Đầu hẻm 12, rẻ mà có khách.",
       ],
-      objective: "Chọn chỗ bán trong mục Kinh doanh",
+      objective: "Chọn chỗ bán (☰ Menu → 📍 Chỗ bán)",
       until: "has_lot",
       next: "ra_quay",
     },
@@ -2270,7 +2270,8 @@ export const data: ContentInput = {
       alley: { name: "Đi hẻm", speed: 5.5, rainSlow: 0.35 },
     },
     expectSpeed: 5.5,
-    waitMinutes: 6,
+    // Cân lại (pnpm balance): 6 phút → ~46 cuốc, lãi ~630k/ngày (gấp 4 làm thuê); 15 → ~23 cuốc, ~300k (gấp 2).
+    waitMinutes: 15,
     tip: { five: [2_000, 5_000], four: [0, 2_000] },
     lines: {
       ask: [
@@ -2442,8 +2443,50 @@ export const data: ContentInput = {
         serveMinutes: 25,
         wagePerHour: 10_000,
       },
+      {
+        id: "chi_hoa",
+        name: "Chị Hoa",
+        bio: "từng bán ở chợ đêm, khéo ăn nói",
+        model: "character-female-a",
+        accuracy: 0.9,
+        serveMinutes: 15,
+        wagePerHour: 14_000,
+      },
+      {
+        id: "tuan_anh",
+        name: "Tuấn Anh",
+        bio: "sinh viên làm thêm buổi tối, lanh lợi",
+        model: "character-male-a",
+        accuracy: 0.86,
+        serveMinutes: 14,
+        wagePerHour: 12_000,
+      },
     ],
   },
+
+  // Cấp tiệm (docs/IA.md bước E): nâng cấp → đông khách hơn + thuê thêm người. Xe đẩy chỉ cấp 1, cấp 2–3 cần nhà mặt tiền.
+  // pnpm balance: ×1,3/×1,6 làm trà sữa tiệm lớn 3 NV lãi 1,36tr/ngày (8,5 lần làm thuê) → ×1,25/×1,45 (~1,18tr, trần tiệm lớn 8 lần).
+  shopLevels: [
+    { level: 1, name: "Quầy nhỏ", emoji: "🏪", trafficMul: 1, maxStaff: 1, upgradeCost: 0 },
+    {
+      level: 2,
+      name: "Tiệm mở rộng",
+      emoji: "🏬",
+      trafficMul: 1.25,
+      maxStaff: 2,
+      upgradeCost: 1_500_000,
+      houseOnly: true,
+    },
+    {
+      level: 3,
+      name: "Tiệm lớn",
+      emoji: "🏢",
+      trafficMul: 1.45,
+      maxStaff: 3,
+      upgradeCost: 3_500_000,
+      houseOnly: true,
+    },
+  ],
 
   // Chuyện của tôi (docs/THEGIOI.md §1): mốc đời người chơi, server ghi một lần kèm ngày game.
   story: [
@@ -2451,6 +2494,8 @@ export const data: ContentInput = {
     { id: "first_cart", emoji: "🛒", text: "Mua {equipment} — bắt đầu đi buôn" },
     { id: "switch_trade", emoji: "🔄", text: "Đổi nghề: bán xe cũ, mua {equipment}" },
     { id: "first_open", emoji: "🎪", text: "Mở quầy {product} đầu tiên ở {lot}" },
+    { id: "shop_level", emoji: "⬆️", text: "Nâng tiệm lên {name}" },
+    { id: "more_shop", emoji: "🏪", text: "Mở thêm cửa hàng thứ {n}: {equipment}" },
     { id: "first_shop", emoji: "🏠", text: "Thuê nhà mặt tiền {lot}, mở tiệm đàng hoàng" },
     { id: "evicted", emoji: "📦", text: "Bị {landlord} dẹp tiệm ở {lot} vì nợ tiền nhà" },
     { id: "first_job", emoji: "💼", text: "Đi làm thuê lần đầu: {job}" },
@@ -2796,6 +2841,8 @@ export const data: ContentInput = {
     shoutMinutes: 60,
     shoutCooldownMinutes: 30,
     bulkPacks: 5,
+    // Chuyển kho giữa các cửa hàng của mình: bấm chuyển, chở tới sau 30 phút game (đang chở thì chưa bán được).
+    transferMinutes: 30,
     bulkDiscount: 0.05,
     resaleRate: 0.4,
     friendDiscountAt: 30,

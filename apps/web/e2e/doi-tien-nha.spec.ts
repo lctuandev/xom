@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
-import { grantMoney, readDialogue, register, setClock, shot, walkToObjective } from "./helpers";
+import {
+  grantMoney,
+  openFeature,
+  readDialogue,
+  register,
+  setClock,
+  shot,
+  walkToObjective,
+} from "./helpers";
 
 // Đòi tiền nhà (docs/USECASES.md UC-F13): 17h chủ nhà tới — modal chân dung + bong bóng thoại; đang kẹt thì xin hẹn
 // NGÀY trả (phí trễ theo số ngày); sau đó vào Làm ăn → 🏪 Mở tiệm trả ngay, chủ nhà cảm ơn.
@@ -55,9 +63,8 @@ test("chủ nhà tới đòi tiền nhà: hẹn ngày trả, rồi trả ngay tr
   await promised.getByRole("button", { name: "Đóng" }).last().tap();
   await expect(promised).toHaveCount(0);
 
-  // Trả ngay trong Làm ăn → 🏪 Mở tiệm (kèm phí trễ đã chốt).
-  await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
-  await page.getByRole("tab", { name: "🏪 Mở tiệm" }).tap();
+  // Trả ngay ở ☰ Menu → 🏠 Thuê nhà & giấy tờ (kèm phí trễ đã chốt).
+  await openFeature(page, "lease");
   const shop = page.getByRole("region", { name: "Mở tiệm" });
   await expect(shop.locator(`[data-rent-promise="${day + 2}"]`)).toBeVisible();
   await shop.getByRole("button", { name: /💵 Trả ngay · 116\.000đ/ }).tap();

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   makeDish,
   openBanhMiStall,
+  openFeature,
   payOrder,
   readDialogue,
   register,
@@ -21,10 +22,10 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await waitForMorning(page, 9);
   await openBanhMiStall(page);
   await setClock(page, 7 * 60);
-  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
+  await openFeature(page, "neighbors");
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
-    .getByRole("dialog", { name: "Xóm" })
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
     .getByRole("button", { name: "Đóng" })
     .last()
     .tap();
@@ -34,14 +35,17 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   const b = await ctx.newPage();
   await register(b, "Bình", `/play?xom=${code}`);
   await (await readDialogue(b)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await b.getByRole("dialog", { name: "Xóm" }).getByRole("button", { name: "Vào xóm" }).tap();
+  await b
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
+    .getByRole("button", { name: "Vào xóm" })
+    .tap();
   await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
 
   // Hai người cùng chơi trên máy chậm thì kịch bản dài hơn một ngày game — tua xóm về sáng sớm.
   await setClock(page, 7 * 60);
 
   // Bình mở bảng Xóm → "Tới quầy" của An → tới nơi bảng gọi món tự mở.
-  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
+  await openFeature(b, "neighbors");
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   const shop = b.getByRole("dialog", { name: "Quầy An" });
   await expect(shop).toBeVisible({ timeout: 30_000 });
@@ -95,7 +99,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await shot(b, "24-nhan-mon");
 
   // Sổ đánh giá (UC-F11): Bình vừa mua nên chấm sao + viết vài chữ; An trả lời trong bảng Làm ăn.
-  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
+  await openFeature(b, "neighbors");
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   await expect(shop).toBeVisible({ timeout: 30_000 });
   const write = shop.locator("[data-write-review]");
@@ -107,8 +111,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await expect(write).toHaveCount(0);
   await shot(b, "25-danh-gia");
 
-  await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
-  await page.getByRole("tab", { name: "📒 Đánh giá" }).tap();
+  await openFeature(page, "reviews");
   const book = page.getByRole("region", { name: "Sổ đánh giá" });
   const review = book.locator("[data-review]").filter({ hasText: "Bánh giòn" });
   await review.scrollIntoViewIfNeeded();

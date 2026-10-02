@@ -14,6 +14,7 @@ import {
   unlockAudio,
 } from "./audio";
 import { refreshAccessToken, useAuth } from "./auth/store";
+import { SHEETS } from "./features/sheets";
 import Interior from "./interior/Interior";
 import ShopInterior from "./interior/ShopInterior";
 import { connectGame, send } from "./net/socket";
@@ -21,32 +22,18 @@ import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
-import { AtmSheet } from "./ui/AtmSheet";
 import { AwayModal } from "./ui/AwayModal";
-import { BoardSheet } from "./ui/BoardSheet";
 import { BubbleLayer } from "./ui/BubbleLayer";
-import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
-import { EquipmentSheet } from "./ui/EquipmentSheet";
-import { FundSheet } from "./ui/FundSheet";
-import { ProfileSheet, QuestsSheet, RecipeSheet, SettingsSheet } from "./ui/HubSheets";
 import { Hud } from "./ui/Hud";
-import { JobsSheet } from "./ui/JobsSheet";
 import { Kitchen } from "./ui/Kitchen";
-import { MarketSheet } from "./ui/MarketSheet";
 import { PhotoShoot } from "./ui/PhotoShoot";
 import { QuickChat } from "./ui/QuickChat";
 import { RentModal } from "./ui/RentModal";
-import { RideSheet } from "./ui/RideSheet";
-import { ShopSheet } from "./ui/ShopSheet";
-import { SiteSheet } from "./ui/SiteSheet";
-import { TalkSheet } from "./ui/TalkSheet";
-import { FoodSheet, VendorSheet } from "./ui/VendorSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
 import { Payslip } from "./ui/work/Payslip";
 import { LoadingScreen } from "./ui/XomArt";
-import { XomSheet } from "./ui/XomSheet";
 import { useWorldEffects } from "./useWorldEffects";
 
 /** Đăng nhập xong quay lại đúng link (giữ ?xom=… của link mời). */
@@ -59,6 +46,7 @@ export default function GameShell() {
   const me = useGame((s) => s.me);
   const sheet = useGame((s) => s.sheet);
   const inside = useGame((s) => s.inside);
+  const Open = sheet ? SHEETS[sheet] : null;
   const [authed, setAuthed] = useState(false);
   useWorldEffects();
   useTutorial();
@@ -111,7 +99,7 @@ export default function GameShell() {
         ) : (
           <Interior placeId={inside} />
         )}
-        {sheet === "recipes" && <RecipeSheet />}
+        {sheet === "recipes" && Open && <Open />}
         <Dialogue />
         <Payslip />
         <DaySummary />
@@ -124,24 +112,8 @@ export default function GameShell() {
       <Scene />
       <BubbleLayer />
       <Hud />
-      {sheet === "business" && <BusinessSheet />}
-      {sheet === "market" && <MarketSheet />}
-      {sheet === "jobs" && <JobsSheet />}
-      {sheet === "xom" && <XomSheet />}
-      {sheet === "shop" && <ShopSheet />}
-      {sheet === "vendor" && <VendorSheet />}
-      {sheet === "food" && <FoodSheet />}
-      {sheet === "quests" && <QuestsSheet />}
-      {sheet === "profile" && <ProfileSheet />}
-      {sheet === "settings" && <SettingsSheet />}
-      {sheet === "recipes" && <RecipeSheet />}
-      {sheet === "atm" && <AtmSheet />}
-      {sheet === "board" && <BoardSheet />}
-      {sheet === "fund" && <FundSheet />}
-      {sheet === "equipment" && <EquipmentSheet />}
-      {sheet === "talk" && <TalkSheet />}
-      {sheet === "ride" && <RideSheet />}
-      {sheet === "site" && <SiteSheet />}
+      {/* Mỗi chức năng một sheet riêng (features/registry + features/sheets — docs/IA.md §4). */}
+      {Open && <Open />}
       <ActionBar />
       <QuickChat />
       <Kitchen />
@@ -190,7 +162,7 @@ function useInvite() {
     }
     if (dialogue || sheet) return;
     shown.current = true;
-    useGame.getState().openSheet("xom");
+    useGame.getState().openSheet("neighbors");
   }, [invite, roster, dialogue, sheet]);
 }
 

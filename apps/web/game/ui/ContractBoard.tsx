@@ -149,7 +149,7 @@ function ActiveContract({
     event: "contract:prepare" | "contract:deliver" | "contract:drop",
     id: string,
   ) => Promise<void>;
-  onWalk: (goal: { kind: "stall" } | { kind: "drop"; lotId: string; open: "jobs" }) => void;
+  onWalk: (goal: { kind: "stall" } | { kind: "drop"; lotId: string; open: "contracts" }) => void;
 }) {
   const inventory = useGame((s) => s.me?.inventory ?? []);
   const t = content.data.contracts.templates.find((x) => x.id === c.templateId);
@@ -189,7 +189,7 @@ function ActiveContract({
           <>
             <button
               type="button"
-              onClick={() => onWalk({ kind: "drop", lotId: c.lotId, open: "jobs" })}
+              onClick={() => onWalk({ kind: "drop", lotId: c.lotId, open: "contracts" })}
               className="h-10 rounded-xl bg-white text-sm font-semibold shadow-sm ring-1 ring-ink/10"
             >
               🚶 Tới {lot}

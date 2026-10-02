@@ -52,7 +52,11 @@ export interface PendingOrder {
 export class RoomRuntime {
   readonly members = new Map<string, Member>();
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
-  readonly attending = new Set<string>();
+  /**
+   * Chủ đang đứng ở quầy nào: playerId → businessId (docs/IA.md bước D — nhiều cửa hàng: chủ tự đứng bán MỘT cửa hàng một
+   * lúc, cửa hàng khác cần nhân viên).
+   */
+  readonly attending = new Map<string, string>();
   /** Chủ quầy giành tự đứng bán dù nhân viên đang trong ca (mặc định để nhân viên bán). */
   readonly selfSell = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
@@ -153,8 +157,22 @@ export class RoomRuntime {
   }
 
   /** Tick bỏ qua nếu tick trước còn đang chạy — không để hàng đợi phình ra. */
+  /** Chủ `ownerId` đang tự đứng ở cửa hàng `businessId`. */
+  attendsAt(ownerId: string, businessId: string) {
+    return this.attending.get(ownerId) === businessId;
+  }
+
+  /** Đang tắt: không nhận nhịp / intent mới (tránh chạm DB sau khi Prisma đã đóng). */
+  closing = false;
+
+  /** Chờ mọi việc đang xếp hàng (tick, intent) chạy xong — gọi khi tắt server. */
+  async drain() {
+    this.closing = true;
+    await this.queue;
+  }
+
   runTick(fn: () => Promise<void>) {
-    if (this.tickPending) return;
+    if (this.tickPending || this.closing) return;
     this.tickPending = true;
     // Lỗi trong một nhịp (vd. tắt server giữa chừng) không được thành unhandled rejection; nhịp sau chạy tiếp.
     void this.run(fn)
@@ -163,4 +181,10 @@ export class RoomRuntime {
         this.tickPending = false;
       });
   }
+}
+
+/** Ngữ cảnh một intent: xóm đang chạy + người gửi. */
+export interface IntentContext {
+  room: RoomRuntime;
+  playerId: string;
 }

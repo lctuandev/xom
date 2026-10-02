@@ -3,6 +3,7 @@ import {
   grantMoney,
   makeDish,
   openBanhMiStall,
+  openFeature,
   payOrder,
   register,
   shot,
@@ -19,7 +20,7 @@ test("thuê nhà mặt tiền mở tiệm: khách vào tiệm gọi món, làm m
   await grantMoney(page, 100_000);
   await openBanhMiStall(page);
   // Giấy tờ mở tiệm (UC-F12) có kịch bản riêng (mo-tiem): ở đây đóng xe đẩy, thuê nhà + đủ giấy tờ bằng lệnh dev.
-  await page.getByRole("button", { name: "Làm ăn" }).tap();
+  await openFeature(page, "stall");
   await page.getByRole("button", { name: "Đóng quầy" }).tap();
   const ok = await page.evaluate(async () => {
     const dbg = (

@@ -56,32 +56,24 @@ iPhone 16 Pro + Pixel 7; `pnpm balance` không cảnh báo. **Chưa chạy lư�
 
 Không có code đang viết dở — cây làm việc sạch. Dưới đây là backlog, mỗi mục ghi **yêu cầu của chủ dự án** + **hướng làm**.
 
-### 3.1 🔧 Tái cấu trúc (làm TRƯỚC khi mở rộng) — góp ý "chồng chéo, gộp nhiều chỗ, dễ conflict"
-Yêu cầu: review toàn bộ chức năng, **phân chia lại vị trí chức năng / nút / menu**, tham khảo cấu trúc các game (Stardew Valley,
-Hay Day, Animal Crossing, The Sims Mobile, Townsmen…), **tách nhỏ tính năng để dễ xử lý**.
-Hướng làm:
-- **Server**: `apps/server/src/game/game.service.ts` ~1.800 dòng ôm quá nhiều → tách `BusinessService` (mở/đóng/chỗ/thực đơn/
-  doanh thu), `MarketService` (chợ, thanh lý), `NeedsService` (đói/khát, ăn uống, sạp NPC), `AtmService`, `EventService`
-  (khai trương, sự kiện), `TutorialService`; `GameService` chỉ còn vòng đời xóm + tick + điều phối. Gateway (~800 dòng) tách
-  theo nhóm intent (một file / nhóm). Có 16 chỗ `business.findFirst({ where: { ownerId } })` giả định một quầy/người — gom về
-  một chỗ trước khi làm nhiều cửa hàng (3.3).
-- **Web**: `ui/BusinessSheet.tsx` quá lớn (bán, kho, thực đơn, chỗ, nhân viên, mở tiệm, thống kê…) → tách thư mục
-  `ui/business/*`; `ActionBar.tsx` gom ~15 nút ngữ cảnh → quy tắc ưu tiên một nút chính + một chip phụ.
-- **Kiến trúc thông tin (đề xuất, chốt với chủ dự án trước khi code)** — thanh dưới 5 mục:
-  `Xóm` (bản đồ, khu phố, hàng xóm, quỹ xóm, bảng tin) · `Làm ăn` (**chọn cửa hàng** → Bán / Kho / Thực đơn / Nhân viên /
-  Tiệm & giấy tờ / Thống kê; thêm "Tổng quan các cửa hàng") · `Việc làm` (làm thuê, xe ôm, phụ hồ, việc xóm, thuê nhau) ·
-  `Nhiệm vụ` (kịch bản, thành tựu, Chuyện của tôi) · `Tôi` (hồ sơ, ví 💵/🏦, kỹ năng, cài đặt). Icon neo trái giữ Ăn uống /
-  Chợ / Bảng xóm. Viết thành `docs/IA.md` + cập nhật DESIGN Luật 12.
-- Sau khi tách: chạy lại **toàn bộ** Playwright.
+### 3.1 🔧 Tái cấu trúc — ✅ bước A + B XONG (2026-10-02, kế hoạch chi tiết: `docs/IA.md`)
+- **B (giao diện):** mỗi chức năng một sheet riêng (35 chức năng — `apps/web/game/features/registry.ts` + `sheets.tsx`),
+  ☰ Menu lưới icon 5 nhóm (chấm đỏ khi có việc), cột neo trái tự ghim tối đa 4, bỏ thanh dưới 5 mục. Test: `openFeature(page, id)`
+  trong `e2e/helpers.ts`; kịch bản mới `menu-chinh`. DESIGN Luật 12.3–12.6, UC-A6.
+- **A (server):** `BusinessRepo` (chỗ duy nhất tìm cửa hàng — bước D sửa ở đây), `PaymentService`, `Broadcast` (thay các
+  `setNotifier`), `BankService`, `NeedsService`, `MarketService`, `BusinessService`; gateway chia business/trade/work/xom/debug +
+  `IntentRunner`.
+- **Còn lại theo docs/IA.md:** C (sổ sách lãi/lỗ theo khoản + tổng quan), D (nhiều cửa hàng + kho riêng + chuyển kho có thời gian),
+  E (chủ tự do khi có nhân viên + cấp tiệm → số nhân viên). `ActionBar` (nút ngữ cảnh) chưa gom về một nút chính.
 
-### 3.2 👩‍🍳 Nhiều nhân viên theo quy mô cửa hàng
+### 3.2 👩‍🍳 Nhiều nhân viên theo quy mô cửa hàng — ✅ XONG (UC-M9: cấp tiệm 1–3, 1/2/3 người)
 Yêu cầu: thuê **cùng lúc nhiều nhân viên** để bán nhanh hơn, **giới hạn theo quy mô** (xe đẩy nhỏ ít người, tiệm lớn nhiều).
 Hướng làm: `Employee` hiện `@unique businessId` → bỏ unique, thêm `id`; content `staff.capacity` theo loại chỗ/cấp tiệm (gợi ý: xe
 đẩy 1, tiệm nhà mặt tiền 2, tiệm lớn/nâng cấp 3); sim `staffShift` nhận **danh sách** người trong ca (sức làm cộng dồn, tỉ lệ sai
 theo người làm món đó, lương từng người); `StaffService.run` chạy theo nhóm; phiếu ca theo người; UI StaffBoard danh sách +
 "Thuê thêm (2/3)". Test: e2e (vượt giới hạn bị từ chối; 2 người bán nhiều hơn 1; lương đủ 2 người); `pnpm balance`.
 
-### 3.3 🏪 Nhiều cửa hàng cùng lúc (không phải đổi nghề)
+### 3.3 🏪 Nhiều cửa hàng cùng lúc (không phải đổi nghề) — ✅ XONG bản đầu (UC-F14; còn: thuê nhiều nhà mặt tiền, doanh thu theo từng cửa hàng trong Sổ sách)
 Yêu cầu: đủ tiền thì mở **nhiều cửa hàng khác nhau**; **review lại toàn bộ luồng "Làm ăn"**.
 Hướng làm: `Business` đã là bảng riêng (nhiều dòng/người được) — phần lớn công việc là bỏ giả định "một quầy":
 `MeView.business` → `businesses[]` + `activeBusinessId`; mọi intent `biz:*`, `market:*` (nhập cho cửa hàng nào), `staff:*`,
@@ -92,7 +84,7 @@ một lúc**, chỗ khác phải có nhân viên. Mua đồ nghề mới không 
 Thêm **📊 Tổng quan cửa hàng**: doanh thu / lãi hôm nay & 7 ngày, nhân viên trong ca, tồn kho sắp hết, tiền nhà sắp tới hạn
 (yêu cầu "bảng thống kê doanh thu, nhân viên… của các cửa hàng").
 
-### 3.4 🚶 Có nhân viên thì chủ đi làm việc khác / mở tiệm khác tự bán
+### 3.4 🚶 Có nhân viên thì chủ đi làm việc khác / mở tiệm khác tự bán — ✅ phần "đi làm việc khác" XONG (`ownerTied`); "mở tiệm khác tự bán" chờ bước D
 Yêu cầu: tiệm đã có nhân viên bán thì user **đi làm nghề khác** hoặc **mở tiệm khác và vào tự bán**.
 Hiện chặn ở 3 chỗ: `work.ts:261` (làm thuê), `rides.ts:192` (xe ôm), `projects.ts:147` (phụ hồ) — "Đang mở quầy — đóng quầy rồi
 mới…". Sửa: chỉ chặn khi có cửa hàng **đang mở mà không có nhân viên trong ca** (helper chung `ownerTied(playerId)`), và
@@ -150,12 +142,14 @@ xe rùa; chạy lượt Playwright toàn bộ.
 - Thợ ảnh: khung ngắm canh giờ theo khung hình; **chưa thử độ khó trên điện thoại thật** (trọn điểm ±180 ms, có điểm ±900 ms,
   server bù trễ ≤ 400 ms).
 - Phụ hồ: tiền công lấy từ khoản nhân công 25% chi phí công trình — xóm nhiều người trộn thì hết sớm.
-- Xe ôm: thuê xe là cả ngày ngồi trên xe nhưng tốc độ đi bộ khi không chở khách; chưa có trong `pnpm balance`.
+- Xe ôm: thuê xe là cả ngày ngồi trên xe nhưng tốc độ đi bộ khi không chở khách. ✅ Đã vào `pnpm balance` (2026-10-02):
+  khách tới quá dày làm xe ôm lãi ~630k/ngày (gấp 4 làm thuê) → `rides.waitMinutes` 6 → 15 (~23 cuốc, ~300k).
 - Tiền nhà vẫn cộng dồn khi chủ offline (hợp đồng tính theo ngày) nhưng không tính trễ khi chưa hẹn; nợ vượt cọc thì vẫn bị dẹp
   tiệm — xem lại khi làm 3.8 (xóm chung chạy cả khi mình offline).
 - Nhân viên chỉ bán khi quầy mở; tự mở cửa khi tới ca chỉ khi chủ **online** (chủ offline thì `finishShift` lúc thoát).
-- e2e server khi tắt app đôi khi log "Transaction not found" / "Cannot use a pool after calling end" từ tick đang chạy — test
-  vẫn qua (nên dừng tick trước khi đóng Prisma trong `onModuleDestroy`).
+- ✅ (2026-10-02) Tắt server: GameService chờ nhịp/intent dở chạy xong (`RoomRuntime.drain`), Prisma đóng ở
+  `onApplicationShutdown` — e2e không còn log "Cannot use a pool after calling end". Test nhân viên thoát game giữa ca chờ
+  phiếu ca ghi xong thay vì chờ cứng 900ms.
 - Hook dev cho Playwright (chỉ bản dev): `window.xomDebug.{send, walk, clock}`, `xomRider()`, `xomShoot()`, `xomTraffic()`.
 - Locator Playwright: toast trùng tên nút → `exact: true`; nút "Đóng" của sheet: `getByRole("dialog").getByRole("button",
   { name: "Đóng" }).first()`; khung đơn: `[data-counterpart=<tên>]`.
