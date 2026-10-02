@@ -12,7 +12,7 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   expect(code).toMatch(/^[0-9a-f]{8}$/);
   await page
-    .getByRole("dialog", { name: "Xóm" })
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
     .getByRole("button", { name: "Đóng" })
     .last()
     .tap();
@@ -22,7 +22,7 @@ test("mời bạn bằng link, thấy nhau đi lại và nói chuyện", async (
   const bPage = await ctx.newPage();
   await register(bPage, "Bình", `/play?xom=${code}`);
   await (await readDialogue(bPage)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  const sheet = bPage.getByRole("dialog", { name: "Xóm" });
+  const sheet = bPage.getByRole("dialog", { name: "👥 Hàng xóm" });
   await expect(sheet.getByText(/Bạn được mời vào xóm/)).toBeVisible();
   await sheet.getByRole("button", { name: "Vào xóm" }).tap();
   await expect(bPage.getByText(/Đã vào xóm mới/)).toBeVisible();

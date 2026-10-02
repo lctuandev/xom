@@ -1,16 +1,22 @@
 import { expect, type Page, test } from "@playwright/test";
 import { content } from "@xom/content";
-import { openBanhMiStall, readDialogue, register, setClock, shot, waitForMorning } from "./helpers";
+import {
+  openBanhMiStall,
+  openFeature,
+  readDialogue,
+  register,
+  setClock,
+  shot,
+  waitForMorning,
+} from "./helpers";
 
 // Thuê nhau chụp ảnh quầy (docs/USECASES.md UC-M8, KIENTRUC §3 — 1.20b): An mở xe bánh mì, đăng việc "chụp ảnh quầy"
 // (trả trước tiền công cho Chú Hai giữ); Bình vào xóm, nhận việc (đặt cọc), tới quầy, cầm máy bấm đúng khoảnh khắc,
 // nộp ảnh; An bấm thông báo → nghiệm thu 5⭐ → Bình nhận tiền, quầy An được đăng nhóm xóm.
 
 const jobs = async (page: Page) => {
-  await page.getByRole("button", { name: "Việc làm", exact: true }).tap();
-  const sheet = page.getByRole("dialog", { name: "Việc làm" });
-  await sheet.getByRole("tab", { name: "📸 Thuê nhau" }).tap();
-  return sheet;
+  await openFeature(page, "gigs");
+  return page.getByRole("dialog", { name: "📸 Thuê nhau" });
 };
 
 test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, chụp, nộp, nghiệm thu", async ({
@@ -36,7 +42,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
-    .getByRole("dialog", { name: "Xóm" })
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
     .getByRole("button", { name: "Đóng" })
     .last()
     .tap();
@@ -46,7 +52,10 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   const b = await ctx.newPage();
   await register(b, "Bình", `/play?xom=${code}`);
   await (await readDialogue(b)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await b.getByRole("dialog", { name: "Xóm" }).getByRole("button", { name: "Vào xóm" }).tap();
+  await b
+    .getByRole("dialog", { name: "👥 Hàng xóm" })
+    .getByRole("button", { name: "Vào xóm" })
+    .tap();
   await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
   await setClock(page, 7 * 60);
 
@@ -60,7 +69,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
 
   // Tới quầy An (tới nơi bảng tự mở lại), cầm máy.
   await bs.getByRole("button", { name: "🚶 Tới quầy" }).tap();
-  bs = b.getByRole("dialog", { name: "Việc làm" });
+  bs = b.getByRole("dialog", { name: "📸 Thuê nhau" });
   await expect(bs.locator("[data-gig-taken=TAKEN]")).toBeVisible({ timeout: 60_000 });
   await bs.getByRole("button", { name: "📷 Chụp" }).tap();
   const cam = b.locator("[data-photo-shoot]");
@@ -92,7 +101,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   }, content.data.gigs.photo.keep);
   expect(scores.length).toBe(content.data.gigs.photo.keep);
   await b.getByRole("button", { name: /^(Dừng|✓ Xong buổi chụp)/ }).tap();
-  bs = b.getByRole("dialog", { name: "Việc làm" });
+  bs = b.getByRole("dialog", { name: "📸 Thuê nhau" });
   await expect(bs.locator("[data-photo-strip]")).toBeVisible();
   await bs.getByRole("button", { name: "🖼️ Nộp ảnh" }).tap();
   await expect(bs.locator("[data-gig-taken=SUBMITTED]")).toBeVisible();
@@ -101,7 +110,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   const toast = page.locator("[data-toast-open='jobs:gigs']", { hasText: "nộp ảnh" });
   await expect(toast).toBeVisible({ timeout: 15_000 });
   await toast.tap();
-  sheet = page.getByRole("dialog", { name: "Việc làm" });
+  sheet = page.getByRole("dialog", { name: "📸 Thuê nhau" });
   const posted = sheet.locator("[data-gig-posted=SUBMITTED]");
   await expect(posted).toBeVisible();
   await expect(posted.locator("[data-gig-quality]")).not.toHaveAttribute("data-gig-quality", "0");

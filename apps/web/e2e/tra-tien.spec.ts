@@ -6,7 +6,7 @@ import { readDialogue, register, shot } from "./helpers";
 test("chọn cách trả tiền ở chợ: chuyển khoản / tiền mặt", async ({ page }) => {
   await register(page, "Trả");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await page.getByRole("button", { name: "Ra chợ" }).tap();
+  await page.locator('[data-anchor="market"]').tap();
   const market = page.getByRole("dialog", { name: "Chợ đầu mối Bà Năm" });
   const row = market.locator('[data-item="pate"]');
   await expect(row).toBeVisible({ timeout: 40_000 });

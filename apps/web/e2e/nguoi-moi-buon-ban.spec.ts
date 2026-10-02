@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   BANH_MI_THIT,
   buyIngredients,
+  closeSheet,
   makeDish,
   payOrder,
   readDialogue,
@@ -44,7 +45,7 @@ test("người mới: bán bánh mì — mua nguyên liệu, làm đúng món, t
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: /Đầu hẻm 12/ }).tap();
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await expect(page.getByText("Đẩy xe tới chỗ bán và mở quầy")).toBeVisible();
 
   // 5. Đẩy xe tới chỗ, mở quầy.
@@ -82,12 +83,12 @@ test("làm sai món: khách phàn nàn, đưa luôn giảm giá; nói chuyện v
   await (await readDialogue(page)).getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
 
   // Nav "Chợ" tự đi bộ ra chợ; nói chuyện với Bà Năm trước khi mua.
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
-  await page.getByRole("button", { name: "Ra chợ", exact: true }).tap();
+  await closeSheet(page);
+  await page.locator('[data-anchor="market"]').tap();
   await expect(page.getByRole("dialog", { name: "Chợ đầu mối Bà Năm" })).toBeVisible({
     timeout: 30_000,
   });
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await page.getByRole("button", { name: "💬 Nói chuyện" }).tap();
   await page.getByRole("button", { name: "🗞️ Hỏi chuyện xóm" }).tap();
   // Câu trả lời hiện ở khung đứng đối diện (UC-E5), câu mình hỏi bên phải.
@@ -95,13 +96,13 @@ test("làm sai món: khách phàn nàn, đưa luôn giảm giá; nói chuyện v
   await expect(talk.locator("[data-me]")).toContainText("Hỏi chuyện xóm");
   await expect(talk.locator("[data-line]")).not.toContainText("Hàng mới về sáng nay");
   await shot(page, "06-noi-chuyen-ba-nam");
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
-  await page.getByRole("button", { name: "Ra chợ", exact: true }).tap();
+  await closeSheet(page);
+  await page.locator('[data-anchor="market"]').tap();
   await buyIngredients(page, BANH_MI_THIT);
   await (await readDialogue(page)).getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: /Dưới gốc cây/ }).tap();
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await walkToObjective(page, /Mở quầy/);
   await page.getByRole("button", { name: /Mở quầy/ }).tap();
   await (await readDialogue(page)).getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
@@ -124,12 +125,12 @@ test("làm sai món: khách phàn nàn, đưa luôn giảm giá; nói chuyện v
   await expect(page.getByRole("dialog", { name: "Làm món" })).toHaveCount(0);
 
   // Đi chỗ khác → quầy vắng chủ; về quầy.
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
-  await page.getByRole("button", { name: "Ra chợ", exact: true }).tap();
+  await closeSheet(page);
+  await page.locator('[data-anchor="market"]').tap();
   await expect(page.getByText("Quầy vắng chủ — khách không mua được")).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await page.getByRole("button", { name: "Về quầy" }).tap();
   await expect(page.getByText("Quầy vắng chủ — khách không mua được")).toHaveCount(0, {
     timeout: 30_000,

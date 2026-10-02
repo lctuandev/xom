@@ -78,6 +78,24 @@ tự chọn tab theo máy:
 
 ## B. Thế giới, di chuyển, thời gian
 
+
+### UC-A6 · Tìm chức năng: ☰ Menu + icon neo tự ghim ✅
+> Góp ý: "làm ăn đang gộp chung đi làm thuê, thuê nhân viên, kho, mở tiệm/thuê… khó dùng — mỗi tính năng nên tách ra một
+> modal/bottom-sheet riêng". Kế hoạch: docs/IA.md.
+
+**Luồng:** màn hình chính chỉ còn thanh số liệu, cột icon neo trái, ⚙️, nút ngữ cảnh, 💬 và **☰ Menu**. Bấm ☰ Menu → lưới icon
+chia 5 nhóm (🏪 Cửa hàng · 🧺 Mua bán · 💼 Việc làm · 🏘️ Xóm · 🙂 Tôi), mỗi icon mở **đúng một sheet** của chức năng đó (35
+chức năng: Quầy của tôi, Thực đơn & giá, Kho hàng, Chỗ bán, Thuê nhà & giấy tờ, Nhân viên, Sổ sách, Khách quen, Đánh giá, Khai
+trương, …). Icon có **chấm đỏ** khi có việc cần làm (hết hàng, chưa chọn chỗ, chưa có xe, đói/khát). **📌 Ghim**: chọn tối đa 4
+chức năng hay dùng → hiện ở cột neo trái (mặc định Ăn uống · Chợ · Quầy của tôi · Làm thuê); ghim thứ 5 bị từ chối.
+Chức năng phải dùng tại chỗ (Chợ, Vựa xe, ATM, Phụ hồ, Xe ôm khi chưa thuê xe) → nhân vật tự đi tới rồi mở.
+Trong mỗi sheet có nút **"›"** chuyển sang chức năng liên quan (Quầy của tôi → Thực đơn, Kho, Chỗ bán, Nhân viên…).
+
+**Luật giao diện:** DESIGN Luật 12.3–12.6. Thêm chức năng = một dòng trong `game/features/registry.ts` + một file sheet.
+
+**Kiểm chứng:** Playwright `menu-chinh` (mở Menu, đủ nhóm; ghim Bảng xóm lên cột neo, ghim quá 4 bị từ chối; mở chức năng
+từ icon neo và từ nút "›") + mọi kịch bản cũ chuyển sang `openFeature(page, id)`.
+
 ### UC-B1 · Đi lại trong xóm ✅
 **Luồng:** chạm xuống đất → nhân vật đi tới; chụm 2 ngón để zoom.
 **Luật:** chỉ đi trên vỉa hè/đường trong phạm vi xóm; chạm tay thì hủy mọi lộ trình tự động.

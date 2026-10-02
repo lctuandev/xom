@@ -21,6 +21,7 @@ import type {
 } from "@xom/shared";
 import { create } from "zustand";
 import { sfx, voice } from "./audio";
+import type { FeatureId } from "./features/registry";
 
 /** Đoán tâm trạng của câu nói để chọn giọng (bực thì gắt, vui thì cao). */
 function moodOf(text: string, tone?: Bubble["tone"]): "calm" | "happy" | "angry" {
@@ -56,25 +57,8 @@ export interface Bubble {
   until?: number;
 }
 
-export type SheetId =
-  | "business"
-  | "market"
-  | "jobs"
-  | "equipment"
-  | "talk"
-  | "xom"
-  | "shop"
-  | "vendor"
-  | "food"
-  | "quests"
-  | "profile"
-  | "settings"
-  | "recipes"
-  | "atm"
-  | "board"
-  | "fund"
-  | "ride"
-  | "site";
+/** Sheet đang mở: một chức năng trong danh mục (features/registry.ts) hoặc Menu ☰. */
+export type SheetId = FeatureId | "menu";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {

@@ -1,5 +1,5 @@
 import { expect, type Locator, test } from "@playwright/test";
-import { readDialogue, register, shot } from "./helpers";
+import { openFeature, readDialogue, register, shot } from "./helpers";
 
 // Cây ATM như ngoài đời (docs/USECASES.md UC-I6): đưa thẻ → tạo PIN → nộp tiền → in biên lai → giao dịch khác
 // → rút tiền (mất phí) → nhận tiền → nhận lại thẻ. HUD chỉ hiện tiền mặt.
@@ -9,7 +9,7 @@ test("ATM: tạo PIN, nộp tiền, in biên lai, rút tiền có phí, nhận l
   const cash = page.locator("[data-money]");
   await expect(cash).toHaveAttribute("data-money", "1500000");
 
-  await page.getByRole("button", { name: "Hồ sơ" }).tap();
+  await openFeature(page, "wallet");
   await expect(page.getByText("🏦 Tài khoản ngân hàng")).toBeVisible();
   await page.getByRole("button", { name: "🚶 Tới cây ATM gần nhất" }).tap();
   const atm = page.getByRole("dialog", { name: "🏧 Cây ATM" });

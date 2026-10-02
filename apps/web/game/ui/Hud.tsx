@@ -4,15 +4,17 @@ import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { openFeature } from "../features/open";
+import { usePins } from "../features/pins";
+import { FEATURES, type FeatureId, featureFromLink } from "../features/registry";
 import { vnd, vndHud } from "../format";
-import { type SheetId, useGame } from "../store";
+import { useGame } from "../store";
 import {
   IconCash,
   IconDrop,
   IconFood,
   IconGear,
   IconJob,
-  IconMap,
   IconMarket,
   IconNeighbors,
   IconQuest,
@@ -22,24 +24,19 @@ import {
   IconTrophy,
   IconWeather,
 } from "./icons";
-import { type JobsTab, setJobsTab } from "./JobsSheet";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
-type NavItem = { id: SheetId | null; label: string; icon: (c: string) => ReactNode };
-
-/**
- * Điều hướng chính (docs/PLAN.md — HUD): 5 mục theo nhóm tính năng, giữa là Nhiệm vụ (nổi lên).
- * Xóm = bản đồ · Làm ăn = quầy/chợ/công thức/kho · Nhiệm vụ = việc hôm nay + hướng dẫn ·
- * Việc làm = làm thuê (sau này: bảng tuyển dụng) · Hàng xóm = ai online, mời bạn (sau này: bạn bè, chat).
- */
-const NAV: NavItem[] = [
-  { id: null, label: "Xóm", icon: (c) => <IconMap className={c} /> },
-  { id: "business", label: "Làm ăn", icon: (c) => <IconShop className={c} /> },
-  { id: "quests", label: "Nhiệm vụ", icon: (c) => <IconQuest className={c} /> },
-  { id: "jobs", label: "Việc làm", icon: (c) => <IconJob className={c} /> },
-  { id: "xom", label: "Hàng xóm", icon: (c) => <IconNeighbors className={c} /> },
-];
+/** Icon vẽ tay cho chức năng hay ghim (còn lại dùng emoji của danh mục). */
+const ANCHOR_ICON: Partial<Record<FeatureId, (c: string) => ReactNode>> = {
+  food: (c) => <IconFood className={c} />,
+  market: (c) => <IconMarket className={c} />,
+  stall: (c) => <IconShop className={c} />,
+  jobs: (c) => <IconJob className={c} />,
+  board: (c) => <IconTrophy className={c} />,
+  quests: (c) => <IconQuest className={c} />,
+  neighbors: (c) => <IconNeighbors className={c} />,
+};
 
 export function Hud() {
   const sheet = useGame((s) => s.sheet);
@@ -84,47 +81,23 @@ export function Hud() {
         </div>
       </div>
 
-      {/* Không nền (góp ý UI): chỉ icon vẽ tay + nhãn chữ, nổi trên bản đồ nhờ quầng sáng như cột icon neo. */}
-      <nav className="pb-safe pointer-events-none relative z-40 grid grid-cols-5 items-end gap-0.5 px-1.5 pt-1">
-        {NAV.map((item) => {
-          const center = item.id === "quests";
-          const active = sheet === item.id;
-          const label = item.id === "xom" ? `Hàng xóm: ${online} người online` : item.label;
-          return (
-            <button
-              key={item.label}
-              type="button"
-              aria-label={label}
-              onClick={() => openSheet(active ? null : item.id)}
-              aria-current={active ? "page" : undefined}
-              className={`group pointer-events-auto relative flex flex-col items-center ${center ? "-mt-5" : "h-14 justify-end"}`}
-            >
-              {/* Icon vẽ tay cỡ lớn; nhãn chữ đè nhẹ ở chân icon (góp ý UI) — mục đang mở nổi lên + nhãn đỏ. */}
-              {center ? (
-                <span className="flex size-16 items-end justify-center transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
-                  {item.icon("icon-halo size-14")}
-                </span>
-              ) : (
-                <span className="flex h-11 items-end transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
-                  {item.icon("icon-halo size-10")}
-                </span>
-              )}
-              <span
-                aria-hidden
-                className={`relative -mt-2.5 rounded-full px-1.5 py-px text-[10px] leading-tight font-extrabold whitespace-nowrap shadow-sm ring-1 ring-cream/80 ${
-                  active ? "bg-red text-cream" : "bg-ink/80 text-cream"
-                }`}
-              >
-                {item.label}
-              </span>
-              {item.id === "xom" && online > 1 && (
-                <span className="absolute top-0 right-2 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream ring-2 ring-cream">
-                  {online}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Thanh dưới chỉ còn ☰ Menu (docs/IA.md §3): mọi chức năng nằm trong Menu, hay dùng thì ghim lên cột trái. */}
+      <nav className="pb-safe pointer-events-none relative z-40 flex h-(--nav-h) items-end px-3">
+        <button
+          type="button"
+          aria-label="Menu"
+          aria-current={sheet === "menu" ? "page" : undefined}
+          onClick={() => openSheet(sheet === "menu" ? null : "menu")}
+          className="pointer-events-auto mb-1 flex h-12 items-center gap-2 rounded-full bg-ink/85 pr-4 pl-3 text-cream shadow-lg active:scale-95 aria-[current=page]:bg-red"
+        >
+          <span aria-hidden className="text-2xl leading-none">
+            ☰
+          </span>
+          <span className="text-sm font-extrabold">Menu</span>
+          {online > 1 && (
+            <span className="rounded-full bg-leaf px-1.5 text-[10px] font-bold">👥 {online}</span>
+          )}
+        </button>
       </nav>
     </div>
   );
@@ -248,50 +221,36 @@ function NewsTicker() {
 }
 
 /**
- * Icon neo bên trái bản đồ (góp ý UX): ăn uống, ra chợ, bảng xóm — icon vẽ tay nhìn là biết, không nền, không chữ
- * (tên đầy đủ ở aria-label / title).
+ * Icon neo bên trái bản đồ (docs/IA.md §3): tối đa 4 chức năng người chơi tự ghim trong ☰ Menu (mặc định ăn uống, chợ,
+ * quầy của tôi, làm thuê) — icon không nền, không chữ (tên ở aria-label / title).
  */
 function SideRail() {
-  const openSheet = useGame((s) => s.openSheet);
-  const nearPlace = useGame((s) => s.nearPlace);
-  const setGoal = useGame((s) => s.setGoal);
-  const toast = useGame((s) => s.toast);
-  const btn = "pointer-events-auto flex size-12 items-center justify-center active:scale-90";
-  const icon = "icon-halo size-11";
+  const pins = usePins((s) => s.pins);
   return (
-    <div className="mt-2 flex flex-col gap-1.5 self-start px-2">
-      <button
-        type="button"
-        aria-label="Quán ăn quanh xóm"
-        title="Ăn uống"
-        className={btn}
-        onClick={() => openSheet("food")}
-      >
-        <IconFood className={icon} />
-      </button>
-      <button
-        type="button"
-        aria-label="Ra chợ"
-        title="Chợ đầu mối"
-        className={btn}
-        onClick={() => {
-          if (nearPlace === "cho_dau_moi") return openSheet("market");
-          openSheet(null);
-          setGoal({ kind: "place", id: "cho_dau_moi", open: "market" });
-          toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
-        }}
-      >
-        <IconMarket className={icon} />
-      </button>
-      <button
-        type="button"
-        aria-label="Bảng xóm"
-        title="Bảng xóm: giải tuần, thị phần, đang hot"
-        className={btn}
-        onClick={() => openSheet("board")}
-      >
-        <IconTrophy className={icon} />
-      </button>
+    <div className="mt-2 flex flex-col gap-1.5 self-start px-2" data-anchor-rail>
+      {pins.map((id) => {
+        const f = FEATURES[id];
+        const icon = ANCHOR_ICON[id];
+        return (
+          <button
+            key={id}
+            type="button"
+            aria-label={f.title}
+            title={f.title}
+            data-anchor={id}
+            className="pointer-events-auto flex size-12 items-center justify-center active:scale-90"
+            onClick={() => openFeature(id)}
+          >
+            {icon ? (
+              icon("icon-halo size-11")
+            ) : (
+              <span aria-hidden className="icon-halo text-[2.1rem] leading-none">
+                {f.icon}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -371,10 +330,9 @@ export function Toasts() {
           onClick={() => {
             dismiss(t.id);
             if (t.open) {
-              // "jobs:gigs" = sheet Việc làm, mở sẵn tab thuê nhau.
-              const [sheet, tab] = t.open.split(":");
-              if (sheet === "jobs" && tab) setJobsTab(tab as JobsTab);
-              openSheet(sheet as SheetId);
+              // Thông báo trỏ thẳng tới một chức năng (id trong features/registry; nhận cả kiểu cũ "jobs:gigs").
+              const id = featureFromLink(t.open);
+              if (id) openSheet(id);
             }
           }}
           data-toast-open={t.open}

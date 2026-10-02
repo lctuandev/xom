@@ -352,7 +352,10 @@ export class ShopService {
   async requireReady(room: RoomRuntime, biz: Business, lotId: string) {
     const lease = await this.activeLease(biz.ownerId);
     if (!lease || lease.lotId !== lotId)
-      throw new GameError("invalid_state", "Ký hợp đồng thuê căn này trước (Làm ăn → 🏪 Mở tiệm)");
+      throw new GameError(
+        "invalid_state",
+        "Ký hợp đồng thuê căn này trước (☰ Menu → 🏠 Thuê nhà & giấy tờ)",
+      );
     const now = this.now(room);
     const missing =
       !biz.licenseAt || biz.licenseAt > now
@@ -363,7 +366,10 @@ export class ShopService {
             ? "biển hiệu"
             : null;
     if (missing)
-      throw new GameError("invalid_state", `Chưa có ${missing} — xem Làm ăn → 🏪 Mở tiệm`);
+      throw new GameError(
+        "invalid_state",
+        `Chưa có ${missing} — xem ☰ Menu → 🏠 Thuê nhà & giấy tờ`,
+      );
   }
 
   /** Chọn nhà làm chỗ bán: chỉ nhà mình đang thuê. */
@@ -372,7 +378,7 @@ export class ShopService {
     if (!lease || lease.lotId !== lotId)
       throw new GameError(
         "invalid_state",
-        "Nhà này phải ký hợp đồng thuê trước (Làm ăn → 🏪 Mở tiệm)",
+        "Nhà này phải ký hợp đồng thuê trước (☰ Menu → 🏠 Thuê nhà & giấy tờ)",
       );
   }
 
@@ -382,7 +388,7 @@ export class ShopService {
     if (lease)
       throw new GameError(
         "invalid_state",
-        `Đang thuê ${content.lot(lease.lotId).name} — tiền nhà vẫn tính mỗi ngày. Trả nhà (Làm ăn → 🏪 Mở tiệm) rồi mới ra vỉa hè bán`,
+        `Đang thuê ${content.lot(lease.lotId).name} — tiền nhà vẫn tính mỗi ngày. Trả nhà (☰ Menu → 🏠 Thuê nhà & giấy tờ) rồi mới ra vỉa hè bán`,
       );
   }
 
@@ -413,7 +419,7 @@ export class ShopService {
         this.told.add(key);
         this.notify?.(b.ownerId, {
           kind: "warn",
-          text: `👮 Đoàn kiểm tra ATTP tới tiệm rồi — về tiệm đón trong ${win} phút (Làm ăn → 🏪 Mở tiệm)`,
+          text: `👮 Đoàn kiểm tra ATTP tới tiệm rồi — về tiệm đón trong ${win} phút (☰ Menu → 🏠 Thuê nhà & giấy tờ)`,
         });
       }
       if (now > b.inspectAt + win) {

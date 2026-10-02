@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, serveCustomer, shot, waitForMorning } from "./helpers";
+import {
+  openBanhMiStall,
+  openFeature,
+  register,
+  serveCustomer,
+  shot,
+  waitForMorning,
+} from "./helpers";
 
 // Bảng xóm + số liệu 7 ngày + thành tựu (docs/USECASES.md UC-P2): bán món đầu tiên → thành tựu "Mở hàng";
 // bảng Làm ăn có biểu đồ 7 ngày; bảng xóm có giải tuần (mình đứng đầu doanh thu), thị phần, đang hot.
@@ -10,9 +17,8 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await openBanhMiStall(page);
   await serveCustomer(page);
 
-  await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
-  const sheet = page.getByRole("dialog", { name: /Xe bánh mì kính/ });
-  await sheet.getByRole("tab", { name: "📊 Số liệu" }).tap();
+  await openFeature(page, "books");
+  const sheet = page.getByRole("dialog", { name: "📊 Sổ sách" });
   const week = sheet.locator("[data-week]");
   await week.scrollIntoViewIfNeeded();
   await expect(week).toBeVisible();
@@ -21,8 +27,7 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await sheet.getByRole("button", { name: "Đóng" }).first().tap();
   await expect(sheet).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Hồ sơ" }).tap();
-  await page.getByRole("tab", { name: /🏅 Thành tựu/ }).tap();
+  await openFeature(page, "badges");
   const badge = page.locator('[data-achievement="mo_hang"]');
   await badge.scrollIntoViewIfNeeded();
   await expect(badge).toHaveAttribute("data-done", "true");
@@ -30,8 +35,8 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  // Bảng xóm là icon cúp neo bên trái màn hình chính.
-  await page.getByRole("button", { name: "Bảng xóm", exact: true }).tap();
+  // Bảng xóm: ☰ Menu → 🏆 Bảng xóm.
+  await openFeature(page, "board");
   const board = page.getByRole("dialog", { name: "Bảng xóm" });
   // Bục vinh danh: mình đứng hạng 1 (giữa, khung vàng, vương miện).
   await expect(

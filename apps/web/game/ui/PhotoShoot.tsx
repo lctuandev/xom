@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { sfx } from "../audio";
 import { send } from "../net/socket";
 import { useGame } from "../store";
-import { setJobsTab } from "./JobsSheet";
 
 /** Vòng ngắm bắt đầu co lại trước khoảnh khắc bấy nhiêu ms. */
 const LEAD_MS = 1400;
@@ -76,8 +75,7 @@ export function PhotoShoot() {
   };
   const done = () => {
     setShoot(null);
-    setJobsTab("gigs");
-    openSheet("jobs");
+    openSheet("gigs");
   };
 
   return (

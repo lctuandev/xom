@@ -361,7 +361,7 @@ export class ProjectService {
       this.notify?.(room.id, {
         kind: "info",
         text: `🏗️ Khởi công ${def.emoji} ${def.name} — ${def.buildDays} ngày nữa xong. ${content.data.crew.keeper} cần người phụ hồ: trộn đủ ${def.crewMixes} mẻ vữa là xong sớm!`,
-        open: "jobs:jobs",
+        open: "site",
       });
       this.changed?.(room);
       return;

@@ -1770,7 +1770,7 @@ export const data: ContentInput = {
       lines: [
         "Giờ chọn chỗ bán. Chỗ đông khách thì thuê đắt — mới làm nên thử Đầu hẻm 12, rẻ mà có khách.",
       ],
-      objective: "Chọn chỗ bán trong mục Kinh doanh",
+      objective: "Chọn chỗ bán (☰ Menu → 📍 Chỗ bán)",
       until: "has_lot",
       next: "ra_quay",
     },

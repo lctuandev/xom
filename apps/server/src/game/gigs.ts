@@ -286,7 +286,7 @@ export class GigService {
     this.notify?.(g.posterId, {
       kind: "info",
       text: `📸 ${player.displayName} nhận chụp ảnh quầy bạn — nhớ mở quầy cho người ta chụp`,
-      open: "jobs:gigs",
+      open: "gigs",
     });
     return this.board(room, playerId);
   }
@@ -384,7 +384,7 @@ export class GigService {
     this.notify?.(g.posterId, {
       kind: "info",
       text: `📸 ${taker.displayName} nộp ảnh quầy — bấm để nghiệm thu (quá ${content.data.gigs.reviewMinutes / 60} giờ tự trả tiền)`,
-      open: "jobs:gigs",
+      open: "gigs",
     });
     return this.board(room, playerId);
   }

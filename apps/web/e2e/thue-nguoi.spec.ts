@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, setClock, setWeather, shot } from "./helpers";
+import { openBanhMiStall, openFeature, register, setClock, setWeather, shot } from "./helpers";
 
 // Thuê nhân viên (docs/KIENTRUC.md §2, docs/USECASES.md UC-M6): Làm ăn → 👩‍🍳 Nhân viên → chọn ca, thuê Thu. Chủ rời quầy
 // đi chợ mà Thu trong ca → Thu bán thay, có phiếu ca (bán, sai, thu, lương).
@@ -9,8 +9,7 @@ test("thuê Thu ca tối → chủ đi chợ, Thu bán thay và có phiếu ca",
   await openBanhMiStall(page);
   await setWeather(page, "sunny");
 
-  await page.getByRole("button", { name: "Làm ăn" }).tap();
-  await page.getByRole("tab", { name: "👩‍🍳 Nhân viên" }).tap();
+  await openFeature(page, "staff");
   const board = page.getByRole("region", { name: "Nhân viên" });
   // Chưa thuê ai: hướng dẫn cách dùng mở sẵn (chọn ca, nhập hàng + mở quầy, rời quầy trong giờ ca, đừng đóng quầy).
   await expect(board.locator("[data-staff-guide]")).toContainText("Đừng đóng quầy");
@@ -26,7 +25,7 @@ test("thuê Thu ca tối → chủ đi chợ, Thu bán thay và có phiếu ca",
 
   // Vào ca tối; chủ bỏ quầy đi chợ — Thu đứng bán thay, thanh dưới báo "đang bán thay" chứ không giục về quầy.
   await setClock(page, 18 * 60);
-  await page.getByRole("button", { name: "🧺 Ra chợ mua hàng" }).tap();
+  await openFeature(page, "market");
   await expect(page.locator("[data-staff-duty=on]")).toContainText(
     "Thu đang bán thay — tới 22:00",
     {
@@ -36,8 +35,7 @@ test("thuê Thu ca tối → chủ đi chợ, Thu bán thay và có phiếu ca",
   await expect(page.getByText(/👩‍🍳 Thu vừa bán \d+ món thay bạn/).first()).toBeVisible({
     timeout: 60_000,
   });
-  await page.getByRole("button", { name: "Làm ăn" }).tap();
-  await page.getByRole("tab", { name: "👩‍🍳 Nhân viên" }).tap();
+  await openFeature(page, "staff");
   const slips = page.locator("[data-shift-slips]");
   await expect(slips).toContainText(/Thu · 18:\d\d–/);
   await expect(slips).toContainText(/lương \d/);

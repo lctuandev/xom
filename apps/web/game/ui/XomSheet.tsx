@@ -3,9 +3,9 @@
 import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
 import { useState } from "react";
+import { FeatureSheet, GoToRow } from "../features/FeatureSheet";
 import { send } from "../net/socket";
 import { useGame } from "../store";
-import { Sheet } from "./Sheet";
 
 export const inviteUrl = (code: string) => `${window.location.origin}/play?xom=${code}`;
 
@@ -13,7 +13,7 @@ export const inviteUrl = (code: string) => `${window.location.origin}/play?xom=$
  * Xóm chung (docs/USECASES.md UC-J1): mã xóm, mời bạn qua link (Zalo/Messenger bằng Web Share),
  * ai đang online, vào xóm của bạn bằng mã.
  */
-export function XomSheet() {
+export function NeighborsSheet() {
   const roster = useGame((s) => s.roster);
   const me = useGame((s) => s.me);
   const invite = useGame((s) => s.invite);
@@ -58,8 +58,7 @@ export function XomSheet() {
   const busyHere = me.business?.open || useGame.getState().shift;
 
   return (
-    <Sheet title="Xóm" onClose={() => close(null)}>
-      <TodayCard />
+    <FeatureSheet id="neighbors">
       {invite && invite !== roster.code && (
         <p className="mb-3 rounded-2xl bg-sun/30 p-3 text-sm font-semibold">
           📨 Bạn được mời vào xóm <span className="font-mono">{invite}</span>. Bấm "Vào xóm" bên
@@ -81,14 +80,6 @@ export function XomSheet() {
           📨 Mời bạn
         </button>
       </div>
-
-      <button
-        type="button"
-        onClick={() => close("fund")}
-        className="mt-3 h-12 w-full rounded-xl bg-leaf font-semibold text-cream"
-      >
-        🏗️ Quỹ xóm & công trình chung
-      </button>
 
       <p className="mt-4 mb-1.5 text-sm font-extrabold">
         Đang online ({roster.peers.length}/{roster.max})
@@ -158,11 +149,20 @@ export function XomSheet() {
           ? "Đang mở quầy hoặc đang trong ca — dọn quầy, ra ca rồi mới chuyển xóm được."
           : "Chuyển xóm thì mang theo tiền, hàng tồn và xe hàng; chỗ bán cũ có người dùng thì chọn chỗ khác."}
       </p>
-    </Sheet>
+      <GoToRow to={["today", "fund", "board"]} />
+    </FeatureSheet>
   );
 }
 
-/** Lịch hôm nay (docs/THEGIOI.md §2): thứ, ngày và sự kiện cả xóm trong ngày (chợ đêm thứ Bảy, mưa lớn…). */
+/** 📅 Hôm nay (docs/THEGIOI.md §2): thứ, ngày và sự kiện cả xóm trong ngày (chợ đêm thứ Bảy, mưa lớn…). */
+export function TodaySheet() {
+  return (
+    <FeatureSheet id="today">
+      <TodayCard />
+    </FeatureSheet>
+  );
+}
+
 function TodayCard() {
   const clock = useGame((s) => s.clock);
   const events = useGame((s) => s.events);

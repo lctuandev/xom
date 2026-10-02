@@ -1,6 +1,14 @@
 import { expect, type Page, test } from "@playwright/test";
 import { content } from "@xom/content";
-import { grantMoney, readDialogue, register, setClock, setWeather, shot } from "./helpers";
+import {
+  grantMoney,
+  openFeature,
+  readDialogue,
+  register,
+  setClock,
+  setWeather,
+  shot,
+} from "./helpers";
 
 // 🏗️ Phụ hồ công trình xóm (docs/USECASES.md UC-J6): xóm khởi công lát bê tông hẻm 12 → Việc làm có thẻ phụ hồ → tới công
 // trường (Cai Lâm) → đọc lệnh "trộn N bao vữa …" + định mức → đổ đúng xi măng / cát / nước → trộn → có công.
@@ -33,12 +41,8 @@ test("phụ hồ: tới công trường, trộn đúng định mức thì có c�
   await page.waitForTimeout(1100);
   expect((await send(page, "fund:donate", { amount: def.cost, pay: "cash" })).ok).toBe(true);
 
-  await page.getByRole("button", { name: "Việc làm", exact: true }).tap();
-  const jobs = page.getByRole("dialog", { name: "Việc làm" });
-  await jobs.getByRole("tab", { name: "💼 Làm thuê" }).tap();
-  const card = jobs.locator("[data-job=phu_ho]");
-  await expect(card).toBeVisible();
-  await card.getByRole("button", { name: "🚶 Tới công trường" }).tap();
+  // ☰ Menu → 🏗️ Phụ hồ: tự đi tới công trường rồi mở bảng của Cai thầu.
+  await openFeature(page, "site");
 
   const sheet = page.getByRole("dialog", { name: /Công trường · Cai Lâm/ });
   await expect(sheet).toBeVisible({ timeout: 60_000 });

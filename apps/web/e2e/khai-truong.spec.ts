@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 import {
+  closeSheet,
   grantMoney,
   openBanhMiStall,
+  openFeature,
   register,
   serveCustomer,
   shot,
@@ -21,8 +23,8 @@ test("khai trương quầy bánh mì: trả tiền, bong bóng, khách đông, g
   // Khai trương mở ở cấp 2 (Luật 4.2) — cộng sẵn KN.
   await grantMoney(page, 200_000, 150);
 
-  await page.getByRole("button", { name: "Làm ăn", exact: true }).tap();
-  const sheet = page.getByRole("dialog", { name: /Xe bánh mì kính/ });
+  await openFeature(page, "promo");
+  const sheet = page.getByRole("dialog", { name: "🎉 Khai trương" });
   const host = sheet.getByRole("button", { name: /🎉 Khai trương · 100\.000đ/ });
   await host.scrollIntoViewIfNeeded();
   await expect(host).toBeEnabled();
@@ -30,7 +32,7 @@ test("khai trương quầy bánh mì: trả tiền, bong bóng, khách đông, g
   await expect(sheet.locator('[data-promo="on"]')).toBeVisible();
   await expect(sheet.getByText(/Đang khai trương tới/)).toBeVisible();
   await shot(page, "60-khai-truong");
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await expect(page.getByText(/khai trương ở Đầu hẻm 12/).first()).toBeVisible({ timeout: 30_000 });
   await shot(page, "61-bong-bong");
 

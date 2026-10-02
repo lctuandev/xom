@@ -196,7 +196,7 @@ export async function openTeaStall(page: Page, lot: RegExp = /Đầu hẻm 12/) 
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: lot }).tap();
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
   await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
   box = await readDialogue(page);
@@ -371,7 +371,7 @@ export async function openBanhMiStall(page: Page, lot: RegExp = /Đầu hẻm 12
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: lot }).tap();
-  await page.getByRole("button", { name: "Xóm", exact: true }).tap();
+  await closeSheet(page);
   await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
   await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
   box = await readDialogue(page);
@@ -385,4 +385,20 @@ export async function skipGuide(page: Page) {
     .getByRole("button", { name: "Bỏ qua" })
     .tap({ timeout: 5_000 })
     .catch(() => undefined);
+}
+
+/**
+ * Mở một chức năng qua ☰ Menu (docs/IA.md §4: mỗi chức năng một sheet riêng; id trong game/features/registry.ts).
+ * Chức năng phải dùng tại chỗ (chợ, vựa xe…) thì nhân vật tự đi tới rồi mới mở sheet.
+ */
+export async function openFeature(page: Page, id: string) {
+  await closeSheet(page);
+  await page.getByRole("button", { name: "Menu", exact: true }).tap();
+  await page.locator(`[data-feature="${id}"]`).tap();
+}
+
+/** Đóng sheet đang mở (nếu có) — về bản đồ. */
+export async function closeSheet(page: Page) {
+  const close = page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first();
+  if (await close.isVisible()) await close.tap();
 }

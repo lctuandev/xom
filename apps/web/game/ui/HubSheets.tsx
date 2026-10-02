@@ -6,15 +6,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { audioLevels, setAudioLevels } from "../audio";
 import { logout } from "../auth/store";
+import { FeatureSheet, GoToRow } from "../features/FeatureSheet";
+import { openFeature } from "../features/open";
 import { vnd } from "../format";
-import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
 import { isSpicy, setSpicy } from "../voice";
-import { nearestAtm } from "../world";
 import { Achievements, useMyStats } from "./BoardSheet";
-import { Sheet } from "./Sheet";
 import { StoryTimeline } from "./Story";
-import { Tabs } from "./Tabs";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
 
@@ -42,13 +40,13 @@ export function QuestsSheet() {
   const me = useGame((s) => s.me);
   const roster = useGame((s) => s.roster);
   const atStall = useGame((s) => s.atStall);
-  const close = useGame((s) => s.openSheet);
+  const _close = useGame((s) => s.openSheet);
   if (!me) return null;
   const step = content.stepById.get(me.tutorial);
   const biz = me.business;
   const hasStock = me.inventory.some((i) => i.qty > 0);
   return (
-    <Sheet title="Nhiệm vụ" onClose={() => close(null)}>
+    <FeatureSheet id="quests">
       {step?.objective && (
         <div className="mb-3 rounded-2xl bg-sun/30 p-3">
           <p className="text-xs font-extrabold text-ink/60">ĐANG LÀM</p>
@@ -57,9 +55,17 @@ export function QuestsSheet() {
       )}
       <p className="mb-1.5 text-sm font-extrabold">Cách buôn bán (tự tích khi làm xong)</p>
       <ul className="mb-4 flex flex-col gap-1.5">
-        <Check done={!!biz} text="1. Mua xe hàng ở vựa xe Ông Sáu" hint="Làm ăn → Tới vựa xe" />
-        <Check done={hasStock} text="2. Ra chợ Bà Năm mua nguyên liệu" hint="Nút 🧺 Chợ bên trái" />
-        <Check done={!!biz?.lotId} text="3. Chọn chỗ bán, đẩy xe tới" hint="Làm ăn → Chỗ bán" />
+        <Check
+          done={!!biz}
+          text="1. Mua xe hàng ở vựa xe Ông Sáu"
+          hint="☰ Menu → 🛒 Vựa xe Ông Sáu"
+        />
+        <Check
+          done={hasStock}
+          text="2. Ra chợ Bà Năm mua nguyên liệu"
+          hint="Icon 🧺 Chợ bên trái"
+        />
+        <Check done={!!biz?.lotId} text="3. Chọn chỗ bán, đẩy xe tới" hint="☰ Menu → 📍 Chỗ bán" />
         <Check
           done={!!biz?.open && atStall}
           text="4. Đứng sau quầy và mở quầy"
@@ -68,7 +74,7 @@ export function QuestsSheet() {
         <Check
           done={me.today.sold > 0}
           text="5. Khách gọi món → làm đúng theo công thức → tính tiền"
-          hint="Làm ăn → 📖 Công thức để xem mỗi món cần những gì"
+          hint="☰ Menu → 📖 Công thức để xem mỗi món cần những gì"
         />
       </ul>
       <p className="mb-1.5 text-sm font-extrabold">Hôm nay</p>
@@ -81,19 +87,137 @@ export function QuestsSheet() {
         <Check
           done={(roster?.peers.length ?? 0) > 1}
           text="Có hàng xóm cùng chơi"
-          hint="Hàng xóm → 📨 Mời bạn"
+          hint="☰ Menu → 👥 Hàng xóm → 📨 Mời bạn"
         />
       </ul>
-    </Sheet>
+    </FeatureSheet>
   );
 }
 
-/** Hồ sơ: tiền, uy tín, hôm nay làm được gì, thân thiết với ai. */
+/** 🙂 Hồ sơ: cấp, kinh nghiệm, danh tiếng, tin cậy, no/khát. */
 export function ProfileSheet() {
   const me = useGame((s) => s.me);
-  const close = useGame((s) => s.openSheet);
+  if (!me) return null;
+  return (
+    <FeatureSheet id="profile" title={me.displayName}>
+      <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
+        <div className="flex items-baseline justify-between">
+          <p className="font-extrabold">Cấp {me.progress.level}</p>
+          <p className="text-xs text-ink/60 tabular-nums">
+            {me.progress.into}/{me.progress.need} KN
+          </p>
+        </div>
+        <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+          <div
+            className="h-full rounded-full bg-leaf"
+            style={{
+              width: `${Math.round((me.progress.into / Math.max(1, me.progress.need)) * 100)}%`,
+            }}
+          />
+        </div>
+        <p className="mt-2 text-sm">
+          Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served} khách
+          · 🤝 tin cậy <b data-trust={me.trust}>{me.trust}</b>
+        </p>
+        <p className="text-xs text-ink/60">
+          KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
+        </p>
+      </div>
+      <div className="mb-3 grid grid-cols-2 gap-2" data-needs-bars>
+        {(
+          [
+            ["🍚 No", me.needs.food, "bg-sun"],
+            ["💧 Đỡ khát", me.needs.drink, "bg-[#5aa9e6]"],
+          ] as const
+        ).map(([label, v, color]) => (
+          <div key={label} className="rounded-2xl bg-white p-2.5 shadow-sm">
+            <p className="flex justify-between text-xs font-semibold">
+              <span>{label}</span>
+              <span className="tabular-nums">{v}%</span>
+            </p>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+              <div
+                className={`h-full rounded-full ${v < content.data.needs.lowAt ? "bg-red" : color}`}
+                style={{ width: `${v}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <GoToRow to={["wallet", "skills", "badges", "story", "friends"]} />
+    </FeatureSheet>
+  );
+}
+
+/** 👛 Ví tiền: 💵 tiền mặt, 🏦 tài khoản, hôm nay thu gì; tới ATM gần nhất. */
+export function WalletSheet() {
+  const me = useGame((s) => s.me);
+  if (!me) return null;
+  const row = (k: string, v: string) => (
+    <div className="flex justify-between border-b border-ink/5 py-1.5 text-sm">
+      <span className="text-ink/60">{k}</span>
+      <b className="tabular-nums">{v}</b>
+    </div>
+  );
+  return (
+    <FeatureSheet id="wallet">
+      <div className="rounded-2xl bg-white p-3 shadow-sm">
+        {row("💵 Tiền mặt", vnd(me.money))}
+        {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}
+        {me.business &&
+          row(
+            "Uy tín quầy",
+            `${"★".repeat(Math.round(me.business.reputation * 5))} (${Math.round(me.business.reputation * 100)}%)`,
+          )}
+        {row("Hôm nay bán", `${me.today.sold} món · ${vnd(me.today.revenue)}`)}
+        {row("Tiền boa", vnd(me.today.tips))}
+        {row("Làm thuê", vnd(me.today.wages))}
+      </div>
+      <button
+        type="button"
+        onClick={() => openFeature("atm")}
+        className="mt-2 h-11 w-full rounded-xl bg-[#2c5aa0] font-semibold text-cream"
+      >
+        🚶 Tới cây ATM gần nhất
+      </button>
+    </FeatureSheet>
+  );
+}
+
+/** 📜 Chuyện của tôi. */
+export function StorySheet() {
+  const name = useGame((s) => s.me?.displayName ?? "");
+  return (
+    <FeatureSheet id="story">
+      <StoryTimeline name={name} />
+    </FeatureSheet>
+  );
+}
+
+/** 📈 Kỹ năng + mở khoá theo cấp. */
+export function SkillsSheet() {
+  const me = useGame((s) => s.me);
+  if (!me) return null;
+  return (
+    <FeatureSheet id="skills">
+      <Skills points={me.progress.skills} level={me.progress.level} />
+    </FeatureSheet>
+  );
+}
+
+/** 🏅 Thành tựu. */
+export function BadgesSheet() {
   const stats = useMyStats();
-  const [tab, setTab] = useState<"me" | "story" | "skills" | "badges" | "friends">("me");
+  return (
+    <FeatureSheet id="badges">
+      <Achievements stats={stats} />
+    </FeatureSheet>
+  );
+}
+
+/** 🫶 Người quen: thân với chủ quán, hàng rong nào. */
+export function FriendsSheet() {
+  const me = useGame((s) => s.me);
   if (!me) return null;
   const friends = Object.entries(me.friendship)
     .filter(([, v]) => v > 0)
@@ -103,123 +227,24 @@ export function ProfileSheet() {
     content.speakerById.get(id)?.name ??
     content.data.vendors.find((v) => v.id === id)?.name ??
     id;
-  const row = (k: string, v: string) => (
-    <div className="flex justify-between border-b border-ink/5 py-1.5 text-sm">
-      <span className="text-ink/60">{k}</span>
-      <b className="tabular-nums">{v}</b>
-    </div>
-  );
   return (
-    <Sheet title={me.displayName} onClose={() => close(null)}>
-      <Tabs
-        label="Hồ sơ"
-        value={tab}
-        onChange={setTab}
-        tabs={[
-          { id: "me", label: "🧑 Tôi" },
-          { id: "story", label: "📖 Chuyện" },
-          { id: "skills", label: "📈 Kỹ năng" },
-          {
-            id: "badges",
-            label: "🏅 Thành tựu",
-            badge: stats?.achievements.filter((a) => a.done).length,
-          },
-          { id: "friends", label: "🫶 Người quen" },
-        ]}
-      />
-      {tab === "story" && <StoryTimeline name={me.displayName} />}
-      {tab === "me" && (
-        <>
-          <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
-            <div className="flex items-baseline justify-between">
-              <p className="font-extrabold">Cấp {me.progress.level}</p>
-              <p className="text-xs text-ink/60 tabular-nums">
-                {me.progress.into}/{me.progress.need} KN
-              </p>
-            </div>
-            <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
-              <div
-                className="h-full rounded-full bg-leaf"
-                style={{
-                  width: `${Math.round((me.progress.into / Math.max(1, me.progress.need)) * 100)}%`,
-                }}
-              />
-            </div>
-            <p className="mt-2 text-sm">
-              Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served}{" "}
-              khách · 🤝 tin cậy <b data-trust={me.trust}>{me.trust}</b>
-            </p>
-            <p className="text-xs text-ink/60">
-              KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
-            </p>
-          </div>
-          <div className="mb-3 grid grid-cols-2 gap-2" data-needs-bars>
-            {(
-              [
-                ["🍚 No", me.needs.food, "bg-sun"],
-                ["💧 Đỡ khát", me.needs.drink, "bg-[#5aa9e6]"],
-              ] as const
-            ).map(([label, v, color]) => (
-              <div key={label} className="rounded-2xl bg-white p-2.5 shadow-sm">
-                <p className="flex justify-between text-xs font-semibold">
-                  <span>{label}</span>
-                  <span className="tabular-nums">{v}%</span>
-                </p>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
-                  <div
-                    className={`h-full rounded-full ${v < content.data.needs.lowAt ? "bg-red" : color}`}
-                    style={{ width: `${v}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-2xl bg-white p-3 shadow-sm">
-            {row("💵 Tiền mặt", vnd(me.money))}
-            {row("🏦 Tài khoản ngân hàng", vnd(me.bank))}
-            {me.business &&
-              row(
-                "Uy tín quầy",
-                `${"★".repeat(Math.round(me.business.reputation * 5))} (${Math.round(me.business.reputation * 100)}%)`,
-              )}
-            {row("Hôm nay bán", `${me.today.sold} món · ${vnd(me.today.revenue)}`)}
-            {row("Tiền boa", vnd(me.today.tips))}
-            {row("Làm thuê", vnd(me.today.wages))}
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const p = getPlayer().position;
-              const atm = nearestAtm(p.x, p.z);
-              if (!atm) return;
-              close(null);
-              useGame.getState().setGoal({ kind: "atm", id: atm.id, open: "atm" });
-            }}
-            className="mt-2 h-11 w-full rounded-xl bg-[#2c5aa0] font-semibold text-cream"
-          >
-            🚶 Tới cây ATM gần nhất
-          </button>
-        </>
+    <FeatureSheet id="friends">
+      {friends.length === 0 ? (
+        <p className="text-sm text-ink/60">Chưa thân ai — nói chuyện, mua hàng nhiều sẽ thân.</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {friends.map(([id, v]) => (
+            <li
+              key={id}
+              className="flex justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
+            >
+              <span className="font-semibold">{nameOf(id)}</span>
+              <span>{"❤️".repeat(Math.min(5, Math.ceil(v / 4)))}</span>
+            </li>
+          ))}
+        </ul>
       )}
-      {tab === "skills" && <Skills points={me.progress.skills} level={me.progress.level} />}
-      {tab === "badges" && <Achievements stats={stats} />}
-      {tab === "friends" &&
-        (friends.length === 0 ? (
-          <p className="text-sm text-ink/60">Chưa thân ai — nói chuyện, mua hàng nhiều sẽ thân.</p>
-        ) : (
-          <ul className="flex flex-col gap-1">
-            {friends.map(([id, v]) => (
-              <li
-                key={id}
-                className="flex justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
-              >
-                <span className="font-semibold">{nameOf(id)}</span>
-                <span>{"❤️".repeat(Math.min(5, Math.ceil(v / 4)))}</span>
-              </li>
-            ))}
-          </ul>
-        ))}
-    </Sheet>
+    </FeatureSheet>
   );
 }
 
@@ -272,13 +297,13 @@ export function SettingsSheet() {
   const ping = useGame((s) => s.pingMs);
   const showPerf = useGame((s) => s.showPerf);
   const setShowPerf = useGame((s) => s.setShowPerf);
-  const close = useGame((s) => s.openSheet);
+  const _close = useGame((s) => s.openSheet);
   const toast = useGame((s) => s.toast);
   const [resetDone, setResetDone] = useState(false);
   const btn =
     "h-12 w-full rounded-xl bg-white px-3 text-left font-semibold shadow-sm active:bg-ink/5";
   return (
-    <Sheet title="Cài đặt" onClose={() => close(null)}>
+    <FeatureSheet id="settings">
       <div className="mb-3 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm shadow-sm">
         <span className={`size-2.5 rounded-full ${status === "online" ? "bg-leaf" : "bg-red"}`} />
         {status === "online" ? `Đang kết nối · ${ping ?? "…"} ms` : "Mất kết nối — đang thử lại"}
@@ -314,7 +339,7 @@ export function SettingsSheet() {
           🚪 Đăng xuất
         </button>
       </div>
-    </Sheet>
+    </FeatureSheet>
   );
 }
 
@@ -324,13 +349,13 @@ export function SettingsSheet() {
  */
 export function RecipeSheet() {
   const me = useGame((s) => s.me);
-  const close = useGame((s) => s.openSheet);
+  const _close = useGame((s) => s.openSheet);
   const products = content.data.products;
   const [pid, setPid] = useState(me?.business?.productId ?? products[0]?.id ?? "");
   const product = content.product(pid);
   const recipe = product.recipe;
   return (
-    <Sheet title="📖 Công thức" onClose={() => close(null)}>
+    <FeatureSheet id="recipes">
       <div className="mb-3 flex gap-1.5 overflow-x-auto">
         {products.map((p) => (
           <button
@@ -385,7 +410,7 @@ export function RecipeSheet() {
           </p>
         )}
       </div>
-    </Sheet>
+    </FeatureSheet>
   );
 }
 

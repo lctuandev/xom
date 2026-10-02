@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
-import { readDialogue, register, shot } from "./helpers";
+import { openFeature, readDialogue, register, shot } from "./helpers";
 
 // Kỹ năng + mở khoá theo cấp (docs/USECASES.md UC-P1): Hồ sơ hiện kỹ năng, chào Bà Năm thì "Ăn nói" nhích lên;
 // những thứ chưa đủ cấp thì có ổ khoá.
 test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", async ({ page }) => {
   await register(page, "Năng");
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await page.getByRole("button", { name: "Ra chợ" }).tap();
+  await page.locator('[data-anchor="market"]').tap();
   await expect(page.getByRole("dialog", { name: "Chợ đầu mối Bà Năm" })).toBeVisible({
     timeout: 40_000,
   });
@@ -25,8 +25,7 @@ test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", 
   await talk.getByRole("button", { name: "Đóng" }).tap();
   await expect(talk).toBeHidden();
 
-  await page.getByRole("button", { name: "Hồ sơ" }).tap();
-  await page.getByRole("tab", { name: "📈 Kỹ năng" }).tap();
+  await openFeature(page, "skills");
   const skills = page.getByRole("region", { name: "Kỹ năng" });
   await expect(skills.locator('[data-skill="an_noi"]')).toBeVisible();
   // Nhà mặt tiền giờ mở bằng vốn + giấy tờ (UC-F12); còn khoá theo cấp: tổ chức khai trương.
