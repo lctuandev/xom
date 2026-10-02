@@ -55,7 +55,9 @@ import {
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
+  shopLeaseSchema,
   shopOrderSchema,
+  shopRegisterSchema,
   staffHireSchema,
   type TalkResult,
   talkSchema,
@@ -354,6 +356,87 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("regulars:list")
   regularsList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.regulars.list(ctx.playerId));
+  }
+
+  @SubscribeMessage("shop:view")
+  shopView(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.view(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:unlease")
+  shopUnlease(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.unlease(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:train")
+  shopTrain(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.train(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:book")
+  shopBook(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.book(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:meet")
+  shopMeet(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.meet(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:sign")
+  shopSign(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, async (ctx) => {
+      const r = await this.game.shops.sign(ctx.room, ctx.playerId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:lease")
+  shopLease(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, shopLeaseSchema, body, async (ctx, p) => {
+      const r = await this.game.shops.lease(ctx.room, ctx.playerId, p.lotId);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("shop:register")
+  shopRegister(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, shopRegisterSchema, body, async (ctx, p) => {
+      const r = await this.game.shops.register(ctx.room, ctx.playerId, p.name);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("debug:shop")
+  debugShop(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, shopLeaseSchema, body, async (ctx, p) => {
+      if (process.env.NODE_ENV === "production")
+        throw new GameError("invalid_state", "Không có lệnh này");
+      await this.game.shops.debugReady(ctx.room, ctx.playerId, p.lotId);
+    });
   }
 
   @SubscribeMessage("ride:view")

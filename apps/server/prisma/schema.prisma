@@ -185,8 +185,41 @@ model Business {
   createdAt   DateTime       @default(now())
   /// Nhân viên đang thuê (KIENTRUC §2), mỗi quầy một người ở bản đầu.
   employee    Employee?
+  /// Mở tiệm (UC-F12): tên quán đăng ký hộ kinh doanh; phút game tuyệt đối hồ sơ được duyệt (null = chưa nộp).
+  shopName    String?
+  licenseAt   Int?
+  /// ATTP: đã tập huấn; giờ đoàn kiểm tra tới (phút tuyệt đối); đã có giấy chứng nhận.
+  trained     Boolean        @default(false)
+  inspectAt   Int?
+  certified   Boolean        @default(false)
+  /// Đã làm biển hiệu tên quán.
+  signed      Boolean        @default(false)
 
   @@index([ownerId])
+}
+
+enum LeaseStatus {
+  ACTIVE
+  /// Tự trả nhà (hoàn cọc).
+  ENDED
+  /// Hết tiền trả tiền nhà, cọc trừ hết — chủ nhà lấy lại.
+  EVICTED
+}
+
+/// Hợp đồng thuê nhà mặt tiền (UC-F12): cọc giữ trong ví "deposit:<id>", tiền nhà tính mỗi ngày dù mở hay đóng.
+model Lease {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  roomId    String      @db.Uuid
+  lotId     String
+  ownerId   String      @db.Uuid
+  deposit   Int
+  signedDay Int
+  endedDay  Int?
+  status    LeaseStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+
+  @@index([roomId, lotId, status])
+  @@index([ownerId, status])
 }
 
 /// Nhân viên NPC đứng quầy thay khi chủ rời quầy / thoát game (docs/KIENTRUC.md §2).

@@ -101,6 +101,8 @@ export interface LotOccupant {
   businessId: string;
   ownerId: string;
   ownerName: string;
+  /** Tên quán trên biển hiệu (đã đăng ký + làm biển, UC-F12). */
+  shopName?: string | null;
   /** Thực đơn đang bày (hàng xóm xem để gọi món, UC-J3). */
   menu: MenuItemView[];
   /** Món làm được ngay (đang bật và đủ nguyên liệu lúc cập nhật gần nhất). */
@@ -579,6 +581,38 @@ export interface RegularView {
   lastDay: number;
 }
 
+/** 🏪 Mở tiệm trong nhà mặt tiền theo quy trình (UC-F12). */
+export interface ShopSetupView {
+  /** Nhà mình đang thuê. */
+  lease: { lotId: string; deposit: number; signedDay: number } | null;
+  shopName: string | null;
+  /** Hộ kinh doanh: chưa nộp / đang xét (xong lúc readyAt) / đã có. */
+  license: "none" | "pending" | "done";
+  licenseReady: { day: number; minute: number } | null;
+  /** Nghề này có cần giấy ATTP không (quán ăn uống). */
+  needCert: boolean;
+  trained: boolean;
+  /** Đoàn kiểm tra ATTP: tới lúc nào, đón được tới lúc nào. */
+  inspect: { day: number; minute: number; until: number; arrived: boolean } | null;
+  certified: boolean;
+  signed: boolean;
+  step: "lease" | "license" | "cert" | "sign" | "ready";
+  houses: {
+    lotId: string;
+    rentPerDay: number;
+    estimate: {
+      deposit: number;
+      reserve: number;
+      license: number;
+      training: number;
+      sign: number;
+      total: number;
+    };
+    /** Người khác đang thuê (tên) — null = trống hoặc của mình. */
+    leasedBy: string | null;
+  }[];
+}
+
 /** 🛵 Xe ôm (KIENTRUC §4, UC-N1): trạng thái cuốc xe của mình. */
 export interface RideView {
   /** idle: chưa chờ khách · waiting: đang chờ · offer: khách hỏi giá · route: đã chốt giá, chọn đường ·
@@ -828,6 +862,8 @@ export const debugClockSchema = z.object({
 });
 /** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
 /** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const shopLeaseSchema = z.object({ lotId: contentId });
+export const shopRegisterSchema = z.object({ name: z.string().min(1).max(60) });
 export const rideRentSchema = z.object({ pay: payMethodSchema.optional() });
 export const rideOfferSchema = z.object({ ratio: z.number().min(0.5).max(3) });
 export const rideGoSchema = z.object({ route: z.enum(["road", "alley"]) });

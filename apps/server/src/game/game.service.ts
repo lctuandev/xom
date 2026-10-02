@@ -78,6 +78,7 @@ import { addToReport, emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
 import { RideService } from "./rides.js";
 import { GameError, RoomRuntime } from "./room.js";
+import { ShopService } from "./shop.js";
 import { StaffService } from "./staff.js";
 import { StatsService } from "./stats.js";
 import { StoryService } from "./story.js";
@@ -163,6 +164,7 @@ export class GameService implements OnModuleDestroy {
     readonly staff: StaffService,
     readonly contracts: ContractService,
     readonly rides: RideService,
+    readonly shops: ShopService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -174,6 +176,10 @@ export class GameService implements OnModuleDestroy {
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.contracts.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.shops.setNotifier(
+      (playerId, n) => emitter.toPlayer(playerId, "notify", n),
+      (room) => this.emitWorld(room),
+    );
     this.rides.setNotifier(
       (playerId, n) => emitter.toPlayer(playerId, "notify", n),
       (playerId, r) => emitter.toPlayer(playerId, "ride", r),
@@ -865,7 +871,8 @@ export class GameService implements OnModuleDestroy {
     const biz = await this.requireBusiness(playerId);
     if (lotId === biz.lotId) return;
     if (!content.lotById.has(lotId)) throw new GameError("invalid_payload", "Không có chỗ này");
-    if (content.lot(lotId).kind === "house") await this.requireLevel(playerId, "lot_house");
+    // Nhà mặt tiền: phải ký hợp đồng thuê trước (UC-F12) — mở bằng vốn, không khoá theo cấp.
+    if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
     if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
     const taken = (this.occupantsCache.get(room.id) ?? []).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
@@ -1135,7 +1142,7 @@ export class GameService implements OnModuleDestroy {
   }
 
   /** Cấp hiện tại của người chơi (mở khoá theo cấp, Luật 4.2). */
-  private async requireLevel(playerId: string, id: "lot_house" | "event_host") {
+  private async requireLevel(playerId: string, id: "event_host") {
     const need = unlockLevel(content, id);
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
     const level = levelOf(player.xp).level;
@@ -1184,6 +1191,7 @@ export class GameService implements OnModuleDestroy {
     if (player.jobId || room.shifts.has(playerId))
       throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở quầy");
     const lot = content.lot(biz.lotId);
+    if (lot.kind === "house") await this.shops.requireReady(room, biz, lot.id);
     const eco = content.economy;
     if (wearState(biz.wear, eco.maintenance) === "broken")
       throw new GameError("invalid_state", "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã");
@@ -1403,6 +1411,7 @@ export class GameService implements OnModuleDestroy {
         }
         await this.work.tick(room);
         await this.rides.tick(room);
+        await this.shops.tick(room);
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }
@@ -1490,6 +1499,8 @@ export class GameService implements OnModuleDestroy {
   /** Cuối ngày: đóng quầy, bỏ nguyên liệu hết hạn, chốt báo cáo, sang ngày mới lúc 6:00. */
   private async endDay(room: RoomRuntime) {
     const day = room.day;
+    // Nhà thuê tính tiền mỗi ngày dù mở hay đóng (UC-F12).
+    await this.shops.endDay(room).catch((err) => this.logger.warn(`tính tiền nhà lỗi: ${err}`));
     for (const playerId of [...room.shifts.keys()]) await this.work.end(room, playerId, "day_end");
     room.boostUntil.clear();
     room.shoutReadyAt.clear();
@@ -1690,6 +1701,7 @@ export class GameService implements OnModuleDestroy {
       equipmentId: b.equipmentId,
       productId: b.productId,
       open: b.status === "OPEN",
+      shopName: b.signed ? b.shopName : null,
     }));
     this.occupantsCache.set(room.id, lots);
     return lots;

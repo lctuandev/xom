@@ -14,16 +14,13 @@ describe("Kỹ năng & mở khoá (e2e)", () => {
   });
   afterAll(() => app.close());
 
-  it("nhà mặt tiền khoá tới cấp 3; đủ KN thì thuê được", async () => {
+  it("nhà mặt tiền không khoá theo cấp nữa mà cần hợp đồng thuê (UC-F12)", async () => {
     const { socket } = await join(url);
     await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
     expect(await emit(socket, "biz:update", { lotId: "nha_so_10" })).toMatchObject({
       ok: false,
-      message: expect.stringMatching(/cần cấp 3/),
+      message: expect.stringMatching(/hợp đồng thuê/),
     });
-    await emit(socket, "debug:grant", { xp: 300 });
-    const ok = await emit<MeView>(socket, "biz:update", { lotId: "nha_so_10" });
-    expect(ok.ok && ok.data.business?.lotId).toBe("nha_so_10");
     socket.disconnect();
   });
 

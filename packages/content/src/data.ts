@@ -2111,6 +2111,15 @@ export const data: ContentInput = {
   },
 
   // Nhân viên thuê đứng quầy thay (KIENTRUC §2): bán khi chủ rời quầy / thoát game, tới hết ca; trả lương theo giờ.
+  shopSetup: {
+    depositDays: 3,
+    reserveDays: 2,
+    license: { office: "UBND phường", fee: 100_000, minutes: 180 },
+    foodCert: { templates: ["FOOD"], trainingFee: 150_000, inspectAfter: 90, inspectWindow: 60 },
+    signFee: 200_000,
+    name: { min: 3, max: 24 },
+  },
+
   rides: {
     stationPlaceId: "tram_xe_om",
     jamProfile: "crossroad",
@@ -2291,6 +2300,7 @@ export const data: ContentInput = {
     { id: "first_regular", emoji: "❤️", text: "Có khách quen đầu tiên: {name} ({bio})" },
     { id: "first_hire", emoji: "👩‍🍳", text: "Thuê người đầu tiên: {name} đứng quầy phụ" },
     { id: "first_contract", emoji: "📋", text: "Xong việc đầu tiên trên bảng việc xóm: {text}" },
+    { id: "first_license", emoji: "🏛️", text: 'Đăng ký hộ kinh doanh: quán "{name}" ra đời' },
     { id: "first_ride", emoji: "🛵", text: "Chạy cuốc xe ôm đầu tiên: chở {name} tới {place}" },
   ],
 
@@ -2682,10 +2692,7 @@ export const data: ContentInput = {
     },
   ],
   // Mở khoá theo cấp (Luật 4.2): làm thật mới mở — không mua bằng tiền thật.
-  unlocks: [
-    { id: "event_host", level: 2, label: "Tổ chức khai trương" },
-    { id: "lot_house", level: 3, label: "Thuê nhà mặt tiền mở tiệm" },
-  ],
+  unlocks: [{ id: "event_host", level: 2, label: "Tổ chức khai trương" }],
 
   // Xóm quê (góp ý chủ dự án 10/2026): ít nhà cao tầng; nhà dân phần lớn là nhà cấp 4 mái ngói, vài nhà tranh,
   // lác đác nhà ống — sau này người chơi mua/xây nhà thì nâng cấp dần lên (DESIGN §5).

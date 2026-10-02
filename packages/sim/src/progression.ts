@@ -97,7 +97,7 @@ export function addSkill(
 }
 
 /** Cấp cần để mở một thứ (1 nếu không khoá). */
-export function unlockLevel(content: Content, id: "lot_house" | "event_host"): number {
+export function unlockLevel(content: Content, id: "event_host"): number {
   return content.data.unlocks.find((u) => u.id === id)?.level ?? 1;
 }
 

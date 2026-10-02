@@ -139,6 +139,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Quầy trà sữa dạng lưới theo góc nhìn người bán (ly M/L, bình trà có vòi, máy dán ly, lưới topping) — bố trí bằng dữ liệu | ✅ | 1.11 | UC-F5 |
 | Thực đơn nhiều món, giá từng món | ✅ | 1.6 | UC-F2 |
 | Tiệm riêng: thuê nhà mặt tiền, vào tiệm có không gian quán, khách đi vào, bảng quầy dạng lưới | 🚧 | 1.10 | UC-W6 |
+| 🏪 Mở tiệm như ngoài đời: hợp đồng thuê (cọc 3 ngày + vốn dự phòng, tiền nhà tính cả ngày đóng, hết cọc mất nhà), hộ kinh doanh + đặt tên quán, ATTP (tập huấn + đón đoàn kiểm tra), biển hiệu tên quán; bỏ khoá cấp 3 | ✅ | 1.22 | UC-F12 |
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |

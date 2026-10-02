@@ -218,8 +218,12 @@ export default function ShopInterior({ lotId }: { lotId: string }) {
     useGame.getState().setProximity(null, true);
   }, []);
 
+  // Biển trong tiệm: tên quán đã đăng ký + treo biển (UC-F12), chưa có thì "BÁNH MÌ <TÊN>".
+  const shopName = useGame((s) => s.world.lots.find((l) => l.businessId === biz?.id)?.shopName);
   if (!biz || !product) return null;
-  const sign = `${product.sign} ${me?.displayName.toLocaleUpperCase("vi") ?? ""}`;
+  const sign = shopName
+    ? shopName.toLocaleUpperCase("vi")
+    : `${product.sign} ${me?.displayName.toLocaleUpperCase("vi") ?? ""}`;
   return (
     <div className="relative h-full w-full overflow-hidden bg-ink select-none">
       <Canvas

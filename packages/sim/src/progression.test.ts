@@ -61,8 +61,7 @@ describe("kỹ năng & mở khoá (DESIGN §4, Luật 4.2)", () => {
     expect(remembersOrders(content, {})).toBe(false);
     expect(remembersOrders(content, { nho_mon: 10 })).toBe(true);
   });
-  it("nhà mặt tiền mở ở cấp 3, khai trương ở cấp 2", () => {
-    expect(unlockLevel(content, "lot_house")).toBe(3);
+  it("khai trương mở ở cấp 2 (nhà mặt tiền giờ mở bằng vốn + giấy tờ, UC-F12)", () => {
     expect(unlockLevel(content, "event_host")).toBe(2);
   });
 });

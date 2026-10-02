@@ -242,6 +242,34 @@ export const regularsSchema = z.object({
  * Nhân viên thuê đứng quầy thay (KIENTRUC §2): tay nghề (tỉ lệ làm đúng), tốc độ, lương/giờ; ca làm cố định trong ngày.
  * Nhân viên không tự nhập hàng, không tự mở quầy — chủ mở quầy rồi giao lại; hết hàng thì nghỉ bán.
  */
+/**
+ * Mở tiệm trong nhà mặt tiền theo quy trình đời thật (UC-F12): thuê nhà (đặt cọc + vốn dự phòng) → đăng ký hộ kinh doanh
+ * (đặt tên quán, chờ xét) → ATTP cho quán ăn uống (tập huấn + đoàn kiểm tra tới tận tiệm) → biển hiệu → mở tiệm.
+ */
+export const shopSetupSchema = z.object({
+  /** Cọc = bấy nhiêu ngày tiền thuê (ngoài đời 3–6 tháng); trả nhà thì hoàn cọc. */
+  depositDays: z.number().int().min(1),
+  /** Phải còn đủ tiền thuê bấy nhiêu ngày sau khi đặt cọc (vốn dự phòng). */
+  reserveDays: z.number().int().min(0),
+  license: z.object({
+    office: z.string(),
+    fee: vnd,
+    /** Phút game chờ xét hồ sơ. */
+    minutes: z.number().int().positive(),
+  }),
+  foodCert: z.object({
+    /** Template sản phẩm cần giấy ATTP. */
+    templates: z.array(z.string()).min(1),
+    trainingFee: vnd,
+    /** Đoàn kiểm tra tới sau bấy nhiêu phút game kể từ lúc hẹn. */
+    inspectAfter: z.number().int().positive(),
+    /** Có mặt ở tiệm trong khoảng này (phút game) kể từ lúc đoàn tới. */
+    inspectWindow: z.number().int().positive(),
+  }),
+  signFee: vnd,
+  name: z.object({ min: z.number().int().min(1), max: z.number().int().max(40) }),
+});
+
 /** Xe ôm (docs/KIENTRUC.md §4) + kẹt xe (§5). Tốc độ tính bằng mét/giây trong cảnh 3D. */
 export const ridesSchema = z.object({
   /** Trạm xe ôm (place kind "ride"). */
@@ -971,7 +999,7 @@ export const skillSchema = z.object({
 
 /** Mở khoá theo cấp (Luật 4.2 — mở bằng làm thật). */
 export const unlockSchema = z.object({
-  id: z.enum(["lot_house", "event_host"]),
+  id: z.enum(["event_host"]),
   level: z.number().int().min(1),
   label: z.string(),
 });
@@ -1018,6 +1046,7 @@ export const contentSchema = z.object({
   staff: staffSchema,
   contracts: contractsSchema,
   rides: ridesSchema,
+  shopSetup: shopSetupSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

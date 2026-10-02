@@ -57,7 +57,10 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
   const product = content.product(occupant.productId);
   const model = content.equipment(occupant.equipmentId).model as CityModel;
   const at = useMemo(() => [{ x: lot.position.x, z: lot.position.z, rot: lot.facing }], [lot]);
-  const text = `${product.sign} ${occupant.ownerName.toLocaleUpperCase("vi")}`;
+  // Tiệm đã đăng ký + treo biển (UC-F12): biển ghi tên quán; chưa có thì "BÁNH MÌ <TÊN>".
+  const text = occupant.shopName
+    ? occupant.shopName.toLocaleUpperCase("vi")
+    : `${product.sign} ${occupant.ownerName.toLocaleUpperCase("vi")}`;
   if (lot.kind === "house") {
     // Tiệm trong nhà: biển hiệu lớn trên cửa, mái hiên; khách vào trong (không đứng ngoài vỉa hè).
     const out = lot.facing === 0 ? -1 : 1;

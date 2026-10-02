@@ -24,6 +24,7 @@ import type {
   RosterView,
   SayEvent,
   ShiftView,
+  ShopSetupView,
   Snapshot,
   StaffView,
   StoryEntryView,
@@ -94,6 +95,17 @@ export interface ClientToServerEvents {
   "debug:regulars": Intent<{ visits: number }>;
   /** Sổ khách quen của quầy mình (KIENTRUC §1). */
   "regulars:list": Intent<Record<string, never>, RegularView[]>;
+  /** 🏪 Mở tiệm (UC-F12): thuê nhà, đăng ký hộ kinh doanh, ATTP, biển hiệu. */
+  "shop:view": Intent<Record<string, never>, ShopSetupView>;
+  "shop:lease": Intent<{ lotId: string }, ShopSetupView>;
+  "shop:unlease": Intent<Record<string, never>, ShopSetupView>;
+  "shop:register": Intent<{ name: string }, ShopSetupView>;
+  "shop:train": Intent<Record<string, never>, ShopSetupView>;
+  "shop:book": Intent<Record<string, never>, ShopSetupView>;
+  "shop:meet": Intent<Record<string, never>, ShopSetupView>;
+  "shop:sign": Intent<Record<string, never>, ShopSetupView>;
+  /** Dev/test: thuê nhà + đủ giấy tờ ngay. */
+  "debug:shop": Intent<{ lotId: string }>;
   /** 🛵 Xe ôm (KIENTRUC §4): xem / thuê xe / chờ khách / trả giá / chọn đường / tới nơi / thu tiền / nghỉ. */
   "ride:view": Intent<Record<string, never>, RideView>;
   "ride:rent": Intent<{ pay?: PayMethod }, RideView>;

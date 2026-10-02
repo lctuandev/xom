@@ -13,9 +13,19 @@ import { useMyStats, WeekChart } from "./BoardSheet";
 import { usePayMethod } from "./PayPicker";
 import { ReviewBook } from "./Reviews";
 import { Section, Sheet, Stepper } from "./Sheet";
+import { ShopSetup } from "./ShopSetup";
 import { Tabs } from "./Tabs";
 
-type BizTab = "sell" | "menu" | "stock" | "lot" | "stats" | "regulars" | "staff" | "reviews";
+type BizTab =
+  | "sell"
+  | "menu"
+  | "stock"
+  | "lot"
+  | "shop"
+  | "stats"
+  | "regulars"
+  | "staff"
+  | "reviews";
 
 /** Bảng Làm ăn: phần đầu (uy tín, mở quầy) luôn hiện; phần dài chia tab dính (góp ý UX). */
 export function BusinessSheet() {
@@ -116,6 +126,7 @@ export function BusinessSheet() {
           { id: "menu", label: "🍽️ Thực đơn" },
           { id: "stock", label: "📦 Kho" },
           { id: "lot", label: "📍 Chỗ bán" },
+          { id: "shop", label: "🏪 Mở tiệm" },
           { id: "stats", label: "📊 Số liệu" },
           { id: "regulars", label: "❤️ Khách quen" },
           { id: "staff", label: "👩‍🍳 Nhân viên" },
@@ -147,6 +158,8 @@ export function BusinessSheet() {
       {current === "regulars" && <RegularBook />}
 
       {current === "staff" && <StaffBoard />}
+
+      {current === "shop" && <ShopSetup />}
 
       {current === "lot" && (
         <Section title="Chỗ bán">
@@ -494,7 +507,6 @@ function StockList({ productId }: { productId: string }) {
 }
 
 function LotPicker({ biz }: { biz: BusinessView }) {
-  const level = useGame((s) => s.me?.progress.level ?? 1);
   const world = useGame((s) => s.world);
   const [open, setOpen] = useState(biz.lotId === null);
   const current = biz.lotId ? content.lot(biz.lotId) : null;
@@ -529,14 +541,12 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       {content.data.lots.map((lot) => {
         const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
         const selected = biz.lotId === lot.id;
-        // Nhà mặt tiền mở khoá theo cấp (Luật 4.2).
-        const need = lot.kind === "house" ? unlockLevel(content, "lot_house") : 1;
-        const locked = level < need;
+        // Nhà mặt tiền: phải ký hợp đồng thuê ở tab 🏪 Mở tiệm (UC-F12) — server kiểm.
         return (
           <li key={lot.id}>
             <button
               type="button"
-              disabled={!!taken || locked}
+              disabled={!!taken}
               aria-pressed={selected}
               onClick={async () => {
                 const res = await send("biz:update", { lotId: lot.id });
@@ -552,8 +562,8 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                   {districtLikes(lot.traffic)}
                 </span>
                 <span className="block text-sm text-ink/60">
-                  {locked
-                    ? `🔒 Cấp ${need} mới thuê được`
+                  {lot.kind === "house" && !selected
+                    ? "📝 Ký hợp đồng thuê ở tab 🏪 Mở tiệm"
                     : taken
                       ? `${taken.ownerName} đang dùng`
                       : lot.hint}

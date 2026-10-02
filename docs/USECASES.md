@@ -458,6 +458,34 @@ Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 
 ---
 
+### UC-F12 · Mở tiệm theo quy trình đời thật ✅ (bản đầu)
+> Góp ý: "mở tiệm khi đủ vốn, đặt tên quán" + "research cách thức hoạt động ngoài đời". Tham khảo: thủ tục mở quán ăn nhỏ
+> (đăng ký hộ kinh doanh ở cơ quan cấp huyện 3–5 ngày, giấy chứng nhận cơ sở đủ điều kiện ATTP có kiểm tra thực tế, nhân viên tập
+> huấn + khám sức khoẻ), kinh nghiệm thuê mặt bằng (cọc 3–6 tháng, giữ vốn dự phòng 3–6 tháng), biển hiệu + khai trương.
+
+**Luồng (Làm ăn → 🏪 Mở tiệm, có checklist ✅ từng bước, dự toán trước):**
+1. **📝 Ký hợp đồng thuê nhà mặt tiền** — cọc **3 ngày tiền thuê** (ví giữ hộ, trả nhà thì hoàn), chủ nhà chỉ cho thuê khi còn
+   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** (cuối ngày); hết tiền thì
+   trừ cọc, **hết cọc thì chủ nhà lấy lại nhà**.
+2. **🏛️ Đăng ký hộ kinh doanh ở UBND phường** — **đặt tên quán** (3–24 ký tự, chữ/số, không trùng trong xóm), lệ phí 100k,
+   **chờ xét 3 giờ game** (báo 🏛️ khi duyệt); ghi 📖 *Đăng ký hộ kinh doanh: quán "…" ra đời*.
+3. **🧑‍🍳 Giấy ATTP** (chỉ quán ăn uống — bánh mì, trà sữa; sạp phụ kiện, sửa xe không cần): **tập huấn** (150k) → **hẹn đoàn
+   kiểm tra** (tới sau 1,5 giờ game) → đoàn tới báo 👮, **chủ phải có mặt ở tiệm trong 60 phút** (trước cửa hoặc trong tiệm) bấm
+   *Đón đoàn* → cấp giấy; vắng mặt thì đoàn về, phải hẹn lại.
+4. **🪧 Biển hiệu tên quán** (200k) — ngoài phố căn nhà treo biển **tên quán** thay cho "BÁNH MÌ <TÊN NGƯỜI CHƠI>".
+5. **Mở tiệm** như thường (tiền thuê ngày + thuế khoán + điện nước); muốn rình rang thì *tổ chức khai trương* (UC-K).
+**Luật game:** nhà mặt tiền **không khoá theo cấp nữa** — mở bằng vốn + giấy tờ; chọn nhà ở *Chỗ bán* chỉ được khi đang thuê
+đúng căn đó; mở tiệm thiếu giấy nào server báo đúng giấy đó; mọi khoản qua sổ cái (`lease_deposit`, `lease_refund`,
+`license_fee`, `food_training`, `sign`, `rent`, `rent_from_deposit`); đo lường `shop_lease`, `shop_register`, `shop_certified`,
+`shop_unlease` (kèm trả / bị lấy nhà).
+**Dữ liệu:** `content.shopSetup`; Prisma `Lease` (ACTIVE / ENDED / EVICTED), `Business.shopName / licenseAt / trained /
+inspectAt / certified / signed`; sim `shopEstimate`, `needsFoodCert`, `shopNameError`, `normalizeShopName`, `nextShopStep`.
+**Kiểm chứng:** sim `shop.test.ts`; e2e server `shop.e2e-spec.ts` (đi hết quy trình, tên bậy bị từ chối, chưa giấy không mở được,
+đón đoàn phải ở tiệm, biển tên quán ngoài phố, trả nhà hoàn cọc; hết tiền trừ cọc rồi bị lấy nhà); Playwright `mo-tiem.spec.ts`;
+`tiem-rieng.spec.ts` dùng lệnh dev `debug:shop`.
+**Sau này:** gia hạn / tăng giá nhà, khám sức khoẻ nhân viên, đoàn kiểm tra đột xuất phạt khi đồ hỏng, thuế khoán theo doanh thu,
+đổi tên quán (làm lại biển), tiệm thứ hai (chuỗi).
+
 ## G. Dịch vụ sửa xe (nghề mới, template SERVICE — docs/NGHE.md §3.1)
 
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
@@ -669,7 +697,7 @@ có không gian quán như Cô Tư** (UC-W6).
 **Kiểm chứng:** unit `floor.test.ts` (vòng đời, than/xin lỗi, quỵt, gây lộn, bàn/đi bộ); e2e server `work.e2e-spec.ts`
 (bưng bê cầm dĩa → đi tới bàn, khách trả tiền ra về có đánh giá); Playwright `nguoi-moi-lam-thue.spec.ts` (3 vai, iPhone 16 Pro + Pixel 7).
 
-### UC-W6 · Tiệm riêng — thuê một căn nhà mặt tiền, có không gian quán như Cô Tư 🚧
+### UC-W6 · Tiệm riêng — thuê một căn nhà mặt tiền, có không gian quán như Cô Tư 🚧 (thuê + giấy tờ: UC-F12)
 > Người chơi yêu cầu: user có tiệm là một căn nhà (như quán Cô Tư) thì mới có không gian quán; cách bày quầy tham khảo
 > ảnh quầy trà sữa (ly M/L, bình trà, lưới topping, máy dán nắp) — khách tới quầy gọi món, mình chạm từng ô rồi bấm đưa món.
 
