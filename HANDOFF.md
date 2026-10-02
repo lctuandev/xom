@@ -150,7 +150,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [ ] **Thưởng** cho thành tựu / nhiệm vụ (tiền nhỏ có trần + mở khoá; không thành thu nhập thụ động).
 - [ ] **Quầy theo mặt hàng**: chọn thể loại khi mở cửa hàng; sheet quầy chỉ còn: nhập đúng hàng của quầy, thuê nhân viên, giá —
   gom bớt nút cuối sheet.
-- [ ] Kiểm tra **nhiều cửa hàng chạy cùng lúc** (chủ đứng một quầy, quầy khác có nhân viên bán) — người chơi báo không chạy được.
+- [x] **Nhiều cửa hàng chạy cùng lúc**: lỗi do client chỉ nhận "đứng quầy" ở cửa hàng đang chọn → tới quầy khác tự chọn (UC-F14).
 - [ ] **Bản đồ mở**: ban đầu chỉ nhà NPC + ô đất trống / nhà cho thuê; người chơi chọn ô để thuê hoặc xây; xóm lớn dần theo số
   người mở tiệm; nâng cấp tiệm thành nhà cao tầng (gắn với nhánh art `feat/phong-cach-toon`).
 - [ ] Tách nhỏ chức năng tiếp (tránh conflict) — áp dụng dần khi làm từng mục trên.

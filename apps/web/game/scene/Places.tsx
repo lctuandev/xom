@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { content, type Place } from "@xom/content";
 import { useMemo, useRef } from "react";
 import type { CharacterModel, CityModel } from "../assets";
+import { send } from "../net/socket";
 import { useGame } from "../store";
 import {
   addressSpot,
@@ -94,6 +95,7 @@ function StaticNpc({
  */
 export function ProximityWatcher() {
   const acc = useRef(0);
+  const selecting = useRef<string | null>(null);
   useFrame((_, dt) => {
     acc.current += dt;
     if (acc.current < 0.25) return;
@@ -108,6 +110,26 @@ export function ProximityWatcher() {
     const lotId = s.me?.business?.lotId;
     const behind = lotId ? standBehind(lotId) : null;
     const atStall = behind ? distanceTo(behind.x, behind.z) <= radius : false;
+    // Nhiều cửa hàng: đứng ở quầy của cửa hàng KHÁC của mình → tự chuyển sang quản lý cửa hàng đó (đi tới quầy nào thì
+    // mở / bán ở quầy đó, khỏi vào 🏬 chọn lại — lỗi "nhiều cửa hàng không chạy cùng lúc được").
+    if (!atStall && s.status === "online") {
+      const other = s.me?.shops.find((b) => {
+        if (b.active || !b.lotId) return false;
+        const at = standBehind(b.lotId);
+        return !!at && distanceTo(at.x, at.z) <= radius;
+      });
+      if (other && selecting.current !== other.id) {
+        selecting.current = other.id;
+        void send("biz:select", { businessId: other.id }).then((r) => {
+          if (r.ok)
+            s.toast({
+              kind: "info",
+              text: `🏬 Đang ở ${other.name ?? content.product(other.productId).name} — quản lý cửa hàng này`,
+            });
+          selecting.current = null;
+        });
+      }
+    }
     if (near !== s.nearPlace || atStall !== s.atStall) s.setProximity(near, atStall);
     // Trước cửa nhà nào (giao hàng).
     let door: string | null = null;
