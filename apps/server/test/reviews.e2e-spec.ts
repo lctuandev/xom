@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { NotifyEvent, OrderEvent, ReviewsView, Snapshot } from "@xom/shared";
+import type { MeView, NotifyEvent, OrderEvent, ReviewsView, Snapshot } from "@xom/shared";
 import { ReviewService } from "../src/game/reviews.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import { changeFor, emit, join, next, openBanhMiStall } from "./client.js";
@@ -18,22 +18,32 @@ describe("Sổ đánh giá (e2e)", () => {
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  it("khách NPC chấm sao xấu thì chủ quầy được báo; sổ có điểm trung bình", async () => {
+  it("khách NPC chấm sao xấu thì chủ quầy được báo; sổ có điểm trung bình; mỗi cửa hàng một sổ", async () => {
     const a = await openBanhMiStall(url);
+    const att = await emit<MeView>(a.socket, "biz:attend", { on: false });
+    const businessId = (att.ok && att.data.business?.id) || "";
     const warned = next(a.socket, "notify", (n: NotifyEvent) => n.text.startsWith("📒"));
     const fake = {
       orderId: "npc-review-1",
       ownerId: a.snap.me.playerId,
+      businessId,
       productId: "banh_mi",
       archetype: "hoc_sinh",
     } as OrderEvent;
     await app.get(ReviewService).npc(fake, 1, 2, "slow", { force: true });
     expect((await warned).text).toMatch(/· học sinh chấm ★★☆☆☆/);
-    const list = await emit<ReviewsView>(a.socket, "review:list", { ownerId: a.snap.me.playerId });
+    const list = await emit<ReviewsView>(a.socket, "review:list", { businessId });
     expect(list.ok && list.data).toMatchObject({ avg: 2, count: 1, dist: [0, 1, 0, 0, 0] });
     expect(list.ok && content.data.reviews.lines.slow).toContain(
       list.ok && list.data.items[0]?.text,
     );
+    // Mở thêm cửa hàng thứ hai: sổ riêng, chưa có đánh giá nào.
+    await emit(a.socket, "debug:grant", { money: 2_000_000 });
+    const second = await emit<MeView>(a.socket, "equipment:buy", { equipmentId: "xe_tra_sua" });
+    const otherId = (second.ok && second.data.business?.id) || "";
+    expect(otherId).not.toBe(businessId);
+    const other = await emit<ReviewsView>(a.socket, "review:list", { businessId: otherId });
+    expect(other.ok && other.data).toMatchObject({ businessId: otherId, count: 0 });
     a.socket.disconnect();
   });
 
@@ -48,11 +58,11 @@ describe("Sổ đánh giá (e2e)", () => {
     await emit(b.socket, "xom:join", { code: a.snap.roster.code });
     const stall = (await moved).world.lots.find((l) => l.ownerId === a.snap.me.playerId);
     if (!stall) throw new Error("không thấy quầy");
-    const ownerId = a.snap.me.playerId;
+    const businessId = stall.businessId;
 
-    expect(await emit(b.socket, "review:write", { ownerId, stars: 5, text: "ngon" })).toMatchObject(
-      { ok: false, message: "Mua ở quầy này rồi mới đánh giá được" },
-    );
+    expect(
+      await emit(b.socket, "review:write", { businessId, stars: 5, text: "ngon" }),
+    ).toMatchObject({ ok: false, message: "Mua ở quầy này rồi mới đánh giá được" });
 
     const lot = content.lot("dau_hem").position;
     b.socket.emit("move", { x: lot.x + 1, z: lot.z + 1.2, yaw: 0, moving: false, inside: null });
@@ -70,10 +80,10 @@ describe("Sổ đánh giá (e2e)", () => {
     const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: changeFor(o) });
     if (!paid.ok) throw new Error(`tính tiền: ${paid.error} ${paid.message}`);
 
-    const before = await emit<ReviewsView>(b.socket, "review:list", { ownerId });
+    const before = await emit<ReviewsView>(b.socket, "review:list", { businessId });
     expect(before.ok && before.data.canWrite).toBe(true);
     const wrote = await emit<ReviewsView>(b.socket, "review:write", {
-      ownerId,
+      businessId,
       stars: 2,
       text: "Chờ lâu vl, bánh nguội",
     });
@@ -82,7 +92,7 @@ describe("Sổ đánh giá (e2e)", () => {
     const mine = wrote.data.items.find((r) => r.fromPlayer);
     expect(mine).toMatchObject({ stars: 2, text: "Chờ lâu ***, bánh nguội", reply: null });
     expect(
-      await emit(b.socket, "review:write", { ownerId, stars: 5, text: "đổi ý" }),
+      await emit(b.socket, "review:write", { businessId, stars: 5, text: "đổi ý" }),
     ).toMatchObject({ ok: false, message: "Hôm nay bạn đánh giá quầy này rồi" });
 
     if (!mine) throw new Error("không thấy đánh giá");
@@ -90,14 +100,16 @@ describe("Sổ đánh giá (e2e)", () => {
       { ok: false, message: "Không phải đánh giá quầy mình" },
     );
     const prisma = app.get(PrismaService);
-    const repBefore = (await prisma.business.findFirstOrThrow({ where: { ownerId } })).reputation;
+    const repBefore = (await prisma.business.findUniqueOrThrow({ where: { id: businessId } }))
+      .reputation;
     const replied = await emit<ReviewsView>(a.socket, "review:reply", {
       reviewId: mine.id,
       text: content.data.reviews.quickReplies.bad[0] ?? "Xin lỗi bạn",
     });
     if (!replied.ok) throw new Error(`trả lời: ${replied.message}`);
     expect(replied.data.items.find((r) => r.id === mine.id)?.reply).toBeTruthy();
-    const repAfter = (await prisma.business.findFirstOrThrow({ where: { ownerId } })).reputation;
+    const repAfter = (await prisma.business.findUniqueOrThrow({ where: { id: businessId } }))
+      .reputation;
     expect(repAfter).toBeGreaterThan(repBefore);
     expect(
       await emit(a.socket, "review:reply", { reviewId: mine.id, text: "lần nữa" }),

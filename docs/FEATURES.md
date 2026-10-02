@@ -148,6 +148,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Nút ☰ Menu icon không nền + chữ "Menu" đè dưới; bỏ neo ⚙️ (Cài đặt trong Menu); ghim icon **cả trái lẫn phải** (mỗi bên 4) | ✅ | 1.24 | UC-A6 |
 | Nút **‹ Quay lại** ở đầu sheet mở từ sheet khác (nút "›", ô trong Menu) — ngăn xếp `sheetBack` | ✅ | 1.24 | UC-A6 |
 | Chú Bảy không bắt chuyện lại mỗi lần vào game (nhớ lời đã nghe); thêm lựa chọn "Con tự lo được" bỏ qua hướng dẫn | ✅ | 1.24 | UC-A1 |
+| 📒 **Đánh giá riêng từng cửa hàng** (Review.businessId; sổ, viết, trả lời, uy tín theo đúng cửa hàng) | ✅ | 1.24 | UC-F11 |
 | 🏗️ Tách server theo miền (BusinessRepo, PaymentService, Broadcast, Bank/Needs/Market/BusinessService, gateway theo nhóm + IntentRunner) — không đổi hành vi | ✅ | 1.24 | docs/IA.md bước A |
 | 📊 Sổ sách: thu/chi theo từng khoản (lương nhân viên, điện nước tách khỏi phí), lãi/lỗ hôm nay & 7 ngày, chỉ ra khoản chi lớn nhất; Tổng kết ngày tính đủ khoản | ✅ | 1.24 | docs/IA.md bước C |
 | 🚶 Chủ tự do khi có nhân viên: quầy mở mà có nhân viên trong ca thì chủ đi làm thuê / xe ôm / phụ hồ được (chỉ chặn khi không ai bán) | ✅ | 1.24 | UC-M6, HANDOFF 3.4 |

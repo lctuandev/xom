@@ -493,7 +493,7 @@ export class OrderService {
     }
     room.orders.delete(orderId);
     if (e.buyerId) {
-      room.purchases.add(purchaseKey(e.buyerId, e.ownerId, room.day));
+      room.purchases.add(purchaseKey(e.buyerId, e.businessId, room.day));
       // Hàng xóm ăn / uống món vừa mua (UC-B11).
       const add = content.data.needs.byCategory[content.product(e.productId).category];
       if (add) {

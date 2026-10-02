@@ -659,24 +659,24 @@ export class GameService implements OnModuleDestroy {
     return this.stats.mine(room, playerId);
   }
 
-  /** Sổ đánh giá của một chủ quầy cùng xóm (hoặc của mình). */
-  reviewList({ room, playerId }: IntentContext, ownerId: string) {
-    return this.reviews.list(room, playerId, ownerId);
+  /** Sổ đánh giá của một cửa hàng (của hàng xóm hoặc của mình) — mỗi cửa hàng một sổ. */
+  reviewList({ room, playerId }: IntentContext, businessId: string) {
+    return this.reviews.list(room, playerId, businessId);
   }
 
   async reviewWrite(
     { room, playerId }: IntentContext,
-    p: { ownerId: string; stars: number; text: string },
+    p: { businessId: string; stars: number; text: string },
   ) {
     const name = room.members.get(playerId)?.displayName ?? "Hàng xóm";
-    await this.reviews.write(room, { id: playerId, name }, p.ownerId, p.stars, p.text);
-    return this.reviews.list(room, playerId, p.ownerId);
+    await this.reviews.write(room, { id: playerId, name }, p.businessId, p.stars, p.text);
+    return this.reviews.list(room, playerId, p.businessId);
   }
 
   async reviewReply({ room, playerId }: IntentContext, reviewId: string, text: string) {
-    await this.reviews.reply(playerId, reviewId, text);
+    const businessId = await this.reviews.reply(playerId, reviewId, text);
     void this.emitMe(playerId).catch(() => undefined);
-    return this.reviews.list(room, playerId, playerId);
+    return this.reviews.list(room, playerId, businessId);
   }
 
   /** Dev/test: đặt giờ trong ngày của xóm mình; production không cho. */

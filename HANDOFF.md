@@ -146,7 +146,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [x] Nút Menu: icon không nền, chữ "Menu" đè dưới; bỏ neo ⚙️; ghim cả trái lẫn phải (UC-A6).
 - [x] Chú Bảy bắt chuyện mỗi lần vào game → nhớ lời đã nghe + lựa chọn bỏ qua hướng dẫn.
 - [x] Nút **‹ Quay lại** trong sheet mở từ sheet khác / từ Menu (store `sheetBack`, `openFeature(id, { from: "sheet" })`).
-- [ ] **Đánh giá riêng từng cửa hàng** (Review.businessId) — hiện chấm chung theo chủ.
+- [x] **Đánh giá riêng từng cửa hàng** (Review.businessId, migration `20261003090000_review_business`, UC-F11).
 - [ ] **Thưởng** cho thành tựu / nhiệm vụ (tiền nhỏ có trần + mở khoá; không thành thu nhập thụ động).
 - [ ] **Quầy theo mặt hàng**: chọn thể loại khi mở cửa hàng; sheet quầy chỉ còn: nhập đúng hàng của quầy, thuê nhân viên, giá —
   gom bớt nút cuối sheet.

@@ -26,7 +26,7 @@ export function ShopSheet() {
   const [picks, setPicks] = useState<Record<string, string>>({});
   const [mods, setMods] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const { view: rating, setView: setRating } = useReviews(lot?.ownerId);
+  const { view: rating, setView: setRating } = useReviews(lot?.businessId);
   // Vừa mua thì mở sẵn sổ để chấm sao; viết xong vẫn để mở cho thấy đánh giá của mình.
   const [bookOpen, setBookOpen] = useState(false);
   const [hello] = useState(() => Math.random());
@@ -95,7 +95,7 @@ export function ShopSheet() {
           <RatingLine view={rating} /> · 📒 Sổ đánh giá
         </summary>
         <div className="mt-2">
-          <ReviewBook ownerId={lot.ownerId} owner={false} onChange={setRating} />
+          <ReviewBook businessId={lot.businessId} owner={false} onChange={setRating} />
         </div>
       </details>
       <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0" aria-label="Thực đơn">

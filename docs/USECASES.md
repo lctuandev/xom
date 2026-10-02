@@ -470,13 +470,15 @@ xin lỗi đàng hoàng — người đọc thấy quán có tâm.
 **Luồng:**
 - Khách NPC tính tiền xong có ~30% viết đánh giá (khách sộp, reviewer luôn viết); khách chờ lâu bỏ đi ~35% chấm 1–2★.
   Sao theo độ hài lòng; câu theo đúng chuyện vừa xảy ra (sai món, thối thiếu, đắt, chậm, rẻ, nhanh) — `content.reviews.lines`.
-- Chủ quầy: bảng *Làm ăn* → *📒 Sổ đánh giá* (điểm trung bình, phân bố sao, 20 đánh giá mới nhất) → *💬 Trả lời*: chọn câu nhanh hoặc tự viết.
+- Chủ quầy: ☰ Menu → *📒 Đánh giá* của cửa hàng đang quản lý (đổi cửa hàng ở thanh chọn trên đầu sheet) (điểm trung bình, phân bố sao, 20 đánh giá mới nhất) → *💬 Trả lời*: chọn câu nhanh hoặc tự viết.
   Đánh giá ≤ 2★ hoặc của hàng xóm thì có thông báo.
 - Hàng xóm: bảng gọi món quầy hàng xóm hiện *★ 4.2 (15 đánh giá)*; vừa mua xong thì mở ra là ô chấm sao + viết vài chữ.
 **Luật game:** chỉ người đã mua ở quầy hôm nay mới viết được, mỗi ngày một lần mỗi quầy, không tự đánh giá mình;
 trả lời mỗi đánh giá một lần; trả lời đánh giá ≤ 3★ thì uy tín quầy +1% và *Ăn nói* +1; chữ người chơi viết tối đa 140 ký tự,
-từ tục bị che `***`. Sổ gắn với chủ quầy — đổi nghề vẫn giữ tiếng.
-**Kiểm chứng:** unit `progression.test.ts` (sao, tình huống, che từ, trung bình); e2e server `reviews.e2e-spec.ts`;
+từ tục bị che `***`. **Mỗi cửa hàng một sổ riêng** (2026-10-03, góp ý đợt 2): `Review.businessId`, uy tín gỡ lại cũng chỉ của
+cửa hàng đó; đổi món ở cùng cửa hàng vẫn giữ sổ; đánh giá cũ được gắn vào cửa hàng cùng món của chủ (migration).
+**Kiểm chứng:** unit `progression.test.ts` (sao, tình huống, che từ, trung bình); e2e server `reviews.e2e-spec.ts` (+ cửa hàng
+thứ hai có sổ trống riêng);
 Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 **Chưa:** đánh giá ảnh hưởng lượng khách mới (hiện qua uy tín), báo cáo đánh giá sai sự thật.
 

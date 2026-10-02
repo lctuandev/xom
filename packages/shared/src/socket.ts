@@ -191,8 +191,9 @@ export interface ClientToServerEvents {
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
   /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */
-  "review:list": Intent<{ ownerId: string }, ReviewsView>;
-  "review:write": Intent<{ ownerId: string; stars: number; text: string }, ReviewsView>;
+  /** Sổ đánh giá của MỘT cửa hàng (mỗi tiệm / quầy một sổ riêng). */
+  "review:list": Intent<{ businessId: string }, ReviewsView>;
+  "review:write": Intent<{ businessId: string; stars: number; text: string }, ReviewsView>;
   "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;
   /** Quỹ xóm + công trình chung (UC-J5). */
   "fund:view": Intent<Record<string, never>, FundView>;

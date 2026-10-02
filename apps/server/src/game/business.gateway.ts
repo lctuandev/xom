@@ -205,7 +205,7 @@ export class BusinessGateway {
   @SubscribeMessage("review:list")
   reviewList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, reviewListSchema, body, (ctx, p) =>
-      this.game.reviewList(ctx, p.ownerId),
+      this.game.reviewList(ctx, p.businessId),
     );
   }
 
