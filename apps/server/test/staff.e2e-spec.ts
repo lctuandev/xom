@@ -1,5 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
-import type { MeView, NotifyEvent, StaffView, StoryEntryView } from "@xom/shared";
+import type { MeView, MyStatsView, NotifyEvent, StaffView, StoryEntryView } from "@xom/shared";
 import { connect, emit, next, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
 
@@ -54,6 +54,10 @@ describe("Thuê nhân viên (e2e)", () => {
     expect(v.recent[0]).toMatchObject({ staffId: "khoa_phu" });
     expect(v.recent[0]?.revenue).toBeGreaterThan(0);
     expect(v.recent[0]?.wages).toBeGreaterThan(0);
+    // Sổ sách (docs/IA.md bước C): lương nhân viên là khoản chi riêng, không lẫn vào phí.
+    const stats = await emit<MyStatsView>(socket, "stats:me", {});
+    const today = stats.ok ? stats.data.days.at(-1) : undefined;
+    expect(today?.costs.staff).toBe(v.recent[0]?.wages);
     const now = await emit<MeView>(socket, "biz:attend", { on: true });
     expect(now.ok && now.data.money + now.data.bank).not.toBe(me.money + me.bank);
     socket.disconnect();

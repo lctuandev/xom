@@ -8,6 +8,10 @@ export interface ReportAdd {
   rent?: number;
   wages?: number;
   fees?: number;
+  /** Lương nhân viên bán thay. */
+  staffWages?: number;
+  /** Điện nước tiệm. */
+  utilities?: number;
   served?: number;
   lost?: number;
   wrong?: number;
@@ -23,6 +27,8 @@ export function emptyReport() {
     rent: 0,
     wages: 0,
     fees: 0,
+    staffWages: 0,
+    utilities: 0,
     spoiledQty: 0,
     spoiledValue: 0,
     served: 0,
@@ -51,6 +57,8 @@ export async function addToReport(tx: Tx, playerId: string, day: number, add: Re
     rent: add.rent ?? 0,
     wages: add.wages ?? 0,
     fees: add.fees ?? 0,
+    staffWages: add.staffWages ?? 0,
+    utilities: add.utilities ?? 0,
     served: add.served ?? 0,
     lost: add.lost ?? 0,
     wrong: add.wrong ?? 0,
@@ -65,6 +73,8 @@ export async function addToReport(tx: Tx, playerId: string, day: number, add: Re
       rent: { increment: inc.rent },
       wages: { increment: inc.wages },
       fees: { increment: inc.fees },
+      staffWages: { increment: inc.staffWages },
+      utilities: { increment: inc.utilities },
       served: { increment: inc.served },
       lost: { increment: inc.lost },
       wrong: { increment: inc.wrong },

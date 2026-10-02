@@ -325,7 +325,7 @@ export class BusinessService {
         try {
           await this.prisma.$transaction(async (tx) => {
             await this.ledger.transfer(tx, from, SYSTEM.landlord, perHour, "utilities", b.id);
-            await addToReport(tx, b.ownerId, room.day, { fees: perHour });
+            await addToReport(tx, b.ownerId, room.day, { utilities: perHour });
           });
           paid = true;
           break;

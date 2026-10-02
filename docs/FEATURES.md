@@ -145,6 +145,8 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🏠 Đòi tiền nhà: chủ nhà NPC (chân dung + thoại) tới nhắc 17h, trả ngay / hẹn **ngày** (phí trễ theo số ngày) / để sau; quá hạn trừ cọc + 🤝, trễ lần 3 hoặc hết cọc thì dẹp tiệm (cả xóm biết); offline chưa hẹn không tính trễ | ✅ | 1.23 | UC-F13 |
 | ⚖️ Cân lại kinh tế tiệm: mặt tiền đông khách hơn + khách chịu giá cao hơn ~20% (`priceTolerance`), nhân viên tay ngang người chơi, sửa lương làm tròn mỗi nhịp (10k→12k/giờ); `pnpm balance` có bảng Tiệm + cảnh báo tiệm thua xe đẩy / nhân viên lỗ / nhân viên hơn chủ | ✅ | 1.23 | UC-F12, UC-M6 |
 | 🧭 Tổ chức lại giao diện: **mỗi chức năng một sheet riêng** (35 chức năng, registry), ☰ Menu lưới icon 5 nhóm + chấm đỏ, cột neo trái tự ghim tối đa 4, bỏ thanh dưới 5 mục; tách Làm ăn 9 tab, Hồ sơ 5 tab, Việc làm 3 tab, Hàng xóm, Thanh lý | ✅ | 1.24 | docs/IA.md, DESIGN Luật 12.3–12.6 |
+| 🏗️ Tách server theo miền (BusinessRepo, PaymentService, Broadcast, Bank/Needs/Market/BusinessService, gateway theo nhóm + IntentRunner) — không đổi hành vi | ✅ | 1.24 | docs/IA.md bước A |
+| 📊 Sổ sách: thu/chi theo từng khoản (lương nhân viên, điện nước tách khỏi phí), lãi/lỗ hôm nay & 7 ngày, chỉ ra khoản chi lớn nhất; Tổng kết ngày tính đủ khoản | ✅ | 1.24 | docs/IA.md bước C |
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |

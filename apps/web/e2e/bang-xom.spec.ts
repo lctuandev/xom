@@ -19,6 +19,12 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
 
   await openFeature(page, "books");
   const sheet = page.getByRole("dialog", { name: "📊 Sổ sách" });
+  // Sổ thu chi hôm nay: có bán hàng, nhập hàng, tiền chỗ; lãi/lỗ ròng.
+  const books = sheet.locator("[data-books=today]");
+  await expect(books).toContainText("💰 Bán hàng");
+  await expect(books.locator("[data-cost=stock]")).not.toContainText("—");
+  await expect(books.locator("[data-profit]")).toBeVisible();
+  await shot(page, "89-so-sach");
   const week = sheet.locator("[data-week]");
   await week.scrollIntoViewIfNeeded();
   await expect(week).toBeVisible();

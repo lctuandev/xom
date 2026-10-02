@@ -4,6 +4,7 @@ import type { MyStatsView, NotifyEvent, XomBoardView } from "@xom/shared";
 import {
   achievementProgress,
   type Contender,
+  costsOf,
   formatClock,
   levelOf,
   marketShare,
@@ -69,6 +70,8 @@ export class StatsService {
           stockCost: d.stockCost,
           rent: d.rent,
           fees: d.fees,
+          staffWages: d.staffWages,
+          utilities: d.utilities,
           served: d.served,
         })),
         rating: {
@@ -139,12 +142,15 @@ export class StatsService {
     const days = [];
     for (let d = Math.max(1, room.day - WINDOW + 1); d <= room.day; d++) {
       const row = me?.days.find((x) => x.day === d);
+      const c = row ? costsOf(row) : { stock: 0, rent: 0, staff: 0, utilities: 0, fees: 0 };
       days.push({
         day: d,
         revenue: row?.revenue ?? 0,
+        tips: row?.tips ?? 0,
         profit: row ? profitOf(row) : 0,
         served: row?.served ?? 0,
         wages: row?.wages ?? 0,
+        costs: c,
       });
     }
     const achievements = await this.checkAchievements(playerId, room.day);

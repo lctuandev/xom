@@ -243,7 +243,7 @@ export class StaffService {
         served: r.served,
         wrong: r.wrong,
         lost: r.lost,
-        fees: quit ? 0 : wages,
+        staffWages: quit ? 0 : wages,
         ...(total ? { satisfaction: { value: satisfaction, weight: total } } : {}),
       });
       await tx.business.update({

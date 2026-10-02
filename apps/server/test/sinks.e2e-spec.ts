@@ -62,8 +62,10 @@ describe("Money sink (e2e)", () => {
     const { socket } = await stall("nha_so_10");
     const opened = await emit(socket, "biz:open", {});
     if (!opened.ok) throw new Error(`${opened.error}: ${opened.message}`);
-    const billed = await next(socket, "me", (m) => m.today.fees > eco.fees.daily.house);
-    expect(billed.today.fees - eco.fees.daily.house).toBe(eco.fees.utilitiesPerHour);
+    // Điện nước là khoản riêng trong sổ (docs/IA.md bước C), thuế khoán vẫn ở phí.
+    const billed = await next(socket, "me", (m) => m.today.utilities > 0);
+    expect(billed.today.utilities).toBe(eco.fees.utilitiesPerHour);
+    expect(billed.today.fees).toBe(eco.fees.daily.house);
     socket.disconnect();
   });
 

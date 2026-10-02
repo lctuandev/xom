@@ -73,7 +73,12 @@ export interface TodayView {
   lost: number;
   stockCost: number;
   wages: number;
+  /** Phí chợ/thuế, giấy tờ, sửa xe, khai trương… */
   fees: number;
+  /** Lương nhân viên bán thay đã trả hôm nay. */
+  staffWages: number;
+  /** Điện nước tiệm hôm nay. */
+  utilities: number;
 }
 
 export interface MeView {
@@ -390,7 +395,16 @@ export interface AchievementView {
 
 /** Số liệu của mình: 7 ngày gần nhất + trung bình quầy cùng món trong xóm + thành tựu. */
 export interface MyStatsView {
-  days: { day: number; revenue: number; profit: number; served: number; wages: number }[];
+  days: {
+    day: number;
+    revenue: number;
+    tips: number;
+    profit: number;
+    served: number;
+    wages: number;
+    /** Chi theo khoản (Sổ sách): nhập hàng, tiền nhà/chỗ, lương nhân viên, điện nước, phí/thuế & khác. */
+    costs: { stock: number; rent: number; staff: number; utilities: number; fees: number };
+  }[];
   avg: { stalls: number; revenue: number; served: number; rating: number } | null;
   achievements: AchievementView[];
 }
@@ -613,8 +627,12 @@ export interface DayReportView {
   reputation: number;
   /** Lãi ngân hàng nhận cuối ngày. */
   interest: number;
-  /** Phí chợ/thuế, điện nước, sửa xe, khai trương. */
+  /** Phí chợ/thuế, giấy tờ, sửa xe, khai trương… */
   fees: number;
+  /** Lương nhân viên bán thay. */
+  staffWages: number;
+  /** Điện nước tiệm. */
+  utilities: number;
   /** Lãi/lỗ trong ngày (gồm cả tiền vào tài khoản). */
   profit: number;
   moneyEnd: number;

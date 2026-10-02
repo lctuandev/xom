@@ -384,6 +384,10 @@ model DailyReport {
   interest     Int      @default(0)
   /// Phí chợ/thuế, điện nước, sửa xe, khai trương… (chỗ tiêu ngoài nhập hàng và thuê chỗ).
   fees         Int      @default(0)
+  /// Lương nhân viên bán thay (UC-M6) — tách khỏi `fees` để Sổ sách thấy rõ (docs/IA.md bước C).
+  staffWages   Int      @default(0)
+  /// Điện nước tiệm theo giờ mở cửa.
+  utilities    Int      @default(0)
   stockCost    Int
   rent         Int
   wages        Int

@@ -985,6 +985,8 @@ export class GameService implements OnModuleDestroy {
         reputation: report.reputation,
         interest: report.interest,
         fees: report.fees,
+        staffWages: report.staffWages,
+        utilities: report.utilities,
         profit:
           report.revenue +
           report.tips +
@@ -992,7 +994,9 @@ export class GameService implements OnModuleDestroy {
           report.interest -
           report.stockCost -
           report.rent -
-          report.fees,
+          report.fees -
+          report.staffWages -
+          report.utilities,
         moneyEnd: Number(report.moneyEnd),
       });
       // Thành tựu (UC-P2): cuối ngày xem có cái nào vừa đủ.
@@ -1098,6 +1102,8 @@ export class GameService implements OnModuleDestroy {
         stockCost: report?.stockCost ?? 0,
         wages: report?.wages ?? 0,
         fees: report?.fees ?? 0,
+        staffWages: report?.staffWages ?? 0,
+        utilities: report?.utilities ?? 0,
       },
     };
   }
