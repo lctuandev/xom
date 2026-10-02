@@ -27,6 +27,12 @@ export function attractiveness(priceRatio: number, product: Product, reputation:
   return (1 / priceRatio) ** product.elasticity * repFactor(reputation);
 }
 
+/** Giá khách thấy hợp lý cho một món ở một chỗ bán (tiệm: cao hơn xe đẩy theo lot.priceTolerance), làm tròn nghìn. */
+export function fairPrice(content: Content, refPrice: number, lotId: string | null): number {
+  const tol = lotId ? content.lot(lotId).priceTolerance : 1;
+  return Math.round((refPrice * tol) / 1000) * 1000;
+}
+
 /** Tỉ lệ giá trung bình của các món đang bán so với giá khách thấy hợp lý. */
 export function menuPriceRatio(
   product: Product,
@@ -144,7 +150,13 @@ export function customerArrivals({
   const info = shops.map((s) => {
     const product = content.product(s.productId);
     const lot = content.lot(s.lotId);
-    return { s, product, lot, attract: attractiveness(s.priceRatio, product, s.reputation) };
+    // Giá so với mức khách chấp nhận ở chỗ này (tiệm: khách chịu giá cao hơn xe đẩy).
+    return {
+      s,
+      product,
+      lot,
+      attract: attractiveness(s.priceRatio / lot.priceTolerance, product, s.reputation),
+    };
   });
 
   const fame = districtFame(

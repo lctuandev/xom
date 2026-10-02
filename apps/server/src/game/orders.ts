@@ -16,6 +16,7 @@ import {
   choosePayment,
   customOrder,
   eat,
+  fairPrice,
   generateOrder,
   hasIngredients,
   ingredientsFor,
@@ -424,7 +425,8 @@ export class OrderService {
 
     const eco = content.economy;
     const variant = content.variant(e.productId, e.variantId);
-    const ratio = e.price / variant.refPrice;
+    // So với giá khách chấp nhận ở chỗ này (ngồi tiệm chịu giá cao hơn xe đẩy).
+    const ratio = e.price / fairPrice(content, variant.refPrice, e.lotId || null);
     const fast = Date.now() - e.createdAt <= order.patienceMs * 0.6;
     // Khách là người chơi: không có tiền boa tự động (boa là chuyện của họ).
     const vip = order.vip;

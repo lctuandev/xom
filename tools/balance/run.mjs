@@ -11,6 +11,7 @@ import {
   dishCost,
   LOST_WEIGHT,
   nextReputation,
+  staffShift,
   weatherAt,
   weatherDemand,
   weatherPlan,
@@ -35,7 +36,8 @@ function runStrategy(equipment, lot, mult, serveSec) {
       (s, v) => s + dishCost(content, recipe, baseSpec(recipe, v.id)) * v.popularity,
       0,
     ) / pop;
-  const price = avgRef * mult;
+  // Tiệm (nhà mặt tiền): khách chịu giá cao hơn → các mức giá thử tính trên giá hợp lý của chỗ đó.
+  const price = avgRef * mult * lot.priceTolerance;
   let reputation = eco.startingReputation;
   let carry = 0;
   let money = 0;
@@ -69,7 +71,7 @@ function runStrategy(equipment, lot, mult, serveSec) {
             id: "s",
             productId: product.id,
             lotId: lot.id,
-            priceRatio: mult,
+            priceRatio: mult * lot.priceTolerance,
             reputation,
             boost: weatherDemand(
               content.weatherKind(weatherAt(sky, m).kind),
@@ -120,6 +122,60 @@ function runStrategy(equipment, lot, mult, serveSec) {
   };
 }
 
+/**
+ * Tiệm có nhân viên đứng cả ngày (UC-M6): nhân viên bán theo sức tay, chủ trả lương giờ + tiền nhà + điện nước + thuế.
+ * Kho đủ hàng (chủ nhập mỗi sáng), giá = giá hợp lý của chỗ đó.
+ */
+function runStaff(equipment, lot, person) {
+  const product = content.product(equipment.products[0]);
+  const recipe = product.recipe;
+  const menu = recipe.variants.map((v) => ({
+    variantId: v.id,
+    price: Math.round((v.refPrice * lot.priceTolerance) / 1000) * 1000,
+  }));
+  const stock = new Map(content.data.ingredients.map((i) => [i.id, 1e6]));
+  const pop = recipe.variants.reduce((s, v) => s + v.popularity, 0);
+  const avgCost =
+    recipe.variants.reduce(
+      (s, v) => s + dishCost(content, recipe, baseSpec(recipe, v.id)) * v.popularity,
+      0,
+    ) / pop;
+  let money = 0;
+  let carry = 0;
+  let served = 0;
+  for (let day = 1; day <= DAYS; day++) {
+    money -=
+      lot.rentPerDay +
+      eco.fees.daily.house +
+      (eco.fees.utilitiesPerHour * (eco.dayEndMinute - eco.dayStartMinute)) / 60;
+    const r = staffShift({
+      content,
+      staff: person,
+      productId: product.id,
+      lotId: lot.id,
+      menu,
+      stock,
+      reputation: eco.startingReputation,
+      priceRatio: lot.priceTolerance,
+      day,
+      fromMinute: eco.dayStartMinute,
+      toMinute: eco.dayEndMinute,
+      demandCarry: carry,
+      seed: `${equipment.id}:${lot.id}`,
+    });
+    carry = r.demandCarry;
+    served += r.served + r.wrong;
+    money += r.revenue - (r.served + r.wrong) * avgCost * (1 + WASTE) - r.wages;
+  }
+  return {
+    equipment: equipment.id,
+    lot: lot.id,
+    staff: person.id,
+    profitPerDay: Math.round(money / DAYS),
+    servedPerDay: Math.round(served / DAYS),
+  };
+}
+
 const rows = [];
 for (const equipment of content.data.equipment)
   for (const lot of content.data.lots)
@@ -156,10 +212,62 @@ for (const equipment of content.data.equipment) {
       warnings.push(
         `${equipment.id}: tay vừa, chỗ tốt nhất (${k(best.profitPerDay)}) còn thua làm thuê (${k(wage)})`,
       );
-    if (name === "nhanh" && best.profitPerDay > wage * 5)
-      warnings.push(`${equipment.id}: tay nhanh lãi quá cao (${k(best.profitPerDay)}/ngày)`);
+    // Trần lãi theo bậc tiến trình: xe đẩy ≤ 5 lần làm thuê; tiệm (đã bỏ vốn cọc + giấy tờ, chi phí cố định cao) ≤ 6,5 lần.
+    const cap = wage * (content.lot(best.lot).kind === "house" ? 6.5 : 5);
+    if (name === "nhanh" && best.profitPerDay > cap)
+      warnings.push(
+        `${equipment.id}: tay nhanh lãi quá cao (${k(best.profitPerDay)}/ngày ở ${best.lot}, trần ${k(cap)})`,
+      );
+    const carts = mine.filter((r) => content.lot(r.lot).kind === "cart");
+    const bestCart = carts.reduce((a, b) => (b.profitPerDay > a.profitPerDay ? b : a));
+    if (name === "nhanh" && bestCart.profitPerDay > wage * 5)
+      warnings.push(
+        `${equipment.id}: xe đẩy tay nhanh lãi quá cao (${k(bestCart.profitPerDay)}/ngày)`,
+      );
   }
 }
+// Tiệm (nhà mặt tiền) phải là bước tiến so với xe đẩy (DESIGN: xe đẩy → tiệm → tiệm lớn); nhân viên đỡ tay chứ không hơn chủ.
+const houses = content.data.lots.filter((l) => l.kind === "house");
+const staffRows = content.data.equipment.flatMap((e) =>
+  houses.flatMap((lot) => content.data.staff.people.map((p) => runStaff(e, lot, p))),
+);
+console.log(
+  "\nTiệm (nhà mặt tiền) | Tự bán tay vừa | Xe đẩy tốt nhất | Nhân viên cả ngày (tốt nhất · tệ nhất)",
+);
+for (const e of content.data.equipment) {
+  const vuaRows = rows.filter((r) => r.equipment === e.id && r.serveSec === SPEEDS.vua);
+  const isHouse = (r) => content.lot(r.lot).kind === "house";
+  const bestHouse = vuaRows
+    .filter(isHouse)
+    .reduce((a, b) => (b.profitPerDay > a.profitPerDay ? b : a));
+  const bestCart = vuaRows
+    .filter((r) => !isHouse(r))
+    .reduce((a, b) => (b.profitPerDay > a.profitPerDay ? b : a));
+  const mine = staffRows.filter((r) => r.equipment === e.id);
+  const top = mine.reduce((a, b) => (b.profitPerDay > a.profitPerDay ? b : a));
+  const low = mine.reduce((a, b) => (b.profitPerDay < a.profitPerDay ? b : a));
+  console.log(
+    `${e.id.padEnd(19)} | ${`${k(bestHouse.profitPerDay)} ${bestHouse.lot}`.padEnd(14)} | ${`${k(bestCart.profitPerDay)} ${bestCart.lot}`.padEnd(15)} | ${k(top.profitPerDay)} ${top.staff}@${top.lot} · ${k(low.profitPerDay)} ${low.staff}@${low.lot}`,
+  );
+  if (bestHouse.profitPerDay <= bestCart.profitPerDay)
+    warnings.push(
+      `${e.id}: tiệm tự bán (${k(bestHouse.profitPerDay)}) không hơn xe đẩy tốt nhất (${k(bestCart.profitPerDay)}) — thuê nhà vô ích`,
+    );
+  if (top.profitPerDay <= 0)
+    warnings.push(`${e.id}: thuê nhân viên cả ngày ở tiệm nào cũng lỗ (${k(top.profitPerDay)})`);
+  for (const r of mine) {
+    // Nhân viên không được hơn chủ tay nhanh tự đứng bán cùng chỗ, cùng giá.
+    const self = rows.find(
+      (x) =>
+        x.equipment === e.id && x.lot === r.lot && x.priceMult === 1 && x.serveSec === SPEEDS.nhanh,
+    );
+    if (self && r.profitPerDay > self.profitPerDay)
+      warnings.push(
+        `${e.id}: ${r.staff} bán thay ở ${r.lot} (${k(r.profitPerDay)}) lãi hơn chủ tay nhanh tự bán (${k(self.profitPerDay)}) — thu nhập thụ động`,
+      );
+  }
+}
+
 const vua = content.data.equipment.map((e) =>
   Math.max(
     ...rows

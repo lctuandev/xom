@@ -2,7 +2,15 @@
 
 import { content } from "@xom/content";
 import type { BusinessView, RegularView, StaffView } from "@xom/shared";
-import { formatClock, openDue, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
+import {
+  fairPrice,
+  formatClock,
+  openDue,
+  priceScore,
+  repairCost,
+  unlockLevel,
+  wearState,
+} from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { districtLikes } from "../districts";
 import { stars, vnd, vndShort } from "../format";
@@ -426,9 +434,11 @@ function MenuRow({ biz, item }: { biz: BusinessView; item: BusinessView["menu"][
   };
   const cost = baseCost(biz.productId, item.variantId);
   const can = makeableCount(biz.productId, item.variantId, inventory);
-  const score = priceScore(price / variant.refPrice);
+  // Ngồi tiệm khách chịu giá cao hơn xe đẩy (lot.priceTolerance).
+  const fair = fairPrice(content, variant.refPrice, biz.lotId);
+  const score = priceScore(price / fair);
   const verdict =
-    price < variant.refPrice * 0.85
+    price < fair * 0.85
       ? { text: "Rẻ", cls: "text-leaf" }
       : score >= 0.95
         ? { text: "Hợp lý", cls: "text-leaf" }
@@ -469,7 +479,9 @@ function MenuRow({ biz, item }: { biz: BusinessView; item: BusinessView["menu"][
             format={vnd}
           />
           <p className={`mt-1 text-center text-xs font-semibold ${verdict.cls}`}>
-            {verdict.text} · khách thấy hợp lý khoảng {vnd(variant.refPrice)}
+            {verdict.text} · khách{" "}
+            {biz.lotId && content.lot(biz.lotId).kind === "house" ? "vào tiệm " : ""}thấy hợp lý
+            khoảng {vnd(fair)}
           </p>
         </div>
       )}

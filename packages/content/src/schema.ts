@@ -210,6 +210,11 @@ export const lotSchema = z.object({
   facing: z.number(),
   /** cart = xe đẩy trên vỉa hè; house = nhà mặt tiền có không gian tiệm bên trong (UC-W6). */
   kind: z.enum(["cart", "house"]).default("cart"),
+  /**
+   * Khách ở chỗ này chịu giá cao hơn giá tham khảo bấy nhiêu lần — ngồi tiệm có mái, có ghế, có biển hiệu thì trả đắt hơn mua
+   * ở xe đẩy. Giá "hợp lý" ở chỗ này = refPrice × priceTolerance.
+   */
+  priceTolerance: z.number().min(1).max(2).default(1),
 });
 
 /** Cư dân có tên trong xóm (KIENTRUC §1): khách tới quầy là một người cụ thể, có món ưa; quầy nhớ họ ghé mấy lần. */

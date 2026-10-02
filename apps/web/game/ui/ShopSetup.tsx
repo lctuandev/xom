@@ -104,6 +104,9 @@ export function ShopSetup() {
                   <p className="text-xs text-ink/60">{lot.hint}</p>
                   <p className="mt-1 text-xs text-ink/60">
                     Ký xong đồ nghề dọn vào nhà, thôi bán xe đẩy ngoài vỉa hè (khỏi trả tiền chỗ).
+                    Mặt tiền có mái, ghế, biển hiệu: <b>khách đông hơn</b> và{" "}
+                    <b>chịu giá cao hơn ~{Math.round((lot.priceTolerance - 1) * 100)}%</b> so với xe
+                    đẩy.
                   </p>
                   <p className="mt-1 text-xs tabular-nums">
                     Tiền nhà {vndShort(h.rentPerDay)}/ngày · cọc {vndShort(e.deposit)} (

@@ -1,7 +1,7 @@
 import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import { baseSpec } from "./recipe.js";
-import { shiftAt, staffShift, staffWage } from "./staff.js";
+import { shiftAt, staffShift, staffWage, staffWageCarry } from "./staff.js";
 
 const banhMi = content.product("banh_mi").recipe;
 const menu = banhMi.variants.map((v) => ({ variantId: v.id, price: v.refPrice }));
@@ -91,5 +91,20 @@ describe("nhân viên bán thay (KIENTRUC §2)", () => {
     expect(shiftAt(content, "sang", 7 * 60)).toBe(true);
     expect(shiftAt(content, "sang", 12 * 60)).toBe(false);
     expect(baseSpec(banhMi, "banh_mi_thit")).toBeTruthy();
+  });
+});
+
+describe("lương nhân viên trả theo nhịp", () => {
+  it("cộng dồn phần lẻ: 16 giờ × 10k/giờ trả đúng 160k dù trả mỗi 5 phút", () => {
+    const di = { wagePerHour: 10_000 } as Parameters<typeof staffWageCarry>[0];
+    let carry = 0;
+    let paid = 0;
+    for (let i = 0; i < (16 * 60) / 5; i++) {
+      const r = staffWageCarry(di, 5, carry);
+      carry = r.carry;
+      paid += r.wages;
+      expect(r.wages % 500).toBe(0);
+    }
+    expect(paid).toBe(160_000);
   });
 });
