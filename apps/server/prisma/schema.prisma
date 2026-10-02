@@ -36,43 +36,45 @@ model Session {
 
 /// Nhân vật trong game của một tài khoản.
 model Player {
-  id           String    @id @default(uuid(7)) @db.Uuid
-  userId       String    @unique @db.Uuid
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName  String
-  roomId       String?   @db.Uuid
-  room         Room?     @relation(fields: [roomId], references: [id])
+  id               String    @id @default(uuid(7)) @db.Uuid
+  userId           String    @unique @db.Uuid
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName      String
+  roomId           String?   @db.Uuid
+  room             Room?     @relation(fields: [roomId], references: [id])
   /// Việc làm thuê đang làm (content job id), null = không đi làm.
-  jobId        String?
+  jobId            String?
   /// Bước kịch bản người mới đang ở (content tutorial step id).
-  tutorial     String    @default("gap_chu_bay")
+  tutorial         String    @default("gap_chu_bay")
   /// Kinh nghiệm tích luỹ từ làm thật (docs/DESIGN.md §4) — cấp độ suy ra từ đây.
-  xp           Int       @default(0)
+  xp               Int       @default(0)
   /// Điểm kỹ năng (DESIGN §4): { tay_nhanh, nho_mon, an_noi } — tăng nhờ làm thật.
-  skills       Json      @default("{}")
+  skills           Json      @default("{}")
   /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
-  achievements Json      @default("{}")
+  achievements     Json      @default("{}")
   /// Mã PIN thẻ ATM (băm sha256 kèm id người chơi) — null = chưa tạo (UC-I6).
-  atmPin       String?
+  atmPin           String?
   /// Sai PIN quá số lần cho phép: máy giữ thẻ tới hết ngày game này.
-  atmLockDay   Int?
+  atmLockDay       Int?
   /// Đói / khát (UC-B11): { food, drink, at } — giảm theo giờ game, tính lại khi đọc (sim needsAt).
-  needs        Json      @default("{}")
+  needs            Json      @default("{}")
   /// Lần cuối rời xóm (thời gian thật + ngày game) — để tóm tắt "Trong lúc bạn vắng" (THEGIOI §4).
-  lastSeenAt   DateTime?
-  lastSeenDay  Int?
+  lastSeenAt       DateTime?
+  lastSeenDay      Int?
   /// 🤝 Điểm tin cậy 0–100 (KIENTRUC §3) — tách khỏi uy tín quầy; lên khi giữ lời, xuống khi bỏ việc / thối thiếu.
-  trust        Int       @default(50)
+  trust            Int       @default(50)
+  /// Cửa hàng đang quản lý (docs/IA.md bước D — nhiều cửa hàng): mọi thao tác quầy áp cho cửa hàng này.
+  activeBusinessId String?   @db.Uuid
   /// Tin cậy quá thấp: khoá nhận việc trên bảng việc xóm tới hết ngày game này.
-  trustLockDay Int?
+  trustLockDay     Int?
   /// 🛵 Xe ôm (KIENTRUC §4): ngày game đã thuê xe Wave của Chú Lực; số cuốc đã chạy; tổng sao khách chấm.
-  bikeRentDay  Int?
-  rides        Int       @default(0)
-  rideStars    Int       @default(0)
+  bikeRentDay      Int?
+  rides            Int       @default(0)
+  rideStars        Int       @default(0)
   /// Việc người chơi thuê (UC-M8): số việc đã được nghiệm thu + tổng sao người thuê chấm.
-  gigs         Int       @default(0)
-  gigStars     Int       @default(0)
-  createdAt    DateTime  @default(now())
+  gigs             Int       @default(0)
+  gigStars         Int       @default(0)
+  createdAt        DateTime  @default(now())
 
   businesses     Business[]
   relations      NpcRelation[]
@@ -169,40 +171,42 @@ enum BusinessStatus {
 }
 
 model Business {
-  id          String         @id @default(uuid(7)) @db.Uuid
-  ownerId     String         @db.Uuid
-  owner       Player         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id          String          @id @default(uuid(7)) @db.Uuid
+  ownerId     String          @db.Uuid
+  owner       Player          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   equipmentId String
   productId   String
   lotId       String?
   /// Thực đơn: variantId → { on, price } (docs/USECASES.md UC-F2).
-  menu        Json           @default("{}")
-  status      BusinessStatus @default(CLOSED)
+  menu        Json            @default("{}")
+  status      BusinessStatus  @default(CLOSED)
   reputation  Float
-  demandCarry Float          @default(0)
+  demandCarry Float           @default(0)
   /// Tiền thuê chỗ trả trước khi mở hàng: ngày và lô đã trả gần nhất.
   rentPaidDay Int?
   rentLotId   String?
   /// Độ mòn xe đẩy/quầy 0–1 (Luật 2.2): bán càng nhiều càng mòn, sửa ở vựa xe Ông Sáu.
-  wear        Float          @default(0)
+  wear        Float           @default(0)
   /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
   promoDay    Int?
-  createdAt   DateTime       @default(now())
+  createdAt   DateTime        @default(now())
   /// Nhân viên đang thuê (KIENTRUC §2), mỗi quầy một người ở bản đầu.
   employee    Employee?
+  /// Kho riêng của cửa hàng.
+  inventory   InventoryItem[]
   /// Mở tiệm (UC-F12): tên quán đăng ký hộ kinh doanh; phút game tuyệt đối hồ sơ được duyệt (null = chưa nộp).
   shopName    String?
   licenseAt   Int?
   /// ATTP: đã tập huấn; giờ đoàn kiểm tra tới (phút tuyệt đối); đã có giấy chứng nhận.
-  trained     Boolean        @default(false)
+  trained     Boolean         @default(false)
   inspectAt   Int?
-  certified   Boolean        @default(false)
+  certified   Boolean         @default(false)
   /// Đã làm biển hiệu tên quán.
-  signed      Boolean        @default(false)
+  signed      Boolean         @default(false)
   /// Ảnh quầy đăng lên nhóm xóm (UC-M8): khách ghé ×adMul tới phút `adUntil` của ngày `adDay`.
   adDay       Int?
   adUntil     Int?
-  adMul       Float          @default(1)
+  adMul       Float           @default(1)
 
   @@index([ownerId])
 }
@@ -360,16 +364,36 @@ model Gig {
 }
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.
+/// Kho RIÊNG từng cửa hàng (docs/IA.md bước D); `playerId` = chủ (dời ngày lô khi chuyển xóm, hỏng cuối ngày).
 model InventoryItem {
-  id       String @id @default(uuid(7)) @db.Uuid
-  playerId String @db.Uuid
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid(7)) @db.Uuid
+  playerId   String   @db.Uuid
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  businessId String   @db.Uuid
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   /// Id nguyên liệu (content ingredients).
-  itemId   String
-  batchDay Int
-  qty      Int
+  itemId     String
+  batchDay   Int
+  qty        Int
 
-  @@unique([playerId, itemId, batchDay])
+  @@unique([businessId, itemId, batchDay])
+  @@index([playerId])
+}
+
+/// Hàng đang chuyển giữa hai cửa hàng của một chủ (bấm chuyển, tới sau vài phút game — docs/IA.md bước D).
+model StockTransfer {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  ownerId   String   @db.Uuid
+  fromId    String   @db.Uuid
+  toId      String   @db.Uuid
+  itemId    String
+  batchDay  Int
+  qty       Int
+  /// Phút game tuyệt đối hàng tới nơi.
+  arriveAt  Int
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
 }
 
 model DailyReport {

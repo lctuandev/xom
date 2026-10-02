@@ -560,6 +560,26 @@ nặng; người thuê "lặn" → chủ nhà giữ cọc, cho người khác th
 nợ trừ cọc; hẹn → cả ngày hẹn không bị đòi → thất hẹn trừ cọc + tin cậy; để sau mãi → trễ 3 lần dẹp tiệm, cả xóm biết, 📖) ·
 Playwright `doi-tien-nha` (modal chân dung → hẹn ngày → trả ở 🏪 Mở tiệm).
 
+
+### UC-F14 · Nhiều cửa hàng, kho riêng từng tiệm, chuyển kho ✅ (bản đầu)
+> Góp ý: "đủ tiền thì mở nhiều cửa hàng khác nhau (không phải đổi nghề)"; chốt: **không giới hạn số cửa hàng**, **kho riêng
+> từng tiệm**, chuyển kho **bấm chuyển, chờ thời gian**. Kế hoạch: docs/IA.md bước D.
+
+**Luồng:** ở vựa Ông Sáu, đã có quầy thì mỗi đồ nghề có 2 nút: **🏪 Mở thêm cửa hàng** (giữ các quầy cũ, quầy mới thành quầy
+đang quản lý) · **🔄 Đổi nghề quầy đang chọn** (bán lại đồ nghề cũ nửa giá, giữ cửa hàng + kho cũ để thanh lý). ☰ Menu →
+**🏬 Các cửa hàng**: thẻ từng cửa hàng (món, chỗ, đang bán/đóng, có nhân viên trong ca không) → **Quản lý cửa hàng này**. Mọi
+sheet nhóm 🏪 (Quầy, Thực đơn, Kho, Chỗ bán, Nhân viên…) có **hàng chip chọn cửa hàng** trên đầu. **📦 Kho → 🚚 Chuyển sang
+cửa hàng khác**: chọn cửa hàng nhận, món, số phần → hàng tới sau **30 phút game** (báo 📦 khi tới). Ở chợ ghi rõ "Nhập hàng
+cho: …".
+
+**Luật game:** kho thuộc cửa hàng — nhập chợ vào cửa hàng đang quản lý, làm món / nhân viên bán / làm hàng việc xóm trừ kho
+cửa hàng đó; chưa có quầy thì không nhập hàng. Chủ **tự đứng bán một cửa hàng một lúc** (`room.attending`: chủ → cửa hàng),
+cửa hàng khác bán được khi có nhân viên trong ca; khách réo / nhân viên bán thay tính theo từng cửa hàng. Đang chở thì hàng
+chưa bán được ở đâu. Hiện mỗi người thuê **một** nhà mặt tiền (các cửa hàng khác ở vỉa hè).
+
+**Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
+khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang`.
+
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
 **Luật:** phụ tùng không hỏng theo ngày nhưng vốn lớn (ruột xe 55k/cái). Biển hiệu "SỬA XE {tên}". Khách đông buổi sáng/chiều tan tầm.

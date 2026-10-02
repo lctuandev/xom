@@ -29,19 +29,44 @@ export class MarketService {
     private readonly broadcast: Broadcast,
   ) {}
 
-  async buyEquipment({ room, playerId }: IntentContext, equipmentId: string, pay?: PayMethod) {
+  /**
+   * Mua đồ nghề ở vựa Ông Sáu (docs/IA.md bước D — nhiều cửa hàng):
+   * - `new` (mặc định): mở THÊM một cửa hàng (không giới hạn), thành cửa hàng đang quản lý.
+   * - `replace`: đổi nghề cửa hàng đang quản lý — bán lại đồ nghề cũ nửa giá, GIỮ cửa hàng (kho cũ còn để thanh lý,
+   *   nhân viên, chỗ bán), đổi món + thực đơn, uy tín về mức khởi đầu.
+   */
+  async buyEquipment(
+    { room, playerId }: IntentContext,
+    equipmentId: string,
+    pay?: PayMethod,
+    mode: "new" | "replace" = "new",
+  ) {
     const eq = content.equipmentById.get(equipmentId);
     if (!eq) throw new GameError("invalid_payload", "Không có thiết bị này");
     requireAt(room, playerId, "vua_xe", "Tới vựa xe Ông Sáu mới mua xe được");
-    const current = await this.businesses.of(playerId);
-    if (current?.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy trước khi đổi nghề");
-    if (current?.equipmentId === equipmentId)
-      throw new GameError("invalid_state", `Bạn đã có ${eq.name}`);
+    const shops = await this.businesses.list(playerId);
+    const current = mode === "replace" ? await this.businesses.of(playerId) : null;
+    if (mode === "replace") {
+      if (!current) throw new GameError("invalid_state", "Chưa có quầy nào để đổi nghề");
+      if (current.status === "OPEN")
+        throw new GameError("invalid_state", "Đóng quầy trước khi đổi nghề");
+      if (current.equipmentId === equipmentId)
+        throw new GameError("invalid_state", `Quầy này đã là ${eq.name}`);
+    }
     let src: PaySource = "cash";
+    let createdId: string | null = null;
     await this.prisma.$transaction(async (tx) => {
+      src = await this.payment.payOut(
+        tx,
+        playerId,
+        eq.price,
+        SYSTEM.supplier,
+        "equipment_buy",
+        eq.id,
+        pay,
+      );
       if (current) {
-        // Đổi nghề: bán lại thiết bị cũ với nửa giá.
+        // Đổi nghề: bán lại thiết bị cũ với nửa giá, cửa hàng giữ nguyên.
         const old = content.equipment(current.equipmentId);
         const resale = Math.round((old.price * EQUIPMENT_RESALE) / 1000) * 1000;
         await this.ledger.transfer(
@@ -52,38 +77,43 @@ export class MarketService {
           "equipment_resale",
           current.id,
         );
-        await tx.business.delete({ where: { id: current.id } });
+        await tx.business.update({
+          where: { id: current.id },
+          data: {
+            equipmentId: eq.id,
+            productId: eq.products[0] ?? "",
+            menu: {},
+            reputation: content.economy.startingReputation,
+            wear: 0,
+          },
+        });
+      } else {
+        const created = await tx.business.create({
+          data: {
+            ownerId: playerId,
+            equipmentId: eq.id,
+            productId: eq.products[0] ?? "",
+            reputation: content.economy.startingReputation,
+          },
+        });
+        createdId = created.id;
+        await tx.player.update({ where: { id: playerId }, data: { activeBusinessId: created.id } });
       }
-      src = await this.payment.payOut(
-        tx,
-        playerId,
-        eq.price,
-        SYSTEM.supplier,
-        "equipment_buy",
-        eq.id,
-        pay,
-      );
-      await tx.business.create({
-        data: {
-          ownerId: playerId,
-          equipmentId: eq.id,
-          productId: eq.products[0] ?? "",
-          reputation: content.economy.startingReputation,
-        },
-      });
       await tx.gameEvent.create({
         data: {
-          playerId: playerId,
+          playerId,
           type: "equipment_buy",
           payload: {
             equipmentId,
+            mode,
             replaced: current?.equipmentId ?? null,
+            shops: shops.length,
           },
         },
       });
     });
     this.broadcast.paidBy(playerId, src, eq.price);
-    // Chuyện của tôi: chiếc xe đầu tiên, hoặc đổi nghề (mỗi nghề ghi một lần).
+    // Chuyện của tôi: chiếc xe đầu tiên, đổi nghề (mỗi nghề một lần), mở thêm cửa hàng.
     if (current)
       await this.story.note(
         playerId,
@@ -92,7 +122,16 @@ export class MarketService {
         { equipment: eq.name },
         { suffix: eq.id },
       );
-    else await this.story.note(playerId, "first_cart", room.day, { equipment: eq.name });
+    else if (shops.length === 0)
+      await this.story.note(playerId, "first_cart", room.day, { equipment: eq.name });
+    else
+      await this.story.note(
+        playerId,
+        "more_shop",
+        room.day,
+        { equipment: eq.name, n: shops.length + 1 },
+        { suffix: createdId ?? eq.id },
+      );
     this.broadcast.world(room);
   }
 
@@ -112,6 +151,11 @@ export class MarketService {
     if (packs >= eco.bulkPacks) total *= 1 - eco.bulkDiscount;
     if (friendship >= eco.friendDiscountAt) total *= 1 - eco.friendDiscount;
     total = Math.max(500, Math.round(total / 500) * 500);
+    // Kho riêng từng cửa hàng: hàng nhập vào cửa hàng đang quản lý.
+    const shop = await this.businesses.require(
+      playerId,
+      "Có quầy hàng rồi mới nhập hàng — mua xe ở vựa Ông Sáu trước",
+    );
     let src: PaySource = "cash";
     await this.prisma.$transaction(async (tx) => {
       src = await this.payment.payOut(
@@ -123,7 +167,7 @@ export class MarketService {
         itemId,
         pay,
       );
-      await addItems(tx, playerId, itemId, room.day, ing.packSize * packs);
+      await addItems(tx, shop, itemId, room.day, ing.packSize * packs);
       await addToReport(tx, playerId, room.day, { stockCost: total });
       await addFriendship(tx, playerId, MARKET_KEEPER, 1);
     });
@@ -139,12 +183,15 @@ export class MarketService {
     const ing = content.ingredientById.get(itemId);
     if (!ing) throw new GameError("invalid_payload", "Chợ không mua món này");
     requireAt(room, playerId, MARKET_KEEPER, "Ra chợ Bà Năm mới thanh lý được");
-    const rows = await this.prisma.inventoryItem.findMany({ where: { playerId, itemId } });
+    const shop = await this.businesses.require(playerId, "Có quầy hàng rồi mới có hàng thanh lý");
+    const rows = await this.prisma.inventoryItem.findMany({
+      where: { businessId: shop.id, itemId },
+    });
     const qty = rows.reduce((s, r) => s + r.qty, 0);
     if (qty <= 0) throw new GameError("invalid_state", "Không còn hàng này trong kho");
     const value = resaleValue(ing.costPerUnit, qty, content.economy.resaleRate);
     await this.prisma.$transaction(async (tx) => {
-      await tx.inventoryItem.deleteMany({ where: { playerId, itemId } });
+      await tx.inventoryItem.deleteMany({ where: { businessId: shop.id, itemId } });
       if (value > 0)
         await this.ledger.transfer(
           tx,

@@ -149,6 +149,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 📊 Sổ sách: thu/chi theo từng khoản (lương nhân viên, điện nước tách khỏi phí), lãi/lỗ hôm nay & 7 ngày, chỉ ra khoản chi lớn nhất; Tổng kết ngày tính đủ khoản | ✅ | 1.24 | docs/IA.md bước C |
 | 🚶 Chủ tự do khi có nhân viên: quầy mở mà có nhân viên trong ca thì chủ đi làm thuê / xe ôm / phụ hồ được (chỉ chặn khi không ai bán) | ✅ | 1.24 | UC-M6, HANDOFF 3.4 |
 | 🛵 Xe ôm trong `pnpm balance` + cân lại nhịp khách (lãi ~gấp 2 làm thuê thay vì gấp 4); tắt server sạch (chờ tick dở, Prisma đóng sau cùng) | ✅ | 1.24 | UC-N1, HANDOFF §4 |
+| 🏬 Nhiều cửa hàng (không giới hạn) + kho riêng từng tiệm + chuyển kho 30 phút game; chọn cửa hàng đang quản lý (chip trên sheet 🏪, 🏬 Các cửa hàng); mở thêm / đổi nghề giữ kho; đứng quầy theo cửa hàng | ✅ | 1.24 | UC-F14, docs/IA.md bước D |
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |

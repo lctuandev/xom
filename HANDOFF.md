@@ -73,7 +73,7 @@ Hướng làm: `Employee` hiện `@unique businessId` → bỏ unique, thêm `id
 theo người làm món đó, lương từng người); `StaffService.run` chạy theo nhóm; phiếu ca theo người; UI StaffBoard danh sách +
 "Thuê thêm (2/3)". Test: e2e (vượt giới hạn bị từ chối; 2 người bán nhiều hơn 1; lương đủ 2 người); `pnpm balance`.
 
-### 3.3 🏪 Nhiều cửa hàng cùng lúc (không phải đổi nghề)
+### 3.3 🏪 Nhiều cửa hàng cùng lúc (không phải đổi nghề) — ✅ XONG bản đầu (UC-F14; còn: thuê nhiều nhà mặt tiền, doanh thu theo từng cửa hàng trong Sổ sách)
 Yêu cầu: đủ tiền thì mở **nhiều cửa hàng khác nhau**; **review lại toàn bộ luồng "Làm ăn"**.
 Hướng làm: `Business` đã là bảng riêng (nhiều dòng/người được) — phần lớn công việc là bỏ giả định "một quầy":
 `MeView.business` → `businesses[]` + `activeBusinessId`; mọi intent `biz:*`, `market:*` (nhập cho cửa hàng nào), `staff:*`,

@@ -944,6 +944,8 @@ export const economySchema = z.object({
   shoutCooldownMinutes: z.number().int().positive(),
   /** Mua sỉ từ số gói này trở lên được giảm giá. */
   bulkPacks: z.number().int().positive(),
+  /** Chuyển hàng giữa hai cửa hàng của mình: hàng tới sau bấy nhiêu phút game (docs/IA.md bước D). */
+  transferMinutes: z.number().int().positive(),
   bulkDiscount: z.number().min(0).max(0.5),
   /** Thanh lý hàng tồn cho chợ (đổi nghề, dư hàng): Bà Năm mua lại bằng tỉ lệ này của giá gốc. */
   resaleRate: z.number().min(0).max(1),

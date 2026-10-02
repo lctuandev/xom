@@ -39,7 +39,7 @@ export class TradeGateway {
   @SubscribeMessage("equipment:buy")
   buyEquipment(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, buyEquipmentSchema, body, (ctx, p) =>
-      this.game.market.buyEquipment(ctx, p.equipmentId, p.pay),
+      this.game.market.buyEquipment(ctx, p.equipmentId, p.pay, p.mode),
     );
   }
 

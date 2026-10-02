@@ -81,6 +81,19 @@ export interface TodayView {
   utilities: number;
 }
 
+/** Một cửa hàng trong danh sách "Cửa hàng của tôi". */
+export interface ShopSummary {
+  id: string;
+  equipmentId: string;
+  productId: string;
+  lotId: string | null;
+  /** Tên quán (tiệm đã đăng ký hộ kinh doanh). */
+  name: string | null;
+  open: boolean;
+  staffOnDuty: boolean;
+  active: boolean;
+}
+
 export interface MeView {
   playerId: string;
   displayName: string;
@@ -100,7 +113,10 @@ export interface MeView {
   /** Chủ đang đứng ở quầy (quầy chỉ bán khi có chủ). */
   attending: boolean;
   business: BusinessView | null;
+  /** Kho của cửa hàng đang quản lý (kho riêng từng cửa hàng — docs/IA.md bước D). */
   inventory: InventoryView[];
+  /** Mọi cửa hàng của mình (không giới hạn); `active` = cửa hàng đang quản lý (`business`). */
+  shops: ShopSummary[];
   /** Độ thân thiết với NPC (id địa điểm → 0–100). */
   friendship: Record<string, number>;
   today: TodayView;
@@ -873,7 +889,18 @@ const contentId = z.string().regex(/^[a-z0-9_]+$/);
 export const payMethodSchema = z.enum(["auto", "cash", "bank"]).default("auto");
 export type PayMethod = "auto" | "cash" | "bank";
 
-export const buyEquipmentSchema = z.object({ equipmentId: contentId, pay: payMethodSchema });
+export const bizSelectSchema = z.object({ businessId: z.string().uuid() });
+export const stockTransferSchema = z.object({
+  toId: z.string().uuid(),
+  itemId: contentId,
+  qty: z.number().int().min(1).max(10_000),
+});
+export const buyEquipmentSchema = z.object({
+  equipmentId: contentId,
+  pay: payMethodSchema,
+  /** new = mở thêm cửa hàng (mặc định); replace = đổi nghề cửa hàng đang quản lý. */
+  mode: z.enum(["new", "replace"]).default("new"),
+});
 export const marketBuySchema = z.object({
   itemId: contentId,
   packs: z.number().int().min(1).max(50),

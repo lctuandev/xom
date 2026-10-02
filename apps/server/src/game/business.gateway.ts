@@ -6,6 +6,7 @@ import {
 } from "@nestjs/websockets";
 import {
   attendSchema,
+  bizSelectSchema,
   emptySchema,
   hostEventSchema,
   menuSchema,
@@ -21,6 +22,7 @@ import {
   shopOrderSchema,
   shopRegisterSchema,
   staffHireSchema,
+  stockTransferSchema,
   updateBusinessSchema,
 } from "@xom/shared";
 import type { GameSocket } from "./game.gateway.js";
@@ -221,6 +223,20 @@ export class BusinessGateway {
   hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, hostEventSchema, body, (ctx, p) =>
       this.game.biz.hostEvent(ctx, p.eventId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("biz:select")
+  bizSelect(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, bizSelectSchema, body, (ctx, p) =>
+      this.game.biz.select(ctx, p.businessId),
+    );
+  }
+
+  @SubscribeMessage("stock:transfer")
+  stockTransfer(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, stockTransferSchema, body, (ctx, p) =>
+      this.game.biz.transferStock(ctx, p),
     );
   }
 }

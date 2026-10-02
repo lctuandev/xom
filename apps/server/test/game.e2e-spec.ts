@@ -104,6 +104,10 @@ describe("Vòng chơi làm thật (e2e)", () => {
     const { body } = await register(url);
     const { socket, snapshot } = await connect(url, body.accessToken);
     expect(snapshot.me.money).toBe(content.economy.startingMoney);
+    // Chưa có quầy thì không nhập hàng được (kho riêng từng cửa hàng — docs/IA.md bước D).
+    const noShop = await emit(socket, "market:buy", { itemId: "banh_mi_phoi", packs: 2 });
+    expect(noShop.ok).toBe(false);
+    await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
     const bought = await emit(socket, "market:buy", { itemId: "banh_mi_phoi", packs: 2 });
     expect(bought.ok && bought.data.inventory).toEqual([
       { itemId: "banh_mi_phoi", qty: 20, expiring: 20 },

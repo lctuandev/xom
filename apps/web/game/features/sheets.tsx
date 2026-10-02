@@ -33,6 +33,7 @@ import { MenuSheet } from "./shop/Menu";
 import { PromoSheet } from "./shop/Promo";
 import { RegularsSheet } from "./shop/Regulars";
 import { ReviewsSheet } from "./shop/Reviews";
+import { ShopsSheet } from "./shop/Shops";
 import { StaffSheet } from "./shop/Staff";
 import { StallSheet } from "./shop/Stall";
 import { StockSheet } from "./shop/Stock";
@@ -41,6 +42,7 @@ import { LiquidateSheet } from "./trade/Liquidate";
 /** id chức năng → sheet (một chức năng một sheet — docs/IA.md §4). Thiếu id nào TypeScript báo ngay. */
 export const SHEETS: Record<FeatureId | "menu", ComponentType> = {
   menu: MainMenu,
+  shops: ShopsSheet,
   stall: StallSheet,
   dishes: MenuSheet,
   stock: StockSheet,

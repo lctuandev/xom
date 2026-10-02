@@ -113,22 +113,22 @@ export class StaffService {
   async tickLive(room: RoomRuntime): Promise<string[]> {
     const step = content.economy.economyTickMinutes;
     // Chủ online mà không tự đứng bán (đi vắng, hoặc ở tiệm nhưng để nhân viên bán) → nhân viên bán.
-    const away = [...room.members.values()]
-      .filter(
-        (m) =>
-          m.sockets.size > 0 && !(room.attending.has(m.playerId) && room.selfSell.has(m.playerId)),
-      )
+    // Theo từng cửa hàng: chủ không tự đứng bán ĐÚNG cửa hàng đó (vắng, đang ở cửa hàng khác, hoặc ở đó mà để NV bán).
+    const online = [...room.members.values()]
+      .filter((m) => m.sockets.size > 0)
       .map((m) => m.playerId);
-    if (away.length === 0) return [];
-    const list = await this.prisma.business.findMany({
-      where: {
-        ownerId: { in: away },
-        status: "OPEN",
-        lotId: { not: null },
-        employee: { isNot: null },
-      },
-      include: { employee: true },
-    });
+    if (online.length === 0) return [];
+    const list = (
+      await this.prisma.business.findMany({
+        where: {
+          ownerId: { in: online },
+          status: "OPEN",
+          lotId: { not: null },
+          employee: { isNot: null },
+        },
+        include: { employee: true },
+      })
+    ).filter((b) => !(room.attendsAt(b.ownerId, b.id) && room.selfSell.has(b.ownerId)));
     const changed: string[] = [];
     for (const biz of list) {
       const e = biz.employee;
@@ -141,14 +141,16 @@ export class StaffService {
 
   /** Chủ thoát game mà quầy đang mở: nhân viên bán nốt tới hết ca hôm nay (tính ngay), rồi dọn quầy. */
   async finishShift(room: RoomRuntime, playerId: string) {
-    const biz = await this.businesses.openWithEmployee(playerId);
-    const e = biz?.employee;
-    const shift = e ? content.data.staff.shifts.find((s) => s.id === e.shiftId) : undefined;
-    if (!biz || !e || !shift) return;
-    const from = Math.max(room.minute, shift.from);
-    const to = Math.min(shift.to, content.economy.dayEndMinute);
-    if (from >= to) return;
-    await this.run(room, biz, e.staffId, from, to, "offline");
+    // Nhiều cửa hàng: mọi cửa hàng đang mở có nhân viên đều bán nốt ca của mình.
+    for (const biz of await this.businesses.openWithEmployee(playerId)) {
+      const e = biz.employee;
+      const shift = e ? content.data.staff.shifts.find((s) => s.id === e.shiftId) : undefined;
+      if (!e || !shift) continue;
+      const from = Math.max(room.minute, shift.from);
+      const to = Math.min(shift.to, content.economy.dayEndMinute);
+      if (from >= to) continue;
+      await this.run(room, biz, e.staffId, from, to, "offline");
+    }
   }
 
   /** Chạy một phiên bán thay và ghi sổ: tiền bán, lương, kho, báo cáo ngày, phiên (để báo khi vắng). */
@@ -164,7 +166,7 @@ export class StaffService {
     if (!person || !biz.lotId) return null;
     const product = content.product(biz.productId);
     const menu = menuOf(biz).filter((m) => m.on);
-    const stock = await stockMap(this.prisma, biz.ownerId);
+    const stock = await stockMap(this.prisma, biz.id);
     const r = staffShift({
       content,
       staff: person,
@@ -199,7 +201,7 @@ export class StaffService {
     }
     let quit = false;
     await this.prisma.$transaction(async (tx) => {
-      if (r.used.size) await consume(tx, biz.ownerId, r.used);
+      if (r.used.size) await consume(tx, biz.id, r.used);
       if (r.revenue > 0)
         await this.ledger.transfer(
           tx,

@@ -27,6 +27,12 @@ export interface FeatureMeta {
 
 export const FEATURES = {
   // 🏪 Cửa hàng của tôi
+  shops: {
+    title: "Các cửa hàng",
+    icon: "🏬",
+    group: "shop",
+    hint: "Mọi cửa hàng của mình, chọn cửa hàng để quản lý",
+  },
   stall: {
     title: "Quầy của tôi",
     icon: "🏪",

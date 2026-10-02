@@ -822,6 +822,7 @@ export class GameService implements OnModuleDestroy {
         await this.work.tick(room);
         await this.rides.tick(room);
         await this.shops.tick(room);
+        await this.biz.deliverTransfers(room);
         await this.orders.expire(room);
         if (room.minute % 10 === 0) await this.persistClock(room);
       }
@@ -834,11 +835,14 @@ export class GameService implements OnModuleDestroy {
   /** Khách dừng lại ở các quầy đang mở và có người đứng (UC-F3). */
   private async customerTick(room: RoomRuntime) {
     const eco = content.economy;
-    const staffed = [...room.members.keys()].filter((id) => room.attending.has(id));
-    const all = await this.prisma.business.findMany({
-      where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
-      include: { employee: true },
-    });
+    // Khách vào quầy chủ tự đứng: đúng cửa hàng chủ đang đứng (nhiều cửa hàng: chỉ một quầy một lúc).
+    const staffed = [...room.attending.keys()];
+    const all = (
+      await this.prisma.business.findMany({
+        where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
+        include: { employee: true },
+      })
+    ).filter((b) => room.attendsAt(b.ownerId, b.id));
     // Nhân viên đang trong ca mà chủ không giành bán: nhân viên bán (StaffService), khách không vào bếp của chủ.
     const businesses = all.filter(
       (b) =>
@@ -1045,16 +1049,18 @@ export class GameService implements OnModuleDestroy {
   }
 
   async me(room: RoomRuntime, playerId: string): Promise<MeView> {
-    const [player, biz, inventory, report, money, bank, relations, served] = await Promise.all([
+    const [player, biz, shops, report, money, bank, relations, served] = await Promise.all([
       this.prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
       this.businesses.withEmployee(playerId),
-      inventoryView(this.prisma, playerId, room.day),
+      this.businesses.listWithEmployee(playerId),
       this.prisma.dailyReport.findUnique({ where: { playerId_day: { playerId, day: room.day } } }),
       this.ledger.balance(this.prisma, playerWallet(playerId)),
       this.ledger.balance(this.prisma, bankWallet(playerId)),
       this.prisma.npcRelation.findMany({ where: { playerId } }),
       this.prisma.dailyReport.aggregate({ where: { playerId }, _sum: { served: true } }),
     ]);
+    // Kho riêng từng cửa hàng: MeView mang kho của cửa hàng đang quản lý.
+    const inventory = biz ? await inventoryView(this.prisma, biz.id, room.day) : [];
     const lease = biz
       ? await this.prisma.lease.findFirst({ where: { ownerId: playerId, status: "ACTIVE" } })
       : null;
@@ -1092,6 +1098,16 @@ export class GameService implements OnModuleDestroy {
           }
         : null,
       inventory,
+      shops: shops.map((b) => ({
+        id: b.id,
+        equipmentId: b.equipmentId,
+        productId: b.productId,
+        lotId: b.lotId,
+        name: b.shopName,
+        open: b.status === "OPEN",
+        staffOnDuty: !!b.employee && !!shiftAt(content, b.employee.shiftId, room.minute),
+        active: b.id === biz?.id,
+      })),
       friendship: Object.fromEntries(relations.map((r) => [r.npcId, r.friendship])),
       progress: {
         xp: player.xp,
@@ -1123,7 +1139,7 @@ export class GameService implements OnModuleDestroy {
       where: { ownerId: { in: [...room.members.keys()] }, lotId: { not: null } },
       include: { owner: true },
     });
-    const stocks = await Promise.all(businesses.map((b) => stockMap(this.prisma, b.ownerId)));
+    const stocks = await Promise.all(businesses.map((b) => stockMap(this.prisma, b.id)));
     const lots = businesses.map((b, i) => ({
       lotId: b.lotId ?? "",
       businessId: b.id,

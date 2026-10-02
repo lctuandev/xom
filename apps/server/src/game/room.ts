@@ -52,7 +52,11 @@ export interface PendingOrder {
 export class RoomRuntime {
   readonly members = new Map<string, Member>();
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
-  readonly attending = new Set<string>();
+  /**
+   * Chủ đang đứng ở quầy nào: playerId → businessId (docs/IA.md bước D — nhiều cửa hàng: chủ tự đứng bán MỘT cửa hàng một
+   * lúc, cửa hàng khác cần nhân viên).
+   */
+  readonly attending = new Map<string, string>();
   /** Chủ quầy giành tự đứng bán dù nhân viên đang trong ca (mặc định để nhân viên bán). */
   readonly selfSell = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
@@ -153,6 +157,11 @@ export class RoomRuntime {
   }
 
   /** Tick bỏ qua nếu tick trước còn đang chạy — không để hàng đợi phình ra. */
+  /** Chủ `ownerId` đang tự đứng ở cửa hàng `businessId`. */
+  attendsAt(ownerId: string, businessId: string) {
+    return this.attending.get(ownerId) === businessId;
+  }
+
   /** Đang tắt: không nhận nhịp / intent mới (tránh chạm DB sau khi Prisma đã đóng). */
   closing = false;
 

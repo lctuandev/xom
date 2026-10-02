@@ -70,7 +70,11 @@ type Intent<P, R = MeView> = (payload: P, ack: (res: Ack<R>) => void) => void;
 
 export interface ClientToServerEvents {
   ping: (payload: PingPayload, ack: (res: Ack<PongPayload>) => void) => void;
-  "equipment:buy": Intent<{ equipmentId: string; pay?: PayMethod }>;
+  "equipment:buy": Intent<{ equipmentId: string; pay?: PayMethod; mode?: "new" | "replace" }>;
+  /** Chọn cửa hàng đang quản lý (nhiều cửa hàng — docs/IA.md bước D). */
+  "biz:select": Intent<{ businessId: string }>;
+  /** Chuyển hàng từ cửa hàng đang quản lý sang cửa hàng khác của mình (tới sau vài phút game). */
+  "stock:transfer": Intent<{ toId: string; itemId: string; qty: number }>;
   "market:buy": Intent<{ itemId: string; packs: number; pay?: PayMethod }>;
   /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
   "market:sell": Intent<{ itemId: string }>;

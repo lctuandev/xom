@@ -79,11 +79,14 @@ export class NeedsService {
    * (UC-B11). Mỗi quầy réo tối đa một lần mỗi 20 phút game.
    */
   async calloutTick(room: RoomRuntime) {
-    const away = [...room.members.keys()].filter((id) => !room.attending.has(id));
-    if (!away.length) return;
-    const open = await this.prisma.business.findMany({
-      where: { ownerId: { in: away }, status: "OPEN", lotId: { not: null } },
-    });
+    // Quầy đang mở mà chủ không đứng ở ĐÚNG quầy đó (vắng, hoặc đang đứng cửa hàng khác).
+    const members = [...room.members.keys()];
+    if (!members.length) return;
+    const open = (
+      await this.prisma.business.findMany({
+        where: { ownerId: { in: members }, status: "OPEN", lotId: { not: null } },
+      })
+    ).filter((b) => !room.attendsAt(b.ownerId, b.id));
     const lines = content.data.needs.callouts;
     for (const b of open) {
       if ((room.calloutAt.get(b.id) ?? -999) > room.minute - 20) continue;

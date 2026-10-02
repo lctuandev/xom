@@ -2452,6 +2452,7 @@ export const data: ContentInput = {
     { id: "first_cart", emoji: "🛒", text: "Mua {equipment} — bắt đầu đi buôn" },
     { id: "switch_trade", emoji: "🔄", text: "Đổi nghề: bán xe cũ, mua {equipment}" },
     { id: "first_open", emoji: "🎪", text: "Mở quầy {product} đầu tiên ở {lot}" },
+    { id: "more_shop", emoji: "🏪", text: "Mở thêm cửa hàng thứ {n}: {equipment}" },
     { id: "first_shop", emoji: "🏠", text: "Thuê nhà mặt tiền {lot}, mở tiệm đàng hoàng" },
     { id: "evicted", emoji: "📦", text: "Bị {landlord} dẹp tiệm ở {lot} vì nợ tiền nhà" },
     { id: "first_job", emoji: "💼", text: "Đi làm thuê lần đầu: {job}" },
@@ -2797,6 +2798,8 @@ export const data: ContentInput = {
     shoutMinutes: 60,
     shoutCooldownMinutes: 30,
     bulkPacks: 5,
+    // Chuyển kho giữa các cửa hàng của mình: bấm chuyển, chở tới sau 30 phút game (đang chở thì chưa bán được).
+    transferMinutes: 30,
     bulkDiscount: 0.05,
     resaleRate: 0.4,
     friendDiscountAt: 30,

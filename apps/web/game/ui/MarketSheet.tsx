@@ -62,6 +62,16 @@ export function MarketSheet() {
           {` · mua từ ${eco.bulkPacks} gói bớt ${Math.round(eco.bulkDiscount * 100)}%`}
           {friend && ` · thân với Bà Năm bớt thêm ${Math.round(eco.friendDiscount * 100)}%`}
         </p>
+        {me.shops.length > 1 && biz && (
+          <p
+            className="mb-2 rounded-xl bg-sun/25 px-3 py-2 text-xs font-semibold"
+            data-market-for={biz.id}
+          >
+            📦 Nhập hàng cho: {content.product(biz.productId).emoji}{" "}
+            {me.shops.find((x) => x.active)?.name ?? content.product(biz.productId).name} — đổi cửa
+            hàng ở 🏬 Các cửa hàng
+          </p>
+        )}
         <PayPicker />
         <Tabs
           label="Quầy hàng ở chợ"

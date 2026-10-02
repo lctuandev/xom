@@ -16,9 +16,38 @@ type Db = PrismaService | Tx;
 export class BusinessRepo {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Cửa hàng của người chơi (null = chưa có xe hàng). */
-  of(playerId: string, db: Db = this.prisma): Promise<Business | null> {
-    return db.business.findFirst({ where: { ownerId: playerId } });
+  /** Mọi cửa hàng của người chơi, cũ trước (docs/IA.md bước D — không giới hạn số cửa hàng). */
+  list(playerId: string, db: Db = this.prisma): Promise<Business[]> {
+    return db.business.findMany({ where: { ownerId: playerId }, orderBy: { createdAt: "asc" } });
+  }
+
+  /** Id cửa hàng đang quản lý (đã chọn và còn của mình), mặc định cửa hàng cũ nhất. */
+  private async activeId(playerId: string, db: Db, list: { id: string }[]) {
+    if (!list.length) return null;
+    const p = await db.player.findUnique({
+      where: { id: playerId },
+      select: { activeBusinessId: true },
+    });
+    return list.find((b) => b.id === p?.activeBusinessId)?.id ?? list[0]?.id ?? null;
+  }
+
+  /** Cửa hàng ĐANG QUẢN LÝ của người chơi (null = chưa có xe hàng) — mọi thao tác quầy áp cho cửa hàng này. */
+  async of(playerId: string, db: Db = this.prisma): Promise<Business | null> {
+    const list = await this.list(playerId, db);
+    const id = await this.activeId(playerId, db, list);
+    return list.find((b) => b.id === id) ?? null;
+  }
+
+  /** Chọn cửa hàng đang quản lý (phải là của mình). */
+  async select(playerId: string, businessId: string) {
+    const biz = await this.prisma.business.findUnique({ where: { id: businessId } });
+    if (!biz || biz.ownerId !== playerId)
+      throw new GameError("invalid_payload", "Không phải cửa hàng của bạn");
+    await this.prisma.player.update({
+      where: { id: playerId },
+      data: { activeBusinessId: businessId },
+    });
+    return biz;
   }
 
   /** Như `of` nhưng bắt buộc có — không có thì báo lỗi cho người chơi. */
@@ -37,9 +66,9 @@ export class BusinessRepo {
     return this.prisma.business.findFirst({ where: { ownerId: playerId, status: "OPEN" } });
   }
 
-  /** Cửa hàng đang mở ở một chỗ, kèm nhân viên (nhân viên bán nốt ca khi chủ thoát game). */
+  /** Mọi cửa hàng đang mở ở một chỗ, kèm nhân viên (nhân viên bán nốt ca khi chủ thoát game). */
   openWithEmployee(playerId: string) {
-    return this.prisma.business.findFirst({
+    return this.prisma.business.findMany({
       where: { ownerId: playerId, status: "OPEN", lotId: { not: null } },
       include: { employee: true },
     });
@@ -57,10 +86,22 @@ export class BusinessRepo {
     return open.find((b) => !b.employee || !shiftAt(content, b.employee.shiftId, minute)) ?? null;
   }
 
-  /** Cửa hàng kèm nhân viên. */
-  withEmployee(playerId: string) {
-    return this.prisma.business.findFirst({
+  /** Cửa hàng đang quản lý, kèm nhân viên. */
+  async withEmployee(playerId: string) {
+    const list = await this.prisma.business.findMany({
       where: { ownerId: playerId },
+      orderBy: { createdAt: "asc" },
+      include: { employee: true },
+    });
+    const id = await this.activeId(playerId, this.prisma, list);
+    return list.find((b) => b.id === id) ?? null;
+  }
+
+  /** Mọi cửa hàng kèm nhân viên (bảng Cửa hàng của tôi / tổng quan). */
+  listWithEmployee(playerId: string) {
+    return this.prisma.business.findMany({
+      where: { ownerId: playerId },
+      orderBy: { createdAt: "asc" },
       include: { employee: true },
     });
   }

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { content } from "@xom/content";
 import type { PayMethod, WorldView } from "@xom/shared";
 import {
+  absMinute,
   canHost,
   feeToFund,
   hostCost,
@@ -10,6 +11,7 @@ import {
   type PaySource,
   repairCost,
   shiftAt,
+  takeFifo,
   unlockLevel,
   wearState,
 } from "@xom/sim";
@@ -25,7 +27,7 @@ import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { Broadcast } from "./broadcast.js";
 import { BusinessRepo } from "./business-repo.js";
-import { stockMap } from "./inventory.js";
+import { addItems, consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { PaymentService } from "./payment.js";
@@ -219,7 +221,7 @@ export class BusinessService {
       // Mỗi ngày nhân viên chỉ mở một lần (chủ đóng giữa chừng thì thôi).
       if (this.staffOpened.has(key)) continue;
       this.staffOpened.add(key);
-      const stock = await stockMap(this.prisma, biz.ownerId);
+      const stock = await stockMap(this.prisma, biz.id);
       if (!availableMenu(biz.productId, menuOf(biz), stock).length) continue;
       const name = content.data.staff.people.find((p) => p.id === e.staffId)?.name ?? "Nhân viên";
       try {
@@ -356,7 +358,9 @@ export class BusinessService {
 
   /** Client báo nhân vật đang đứng ở quầy hay đã đi chỗ khác. */
   async attend({ room, playerId }: IntentContext, on: boolean) {
-    if (on) room.attending.add(playerId);
+    // Đứng ở quầy = đứng ở cửa hàng đang quản lý (client báo khi tới đúng chỗ của cửa hàng đó).
+    const biz = on ? await this.businesses.of(playerId) : null;
+    if (biz) room.attending.set(playerId, biz.id);
     else room.attending.delete(playerId);
   }
 
@@ -373,4 +377,76 @@ export class BusinessService {
 
   /** Ghi sự kiện đo lường (DESIGN §16), không chặn luồng chơi nếu lỗi. */
   /** Gửi MeView mới cho người chơi (sau intent không trả MeView mà đổi tiền / kho). */
+
+  // ───────────── Nhiều cửa hàng (docs/IA.md bước D) ─────────────
+
+  /** Chọn cửa hàng đang quản lý; đang đứng quầy cửa hàng cũ thì thôi đứng (đứng quầy theo đúng cửa hàng). */
+  async select({ room, playerId }: IntentContext, businessId: string) {
+    const biz = await this.businesses.select(playerId, businessId);
+    if (room.attending.has(playerId) && room.attending.get(playerId) !== biz.id)
+      room.attending.delete(playerId);
+  }
+
+  /**
+   * Chuyển hàng từ cửa hàng đang quản lý sang cửa hàng khác của mình: lấy lô cũ trước (giữ ngày nhập để hạn dùng
+   * đúng), hàng tới sau `transferMinutes` phút game — đang chở thì cửa hàng nào cũng chưa bán được.
+   */
+  async transferStock(
+    { room, playerId }: IntentContext,
+    p: { toId: string; itemId: string; qty: number },
+  ) {
+    const from = await this.businesses.require(playerId);
+    const to = await this.prisma.business.findUnique({ where: { id: p.toId } });
+    if (!to || to.ownerId !== playerId)
+      throw new GameError("invalid_payload", "Không phải cửa hàng của bạn");
+    if (to.id === from.id) throw new GameError("invalid_payload", "Chọn cửa hàng khác để chuyển");
+    const arriveAt = absMinute(room.day, room.minute) + content.economy.transferMinutes;
+    await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.inventoryItem.findMany({
+        where: { businessId: from.id, itemId: p.itemId },
+      });
+      const have = rows.reduce((n, r) => n + r.qty, 0);
+      if (have < p.qty)
+        throw new GameError("invalid_state", `Kho chỉ còn ${have} — không đủ ${p.qty} để chuyển`);
+      const { taken } = takeFifo(rows, p.qty);
+      await consume(tx, from.id, new Map([[p.itemId, p.qty]]));
+      for (const b of taken)
+        await tx.stockTransfer.create({
+          data: {
+            ownerId: playerId,
+            fromId: from.id,
+            toId: to.id,
+            itemId: p.itemId,
+            batchDay: b.batchDay,
+            qty: b.qty,
+            arriveAt,
+          },
+        });
+    });
+    void this.broadcast.log(playerId, "stock_transfer", { itemId: p.itemId, qty: p.qty });
+    this.broadcast.stockChanged(room);
+  }
+
+  /** Mỗi phút: hàng chuyển đã tới nơi thì nhập kho cửa hàng nhận, báo chủ. */
+  async deliverTransfers(room: RoomRuntime) {
+    const now = absMinute(room.day, room.minute);
+    const due = await this.prisma.stockTransfer.findMany({
+      where: { ownerId: { in: [...room.members.keys()] }, arriveAt: { lte: now } },
+    });
+    if (!due.length) return;
+    const owners = new Set<string>();
+    for (const t of due) {
+      await this.prisma.$transaction(async (tx) => {
+        const to = await tx.business.findUnique({ where: { id: t.toId } });
+        if (to) await addItems(tx, to, t.itemId, t.batchDay, t.qty);
+        await tx.stockTransfer.delete({ where: { id: t.id } });
+      });
+      owners.add(t.ownerId);
+    }
+    for (const id of owners) {
+      this.broadcast.notify(id, { kind: "good", text: "📦 Hàng chuyển kho đã tới cửa hàng" });
+      this.broadcast.me(id);
+    }
+    this.broadcast.stockChanged(room);
+  }
 }
