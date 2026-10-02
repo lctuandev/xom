@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module.js";
 import { BankService } from "./bank.js";
 import { Broadcast } from "./broadcast.js";
+import { BusinessService } from "./business.js";
 import { BusinessRepo } from "./business-repo.js";
 import { ContractService } from "./contracts.js";
 import { GameGateway } from "./game.gateway.js";
@@ -28,6 +29,7 @@ import { WorkService } from "./work.js";
     BankService,
     Broadcast,
     BusinessRepo,
+    BusinessService,
     MarketService,
     NeedsService,
     PaymentService,

@@ -78,6 +78,11 @@ export class Broadcast {
     this.worldOf?.(room);
   }
 
+  /** Sự kiện trong ngày của xóm đổi (khai trương…). */
+  events(room: RoomRuntime) {
+    this.emitter?.toRoom(room.id, "events", room.events);
+  }
+
   /** Kho của ai đó đổi: hàng xóm cần biết món nào còn làm được (chỉ khi xóm có người khác). */
   stockChanged(room: RoomRuntime) {
     if (room.members.size > 1) this.world(room);

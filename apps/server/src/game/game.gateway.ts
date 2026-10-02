@@ -185,23 +185,23 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("biz:update")
   updateBusiness(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, updateBusinessSchema, body, (ctx, p) =>
-      this.game.updateLot(ctx, p.lotId),
+      this.game.biz.updateLot(ctx, p.lotId),
     );
   }
 
   @SubscribeMessage("biz:open")
   open(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, emptySchema, body, (ctx) => this.game.openBusiness(ctx));
+    return this.handle(c, emptySchema, body, (ctx) => this.game.biz.openBusiness(ctx));
   }
 
   @SubscribeMessage("biz:close")
   close(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, emptySchema, body, (ctx) => this.game.closeBusiness(ctx));
+    return this.handle(c, emptySchema, body, (ctx) => this.game.biz.closeBusiness(ctx));
   }
 
   @SubscribeMessage("biz:repair")
   repair(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, repairSchema, body, (ctx, p) => this.game.repair(ctx, p.pay));
+    return this.handle(c, repairSchema, body, (ctx, p) => this.game.biz.repair(ctx, p.pay));
   }
 
   @SubscribeMessage("work:start")
@@ -258,18 +258,18 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage("biz:attend")
   attend(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, attendSchema, body, (ctx, p) => this.game.attend(ctx, p.on));
+    return this.handle(c, attendSchema, body, (ctx, p) => this.game.biz.attend(ctx, p.on));
   }
 
   @SubscribeMessage("biz:selfSell")
   selfSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, selfSellSchema, body, (ctx, p) => this.game.setSelfSell(ctx, p.on));
+    return this.handle(c, selfSellSchema, body, (ctx, p) => this.game.biz.setSelfSell(ctx, p.on));
   }
 
   @SubscribeMessage("biz:menu")
   menu(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, menuSchema, body, (ctx, p) =>
-      this.game.setMenu(ctx, p.variantId, { on: p.on, price: p.price }),
+      this.game.biz.setMenu(ctx, p.variantId, { on: p.on, price: p.price }),
     );
   }
 
@@ -821,7 +821,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("event:host")
   hostEvent(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, hostEventSchema, body, (ctx, p) =>
-      this.game.hostEvent(ctx, p.eventId, p.pay),
+      this.game.biz.hostEvent(ctx, p.eventId, p.pay),
     );
   }
 
