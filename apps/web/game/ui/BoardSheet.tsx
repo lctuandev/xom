@@ -8,6 +8,7 @@ import { vndShort } from "../format";
 import { send } from "../net/socket";
 import { useGame } from "../store";
 import { Modal } from "./Modal";
+import { ClaimButton, RewardTag } from "./Rewards";
 import { Tabs } from "./Tabs";
 
 /** Hiện giá trị theo kiểu hạng mục: tiền, số món, sao, phần trăm, điểm. */
@@ -314,8 +315,15 @@ export function WeekChart({ stats }: { stats: MyStatsView | null }) {
 
 /** Thành tựu: cái đã mở + tiến độ cái chưa (Hồ sơ). */
 export function Achievements({ stats }: { stats: MyStatsView | null }) {
+  // Nhận thưởng xong thì đánh dấu ngay trên máy (server đã ghi).
+  const [claimedNow, setClaimedNow] = useState<string[]>([]);
   if (!stats) return null;
   const done = stats.achievements.filter((a) => a.done).length;
+  const list = [...stats.achievements].sort(
+    (a, b) =>
+      Number(b.done && !b.claimed && !claimedNow.includes(b.id)) -
+      Number(a.done && !a.claimed && !claimedNow.includes(a.id)),
+  );
   return (
     <section aria-label="Thành tựu" className="rounded-2xl bg-white p-3 shadow-sm">
       <p className="mb-2 font-extrabold">
@@ -325,12 +333,12 @@ export function Achievements({ stats }: { stats: MyStatsView | null }) {
         </span>
       </p>
       <ul className="grid grid-cols-2 gap-1.5">
-        {stats.achievements.map((a) => (
+        {list.map((a) => (
           <li
             key={a.id}
             data-achievement={a.id}
             data-done={a.done}
-            className={`rounded-xl p-2 text-xs ${a.done ? "bg-sun/30" : "bg-ink/5 text-ink/60"}`}
+            className={`flex flex-col gap-0.5 rounded-xl p-2 text-xs ${a.done ? "bg-sun/30" : "bg-ink/5 text-ink/60"}`}
           >
             <p className="text-sm font-semibold">
               <span className={a.done ? "" : "grayscale"}>{a.emoji}</span> {a.name}
@@ -341,6 +349,16 @@ export function Achievements({ stats }: { stats: MyStatsView | null }) {
                 <div className="h-full bg-leaf" style={{ width: `${(a.value / a.goal) * 100}%` }} />
               </div>
             )}
+            <div className="mt-auto flex items-center justify-between gap-1 pt-1">
+              <RewardTag reward={a.reward} />
+              <ClaimButton
+                kind="ach"
+                id={a.id}
+                done={a.done}
+                claimed={a.claimed || claimedNow.includes(a.id)}
+                onClaimed={() => setClaimedNow((c) => [...c, a.id])}
+              />
+            </div>
           </li>
         ))}
       </ul>

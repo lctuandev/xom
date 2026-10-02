@@ -419,6 +419,12 @@ export interface XomBoardView {
   trends: { emoji: string; text: string }[];
 }
 
+/** Phần thưởng thành tựu / nhiệm vụ: kinh nghiệm + ít tiền mặt. */
+export interface RewardView {
+  xp: number;
+  money: number;
+}
+
 export interface AchievementView {
   id: string;
   emoji: string;
@@ -427,6 +433,22 @@ export interface AchievementView {
   goal: number;
   value: number;
   done: boolean;
+  reward: RewardView;
+  /** Đã bấm nhận thưởng. */
+  claimed: boolean;
+}
+
+/** Nhiệm vụ hôm nay (server đếm từ sổ hôm nay). */
+export interface QuestView {
+  id: string;
+  emoji: string;
+  text: string;
+  hint?: string;
+  goal: number;
+  value: number;
+  done: boolean;
+  reward: RewardView;
+  claimed: boolean;
 }
 
 /** Số liệu của mình: 7 ngày gần nhất + trung bình quầy cùng món trong xóm + thành tựu. */
@@ -1136,6 +1158,10 @@ export const reviewWriteSchema = z.object({
   businessId: z.string().uuid(),
   stars: z.number().int().min(1).max(5),
   text: reviewText,
+});
+export const rewardClaimSchema = z.object({
+  kind: z.enum(["ach", "quest"]),
+  id: z.string().min(1).max(64),
 });
 export const reviewReplySchema = z.object({ reviewId: z.string().uuid(), text: reviewText });
 
