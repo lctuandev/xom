@@ -3,6 +3,7 @@ export * from "./contracts.js";
 export * from "./economy.js";
 export * from "./events.js";
 export * from "./floor.js";
+export * from "./gigs.js";
 export * from "./grid.js";
 export * from "./needs.js";
 export * from "./progression.js";

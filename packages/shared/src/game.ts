@@ -687,6 +687,59 @@ export interface ContractBoardView {
   offers: ContractView[];
 }
 
+/** Việc người chơi đăng cho nhau (1.20b, UC-M8) — hiện có 📸 chụp ảnh quầy. */
+export interface GigView {
+  id: string;
+  kind: "photo";
+  posterName: string;
+  /** Tên quán / quầy cần chụp + chỗ. */
+  shopName: string;
+  lotId: string;
+  reward: number;
+  deposit: number;
+  fee: number;
+  /** Hạn làm (phút trong ngày). */
+  deadline: number;
+  status: "OPEN" | "TAKEN" | "SUBMITTED" | "DONE" | "REFUNDED" | "CANCELLED" | "EXPIRED" | "FAILED";
+  takerName: string | null;
+  /** Sao trung bình + số việc của người nhận (người đăng xem khi nghiệm thu). */
+  takerRating: { gigs: number; avg: number } | null;
+  /** Mình là người đăng / người nhận. */
+  posted: boolean;
+  taken: boolean;
+  cameraPaid: boolean;
+  /** Điểm từng tấm đã chụp; chất lượng bộ ảnh nộp. */
+  shots: number[];
+  quality: number | null;
+  stars: number | null;
+  /** Hạn nghiệm thu (phút trong ngày nếu cùng ngày). */
+  reviewBy: number | null;
+  verdict: "accepted" | "auto" | "dispute_taker" | "dispute_poster" | null;
+}
+
+export interface GigBoardView {
+  day: number;
+  trust: number;
+  lockedUntil: number | null;
+  /** Mình có quầy (đăng được việc chụp ảnh). */
+  canPost: boolean;
+  gigs: GigView[];
+}
+
+/** Bắt đầu buổi chụp: server sinh khoảnh khắc (ms kể từ lúc bắt đầu). */
+export interface PhotoSessionView {
+  gigId: string;
+  sessionMs: number;
+  shotsMax: number;
+  moments: { at: number; kind: number }[];
+}
+
+export interface PhotoShotView {
+  /** Điểm tấm vừa chụp + mọi tấm trong buổi. */
+  score: number;
+  shots: number[];
+}
+
 /** Một phiếu ca của nhân viên (KIENTRUC §2). */
 export interface StaffShiftView {
   staffId: string;
@@ -882,6 +935,20 @@ export const ridePaySchema = z.object({
   change: z.number().int().min(0).max(1_000_000).nullable(),
 });
 export const contractIdSchema = z.object({ id: z.string().uuid() });
+export const gigPostSchema = z.object({
+  kind: z.literal("photo"),
+  reward: z.number().int().positive(),
+  hours: z.number().int().positive(),
+});
+/** Bấm máy: `at` = ms kể từ lúc bắt đầu buổi chụp theo máy người chơi (để bù trễ mạng). */
+export const gigShotSchema = z.object({
+  id: z.string().uuid(),
+  at: z.number().int().min(0).max(120_000).optional(),
+});
+export const gigReviewSchema = z.object({
+  id: z.string().uuid(),
+  stars: z.number().int().min(1).max(5),
+});
 /** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
 export const debugContractSchema = z.object({ templateId: contentId });
 export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });

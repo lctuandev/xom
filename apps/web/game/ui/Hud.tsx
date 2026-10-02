@@ -22,6 +22,7 @@ import {
   IconTrophy,
   IconWeather,
 } from "./icons";
+import { type JobsTab, setJobsTab } from "./JobsSheet";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
@@ -369,7 +370,12 @@ export function Toasts() {
           type="button"
           onClick={() => {
             dismiss(t.id);
-            if (t.open) openSheet(t.open as SheetId);
+            if (t.open) {
+              // "jobs:gigs" = sheet Việc làm, mở sẵn tab thuê nhau.
+              const [sheet, tab] = t.open.split(":");
+              if (sheet === "jobs" && tab) setJobsTab(tab as JobsTab);
+              openSheet(sheet as SheetId);
+            }
           }}
           data-toast-open={t.open}
           className={`pointer-events-auto flex items-start gap-2 border-l-4 px-3 py-2 text-left text-sm leading-snug font-semibold ${

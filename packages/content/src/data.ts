@@ -2165,6 +2165,37 @@ export const data: ContentInput = {
     },
   },
 
+  gigs: {
+    // Phí ghi sổ nhỏ vào quỹ xóm (Chú Hai giữ sổ, đứng ra phân xử) — money sink.
+    feeRate: 0.05,
+    feeMin: 2000,
+    reviewMinutes: 120,
+    disputeLostTrust: 5,
+    photo: {
+      mentor: "Bé Na (kênh Na Ăn Gì)",
+      // Ngoài đời thợ chụp tự do ~150k/giờ, chụp món ~150k/món; quầy nhỏ trong xóm thuê buổi ngắn rẻ hơn.
+      rewards: [60000, 100000, 150000],
+      hours: [2, 4, 8],
+      minTrust: 30,
+      cameraRent: 20000,
+      sessionMs: 20000,
+      moments: 6,
+      windowMs: 900,
+      perfectMs: 180,
+      shots: 8,
+      keep: 3,
+      passQuality: 55,
+      adBoost: 0.6,
+      adMinutes: 180,
+      kinds: [
+        { emoji: "😄", label: "Khách cười tươi" },
+        { emoji: "♨️", label: "Món bốc khói" },
+        { emoji: "🌤️", label: "Nắng xiên đẹp" },
+        { emoji: "🙌", label: "Chủ quầy tạo dáng" },
+        { emoji: "🥢", label: "Gắp miếng đầu tiên" },
+      ],
+    },
+  },
   contracts: {
     keeper: "Chú Hai tổ trưởng",
     perDay: 3,
@@ -2303,6 +2334,12 @@ export const data: ContentInput = {
     { id: "first_contract", emoji: "📋", text: "Xong việc đầu tiên trên bảng việc xóm: {text}" },
     { id: "first_license", emoji: "🏛️", text: 'Đăng ký hộ kinh doanh: quán "{name}" ra đời' },
     { id: "first_ride", emoji: "🛵", text: "Chạy cuốc xe ôm đầu tiên: chở {name} tới {place}" },
+    { id: "first_gig", emoji: "📸", text: "Lần đầu chụp ảnh thuê: chụp quầy {shop} cho {name}" },
+    {
+      id: "first_gig_post",
+      emoji: "📣",
+      text: "Lần đầu thuê {name} chụp ảnh quầy — ảnh đăng lên nhóm xóm",
+    },
   ],
 
   achievements: [

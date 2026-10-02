@@ -69,6 +69,7 @@ import {
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { ContractService } from "./contracts.js";
+import { GigService } from "./gigs.js";
 import { addItems, inventoryView, stockMap } from "./inventory.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
@@ -178,6 +179,7 @@ export class GameService implements OnModuleDestroy {
     readonly regulars: RegularService,
     readonly staff: StaffService,
     readonly contracts: ContractService,
+    readonly gigs: GigService,
     readonly rides: RideService,
     readonly shops: ShopService,
   ) {}
@@ -191,6 +193,7 @@ export class GameService implements OnModuleDestroy {
     this.regulars.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.contracts.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
+    this.gigs.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.shops.setNotifier(
       (playerId, n) => emitter.toPlayer(playerId, "notify", n),
       (room) => this.emitWorld(room),
@@ -1418,6 +1421,7 @@ export class GameService implements OnModuleDestroy {
             this.emitter?.toPlayer(owner, "me", await this.me(room, owner));
           await this.calloutTick(room);
           await this.contracts.tick(room);
+          await this.gigs.tick(room);
           await this.projects.tick(room);
         }
         if (room.minute % 60 === 0) {
@@ -1467,6 +1471,8 @@ export class GameService implements OnModuleDestroy {
         boost:
           ((room.boostUntil.get(b.id) ?? 0) > room.minute ? eco.shoutBoost : 1) *
           this.promoOf(room, b.id).demand *
+          // Ảnh quầy thợ ảnh chụp, đăng lên nhóm xóm (UC-M8).
+          this.gigs.adOf(room, b) *
           wearDemand(b.wear, eco.maintenance) *
           projectDemand(content, built, b.lotId ?? "") *
           // Sự kiện cả xóm theo nhóm hàng (chợ đêm thứ Bảy: ăn vặt, đồ uống, phụ kiện đông hẳn).

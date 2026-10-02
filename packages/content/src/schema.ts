@@ -369,6 +369,48 @@ export const contractsSchema = z.object({
     .min(1),
 });
 
+/**
+ * 📋 Việc người chơi đăng cho nhau (docs/KIENTRUC.md §3, 1.20b — UC-M8): người đăng trả tiền vào ví giữ hộ trước, người nhận
+ * đặt cọc; nộp việc → người đăng nghiệm thu (quá hạn thì tự trả), khiếu nại → người giữ bảng xem sản phẩm rồi phân xử.
+ */
+export const gigsSchema = z.object({
+  /** Phí ghi sổ (tỉ lệ tiền công, tối thiểu `feeMin`) — vào quỹ xóm. */
+  feeRate: z.number().min(0).max(0.5),
+  feeMin: z.number().int().min(0),
+  /** Phút game người đăng có để nghiệm thu; quá hạn tự trả cho người nhận (như sàn freelance tự giải ngân). */
+  reviewMinutes: z.number().int().min(10),
+  /** Khiếu nại thua (việc đạt chuẩn mà vẫn kêu) / nộp việc kém bị xử thua: trừ tin cậy. */
+  disputeLostTrust: z.number().int().min(0),
+  /** 📸 Thợ ảnh (NGHE §3.3): chủ quầy thuê chụp ảnh quầy đăng lên nhóm xóm → khách ghé nhiều hơn vài giờ. */
+  photo: z.object({
+    /** Người dẫn nghề. */
+    mentor: z.string(),
+    /** Mức tiền công người đăng chọn. */
+    rewards: z.array(z.number().int().min(1000)).min(1),
+    /** Hạn làm (giờ game kể từ lúc đăng) người đăng chọn. */
+    hours: z.array(z.number().int().min(1).max(12)).min(1),
+    minTrust: z.number().int().min(0).max(100),
+    /** Thuê máy ảnh mỗi buổi chụp (money sink). */
+    cameraRent: z.number().int().min(0),
+    /** Một buổi chụp kéo dài (ms thật) và số khoảnh khắc đẹp xuất hiện. */
+    sessionMs: z.number().int().min(5000),
+    moments: z.number().int().min(3),
+    /** Bấm lệch khoảnh khắc trong khoảng này (ms) thì vẫn có điểm; trong `perfectMs` là 100 điểm. */
+    windowMs: z.number().int().min(100),
+    perfectMs: z.number().int().min(0),
+    /** Số kiểu ảnh tối đa một buổi; nộp `keep` tấm đẹp nhất. */
+    shots: z.number().int().min(3),
+    keep: z.number().int().min(1),
+    /** Điểm ảnh (trung bình `keep` tấm) từ mức này trở lên là đạt khi phân xử. */
+    passQuality: z.number().int().min(0).max(100),
+    /** Đăng ảnh lên nhóm xóm: khách ghé ×(1 + adBoost × chất lượng) trong `adMinutes`. */
+    adBoost: z.number().min(0).max(2),
+    adMinutes: z.number().int().min(10),
+    /** Khoảnh khắc: emoji + chữ hiện trong khung ngắm. */
+    kinds: z.array(z.object({ emoji: z.string(), label: z.string() })).min(1),
+  }),
+});
+
 export const staffSchema = z.object({
   shifts: z
     .array(
@@ -1045,6 +1087,7 @@ export const contentSchema = z.object({
   regulars: regularsSchema,
   staff: staffSchema,
   contracts: contractsSchema,
+  gigs: gigsSchema,
   rides: ridesSchema,
   shopSetup: shopSetupSchema,
   economy: economySchema,

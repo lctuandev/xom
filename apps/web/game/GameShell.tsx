@@ -35,6 +35,7 @@ import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
 import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
+import { PhotoShoot } from "./ui/PhotoShoot";
 import { QuickChat } from "./ui/QuickChat";
 import { RideSheet } from "./ui/RideSheet";
 import { ShopSheet } from "./ui/ShopSheet";
@@ -141,6 +142,7 @@ export default function GameShell() {
       <ActionBar />
       <QuickChat />
       <Kitchen />
+      <PhotoShoot />
       <DoorSheet />
       <Payslip />
       <Dialogue />

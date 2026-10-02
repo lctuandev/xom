@@ -28,6 +28,9 @@ import {
   debugWeatherSchema,
   emptySchema,
   fundDonateSchema,
+  gigPostSchema,
+  gigReviewSchema,
+  gigShotSchema,
   hostEventSchema,
   type InspectResult,
   inspectSchema,
@@ -548,6 +551,90 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       if (process.env.NODE_ENV === "production")
         throw new GameError("invalid_state", "Không có lệnh này");
       await this.game.contracts.debugPost(ctx.room, p.templateId);
+    });
+  }
+
+  @SubscribeMessage("gig:list")
+  gigList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) =>
+      this.game.gigs.board(ctx.room, ctx.playerId),
+    );
+  }
+
+  @SubscribeMessage("gig:post")
+  gigPost(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, gigPostSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.post(ctx.room, ctx.playerId, p.reward, p.hours);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:cancel")
+  gigCancel(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.cancel(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:take")
+  gigTake(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.take(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:drop")
+  gigDrop(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.drop(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:shoot")
+  gigShoot(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.shoot(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:shot")
+  gigShot(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, gigShotSchema, body, (ctx, p) =>
+      this.game.gigs.shot(ctx.playerId, p.id, p.at),
+    );
+  }
+
+  @SubscribeMessage("gig:submit")
+  gigSubmit(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, (ctx, p) =>
+      this.game.gigs.submit(ctx.room, ctx.playerId, p.id),
+    );
+  }
+
+  @SubscribeMessage("gig:review")
+  gigReview(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, gigReviewSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.review(ctx.room, ctx.playerId, p.id, p.stars);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
+    });
+  }
+
+  @SubscribeMessage("gig:dispute")
+  gigDispute(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, contractIdSchema, body, async (ctx, p) => {
+      const r = await this.game.gigs.dispute(ctx.room, ctx.playerId, p.id);
+      await this.game.pushMe(ctx.room, ctx.playerId);
+      return r;
     });
   }
 

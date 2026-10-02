@@ -73,8 +73,10 @@ escrow sang người nhận. Trễ hạn / bỏ ngang → hoàn tiền cho ngư�
 **Đã làm (UC-M7):** việc NPC đặt kiểu *giao N phần món tới một chỗ trước giờ hẹn* (`content.contracts.templates`, 3 việc/ngày/xóm);
 cọc 20% của người nhận + thưởng của người đặt vào ví `escrow:<id>`; làm hàng ở quầy (trừ nguyên liệu thật) → đi giao (server
 kiểm vị trí + hạn); trễ / bỏ: hoàn thưởng, mất cọc (`penalty:contract`), 🤝 −15; thối thiếu 🤝 −2; < 15 khoá 3 ngày.
-`ContractService` (board, take, prepare, deliver, drop, tick, trustEvent). **Còn lại (1.20b):** người chơi đăng việc, nghiệm
-thu, phân xử, chấm sao.
+`ContractService` (board, take, prepare, deliver, drop, tick, trustEvent).
+**Đã làm (1.20b, UC-M8):** việc người chơi đăng là model riêng `Gig` + `GigService` (post, cancel, take, drop, shoot, shot, submit,
+review, dispute, tick): người đăng trả trước vào ví `escrow:gig:<id>` + phí ghi sổ vào quỹ xóm; nộp → hạn nghiệm thu 2 giờ (quá thì
+tự trả); khiếu nại → phân xử theo điểm bộ ảnh; sao người nhận lưu `Player.gigs / gigStars`. Việc đầu tiên: 📸 chụp ảnh quầy.
 
 ## 4. 🛵 Xe ôm (1.21) ✅ bản đầu
 

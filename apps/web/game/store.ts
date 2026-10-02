@@ -10,6 +10,7 @@ import type {
   OrderResultEvent,
   OrderUpdateEvent,
   PayslipView,
+  PhotoSessionView,
   RideView,
   RosterView,
   SayEvent,
@@ -119,6 +120,8 @@ interface GameState {
   orders: OrderState[];
   /** Đơn đang mở màn hình làm món. */
   kitchen: string | null;
+  /** 📸 Buổi chụp đang diễn ra (UC-M8): khoảnh khắc server sinh + giờ bắt đầu theo máy mình. */
+  shoot: (PhotoSessionView & { startedAt: number }) | null;
   bubbles: Record<string, Bubble>;
   /** Người đang đứng đối diện trong khung chân dung (UC-E5): lời họ và mình đã ở đó, không lặp trên đầu nhân vật. */
   facing: string | null;
@@ -189,6 +192,7 @@ interface GameState {
   /** Làm lại món (sau khi khách chê sai). */
   resetDish: (orderId: string) => void;
   openKitchen: (orderId: string | null) => void;
+  setShoot: (shoot: GameState["shoot"]) => void;
   say: (s: SayEvent, ms?: number) => void;
   setBubble: (key: string, b: Bubble | null) => void;
   setInside: (placeId: string | null) => void;
@@ -245,6 +249,7 @@ export const useGame = create<GameState>((set, get) => ({
   goal: null,
   orders: [],
   kitchen: null,
+  shoot: null,
   bubbles: {},
   facing: null,
   inside: null,
@@ -387,6 +392,7 @@ export const useGame = create<GameState>((set, get) => ({
   setInside: (inside) => set({ inside, sheet: null }),
   setShift: (shift) => set({ shift }),
   setRide: (ride) => set({ ride }),
+  setShoot: (shoot) => set({ shoot }),
   setPayslip: (payslip) => set({ payslip }),
   setNearAddress: (nearAddress) => set({ nearAddress }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),

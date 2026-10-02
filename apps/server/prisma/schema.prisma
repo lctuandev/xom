@@ -69,6 +69,9 @@ model Player {
   bikeRentDay  Int?
   rides        Int      @default(0)
   rideStars    Int      @default(0)
+  /// Việc người chơi thuê (UC-M8): số việc đã được nghiệm thu + tổng sao người thuê chấm.
+  gigs         Int      @default(0)
+  gigStars     Int      @default(0)
   createdAt   DateTime @default(now())
 
   businesses Business[]
@@ -194,6 +197,10 @@ model Business {
   certified   Boolean        @default(false)
   /// Đã làm biển hiệu tên quán.
   signed      Boolean        @default(false)
+  /// Ảnh quầy đăng lên nhóm xóm (UC-M8): khách ghé ×adMul tới phút `adUntil` của ngày `adDay`.
+  adDay       Int?
+  adUntil     Int?
+  adMul       Float          @default(1)
 
   @@index([ownerId])
 }
@@ -286,6 +293,60 @@ model Contract {
 
   @@index([roomId, day])
   @@index([takerId, status])
+}
+
+enum GigStatus {
+  /// Đang treo trên bảng (tiền công nằm trong ví giữ hộ của người đăng).
+  OPEN
+  /// Đã có người nhận (cọc người nhận cũng vào ví giữ hộ).
+  TAKEN
+  /// Đã nộp việc, chờ người đăng nghiệm thu (quá hạn thì tự trả).
+  SUBMITTED
+  /// Đã trả tiền cho người nhận (nghiệm thu / tự trả / phân xử người nhận thắng).
+  DONE
+  /// Phân xử người đăng thắng: hoàn tiền công cho người đăng.
+  REFUNDED
+  /// Người đăng gỡ khi chưa ai nhận.
+  CANCELLED
+  /// Hết hạn mà chưa ai nhận: hoàn tiền người đăng.
+  EXPIRED
+  /// Người nhận trễ hạn / bỏ ngang: hoàn tiền người đăng, người nhận mất cọc.
+  FAILED
+}
+
+/// Việc người chơi đăng cho nhau (docs/KIENTRUC.md §3 — 1.20b, UC-M8). Hiện có: 📸 chụp ảnh quầy.
+model Gig {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  roomId     String    @db.Uuid
+  day        Int
+  kind       String
+  posterId   String    @db.Uuid
+  /// Quầy cần chụp (của người đăng) + chỗ bán lúc đăng.
+  businessId String    @db.Uuid
+  lotId      String
+  reward     Int
+  deposit    Int
+  fee        Int
+  /// Hạn làm (phút trong ngày `day`).
+  deadline   Int
+  takerId    String?   @db.Uuid
+  status     GigStatus @default(OPEN)
+  /// Đã thuê máy ảnh cho việc này (thuê một lần).
+  cameraPaid Boolean   @default(false)
+  /// Điểm từng tấm đã chụp (0–100).
+  shots      Int[]     @default([])
+  quality    Int?
+  stars      Int?
+  /// Hạn nghiệm thu (phút tuyệt đối = day × 1440 + phút).
+  reviewBy   Int?
+  /// Kết quả: "accepted" | "auto" | "dispute_taker" | "dispute_poster".
+  verdict    String?
+  createdAt  DateTime  @default(now())
+  doneAt     DateTime?
+
+  @@index([roomId, day])
+  @@index([takerId, status])
+  @@index([posterId, status])
 }
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.

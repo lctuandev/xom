@@ -136,6 +136,8 @@ Tới nơi → chế độ chụp (khung ngắm, chờ đúng khoảnh khắc: k
 nhất → nộp. Điểm ảnh theo bố cục + khoảnh khắc → tiền hợp đồng + **quầy được tăng khách (boost)** vài giờ.
 **Phụ thuộc người chơi:** chủ quầy *thuê* thợ ảnh khi khai trương; reviewer làm quầy đông → hai người kiếm tiền từ nhau.
 **Âm thanh:** tiếng màn trập, "1, 2, 3 cười!", tiếng xóm reo khi đăng bài viral.
+**Đã làm (UC-M8):** chụp ảnh quầy theo việc chủ quầy đăng ở tab 📸 Thuê nhau — thuê máy 20k, khung ngắm canh khoảnh khắc (server
+chấm theo giờ server), nộp 3 tấm đẹp nhất, chủ nghiệm thu + chấm sao; ảnh đăng nhóm xóm kéo khách. Chưa có: review món, ảnh cưới.
 
 ### 3.4 🏗️ Phụ hồ công trình xóm — Contract × Quỹ xóm (UC-J5)
 

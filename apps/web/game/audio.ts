@@ -4,7 +4,16 @@
 // - Nhạc nền: giai điệu ngũ cung kiểu đàn tranh trên nền trầm; ngày tươi, đêm chậm và dịu.
 // Trình duyệt chỉ cho phát sau cú chạm đầu tiên → `unlockAudio()` gắn vào pointerdown.
 
-export type Sfx = "click" | "coin" | "scoop" | "plate" | "bell" | "error" | "door" | "pop";
+export type Sfx =
+  | "click"
+  | "coin"
+  | "scoop"
+  | "plate"
+  | "bell"
+  | "error"
+  | "door"
+  | "pop"
+  | "shutter";
 
 interface Levels {
   music: number;
@@ -151,6 +160,11 @@ export function sfx(name: Sfx) {
     case "door":
       noise(busSfx, t, 0.25, 400, 0.2);
       tone(busSfx, 110, t + 0.18, 0.12, "sine", 0.25);
+      break;
+    case "shutter":
+      // Tách-tách của màn trập: hai tiếng xì ngắn.
+      noise(busSfx, t, 0.04, 3000, 0.35);
+      noise(busSfx, t + 0.07, 0.05, 2200, 0.3);
       break;
   }
 }

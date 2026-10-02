@@ -15,7 +15,8 @@ export function ActionBar() {
   const sheet = useGame((s) => s.sheet);
   const dialogue = useGame((s) => s.dialogue);
   const kitchen = useGame((s) => s.kitchen);
-  if (sheet || dialogue || kitchen) return null;
+  const shoot = useGame((s) => s.shoot);
+  if (sheet || dialogue || kitchen || shoot) return null;
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
       <DoorButton />

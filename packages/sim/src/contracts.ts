@@ -57,12 +57,19 @@ export function contractText(content: Content, t: ContractTemplate, qty: number)
     .replace("{deadline}", formatClock(t.deadline));
 }
 
-export type TrustEvent = "done" | "fail" | "short";
+export type TrustEvent = "done" | "fail" | "short" | "dispute_lost";
 
 /** Điểm tin cậy sau một chuyện (0–100). */
 export function trustAfter(content: Content, trust: number, event: TrustEvent): number {
   const t = content.data.contracts.trust;
-  const delta = event === "done" ? t.done : event === "fail" ? -t.fail : -t.short;
+  const delta =
+    event === "done"
+      ? t.done
+      : event === "fail"
+        ? -t.fail
+        : event === "dispute_lost"
+          ? -content.data.gigs.disputeLostTrust
+          : -t.short;
   return Math.max(0, Math.min(100, trust + delta));
 }
 

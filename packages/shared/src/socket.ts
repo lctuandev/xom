@@ -6,6 +6,7 @@ import type {
   DayReportView,
   EventView,
   FundView,
+  GigBoardView,
   InspectResult,
   MakeResult,
   MeView,
@@ -18,6 +19,8 @@ import type {
   PayMethod,
   PayslipView,
   PeerPos,
+  PhotoSessionView,
+  PhotoShotView,
   RegularView,
   ReviewsView,
   RideView,
@@ -123,6 +126,16 @@ export interface ClientToServerEvents {
   "contract:drop": Intent<{ id: string }, ContractBoardView>;
   /** Dev/test: đăng ngay một việc theo mẫu. */
   "debug:contract": Intent<{ templateId: string }>;
+  "gig:list": Intent<Record<string, never>, GigBoardView>;
+  "gig:post": Intent<{ kind: "photo"; reward: number; hours: number }, GigBoardView>;
+  "gig:cancel": Intent<{ id: string }, GigBoardView>;
+  "gig:take": Intent<{ id: string }, GigBoardView>;
+  "gig:drop": Intent<{ id: string }, GigBoardView>;
+  "gig:shoot": Intent<{ id: string }, PhotoSessionView>;
+  "gig:shot": Intent<{ id: string; at?: number }, PhotoShotView>;
+  "gig:submit": Intent<{ id: string }, GigBoardView>;
+  "gig:review": Intent<{ id: string; stars: number }, GigBoardView>;
+  "gig:dispute": Intent<{ id: string }, GigBoardView>;
   /** Nhân viên đứng quầy thay (KIENTRUC §2). */
   "staff:view": Intent<Record<string, never>, StaffView>;
   "staff:hire": Intent<{ staffId: string; shiftId: string }, StaffView>;

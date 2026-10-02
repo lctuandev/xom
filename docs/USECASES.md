@@ -971,8 +971,37 @@ ví `escrow:<id>` (WalletKind ESCROW); sim `contractOffers`, `contractPay`, `con
 **Kiểm chứng:** sim `contracts.test.ts`; e2e server `contracts.e2e-spec.ts` (nhận → làm → giao xa bị từ chối → giao đúng chỗ, tiền
 + cọc + tin cậy + Chuyện; vượt tin cậy / khác nghề bị từ chối; trễ hạn mất cọc; bỏ ngang mãi bị khoá); Playwright `bang-viec.spec.ts`
 (lệnh dev `debug:contract`).
-**Sau này:** người chơi đăng việc cho nhau (escrow giữa hai người, nghiệm thu, Chú Hai phân xử), việc chụp ảnh / phụ hồ / sửa xe
-tận nhà, chấm sao người nhận, tin cậy mở chợ người chơi.
+**Sau này:** ~~người chơi đăng việc cho nhau~~ (UC-M8), việc phụ hồ / sửa xe tận nhà, tin cậy mở chợ người chơi.
+
+### UC-M8 · 📸 Thuê nhau: chủ quầy thuê thợ chụp ảnh quầy ✅ (1.20b, việc đầu tiên người chơi đăng)
+**Nhân vật:** **Chú Hai tổ trưởng** giữ sổ + tiền, phân xử; **Bé Na** (kênh "Na Ăn Gì") chỉ nghề chụp; chủ quầy (người đăng) và
+hàng xóm (thợ ảnh).
+**Đời thật (đã tra):** sàn việc tự do kiểu Upwork: bên thuê **nạp tiền vào ký quỹ trước**, bên làm nộp sản phẩm → bên thuê có
+**hạn duyệt**, quá hạn không phản hồi thì **tự giải ngân**; tranh chấp thì bên thứ ba **xem sản phẩm rồi phân xử**. Thợ chụp tự do
+ngoài đời ~150k/giờ, chụp món ~150k/món; quầy nhỏ trong xóm thuê buổi ngắn 60–150k.
+**Luồng (chủ quầy):** Việc làm → **📸 Thuê nhau** → *Thuê người chụp ảnh quầy mình* → chọn tiền công (60k/100k/150k) + hạn (2/4/8
+giờ) → **Đăng việc · trả trước** (tiền công vào ví giữ hộ, **phí ghi sổ 5%** tối thiểu 2k vào **quỹ xóm**) → có người nhận: thông
+báo bấm được → giữ quầy mở → thợ nộp ảnh: thông báo *"bấm để nghiệm thu"* → xem 3 tấm đẹp nhất + điểm bộ ảnh + sao của thợ →
+**chấm sao + ✅ Nghiệm thu** hoặc **⚖️ Khiếu nại**. Chưa ai nhận thì **gỡ việc** (hoàn tiền công, phí không hoàn).
+**Luồng (thợ ảnh):** tab 📸 Thuê nhau → **Nhận việc · đặt cọc 20%** → **🚶 Tới quầy** (tới nơi bảng tự mở) → **📷 Chụp** (lần đầu
+**thuê máy 20k**) → khung ngắm phủ lên cảnh 3D: khoảnh khắc đẹp (😄 khách cười, ♨️ món bốc khói, 🌤️ nắng xiên…) hiện dần, **vòng
+ngắm co lại**, xanh khít là lúc bấm → mỗi tấm có điểm (🌟 / 🖼️ / 🌫️), tối đa 8 kiểu → **🖼️ Nộp ảnh** (≥ 3 tấm) → chờ nghiệm thu.
+**Tình huống đời thật:** quầy đang đóng → *"chờ chủ quầy mở hàng rồi chụp mới có không khí"*; đứng xa → không chụp được; chủ bận
+quên nghiệm thu → **quá 2 giờ Chú Hai tự trả**; ảnh xấu (< 55/100) bị khiếu nại → **hoàn tiền công cho chủ**, thợ lấy lại cọc nhưng
+🤝 −5; ảnh đạt mà chủ vẫn khiếu nại → **vẫn trả tiền**, chủ 🤝 −5; trễ hạn / bỏ ngang → hoàn tiền chủ, thợ **mất cọc** + 🤝 −15
+(có thể bị khoá).
+**Luật game:** tiền công là tiền **người chơi trả người chơi** (không sinh tiền mới); money sink: phí ghi sổ (vào quỹ xóm), thuê máy
+ảnh, cọc mất; ảnh được duyệt **đăng lên nhóm xóm**: khách ghé quầy ×(1 + 0,6 × chất lượng) trong 3 giờ; **server chấm từng tấm theo
+giờ server** (khoảnh khắc server sinh; bù trễ mạng tối đa 400 ms); mỗi người đăng 1 việc, nhận 1 việc một lúc; không tự nhận việc
+mình; cần 🤝 ≥ 30; sổ cái: `gig_escrow`, `gig_fee`, `gig_deposit`, `camera_rent`, `gig_reward`, `gig_deposit_back`, `gig_refund`,
+`penalty:gig`; đo lường `gig_post`, `gig_take`, `gig_done`, `gig_disputed`, `gig_fail`.
+**Dữ liệu:** `content.gigs` (phí, hạn nghiệm thu, mức tiền công, hạn, máy ảnh, khoảnh khắc, chuẩn đạt, hiệu ứng quảng cáo);
+`Gig` (Prisma), `Player.gigs / gigStars`, `Business.adDay / adUntil / adMul`; ví `escrow:gig:<id>`; sim `gigFee`, `gigDeposit`,
+`photoMoments`, `shotScore`, `photoQuality`, `adMultiplier`, `disputeVerdict`.
+**Kiểm chứng:** sim `gigs.test.ts`; e2e server `gigs.e2e-spec.ts` (đăng → nhận → đứng xa bị từ chối → chụp đẹp → nộp → nghiệm thu
+5⭐: tiền, cọc, quỹ xóm, tin cậy, sao, quảng cáo; ảnh xấu → khiếu nại → hoàn tiền; gỡ việc; quá hạn tự trả); Playwright
+`thue-chup-anh.spec.ts` (hai người chơi; hook dev `xomShoot()` để bấm đúng lúc vì máy test chỉ vài khung hình/giây).
+**Sau này:** thêm loại việc (phụ hồ, sửa xe tận nhà, giao hàng hộ), người nhận đặt giá (đấu thầu), ảnh hiện trên bảng tin xóm.
 
 ---
 

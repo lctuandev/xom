@@ -3,6 +3,7 @@ import { AuthModule } from "../auth/auth.module.js";
 import { ContractService } from "./contracts.js";
 import { GameGateway } from "./game.gateway.js";
 import { GameService } from "./game.service.js";
+import { GigService } from "./gigs.js";
 import { OrderService } from "./orders.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
@@ -27,6 +28,7 @@ import { WorkService } from "./work.js";
     RegularService,
     StaffService,
     ContractService,
+    GigService,
     RideService,
     ShopService,
     ProjectService,

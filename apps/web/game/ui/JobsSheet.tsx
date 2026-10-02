@@ -5,12 +5,17 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { useGame } from "../store";
 import { ContractBoard } from "./ContractBoard";
+import { GigBoard } from "./GigBoard";
 import { Sheet } from "./Sheet";
 import { Tabs } from "./Tabs";
 
-type JobsTab = "jobs" | "board";
+export type JobsTab = "jobs" | "board" | "gigs";
 /** Mở lại sheet thì về tab lần trước (đang làm việc trên bảng xóm thì khỏi chọn lại). */
 let lastTab: JobsTab = "jobs";
+/** Mở sheet Việc làm ở tab nào (thông báo "jobs:gigs" → tab thuê nhau). */
+export function setJobsTab(t: JobsTab) {
+  lastTab = t;
+}
 
 /**
  * Việc làm thuê (docs/USECASES.md nhóm W): mỗi việc ở một nơi có không gian riêng —
@@ -35,9 +40,10 @@ export function JobsSheet() {
         tabs={[
           { id: "jobs", label: "💼 Làm thuê" },
           { id: "board", label: "📋 Việc xóm" },
+          { id: "gigs", label: "📸 Thuê nhau" },
         ]}
       />
-      {tab === "board" ? <ContractBoard /> : <JobList />}
+      {tab === "board" ? <ContractBoard /> : tab === "gigs" ? <GigBoard /> : <JobList />}
     </Sheet>
   );
 }
