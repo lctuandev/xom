@@ -465,15 +465,20 @@ Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 
 **Luồng (Làm ăn → 🏪 Mở tiệm, có checklist ✅ từng bước, dự toán trước):**
 1. **📝 Ký hợp đồng thuê nhà mặt tiền** — cọc **3 ngày tiền thuê** (ví giữ hộ, trả nhà thì hoàn), chủ nhà chỉ cho thuê khi còn
-   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** (cuối ngày); hết tiền thì
-   trừ cọc, **hết cọc thì chủ nhà lấy lại nhà**.
+   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** (cuối ngày) **từ ngày sau
+   ngày ký** (ngày ký có thể đã trả tiền chỗ xe đẩy); hết tiền thì trừ cọc, **hết cọc thì chủ nhà lấy lại nhà**. Đang thuê nhà
+   thì **không dọn quầy ra vỉa hè** (tránh vừa tiền nhà vừa tiền chỗ) — muốn ra thì trả nhà (hoàn cọc).
 2. **🏛️ Đăng ký hộ kinh doanh ở UBND phường** — **đặt tên quán** (3–24 ký tự, chữ/số, không trùng trong xóm), lệ phí 100k,
    **chờ xét 3 giờ game** (báo 🏛️ khi duyệt); ghi 📖 *Đăng ký hộ kinh doanh: quán "…" ra đời*.
 3. **🧑‍🍳 Giấy ATTP** (chỉ quán ăn uống — bánh mì, trà sữa; sạp phụ kiện, sửa xe không cần): **tập huấn** (150k) → **hẹn đoàn
    kiểm tra** (tới sau 1,5 giờ game) → đoàn tới báo 👮, **chủ phải có mặt ở tiệm trong 60 phút** (trước cửa hoặc trong tiệm) bấm
    *Đón đoàn* → cấp giấy; vắng mặt thì đoàn về, phải hẹn lại.
 4. **🪧 Biển hiệu tên quán** (200k) — ngoài phố căn nhà treo biển **tên quán** thay cho "BÁNH MÌ <TÊN NGƯỜI CHƠI>".
-5. **Mở tiệm** như thường (tiền thuê ngày + thuế khoán + điện nước); muốn rình rang thì *tổ chức khai trương* (UC-K).
+5. **Mở tiệm** — ngay trong tiệm có nút **🔓 Mở cửa tiệm**; mở tiệm **không trả tiền chỗ** (tiền nhà đã tính theo hợp đồng), chỉ
+   **thuế khoán** ngày có mở + điện nước theo giờ; có nhân viên thì tới ca **nhân viên tự mở cửa** (UC-M6). Ngoài phố có biển chính
+   trên mặt tiền + **biển vẫy** vuông góc (nhìn dọc phố vẫn đọc được tên quán). Muốn rình rang thì *tổ chức khai trương* (UC-K).
+> Góp ý chơi thử (rà lại): trước đây mở tiệm bị trừ cả "tiền chỗ" như xe đẩy dù tiền nhà đã tính theo hợp đồng, ngày ký bị tính
+> tiền nhà dù đã trả tiền chỗ xe đẩy, đang thuê nhà vẫn dọn ra vỉa hè được (trả hai lần) — đã sửa, server e2e `shop-flow`.
 **Luật game:** nhà mặt tiền **không khoá theo cấp nữa** — mở bằng vốn + giấy tờ; chọn nhà ở *Chỗ bán* chỉ được khi đang thuê
 đúng căn đó; mở tiệm thiếu giấy nào server báo đúng giấy đó; mọi khoản qua sổ cái (`lease_deposit`, `lease_refund`,
 `license_fee`, `food_training`, `sign`, `rent`, `rent_from_deposit`); đo lường `shop_lease`, `shop_register`, `shop_certified`,
@@ -956,6 +961,10 @@ Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 gi
 2 món thay bạn"*, khách không réo chủ). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy
 *"Trong lúc bạn vắng…"* có dòng **👩‍🍳 Thu bán thay 12 món (1 món sai) · thu … · trả lương …**. Có **phiếu ca** (giờ, bán, sai, thu,
 lương, khách hụt). Đổi người / đổi ca / cho nghỉ bất cứ lúc nào.
+**Có nhân viên thì chủ không bắt buộc đứng bán** (góp ý chơi thử): trong ca, chủ ở quầy / trong tiệm thấy *"👩‍🍳 Khoa đang bán — bạn
+cứ đứng xem"* (trong tiệm nhân viên đứng quầy, chủ đứng bên); bấm **🙋 Tôi bán** để giành bán (khách vào bếp của chủ), bấm *Để
+Khoa bán* để trả quầy. **Tới ca mà quầy đang đóng thì nhân viên tự mở cửa** (còn hàng làm được ít nhất một món, trả phí ngày như
+chủ mở; báo *"🔓 Khoa tới ca, mở cửa giúp bạn"*); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
 **Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
 viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
 **Luật game (không thu nhập thụ động không trần):** nhân viên **không tự nhập hàng, không tự mở quầy**; doanh thu có trần = kho

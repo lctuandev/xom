@@ -60,6 +60,7 @@ import {
   type ServerToClientEvents,
   SOCKET_OPTIONS,
   saySchema,
+  selfSellSchema,
   shopLeaseSchema,
   shopOrderSchema,
   shopRegisterSchema,
@@ -258,6 +259,11 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("biz:attend")
   attend(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, attendSchema, body, (ctx, p) => this.game.attend(ctx, p.on));
+  }
+
+  @SubscribeMessage("biz:selfSell")
+  selfSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, selfSellSchema, body, (ctx, p) => this.game.setSelfSell(ctx, p.on));
   }
 
   @SubscribeMessage("biz:menu")

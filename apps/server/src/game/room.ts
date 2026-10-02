@@ -53,6 +53,8 @@ export class RoomRuntime {
   readonly members = new Map<string, Member>();
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
   readonly attending = new Set<string>();
+  /** Chủ quầy giành tự đứng bán dù nhân viên đang trong ca (mặc định để nhân viên bán). */
+  readonly selfSell = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
   /** Hàng xóm đã mua ở quầy ai hôm nay (`buyer:owner:day`) — mới được viết đánh giá (UC-F11). */
   readonly purchases = new Set<string>();

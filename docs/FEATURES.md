@@ -145,6 +145,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |
+| Rà luồng tiệm: không trả trùng tiền nhà / tiền chỗ, đang thuê nhà không ra vỉa hè, tiền nhà từ ngày sau ngày ký, mở cửa ngay trong tiệm, biển vẫy nhìn dọc phố; nhân viên tới ca tự mở cửa, chủ ở quầy xem nhân viên bán hoặc giành bán; Chú Bảy nói đúng vốn khởi nghiệp | ✅ | 1.22 | UC-F12, UC-M6 |
 | 📋 Bảng việc xóm (việc NPC đặt: làm hàng + giao tận nơi trước hạn), escrow thưởng + cọc, 🤝 điểm tin cậy, mất cọc / khoá khi bỏ việc | ✅ | 1.20 | UC-M7, KIENTRUC §3 |
 | 📋 Người chơi đăng việc cho nhau (ví giữ hộ, phí ghi sổ vào quỹ xóm), nghiệm thu + chấm sao, quá hạn tự trả, Chú Hai phân xử | ✅ | 1.20b | UC-M8, KIENTRUC §3 |
 | 📸 Thợ ảnh: thuê máy, khung ngắm canh khoảnh khắc (server chấm), nộp 3 tấm, ảnh đăng nhóm xóm kéo khách | ✅ | 1.20b | UC-M8, NGHE §3.3 |

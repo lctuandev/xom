@@ -3,10 +3,11 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { content } from "@xom/content";
 import type { OrderEvent } from "@xom/shared";
-import { formatClock } from "@xom/sim";
+import { formatClock, openDue } from "@xom/sim";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { CharacterModel } from "../assets";
-import { vnd } from "../format";
+import { vnd, vndShort } from "../format";
+import { send } from "../net/socket";
 import { registerAnchor } from "../scene/anchors";
 import { BubbleProjector } from "../scene/BubbleProjector";
 import { Character, Walker } from "../scene/Character";
@@ -15,6 +16,7 @@ import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
 import { BubbleLayer } from "../ui/BubbleLayer";
 import { Toasts } from "../ui/Hud";
 import { Kitchen } from "../ui/Kitchen";
+import { StaffSellChip } from "../ui/StaffSellChip";
 import { Cutaway, OrbitCam } from "./cam";
 import { Model } from "./models";
 
@@ -189,18 +191,58 @@ function Customers() {
   );
 }
 
+/** Chủ: đứng sau quầy khi tự bán; nhân viên đang bán thì chủ đứng bên cạnh xem, nhân viên đứng quầy. */
 function Me() {
+  const staffSelling = useGame((s) => !!s.me?.business?.open && !!s.me.business.staff?.selling);
   const w = useMemo(() => {
-    const a = new Walker(0, 0.75, 1);
+    const a = new Walker(0, 0.75, 2);
     a.yaw = Math.PI;
     return a;
   }, []);
+  useEffect(() => {
+    if (staffSelling) w.moveTo(-2.4, 0.4, Math.PI * 0.85);
+    else w.moveTo(0, 0.75, Math.PI);
+  }, [staffSelling, w]);
   const myId = useGame((s) => s.me?.playerId);
   useEffect(() => (myId ? registerAnchor(myId, () => w.position) : undefined), [myId, w]);
   return <Character model="character-male-a" walker={w} />;
 }
 
+/** Nhân viên đứng quầy bán thay (UC-M6). */
+function Staff() {
+  const staff = useGame((s) => (s.me?.business?.open ? s.me.business.staff : null));
+  const w = useMemo(() => {
+    const a = new Walker(0.2, 0.75, 1);
+    a.yaw = Math.PI;
+    return a;
+  }, []);
+  if (!staff?.selling) return null;
+  return <Character model={staff.model as CharacterModel} walker={w} />;
+}
+
 /** Cảnh trong tiệm + bảng điều khiển phía dưới. */
+/** Tiệm đang đóng: mở cửa ngay trong tiệm (khỏi ra ngoài tìm nút). */
+function OpenShopButton() {
+  const biz = useGame((s) => s.me?.business);
+  const [busy, setBusy] = useState(false);
+  if (!biz?.lotId) return null;
+  const due = biz.rentPaidToday ? 0 : openDue(content, biz.lotId).total;
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        await send("biz:open", {});
+        setBusy(false);
+      }}
+      className="mt-2 h-12 w-full rounded-2xl bg-red font-semibold text-cream disabled:opacity-40"
+    >
+      🔓 Mở cửa tiệm{due ? ` · thuế khoán ${vndShort(due)}` : ""}
+    </button>
+  );
+}
+
 export default function ShopInterior({ lotId }: { lotId: string }) {
   const me = useGame((s) => s.me);
   const clock = useGame((s) => s.clock);
@@ -240,6 +282,7 @@ export default function ShopInterior({ lotId }: { lotId: string }) {
         <Suspense fallback={null}>
           <ShopRoom sign={sign} color={product.signColor} productId={product.id} />
           <Me />
+          <Staff />
           <Customers />
           <BubbleProjector fallbackTop={96} />
         </Suspense>
@@ -272,9 +315,10 @@ export default function ShopInterior({ lotId }: { lotId: string }) {
         className="pb-safe pointer-events-auto absolute inset-x-0 bottom-0 rounded-t-3xl bg-cream px-3 pt-3 shadow-[0_-8px_30px_rgba(0,0,0,0.25)]"
       >
         <p className="text-xs font-semibold text-ink/60">
-          {lot.name} · {biz.open ? "đang mở tiệm" : "đang đóng — mở tiệm ở Làm ăn"} ·{" "}
-          {orders.length} khách chờ
+          {lot.name} · {biz.open ? "đang mở tiệm" : "đang đóng cửa"} · {orders.length} khách chờ
         </p>
+        <StaffSellChip className="mt-2 max-w-none" />
+        {!biz.open && <OpenShopButton />}
         <div className="mt-2 grid grid-cols-[2fr_1fr] gap-2">
           <button
             type="button"

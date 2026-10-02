@@ -105,13 +105,17 @@ export class StaffService {
   }
 
   /**
-   * Mỗi nhịp kinh tế: quầy đang mở, chủ còn trong xóm mà không đứng quầy, nhân viên trong ca → bán thay một nhịp.
+   * Mỗi nhịp kinh tế: quầy đang mở, chủ còn trong xóm mà không tự đứng bán, nhân viên trong ca → bán thay một nhịp.
    * Trả về chủ quầy có tiền/kho đổi (để gửi MeView mới).
    */
   async tickLive(room: RoomRuntime): Promise<string[]> {
     const step = content.economy.economyTickMinutes;
+    // Chủ online mà không tự đứng bán (đi vắng, hoặc ở tiệm nhưng để nhân viên bán) → nhân viên bán.
     const away = [...room.members.values()]
-      .filter((m) => m.sockets.size > 0 && !room.attending.has(m.playerId))
+      .filter(
+        (m) =>
+          m.sockets.size > 0 && !(room.attending.has(m.playerId) && room.selfSell.has(m.playerId)),
+      )
       .map((m) => m.playerId);
     if (away.length === 0) return [];
     const list = await this.prisma.business.findMany({

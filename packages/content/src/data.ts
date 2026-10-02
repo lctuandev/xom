@@ -1,5 +1,16 @@
 import type { ContentInput } from "./schema.js";
 
+/** Vốn khởi nghiệp: 💵 tiền mặt + 🏦 tài khoản (dùng chung cho economy và lời Chú Bảy để không lệch nhau). */
+const START_CASH = 1_500_000;
+const START_BANK = 1_000_000;
+/** 1_500_000 → "1 triệu rưỡi", 1_000_000 → "1 triệu", 500_000 → "500 ngàn" (cách nói ngoài đời). */
+const spoken = (n: number) =>
+  n >= 1_000_000
+    ? n % 1_000_000 === 500_000
+      ? `${Math.floor(n / 1_000_000)} triệu rưỡi`
+      : `${(n / 1_000_000).toLocaleString("vi-VN")} triệu`
+    : `${n / 1000} ngàn`;
+
 // Dữ liệu MVP: 1 xóm, 3 business (bánh mì, trà sữa, phụ kiện), 2 template (docs/PLAN.md §3.1).
 // Mọi con số ở đây là điểm khởi đầu để cân bằng bằng tools/balance.
 
@@ -1721,7 +1732,8 @@ export const data: ContentInput = {
       speaker: "chu_bay",
       lines: [
         "Ủa, con là người mới dọn về xóm hả? Chú là Bảy, chạy xe ôm đầu hẻm nè.",
-        "Ở xóm này ai cũng tự lo lấy cái nghề. Trong túi con có 500 ngàn — đủ mua một chiếc xe đẩy nhỏ.",
+        `Ở xóm này ai cũng tự lo lấy cái nghề. Trong túi con có ${spoken(START_CASH)} tiền mặt, thêm ${spoken(START_BANK)} trong tài khoản ngân hàng.`,
+        "Đủ sắm một chiếc xe đẩy, nhập hàng mà vẫn còn dư phòng thân — tiền ngân hàng rút ở cây ATM nha.",
         "Còn chưa chắc tay thì qua quán cơm Cô Tư phụ việc, kiếm vốn trước cũng được.",
       ],
       choices: [
@@ -2682,9 +2694,9 @@ export const data: ContentInput = {
   },
 
   economy: {
-    startingMoney: 1_500_000,
+    startingMoney: START_CASH,
     // Góp ý chơi thử: mua xe xong còn ~300k, khó sống → mở sẵn tài khoản có 1tr dự phòng.
-    startingBank: 1_000_000,
+    startingBank: START_BANK,
     dayStartMinute: 6 * 60,
     dayEndMinute: 22 * 60,
     economyTickMinutes: 5,

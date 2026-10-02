@@ -2,7 +2,7 @@
 
 import { content } from "@xom/content";
 import type { BusinessView, RegularView, StaffView } from "@xom/shared";
-import { formatClock, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
+import { formatClock, openDue, priceScore, repairCost, unlockLevel, wearState } from "@xom/sim";
 import { useEffect, useRef, useState } from "react";
 import { districtLikes } from "../districts";
 import { stars, vnd, vndShort } from "../format";
@@ -228,9 +228,8 @@ function OpenButton({
   const close = useGame((s) => s.openSheet);
   const lot = biz.lotId ? content.lot(biz.lotId) : null;
   const eco = content.economy;
-  // Tiền thuê chỗ + phí chợ/thuế trả một lần mỗi ngày (Luật 2.2).
-  const rentDue =
-    !biz.open && lot && !biz.rentPaidToday ? lot.rentPerDay + eco.fees.daily[lot.kind] : 0;
+  // Tiền chỗ (xe đẩy) + phí chợ/thuế trả một lần mỗi ngày (Luật 2.2); tiệm thì tiền nhà theo hợp đồng.
+  const rentDue = !biz.open && lot && !biz.rentPaidToday ? openDue(content, lot.id).total : 0;
   const broken = wearState(biz.wear, eco.maintenance) === "broken";
   const cantPay = rentDue > money;
   const hint = broken
@@ -541,12 +540,14 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       {content.data.lots.map((lot) => {
         const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
         const selected = biz.lotId === lot.id;
+        // Đang thuê nhà: không dọn ra vỉa hè (tiền nhà vẫn chạy) — trả nhà ở tab 🏪 Mở tiệm trước.
+        const leased = !!biz.leaseLotId && lot.kind !== "house";
         // Nhà mặt tiền: phải ký hợp đồng thuê ở tab 🏪 Mở tiệm (UC-F12) — server kiểm.
         return (
           <li key={lot.id}>
             <button
               type="button"
-              disabled={!!taken}
+              disabled={!!taken || leased}
               aria-pressed={selected}
               onClick={async () => {
                 const res = await send("biz:update", { lotId: lot.id });
@@ -564,13 +565,18 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                 <span className="block text-sm text-ink/60">
                   {lot.kind === "house" && !selected
                     ? "📝 Ký hợp đồng thuê ở tab 🏪 Mở tiệm"
-                    : taken
-                      ? `${taken.ownerName} đang dùng`
-                      : lot.hint}
+                    : leased
+                      ? "🏠 Đang thuê nhà — trả nhà ở tab 🏪 Mở tiệm rồi mới ra vỉa hè"
+                      : taken
+                        ? `${taken.ownerName} đang dùng`
+                        : lot.hint}
                 </span>
               </span>
-              <span className="shrink-0 font-semibold tabular-nums">
+              <span className="shrink-0 text-right font-semibold tabular-nums">
                 {vndShort(lot.rentPerDay)}
+                <span className="block text-[10px] font-normal text-ink/50">
+                  {lot.kind === "house" ? "tiền nhà/ngày" : "tiền chỗ/ngày"}
+                </span>
               </span>
             </button>
           </li>
@@ -703,13 +709,14 @@ function StaffBoard() {
             <i>Cả ngày 6–22h</i>).
           </li>
           <li>
-            <b>Nhập đủ hàng</b> rồi <b>mở quầy</b> như thường — nhân viên không tự nhập hàng, hết
-            hàng là dọn về.
+            <b>Nhập đủ hàng</b> — nhân viên không tự nhập hàng, hết hàng là dọn về. Tới giờ ca mà
+            quầy đang đóng thì <b>nhân viên tự mở cửa</b> (trả phí ngày như bạn mở).
           </li>
           <li>
-            Trong giờ ca, bạn <b>rời quầy</b> (đi chợ, đi làm thuê, chạy xe ôm) hoặc{" "}
-            <b>thoát game</b> — nhân viên đứng bán thay. <b>Đừng đóng quầy</b>: quầy đóng thì không
-            ai bán.
+            Trong giờ ca <b>nhân viên đứng bán</b>: bạn đi đâu cũng được (chợ, làm thuê, xe ôm,
+            thoát game), hoặc ở lại quầy / trong tiệm xem — muốn tự bán thì bấm <b>🙋 Tôi bán</b>,
+            bấm lại để trả quầy cho nhân viên. <b>Đừng đóng quầy</b> giữa ca: đóng rồi thì không ai
+            bán.
           </li>
           <li>
             Tiền bán vào ví bạn, lương trừ theo giờ; xem kết quả ở <i>Phiếu ca</i> bên dưới.

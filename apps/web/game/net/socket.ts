@@ -125,6 +125,7 @@ export function connectGame(onSignedOut: () => void): () => void {
     (window as unknown as { xomDebug: unknown }).xomDebug = {
       send,
       walk: (x: number, z: number) => useGame.getState().setGoal({ kind: "point", x, z }),
+      clock: () => useGame.getState().clock,
     };
 
   return () => {

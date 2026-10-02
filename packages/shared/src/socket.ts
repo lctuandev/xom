@@ -82,6 +82,7 @@ export interface ClientToServerEvents {
   "work:act": Intent<WorkAct, WorkResult>;
   "work:stop": Intent<Record<string, never>, WorkResult>;
   "biz:attend": Intent<{ on: boolean }>;
+  "biz:selfSell": Intent<{ on: boolean }>;
   "order:make": Intent<
     { orderId: string; build: Record<string, string | string[] | true> },
     MakeResult

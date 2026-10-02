@@ -42,6 +42,7 @@ import {
   needsAlert,
   needsAt,
   needsFrom,
+  openDue,
   overrideWeather,
   type PaySource,
   pinError,
@@ -51,6 +52,7 @@ import {
   resaleValue,
   type SkillPoints,
   seededRandom,
+  shiftAt,
   spoilage,
   unlockLevel,
   wearDemand,
@@ -126,19 +128,30 @@ export interface GameEmitter {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Nhân viên của quầy cho MeView: tên, ca, có đang trong ca không (để HUD báo "đang bán thay"). */
-function staffView(e: { staffId: string; shiftId: string } | null, minute: number) {
+function staffView(
+  e: { staffId: string; shiftId: string } | null,
+  minute: number,
+  ownerSells: boolean,
+) {
   if (!e) return null;
   const person = content.data.staff.people.find((p) => p.id === e.staffId);
   const shift = content.data.staff.shifts.find((s) => s.id === e.shiftId);
   if (!person || !shift) return null;
+  const onDuty = minute >= shift.from && minute < shift.to;
   return {
     name: person.name,
     shift: shift.name,
     from: shift.from,
     to: shift.to,
-    onDuty: minute >= shift.from && minute < shift.to,
+    onDuty,
+    selling: onDuty && !ownerSells,
+    model: person.model,
   };
 }
+
+/** Chủ đang tự đứng bán (đứng quầy và đã giành bán thay nhân viên). */
+const ownerSells = (room: RoomRuntime, playerId: string) =>
+  room.attending.has(playerId) && room.selfSell.has(playerId);
 
 /** Dời mọi mốc "ngày" của người chơi theo độ lệch ngày giữa hai xóm (khóa unique → dời qua số âm). */
 async function rebaseDays(tx: Tx, playerId: string, offset: number) {
@@ -165,6 +178,8 @@ export class GameService implements OnModuleDestroy {
   private readonly rooms = new Map<string, RoomRuntime>();
   private readonly roomOfPlayer = new Map<string, string>();
   private readonly occupantsCache = new Map<string, WorldView["lots"]>();
+  /** Nhân viên đã tự mở cửa hôm nay (`businessId:day`) — chủ đóng giữa chừng thì không mở lại. */
+  private readonly staffOpened = new Set<string>();
   private emitter?: GameEmitter;
 
   constructor(
@@ -894,6 +909,8 @@ export class GameService implements OnModuleDestroy {
     if (!content.lotById.has(lotId)) throw new GameError("invalid_payload", "Không có chỗ này");
     // Nhà mặt tiền: phải ký hợp đồng thuê trước (UC-F12) — mở bằng vốn, không khoá theo cấp.
     if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
+    // Đang thuê nhà mà dọn ra vỉa hè: tiền nhà vẫn tính mỗi ngày + trả thêm tiền chỗ — chặn, trả nhà trước.
+    else await this.shops.requireNoLease(playerId);
     if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
     const taken = (this.occupantsCache.get(room.id) ?? []).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
@@ -1211,6 +1228,63 @@ export class GameService implements OnModuleDestroy {
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
     if (player.jobId || room.shifts.has(playerId))
       throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở quầy");
+    await this.doOpen(room, playerId, biz);
+  }
+
+  /** Có nhân viên trong ca: chủ tự đứng bán hay để nhân viên bán (chủ vẫn ở tiệm coi). */
+  async setSelfSell({ room, playerId }: IntentContext, on: boolean) {
+    if (on) room.selfSell.add(playerId);
+    else room.selfSell.delete(playerId);
+  }
+
+  /**
+   * Nhân viên tới ca thì mở cửa giúp chủ (KIENTRUC §2): quầy đã có chỗ, đủ giấy tờ (tiệm), còn hàng làm được ít nhất một
+   * món, chủ đang online. Tiền chỗ / phí ngày trừ như chủ tự mở; thiếu tiền thì thôi, báo chủ.
+   */
+  private async staffAutoOpen(room: RoomRuntime) {
+    const online = [...room.members.values()]
+      .filter((m) => m.sockets.size > 0)
+      .map((m) => m.playerId);
+    if (!online.length) return;
+    const closed = await this.prisma.business.findMany({
+      where: {
+        ownerId: { in: online },
+        status: "CLOSED",
+        lotId: { not: null },
+        employee: { isNot: null },
+      },
+      include: { employee: true },
+    });
+    for (const biz of closed) {
+      const e = biz.employee;
+      if (!e || !shiftAt(content, e.shiftId, room.minute)) continue;
+      const key = `${biz.id}:${room.day}`;
+      // Mỗi ngày nhân viên chỉ mở một lần (chủ đóng giữa chừng thì thôi).
+      if (this.staffOpened.has(key)) continue;
+      this.staffOpened.add(key);
+      const stock = await stockMap(this.prisma, biz.ownerId);
+      if (!availableMenu(biz.productId, menuOf(biz), stock).length) continue;
+      const name = content.data.staff.people.find((p) => p.id === e.staffId)?.name ?? "Nhân viên";
+      try {
+        await this.doOpen(room, biz.ownerId, biz);
+        this.emitter?.toPlayer(biz.ownerId, "notify", {
+          kind: "good",
+          text: `🔓 ${name} tới ca, mở cửa ${content.lot(biz.lotId ?? "").kind === "house" ? "tiệm" : "quầy"} giúp bạn rồi`,
+        });
+        this.emitter?.toPlayer(biz.ownerId, "me", await this.me(room, biz.ownerId));
+      } catch (err) {
+        if (!(err instanceof GameError)) throw err;
+        this.emitter?.toPlayer(biz.ownerId, "notify", {
+          kind: "warn",
+          text: `🔒 ${name} tới ca mà không mở cửa được: ${err.message}`,
+        });
+      }
+    }
+  }
+
+  /** Mở cửa: trả tiền chỗ (xe đẩy) / tiền nhà hôm nay (tiệm) + phí ngày nếu chưa trả hôm nay. */
+  private async doOpen(room: RoomRuntime, playerId: string, biz: Business) {
+    if (!biz.lotId) throw new GameError("invalid_state", "Chọn chỗ bán trước đã");
     const lot = content.lot(biz.lotId);
     if (lot.kind === "house") await this.shops.requireReady(room, biz, lot.id);
     const eco = content.economy;
@@ -1219,9 +1293,10 @@ export class GameService implements OnModuleDestroy {
     await this.prisma.$transaction(async (tx) => {
       const paid = biz.rentPaidDay === room.day && biz.rentLotId === lot.id;
       if (!paid) {
-        await this.payOut(tx, playerId, lot.rentPerDay, SYSTEM.landlord, "rent", lot.id);
+        // Xe đẩy trả tiền chỗ vỉa hè theo ngày khi mở; tiệm trong nhà thì tiền nhà đã tính theo hợp đồng (UC-F12).
         // Phí chợ/vệ sinh (xe đẩy) hoặc thuế khoán (tiệm) mỗi ngày — Luật 2.2.
-        const fee = eco.fees.daily[lot.kind];
+        const { rent, fee } = openDue(content, lot.id);
+        if (rent > 0) await this.payOut(tx, playerId, rent, SYSTEM.landlord, "rent", lot.id);
         // Phí chợ thu tận tay; một phần vào quỹ xóm làm công trình chung (UC-J5), còn lại cho ban quản lý chợ.
         if (fee > 0) {
           const toFund = feeToFund(fee, content.data.fund.feeShare);
@@ -1230,7 +1305,7 @@ export class GameService implements OnModuleDestroy {
           if (fee - toFund > 0)
             await this.payOut(tx, playerId, fee - toFund, SYSTEM.landlord, "fee", lot.id);
         }
-        await addToReport(tx, playerId, room.day, { rent: lot.rentPerDay, fees: fee });
+        await addToReport(tx, playerId, room.day, { rent, fees: fee });
       }
       await tx.business.update({
         where: { id: biz.id },
@@ -1314,6 +1389,8 @@ export class GameService implements OnModuleDestroy {
 
   async closeBusiness({ room, playerId }: IntentContext) {
     const biz = await this.requireBusiness(playerId);
+    // Chủ tự đóng thì nhân viên không mở lại trong ngày (tới ca hôm sau mới mở).
+    this.staffOpened.add(`${biz.id}:${room.day}`);
     await this.prisma.business.update({ where: { id: biz.id }, data: { status: "CLOSED" } });
     this.orders.dropFor(room, biz.id);
     this.emitWorld(room);
@@ -1419,6 +1496,7 @@ export class GameService implements OnModuleDestroy {
         await this.endDay(room);
       } else {
         if (room.minute % eco.economyTickMinutes === 0) {
+          await this.staffAutoOpen(room);
           await this.customerTick(room);
           for (const owner of await this.staff.tickLive(room))
             this.emitter?.toPlayer(owner, "me", await this.me(room, owner));
@@ -1447,9 +1525,19 @@ export class GameService implements OnModuleDestroy {
   private async customerTick(room: RoomRuntime) {
     const eco = content.economy;
     const staffed = [...room.members.keys()].filter((id) => room.attending.has(id));
-    const businesses = await this.prisma.business.findMany({
+    const all = await this.prisma.business.findMany({
       where: { ownerId: { in: staffed }, status: "OPEN", lotId: { not: null } },
+      include: { employee: true },
     });
+    // Nhân viên đang trong ca mà chủ không giành bán: nhân viên bán (StaffService), khách không vào bếp của chủ.
+    const businesses = all.filter(
+      (b) =>
+        !(
+          b.employee &&
+          shiftAt(content, b.employee.shiftId, room.minute) &&
+          !room.selfSell.has(b.ownerId)
+        ),
+    );
     if (businesses.length === 0) return;
     // Công trình chung đã nghiệm thu (UC-J5): đường sá, cầu, đèn… làm khách ghé chỗ bán gần đó nhiều hơn.
     const built = await this.projects.done(room.id);
@@ -1655,6 +1743,9 @@ export class GameService implements OnModuleDestroy {
       this.prisma.npcRelation.findMany({ where: { playerId } }),
       this.prisma.dailyReport.aggregate({ where: { playerId }, _sum: { served: true } }),
     ]);
+    const lease = biz
+      ? await this.prisma.lease.findFirst({ where: { ownerId: playerId, status: "ACTIVE" } })
+      : null;
     const totalServed = served._sum.served ?? 0;
     const lv = levelOf(player.xp);
     return {
@@ -1683,7 +1774,9 @@ export class GameService implements OnModuleDestroy {
             rentPaidToday: biz.rentPaidDay === room.day && biz.rentLotId === biz.lotId,
             promoDay: biz.promoDay,
             wear: biz.wear,
-            staff: staffView(biz.employee, room.minute),
+            staff: staffView(biz.employee, room.minute, ownerSells(room, playerId)),
+            selfSell: room.selfSell.has(playerId),
+            leaseLotId: lease?.lotId ?? null,
           }
         : null,
       inventory,

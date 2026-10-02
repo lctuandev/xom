@@ -326,6 +326,16 @@ export class ShopService {
       );
   }
 
+  /** Dọn quầy ra vỉa hè: phải trả nhà trước (tránh vừa tiền nhà vừa tiền chỗ). */
+  async requireNoLease(playerId: string) {
+    const lease = await this.activeLease(playerId);
+    if (lease)
+      throw new GameError(
+        "invalid_state",
+        `Đang thuê ${content.lot(lease.lotId).name} — tiền nhà vẫn tính mỗi ngày. Trả nhà (Làm ăn → 🏪 Mở tiệm) rồi mới ra vỉa hè bán`,
+      );
+  }
+
   /** Mỗi phút: báo hồ sơ đã duyệt, đoàn kiểm tra tới; quá giờ không ai đón thì huỷ hẹn. */
   async tick(room: RoomRuntime) {
     const now = this.now(room);
@@ -371,8 +381,9 @@ export class ShopService {
       where: { roomId: room.id, status: "ACTIVE" },
     });
     for (const lease of leases) {
-      const biz = await this.prisma.business.findFirst({ where: { ownerId: lease.ownerId } });
-      if (biz?.rentPaidDay === room.day && biz.rentLotId === lease.lotId) continue;
+      // Tiền nhà tính theo hợp đồng, mỗi cuối ngày dù mở hay đóng — từ ngày sau ngày ký (ngày ký có thể đã trả tiền chỗ
+      // xe đẩy). Mở tiệm không trả "tiền chỗ" nữa nên không bao giờ trả trùng.
+      if (lease.signedDay >= room.day) continue;
       const rent = content.lot(lease.lotId).rentPerDay;
       let evicted = false;
       await this.prisma.$transaction(async (tx) => {

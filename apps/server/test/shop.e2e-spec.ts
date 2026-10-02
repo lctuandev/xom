@@ -132,6 +132,11 @@ describe("Mở tiệm (e2e)", () => {
     const prisma = app.get(PrismaService);
     const ledger = app.get(LedgerService);
     const lease = await prisma.lease.findFirstOrThrow({ where: { ownerId: id, status: "ACTIVE" } });
+    // Tiền nhà tính từ ngày sau ngày ký: coi như đã ký từ hôm qua.
+    await prisma.lease.update({
+      where: { id: lease.id },
+      data: { signedDay: lease.signedDay - 1 },
+    });
     // Tiêu hết tiền mặt + tài khoản, cọc chỉ còn 50k (< tiền nhà một ngày).
     await prisma.$transaction(async (tx) => {
       for (const w of [playerWallet(id), bankWallet(id)]) {

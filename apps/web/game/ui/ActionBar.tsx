@@ -1,11 +1,12 @@
 "use client";
 
 import { content } from "@xom/content";
-import { formatClock } from "@xom/sim";
+import { formatClock, openDue } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { send, sendWork } from "../net/socket";
 import { useGame } from "../store";
 import { sheetForPlace } from "../world";
+import { StaffSellChip } from "./StaffSellChip";
 
 /**
  * Hành động theo ngữ cảnh, ngay trên thanh điều hướng (vùng ngón cái):
@@ -28,6 +29,7 @@ export function ActionBar() {
       <ShopButton />
       <KitchenButton />
       <AwayChip />
+      <AtStallStaffChip />
       <RideChip />
       <OpenStallButton />
       <EnterShopButton />
@@ -212,6 +214,13 @@ function RideChip() {
   );
 }
 
+/** Đứng ở quầy mà nhân viên đang trong ca: xem nhân viên bán hoặc giành tự bán. */
+function AtStallStaffChip() {
+  const atStall = useGame((s) => s.atStall);
+  if (!atStall) return null;
+  return <StaffSellChip />;
+}
+
 function AwayChip() {
   const open = useGame((s) => s.me?.business?.open ?? false);
   const staff = useGame((s) => s.me?.business?.staff);
@@ -292,7 +301,7 @@ function OpenStallButton() {
   const biz = useGame((s) => s.me?.business);
   const [busy, setBusy] = useState(false);
   if (!atStall || !biz || biz.open) return null;
-  const rent = biz.lotId && !biz.rentPaidToday ? content.lot(biz.lotId).rentPerDay : 0;
+  const due = biz.lotId && !biz.rentPaidToday ? openDue(content, biz.lotId) : null;
   return (
     <button
       type="button"
@@ -305,7 +314,8 @@ function OpenStallButton() {
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
       🔓 {biz.lotId && content.lotById.get(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
-      {rent ? ` · thuê chỗ ${Math.round(rent / 1000)}k` : ""}
+      {due?.rent ? ` · thuê chỗ ${Math.round(due.rent / 1000)}k` : ""}
+      {due?.fee ? ` · ${due.rent ? "phí" : "thuế khoán"} ${Math.round(due.fee / 1000)}k` : ""}
     </button>
   );
 }

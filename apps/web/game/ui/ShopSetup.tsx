@@ -71,9 +71,12 @@ export function ShopSetup() {
             <p>
               Đang thuê <b>{house.name}</b> · cọc {vnd(v.lease.deposit)} (hoàn khi trả nhà).
             </p>
-            <p className="text-ink/60">
-              Tiền nhà {vnd(house.rentPerDay)}/ngày, <b>tính cả ngày đóng cửa</b>; hết tiền thì trừ
-              cọc, hết cọc chủ nhà lấy lại nhà.
+            <p className="text-ink/60" data-lease-rules>
+              Tiền nhà {vnd(house.rentPerDay)}/ngày tính <b>từ ngày sau ngày ký</b>, trừ mỗi tối{" "}
+              <b>dù mở hay đóng</b>; hết tiền thì trừ cọc, hết cọc chủ nhà lấy lại nhà. Mở tiệm{" "}
+              <b>không trả tiền chỗ</b> nữa, chỉ thuế khoán{" "}
+              {vndShort(content.economy.fees.daily.house)}/ngày có mở. Đang thuê nhà thì không ra
+              vỉa hè bán được — muốn ra thì trả nhà.
             </p>
             <button
               type="button"
@@ -93,6 +96,9 @@ export function ShopSetup() {
                 <li key={h.lotId} className="rounded-xl bg-cream p-2" data-house={h.lotId}>
                   <p className="text-sm font-semibold">{lot.name}</p>
                   <p className="text-xs text-ink/60">{lot.hint}</p>
+                  <p className="mt-1 text-xs text-ink/60">
+                    Ký xong đồ nghề dọn vào nhà, thôi bán xe đẩy ngoài vỉa hè (khỏi trả tiền chỗ).
+                  </p>
                   <p className="mt-1 text-xs tabular-nums">
                     Tiền nhà {vndShort(h.rentPerDay)}/ngày · cọc {vndShort(e.deposit)} (
                     {s.depositDays} ngày) · dự phòng {vndShort(e.reserve)}

@@ -61,3 +61,17 @@ export function nextShopStep(o: {
   if (!o.signed) return "sign";
   return "ready";
 }
+
+/**
+ * Tiền phải trả khi mở cửa lần đầu trong ngày: xe đẩy trả tiền chỗ vỉa hè + phí chợ; tiệm trong nhà chỉ trả thuế khoán
+ * (tiền nhà đã tính theo hợp đồng mỗi cuối ngày — UC-F12), không bao giờ trả trùng.
+ */
+export function openDue(
+  content: Content,
+  lotId: string,
+): { rent: number; fee: number; total: number } {
+  const lot = content.lot(lotId);
+  const rent = lot.kind === "house" ? 0 : lot.rentPerDay;
+  const fee = content.economy.fees.daily[lot.kind];
+  return { rent, fee, total: rent + fee };
+}

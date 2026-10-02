@@ -36,11 +36,25 @@ export interface BusinessView {
   /** Đã trả tiền thuê chỗ hiện tại cho hôm nay chưa (mở lại trong ngày không mất thêm). */
   rentPaidToday: boolean;
   /** Nhân viên đang thuê (KIENTRUC §2): ai, ca mấy giờ, bây giờ có đang trong ca không. */
-  staff?: { name: string; shift: string; from: number; to: number; onDuty: boolean } | null;
+  staff?: {
+    name: string;
+    shift: string;
+    from: number;
+    to: number;
+    onDuty: boolean;
+    /** Nhân viên đang đứng bán (trong ca, chủ không giành bán). */
+    selling: boolean;
+    /** Model nhân vật (vẽ nhân viên đứng quầy trong tiệm). */
+    model: string;
+  } | null;
+  /** Chủ đứng quầy tự bán thay nhân viên (khi nhân viên đang trong ca). */
+  selfSell?: boolean;
   /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
   promoDay: number | null;
   /** Độ mòn xe/quầy 0–1 (sửa ở vựa xe). */
   wear: number;
+  /** Nhà mặt tiền đang thuê theo hợp đồng (UC-F12) — tiền nhà tính mỗi ngày dù mở hay đóng. */
+  leaseLotId?: string | null;
 }
 
 export interface InventoryView {
@@ -889,6 +903,8 @@ export const workActSchema = z.discriminatedUnion("kind", [
 ]);
 export type WorkAct = z.infer<typeof workActSchema>;
 export const attendSchema = z.object({ on: z.boolean() });
+/** Có nhân viên trong ca: chủ tự đứng bán (true) hay để nhân viên bán (false). */
+export const selfSellSchema = z.object({ on: z.boolean() });
 export const tutorialSchema = z.object({ step: contentId });
 const coord = z.number().min(-200).max(200);
 export const moveSchema = z.object({
