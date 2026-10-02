@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { DayReportView, MeView, OrderEvent } from "@xom/shared";
+import type { AtmReceipt, DayReportView, MeView, OrderEvent } from "@xom/shared";
 import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../src/economy/ledger.service.js";
 import { GameService } from "../src/game/game.service.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
@@ -18,6 +18,8 @@ describe("Ngân hàng (e2e)", () => {
   afterAll(() => app.close());
 
   const START = content.economy.startingMoney;
+  /** Vốn dự phòng có sẵn trong tài khoản người mới. */
+  const B0 = content.economy.startingBank;
   const balance = (key: string) => app.get(LedgerService).balance(app.get(PrismaService), key);
 
   it("khách chuyển khoản → tiền vào 🏦 tài khoản; trả tiền mặt → vào 💵 ví", async () => {
@@ -56,12 +58,14 @@ describe("Ngân hàng (e2e)", () => {
     socket.disconnect();
   }, 60_000);
 
-  it("ATM: phải đứng gần; bội số mệnh giá; không rút quá số dư; tiền chỉ đổi chỗ giữa ví và tài khoản", async () => {
+  it("ATM: phải đứng gần; tạo PIN; bội số mệnh giá; rút mất phí; không rút quá số dư; có biên lai", async () => {
     const { socket } = await join(url);
     const atm = content.atms[0];
     if (!atm) throw new Error("bản đồ không có ATM");
-    const use = (action: string, amount: number) =>
-      emit<MeView>(socket, "atm:use", { atmId: atm.id, action, amount });
+    const PIN = "270915";
+    type Res = { me: MeView; receipt: AtmReceipt };
+    const use = (action: string, amount: number, pin = PIN) =>
+      emit<Res>(socket, "atm:use", { atmId: atm.id, action, amount, pin });
 
     socket.emit("move", { x: atm.x + 20, z: atm.z, yaw: 0, moving: false, inside: null });
     await new Promise((r) => setTimeout(r, 80));
@@ -72,19 +76,75 @@ describe("Ngân hàng (e2e)", () => {
 
     socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await new Promise((r) => setTimeout(r, 80));
+    expect(await use("deposit", 50_000)).toMatchObject({ ok: false, message: /chưa có mã PIN/ });
+    expect(await emit(socket, "atm:pin", { atmId: atm.id, pin: "123456" })).toMatchObject({
+      ok: false,
+      message: /liên tiếp/,
+    });
+    const set = await emit<MeView>(socket, "atm:pin", { atmId: atm.id, pin: PIN });
+    expect(set.ok && set.data.atm).toEqual({ hasPin: true, locked: false });
+    // Đổi PIN phải có PIN cũ.
+    expect(await emit(socket, "atm:pin", { atmId: atm.id, pin: "482613" })).toMatchObject({
+      ok: false,
+      message: /PIN cũ/,
+    });
+
     const dep = await use("deposit", 200_000);
-    expect(dep.ok && dep.data).toMatchObject({ money: START - 200_000, bank: 200_000 });
+    if (!dep.ok) throw new Error(`nộp: ${dep.message}`);
+    expect(dep.data.me).toMatchObject({ money: START - 200_000, bank: B0 + 200_000 });
+    expect(dep.data.receipt).toMatchObject({
+      action: "deposit",
+      amount: 200_000,
+      fee: 0,
+      balance: B0 + 200_000,
+    });
+    expect(dep.data.receipt.code).toMatch(/^FT\d{3}[0-9A-F]{6}$/);
     expect(await use("withdraw", 15_000)).toMatchObject({ ok: false, error: "invalid_payload" });
-    expect(await use("withdraw", 500_000)).toMatchObject({
+    expect(await use("withdraw", B0 + 500_000)).toMatchObject({
       ok: false,
       error: "insufficient_funds",
-      message: "Tài khoản không đủ số dư",
+      message: expect.stringMatching(/Tài khoản không đủ số dư/),
     });
+    const fee = content.economy.bank.withdrawFee;
     const wd = await use("withdraw", 50_000);
-    expect(wd.ok && wd.data).toMatchObject({ money: START - 150_000, bank: 150_000 });
+    if (!wd.ok) throw new Error(`rút: ${wd.message}`);
+    expect(wd.data.me).toMatchObject({ money: START - 150_000, bank: B0 + 150_000 - fee });
+    expect(wd.data.receipt).toMatchObject({ fee, balance: B0 + 150_000 - fee });
     expect(
-      await emit(socket, "atm:use", { atmId: "atm_0_0", action: "deposit", amount: 10_000 }),
+      await emit(socket, "atm:use", {
+        atmId: "atm_0_0",
+        action: "deposit",
+        amount: 10_000,
+        pin: PIN,
+      }),
     ).toMatchObject({ ok: false, error: "invalid_payload" });
+    socket.disconnect();
+  });
+
+  it("ATM: sai PIN 3 lần thì máy giữ thẻ tới hôm sau", async () => {
+    const { socket, snap } = await join(url);
+    const atm = content.atms[0];
+    if (!atm) throw new Error("bản đồ không có ATM");
+    socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
+    await new Promise((r) => setTimeout(r, 80));
+    await emit(socket, "atm:pin", { atmId: atm.id, pin: "270915" });
+    const auth = (pin: string) => emit<MeView>(socket, "atm:auth", { atmId: atm.id, pin });
+    expect(await auth("111222")).toMatchObject({
+      ok: false,
+      message: "Sai mã PIN — còn 2 lần thử",
+    });
+    expect(await auth("111222")).toMatchObject({
+      ok: false,
+      message: "Sai mã PIN — còn 1 lần thử",
+    });
+    expect(await auth("111222")).toMatchObject({ ok: false, message: /máy giữ thẻ/ });
+    expect(await auth("270915")).toMatchObject({ ok: false, message: /giữ thẻ của bạn/ });
+    // Sang ngày mới thì được trả thẻ.
+    const room = app.get(GameService).roomFor(snap.me.playerId);
+    if (!room) throw new Error("không có xóm");
+    room.day += 1;
+    const ok = await auth("270915");
+    expect(ok.ok && ok.data.atm).toEqual({ hasPin: true, locked: false });
     socket.disconnect();
   });
 
@@ -101,7 +161,7 @@ describe("Ngân hàng (e2e)", () => {
     room.minute = content.economy.dayEndMinute - 2;
     const r: DayReportView = await report;
     expect(r.interest).toBe(content.economy.bank.interestCap);
-    expect(await balance(bankWallet(id))).toBe(50_000_000 + content.economy.bank.interestCap);
+    expect(await balance(bankWallet(id))).toBe(B0 + 50_000_000 + content.economy.bank.interestCap);
     socket.disconnect();
   });
 });

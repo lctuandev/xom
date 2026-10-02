@@ -1,5 +1,6 @@
 import { content } from "@xom/content";
 import type {
+  AwayView,
   ClockView,
   DayReportView,
   EventView,
@@ -9,6 +10,8 @@ import type {
   OrderResultEvent,
   OrderUpdateEvent,
   PayslipView,
+  PhotoSessionView,
+  RideView,
   RosterView,
   SayEvent,
   ShiftView,
@@ -67,7 +70,10 @@ export type SheetId =
   | "settings"
   | "recipes"
   | "atm"
-  | "board";
+  | "board"
+  | "fund"
+  | "ride"
+  | "site";
 
 /** Đơn khách ở quầy mình + trạng thái món đã làm. */
 export interface OrderState extends OrderEvent {
@@ -85,7 +91,11 @@ export type Goal =
   /** Tới sạp đồ ăn NPC. */
   | { kind: "vendor"; id: string; open?: SheetId }
   /** Tới cây ATM. */
-  | { kind: "atm"; id: string; open?: SheetId };
+  | { kind: "atm"; id: string; open?: SheetId }
+  /** Mang hàng tới chỗ giao của việc trên bảng việc xóm (KIENTRUC §3). */
+  | { kind: "drop"; lotId: string; open?: SheetId }
+  /** Chở khách xe ôm tới một điểm (KIENTRUC §4). */
+  | { kind: "point"; x: number; z: number; open?: SheetId };
 
 export interface Toast extends NotifyEvent {
   id: number;
@@ -111,10 +121,16 @@ interface GameState {
   orders: OrderState[];
   /** Đơn đang mở màn hình làm món. */
   kitchen: string | null;
+  /** 📸 Buổi chụp đang diễn ra (UC-M8): khoảnh khắc server sinh + giờ bắt đầu theo máy mình. */
+  shoot: (PhotoSessionView & { startedAt: number }) | null;
   bubbles: Record<string, Bubble>;
+  /** Người đang đứng đối diện trong khung chân dung (UC-E5): lời họ và mình đã ở đó, không lặp trên đầu nhân vật. */
+  facing: string | null;
   /** Đang ở bên trong nơi làm (id địa điểm) — cảnh nội thất thay cho bản đồ. */
   inside: string | null;
   shift: ShiftView | null;
+  /** 🛵 Cuốc xe ôm hiện tại (KIENTRUC §4). */
+  ride: RideView | null;
   payslip: PayslipView | null;
   /** Địa chỉ giao hàng đang đứng trước cửa. */
   nearAddress: string | null;
@@ -131,6 +147,8 @@ interface GameState {
   contextLost: boolean;
   /** Ai đang online trong xóm (vị trí từng khung hình nằm ở net/peers.ts, không qua store). */
   roster: RosterView | null;
+  /** Chat của người chơi trong xóm (30 câu gần nhất, chỉ trên máy). */
+  chatLog: { id: number; who: string; name: string; text: string; mine: boolean }[];
   /** Mã xóm từ link mời (?xom=…) đang chờ người chơi đồng ý vào. */
   invite: string | null;
   /** Quầy hàng xóm đang đứng gần (businessId) — gọi món được (UC-J3). */
@@ -141,6 +159,9 @@ interface GameState {
   /** Cây ATM đang đứng gần (UC-I6). */
   nearAtm: string | null;
   setNearAtm: (id: string | null) => void;
+  /** 🏗️ Công trường đang đứng gần (id dòng công trình, UC-J6). */
+  nearSite: string | null;
+  setNearSite: (id: string | null) => void;
   /** Sạp đồ ăn NPC đang đứng gần (UC-B9). */
   nearVendor: string | null;
   setNearVendor: (id: string | null) => void;
@@ -156,6 +177,9 @@ interface GameState {
   setRoster: (r: RosterView) => void;
   setInvite: (code: string | null) => void;
   applySnapshot: (s: Snapshot) => void;
+  /** "Trong lúc bạn vắng…" (THEGIOI §4): có khi vào lại sau một lúc vắng; đóng thì về null. */
+  away: AwayView | null;
+  setAway: (a: AwayView | null) => void;
   setMe: (me: MeView) => void;
   setClock: (c: ClockView) => void;
   setWorld: (w: WorldView) => void;
@@ -172,10 +196,12 @@ interface GameState {
   /** Làm lại món (sau khi khách chê sai). */
   resetDish: (orderId: string) => void;
   openKitchen: (orderId: string | null) => void;
+  setShoot: (shoot: GameState["shoot"]) => void;
   say: (s: SayEvent, ms?: number) => void;
   setBubble: (key: string, b: Bubble | null) => void;
   setInside: (placeId: string | null) => void;
   setShift: (s: ShiftView | null) => void;
+  setRide: (r: RideView | null) => void;
   setPayslip: (p: PayslipView | null) => void;
   setNearAddress: (id: string | null) => void;
   countServed: () => void;
@@ -210,7 +236,9 @@ export function purchaseOf(o: OrderEvent | undefined, world: WorldView): Purchas
 
 let toastId = 0;
 
-export const useGame = create<GameState>((set) => ({
+let chatSeq = 0;
+
+export const useGame = create<GameState>((set, get) => ({
   status: "connecting",
   me: null,
   clock: null,
@@ -225,9 +253,12 @@ export const useGame = create<GameState>((set) => ({
   goal: null,
   orders: [],
   kitchen: null,
+  shoot: null,
   bubbles: {},
+  facing: null,
   inside: null,
   shift: null,
+  ride: null,
   payslip: null,
   nearAddress: null,
   servedCount: 0,
@@ -239,12 +270,15 @@ export const useGame = create<GameState>((set) => ({
   pingMs: null,
   contextLost: false,
   roster: null,
+  chatLog: [],
   invite: null,
   nearShop: null,
   purchase: null,
   setNearShop: (nearShop) => set({ nearShop }),
   nearAtm: null,
   setNearAtm: (nearAtm) => set({ nearAtm }),
+  nearSite: null,
+  setNearSite: (nearSite) => set({ nearSite }),
   nearVendor: null,
   setNearVendor: (nearVendor) => set({ nearVendor }),
   eating: null,
@@ -257,6 +291,8 @@ export const useGame = create<GameState>((set) => ({
   showPerf: false,
   setShowPerf: (showPerf) => set({ showPerf }),
   setPurchase: (purchase) => set({ purchase }),
+  away: null,
+  setAway: (away) => set({ away }),
   setRoster: (roster) => set({ roster }),
   setInvite: (invite) => set({ invite }),
   applySnapshot: (s) =>
@@ -267,6 +303,7 @@ export const useGame = create<GameState>((set) => ({
       clock: s.clock,
       world: s.world,
       events: s.events,
+      ...(s.away ? { away: s.away } : {}),
       orders: s.orders
         .filter((o) => o.ownerId === s.me.playerId)
         .map((o) => ({ ...o, made: "none", mistakes: [] })),
@@ -299,9 +336,16 @@ export const useGame = create<GameState>((set) => ({
   openSheet: (sheet) => set({ sheet }),
   toast: (n) => {
     const id = ++toastId;
-    set((s) => ({ toasts: [...s.toasts.slice(-2), { ...n, id }] }));
+    // Trùng câu đang hiện thì làm mới chứ không thêm dòng (khỏi dồn thông báo giống nhau).
+    set((s) => ({
+      toasts: [...s.toasts.filter((t) => t.text !== n.text).slice(-2), { ...n, id }],
+    }));
     sfx(n.kind === "warn" ? "error" : n.kind === "good" && n.text.startsWith("+") ? "coin" : "pop");
-    setTimeout(() => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })), 3500);
+    // Thông báo bấm được (khách vẫy xe…) để lâu hơn cho kịp bấm.
+    setTimeout(
+      () => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+      n.open ? 7000 : 3500,
+    );
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   setProximity: (nearPlace, atStall) => set({ nearPlace, atStall }),
@@ -331,8 +375,15 @@ export const useGame = create<GameState>((set) => ({
   openKitchen: (kitchen) => set({ kitchen, sheet: null }),
   say: (e, ms = 4000) => {
     voice(e.who, e.text, moodOf(e.text));
+    // Người chơi nói (không phải NPC) thì ghi vào khung chat.
+    const st = get();
+    const mine = st.me?.playerId === e.who;
+    const name = mine ? st.me?.displayName : st.roster?.peers.find((p) => p.id === e.who)?.name;
     set((s) => ({
       bubbles: { ...s.bubbles, [e.who]: { text: e.text, tone: "say", until: Date.now() + ms } },
+      chatLog: name
+        ? [...s.chatLog.slice(-29), { id: ++chatSeq, who: e.who, name, text: e.text, mine }]
+        : s.chatLog,
     }));
   },
   setBubble: (key, b) =>
@@ -346,6 +397,8 @@ export const useGame = create<GameState>((set) => ({
     }),
   setInside: (inside) => set({ inside, sheet: null }),
   setShift: (shift) => set({ shift }),
+  setRide: (ride) => set({ ride }),
+  setShoot: (shoot) => set({ shoot }),
   setPayslip: (payslip) => set({ payslip }),
   setNearAddress: (nearAddress) => set({ nearAddress }),
   countServed: () => set((s) => ({ servedCount: s.servedCount + 1 })),

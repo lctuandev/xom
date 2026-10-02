@@ -95,11 +95,12 @@ Nhà cung cấp → Kho → Định giá → Tiếp thị → Khách → Đánh 
 
 **Rủi ro bắt buộc có**: hàng tồn · hàng hỏng · đối thủ · giá nguyên liệu biến động · khách phàn nàn · trào lưu thay đổi.
 **Luật 7.1** — Không có "mua → bán" một chạm: mỗi khâu là một quyết định hoặc một thao tác của người chơi.
+**Luật 7.2** — **Nhịp khách là để chơi, không phải để chờ**: quầy đang mở giờ cao điểm thì 10–20 giây thật có một khách. Chỉnh bằng `economy.demandScale` (hiện 1,6) — tăng khách thì phải tăng chỗ tiêu tương ứng (tiền chỗ đã ×1,5) và chạy `pnpm balance` (lãi tay vừa ≥ lương làm thuê, tay nhanh ≤ 5× lương, chênh giữa các nghề ≤ 2,5×).
 
 ## 8. 🌦️ Thế giới thay đổi
 
 - **Thời gian**: sáng · chiều · tối · đêm (ánh sáng, đèn, sạp mở/dọn theo giờ).
-- **Thời tiết**: ☀️ nắng · 🌧️ mưa · ⛈️ bão · 🌫️ âm u — ảnh hưởng khách, giá, giao hàng.
+- **Thời tiết**: ☀️ nắng · 🌧️ mưa · ⛈️ bão · ☁️ âm u — ảnh hưởng khách, giá, giao hàng.
 - **Giao thông**: giờ cao điểm đường đông, kẹt xe. **Đám đông**: tối khu ăn uống đông.
 **Luật 8.1** — Thế giới thay đổi phải **buộc người chơi thích nghi** (đổi giờ bán, đổi món, đổi chỗ), không chỉ để trang trí.
 
@@ -126,6 +127,18 @@ Sau này: **âm thanh theo khoảng cách** (đứng gần nghe rõ, đi xa nh�
 **Luật 12.3** — Sheet có list dài (quá ~1,5 màn hình) thì chia **tab dính** trên đầu vùng cuộn (component `Tabs`):
 phần quyết định chính (nút Mở quầy, cách trả tiền…) để trên tab, mỗi tab một nhóm; tab mặc định theo ngữ cảnh
 (vd. chưa chọn chỗ bán thì mở tab Chỗ bán). Đang áp: chợ đầu mối (theo nghề + Thanh lý), Làm ăn, Hồ sơ, Bảng xóm.
+**Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** — nhìn là biết (tô phở = Ăn uống,
+rổ rau = Chợ, cúp = Bảng xóm, bánh răng = Cài đặt, bong bóng = Chat); tên đầy đủ ở `aria-label`/`title`; class `icon-halo`
+(quầng trắng + bóng) để nổi trên mọi nền 3D. Cột neo trái tối đa 3 icon (Luật 12.1).
+**Luật 12.6 — Thanh trên & thanh dưới:** thanh trạng thái chỉ chứa *số liệu* (tiền, uy tín, no/khát khi thấp, ngày · trời · giờ),
+trải tới mép phải, icon SVG cùng bộ (`IconCash`, `IconStar`, `IconRice`, `IconDrop`, `IconWeather`); tiền dưới 100 nghìn ghi đủ, từ 100 nghìn ghi "138k", từ 1 triệu
+thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo: trái = ăn uống, chợ, bảng xóm;
+phải = cài đặt. Thanh điều hướng dưới **không nền** (nổi trên bản đồ như cột neo, quầng `icon-halo`), icon vẽ tay cỡ lớn **có nhãn chữ đè nhẹ ở chân icon** (mục đang mở: icon nổi lên, nhãn đỏ;
+Nhiệm vụ ở giữa to nhất). Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
+**Luật 12.5 — Sheet hay Modal:** *bottom sheet* cho thao tác trong lúc chơi, cần vẫn thấy bản đồ (chợ, làm ăn, quầy hàng xóm…);
+*modal* giữa màn hình (`Modal`) cho nội dung xem trọn vẹn, cần tập trung (bảng xếp hạng, hướng dẫn cài đặt). Bảng xếp hạng
+có bục vinh danh 2–1–3: hạng 1 khung vàng + vương miện + viền sáng xoay (tắt khi máy bật giảm chuyển động), hạng 2 bạc, hạng 3 đồng.
+**Luật 12.6a — Màn hẹp (góp ý chơi thử):** thanh trạng thái **không bao giờ tràn** — giờ luôn thấy trọn. Dùng container query theo bề rộng thanh: tiền ≥ 100k ghi gọn "138k" (≥ 1tr "1,48tr", số đủ ở title); thanh < 330px bỏ số ngày ("T2", ngày xem ở 📅 Hôm nay); < 320px chip đói/khát chỉ còn icon (đỏ, nhấp nháy); < 380px bỏ mũi tên dự báo thời tiết. Kiểm bằng Playwright `thanh-trang-thai` (iPhone, Pixel, 360px).
 
 ## 13. 🌐 Nhiều người chơi
 
@@ -151,6 +164,8 @@ Ngay từ đầu ghi sự kiện (bảng `GameEvent`): DAU/MAU · thời lượn
 
 Lý do quay lại: sự kiện ngày · chợ phiên tuần · mục tiêu làm ăn · bạn bè đang làm gì · trang trí nhà · sưu tầm · mùa · nghề mới.
 **Luật 17.1** — **Không** ép đăng nhập bằng phần thưởng điểm danh dồn dập, không thông báo dồn dập, không cơ chế "mất trắng nếu không vào".
+**Luật 17.2** — Nhu cầu cơ thể (đói / khát, UC-B11) chỉ là **gia vị đời sống**: tay chậm đi chút + nhắc một lần mỗi lần đổi mức;
+**không** khoá việc chơi, không trừ tiền, không chết đói; ngủ đêm chỉ tính 4 giờ, offline không bị phạt thêm.
 
 ## Khung hệ thống
 

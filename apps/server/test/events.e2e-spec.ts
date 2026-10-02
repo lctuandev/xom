@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { MeView } from "@xom/shared";
+import type { EventView, MeView } from "@xom/shared";
 import { LedgerService, playerWallet, SYSTEM } from "../src/economy/ledger.service.js";
 import { GameService } from "../src/game/game.service.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
@@ -111,6 +111,25 @@ describe("Sự kiện (e2e)", () => {
     await emit(socket, "order:decline", { orderId: o2.orderId });
     const lost = await prisma.business.findFirstOrThrow({ where: { id: before.id } });
     expect(lost.reputation).toBeLessThanOrEqual(won.reputation - vip.repLose + 1e-9);
+    socket.disconnect();
+  });
+
+  it("lịch tuần: thứ Bảy có chợ đêm 18:00–22:00 cho cả xóm; ngày thường thì không", async () => {
+    const { socket } = await join(url);
+    const sat = next(socket, "events", (list: EventView[]) =>
+      list.some((e) => e.eventId === "cho_dem"),
+    );
+    await emit(socket, "debug:clock", { minute: 17 * 60, day: 6 });
+    const list = await sat;
+    expect(content.weekday(6).name).toBe("Thứ Bảy");
+    expect(list.find((e) => e.eventId === "cho_dem")).toMatchObject({
+      from: 18 * 60,
+      to: 22 * 60,
+      key: "cho_dem:6",
+    });
+    const wed = next(socket, "events", (l: EventView[]) => !l.some((e) => e.eventId === "cho_dem"));
+    await emit(socket, "debug:clock", { minute: 17 * 60, day: 10 });
+    expect((await wed).some((e) => e.eventId === "cho_dem")).toBe(false);
     socket.disconnect();
   });
 });

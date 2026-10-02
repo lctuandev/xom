@@ -57,7 +57,10 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
   const product = content.product(occupant.productId);
   const model = content.equipment(occupant.equipmentId).model as CityModel;
   const at = useMemo(() => [{ x: lot.position.x, z: lot.position.z, rot: lot.facing }], [lot]);
-  const text = `${product.sign} ${occupant.ownerName.toLocaleUpperCase("vi")}`;
+  // Tiệm đã đăng ký + treo biển (UC-F12): biển ghi tên quán; chưa có thì "BÁNH MÌ <TÊN>".
+  const text = occupant.shopName
+    ? occupant.shopName.toLocaleUpperCase("vi")
+    : `${product.sign} ${occupant.ownerName.toLocaleUpperCase("vi")}`;
   if (lot.kind === "house") {
     // Tiệm trong nhà: biển hiệu lớn trên cửa, mái hiên; khách vào trong (không đứng ngoài vỉa hè).
     const out = lot.facing === 0 ? -1 : 1;
@@ -67,12 +70,22 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
           model="detail-awning-wide"
           at={[{ x: lot.position.x, z: lot.position.z + out * 1.3, rot: lot.facing }]}
         />
+        {/* Biển chính trên mặt tiền: đưa ra trước + cao hơn mái hiên để không bị mái che. */}
         <Sign
           text={`🏪 ${text}`}
-          position={[lot.position.x, 3.2, lot.position.z + out * 1.35]}
+          position={[lot.position.x, 3.7, lot.position.z + out * 1.75]}
           rotationY={lot.facing}
           bg={occupant.open ? product.signColor : CLOSED_SIGN}
           size={[3.2, 0.7]}
+        />
+        {/* Biển vẫy vuông góc mặt tiền (như biển dọc các tiệm ngoài phố): nhìn dọc con đường (camera mặc định) vẫn đọc
+            được tên quán — biển chính song song mặt tiền thì nhìn ngang chỉ thấy cạnh. */}
+        <Sign
+          text={text}
+          position={[lot.position.x + 1.8, 3.1, lot.position.z + out * 2.2]}
+          rotationY={Math.PI / 2}
+          bg={occupant.open ? product.signColor : CLOSED_SIGN}
+          size={[3, 0.7]}
         />
         {promo && <Balloons x={lot.position.x} z={lot.position.z + out * 1.3} />}
       </group>

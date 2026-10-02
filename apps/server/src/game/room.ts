@@ -7,6 +7,7 @@ import {
   type WeatherSpan,
   weatherAt,
   weatherPlan,
+  weeklyEvents,
 } from "@xom/sim";
 import type { Shift } from "./work.js";
 
@@ -41,6 +42,8 @@ export interface PendingOrder {
   dish: { build: DishView; score: number; mistakes: string[] } | null;
   /** Chủ quầy đã bắt tay làm món (chỉ cộng thêm kiên nhẫn một lần). */
   started?: boolean;
+  /** Số lần kiểm tra bộ phận (sửa xe, UC-G3). */
+  checks?: number;
   /** Khách VIP: hệ số boa, uy tín được/mất (từ content.events). */
   vip?: { minMods: number; patience: number; tipMult: number; repWin: number; repLose: number };
 }
@@ -50,9 +53,19 @@ export class RoomRuntime {
   readonly members = new Map<string, Member>();
   /** Người chơi đang đứng ở quầy của mình — quầy chỉ bán khi có chủ. */
   readonly attending = new Set<string>();
+  /** Chủ quầy giành tự đứng bán dù nhân viên đang trong ca (mặc định để nhân viên bán). */
+  readonly selfSell = new Set<string>();
   readonly orders = new Map<string, PendingOrder>();
   /** Hàng xóm đã mua ở quầy ai hôm nay (`buyer:owner:day`) — mới được viết đánh giá (UC-F11). */
   readonly purchases = new Set<string>();
+  /** Lần chat gần nhất của từng người (ms) — chống spam. */
+  readonly chatAt = new Map<string, number>();
+  /** Số lần nhập sai PIN ATM trong ngày (reset khi đúng / sang ngày). */
+  readonly atmTries = new Map<string, number>();
+  /** Mức đói/khát đã nhắc gần nhất của từng người ("low:ok"…) — nhắc một lần mỗi lần đổi mức. */
+  readonly needsAlert = new Map<string, string>();
+  /** Lần khách réo gần nhất ở từng quầy (phút game). */
+  readonly calloutAt = new Map<string, number>();
   /** Rao hàng: businessId → hết hiệu lực ở phút game này (trong ngày). */
   readonly boostUntil = new Map<string, number>();
   /** Hồi chiêu rao hàng: playerId → được rao lại từ phút game này. */
@@ -93,7 +106,12 @@ export class RoomRuntime {
       this.day,
     );
     this.events = [];
-    for (const e of dailyEvents(content.data.events, this.id, this.day)) {
+    // Sự kiện ngẫu nhiên trong ngày + sự kiện theo lịch tuần (chợ đêm thứ Bảy, THEGIOI §2).
+    const today = [
+      ...dailyEvents(content.data.events, this.id, this.day),
+      ...weeklyEvents(content.data.events, content.weekday(this.day).index),
+    ];
+    for (const e of today) {
       const sky = content.event(e.eventId).effects.weather;
       if (sky) this.weather = overrideWeather(this.weather, { from: e.from, to: e.to, kind: sky });
       this.events.push({ key: `${e.eventId}:${this.day}`, ...e });

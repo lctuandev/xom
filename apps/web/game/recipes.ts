@@ -1,6 +1,6 @@
 import { content } from "@xom/content";
 import type { InventoryView } from "@xom/shared";
-import { baseSpec, dishCost, ingredientsFor } from "@xom/sim";
+import { baseSpec, dishCost, ingredientsFor, recipeIngredients } from "@xom/sim";
 
 /** Kho dạng Map: itemId → số phần. */
 export const stockMap = (inv: InventoryView[] | undefined) =>
@@ -29,10 +29,5 @@ export function baseCost(productId: string, variantId: string): number {
 
 /** Nguyên liệu mà công thức của nghề này dùng tới. */
 export function ingredientsOfProduct(productId: string): string[] {
-  const ids = new Set<string>();
-  for (const step of content.product(productId).recipe.steps) {
-    if (step.ingredient) ids.add(step.ingredient);
-    for (const o of step.options) if (o.ingredient) ids.add(o.ingredient);
-  }
-  return [...ids];
+  return recipeIngredients(content.product(productId).recipe);
 }

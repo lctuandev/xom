@@ -2,7 +2,7 @@
 
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo } from "react";
-import type { CharacterModel } from "../assets";
+import { modelFor } from "../looks";
 import { peerTargets } from "../net/presence";
 import { useGame } from "../store";
 import { registerAnchor } from "./anchors";
@@ -10,15 +10,6 @@ import { Character, Walker } from "./Character";
 
 // Hàng xóm là người chơi thật (docs/USECASES.md UC-J2): đi theo vị trí server phát 10 Hz,
 // nội suy mượt giữa các gói; đang ở trong quán/bưu cục thì không hiện ngoài phố.
-
-/** Không dùng "character-male-a" — đó là dáng của chính mình, để khỏi nhìn nhầm. */
-const MODELS: CharacterModel[] = ["character-female-a", "character-male-c", "character-female-d"];
-
-function modelFor(id: string): CharacterModel {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return MODELS[Math.abs(h) % MODELS.length] ?? "character-male-c";
-}
 
 /** Xa quá (vừa vào xóm, mạng giật lâu) thì dịch chuyển thẳng thay vì chạy qua. */
 const SNAP_DIST = 8;

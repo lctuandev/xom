@@ -8,7 +8,7 @@
   --xom-leaf: #2f7d4f;
   --xom-sky: #bfe3f2;
   /* Chiều cao thanh điều hướng dưới (h-12 + pt-1.5 + pb-safe); sheet nằm ngay trên nó. */
-  --nav-h: calc(3.375rem + max(env(safe-area-inset-bottom), 0.5rem));
+  --nav-h: calc(3.75rem + max(env(safe-area-inset-bottom), 0.5rem));
 }
 
 @theme inline {
@@ -42,4 +42,40 @@ body {
 
 @utility pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+/* Icon neo trên bản đồ (không nền nút): quầng sáng + bóng để nổi trên mọi nền 3D, ngày lẫn đêm. */
+.icon-halo {
+  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 2px #fff)
+    drop-shadow(0 2px 3px rgb(0 0 0 / 0.35));
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+}
+/* Khung top 1 bảng xóm: ánh vàng chạy quanh viền. */
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 0 0 3px rgb(255 214 102 / 0.55),
+      0 0 22px 6px rgb(255 190 60 / 0.65);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe-only {
+    animation: none;
+  }
 }

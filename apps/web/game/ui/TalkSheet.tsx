@@ -4,6 +4,7 @@ import { content } from "@xom/content";
 import { useState } from "react";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { Counterpart } from "./Counterpart";
 import { Sheet } from "./Sheet";
 
 const TOPICS = [
@@ -26,6 +27,10 @@ export function TalkSheet() {
   if (!nearPlace || !me) return null;
   const place = content.place(nearPlace);
   const friendship = me.friendship[nearPlace] ?? 0;
+  // Câu mới nhất hiện ở khung đối diện (UC-E5); các câu trước đó lùi xuống lịch sử trong sheet.
+  const lastNpc = log.findLast((l) => l.who === "npc");
+  const lastMe = log.findLast((l) => l.who === "me");
+  const earlier = log.slice(0, -2);
 
   const ask = async (topic: (typeof TOPICS)[number]) => {
     setBusy(true);
@@ -55,7 +60,19 @@ export function TalkSheet() {
   };
 
   return (
-    <Sheet title={`Nói chuyện với ${place.keeper.name}`} onClose={() => close(null)}>
+    <Sheet
+      title={`Nói chuyện với ${place.keeper.name}`}
+      onClose={() => close(null)}
+      face={
+        <Counterpart
+          model={place.keeper.model}
+          name={place.keeper.name}
+          anchor={nearPlace}
+          line={lastNpc?.text ?? place.keeper.greeting}
+          me={lastMe?.text}
+        />
+      }
+    >
       <div className="mb-3 flex items-center gap-2">
         <span className="text-xs font-semibold text-ink/60">Thân thiết</span>
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/10">
@@ -64,7 +81,7 @@ export function TalkSheet() {
         <span className="text-xs font-semibold tabular-nums">{friendship}</span>
       </div>
       <ul className="mb-3 flex flex-col gap-1.5">
-        {log.map((l, i) => (
+        {earlier.map((l, i) => (
           <li
             // biome-ignore lint/suspicious/noArrayIndexKey: lịch sử hội thoại chỉ thêm vào cuối
             key={i}

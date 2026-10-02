@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Player" ADD COLUMN     "bikeRentDay" INTEGER,
+ADD COLUMN     "rideStars" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "rides" INTEGER NOT NULL DEFAULT 0;

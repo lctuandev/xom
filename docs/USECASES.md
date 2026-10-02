@@ -64,6 +64,16 @@
 ### UC-A4 · Mở game trên hai tab/hai máy cùng lúc ⏳
 **Luật:** cùng một người chơi chỉ điều khiển từ một nơi; tab mới vào thì tab cũ nhận thông báo "Bạn đang chơi ở nơi khác" và ngắt.
 
+
+### UC-A5 · Thêm XÓM vào màn hình chính (PWA) ✅
+**Đời thật:** người chơi quen mở app từ màn hình chính; Safari không tự hỏi cài, nhiều người không biết làm.
+**Luồng:** trang chủ → *📲 Thêm XÓM vào màn hình chính* (ẩn nếu đang mở từ màn hình chính) → modal *Cài XÓM như ứng dụng*,
+tự chọn tab theo máy:
+- **iPhone / iPad:** 3 bước, mỗi bước một ảnh chụp Safari thật (danh bạ đã làm mờ) có khung đỏ nhấp nháy đúng chỗ bấm:
+  ① nút Chia sẻ → ② *Xem thêm* → ③ *Thêm vào Màn hình chính*; Quay lại / Tiếp / Xong; nhắc mở bằng Safari nếu đang trong Zalo.
+- **Android:** Chrome cho phép thì có nút *📲 Cài ngay* (hộp cài của hệ thống, `beforeinstallprompt`); luôn có 3 bước qua menu ⋮.
+**Kiểm chứng:** Playwright `cai-dat.spec.ts` (cả hai tab, đủ 3 bước).
+
 ---
 
 ## B. Thế giới, di chuyển, thời gian
@@ -84,7 +94,7 @@
 **Hệ thống:** 🌦️ Thế giới thay đổi · **Luật:** 8.1 (buộc thích nghi), 12.1 (không thêm nút), 15 (dữ liệu điều khiển), 11 (âm thanh).
 **Đời thật:** trưa nắng gắt người ta mua nước; mưa thì đường vắng, ai có mái che mới bán được; bão thì shipper chạy chậm, khách trả thêm phụ phí;
 chiều Sài Gòn hay đổ mưa, nhìn trời kéo mây là biết dọn hàng.
-**Luồng:** thanh 🕒 trên HUD hiện kiểu trời (☀️ nắng · 🌫️ âm u · 🌧️ mưa · ⛈️ bão; ban đêm trời quang là 🌙). Trời sắp đổi (trong 90 phút game)
+**Luồng:** thanh 🕒 trên HUD hiện kiểu trời (☀️ nắng · ☁️ âm u · 🌧️ mưa · ⛈️ bão; ban đêm trời quang là 🌙). Trời sắp đổi (trong 90 phút game)
 → thanh giờ hiện "→🌧️" và dải tin báo trước *"Khoảng 14:00 có mưa — chuẩn bị dời vô chỗ có mái"*. Tới giờ: thông báo
 *"Trời đổ mưa — xe đẩy vắng khách, tiệm có mái đông lên"*, hạt mưa rơi, trời xám lại, tiếng mưa rào rào; giông thì chớp + sấm, đèn đường bật.
 **Luật game:**
@@ -175,6 +185,23 @@ mình ra ghế nhựa ngồi ăn (có muỗng) vài giây; NPC có việc để 
 
 ---
 
+
+### UC-B11 · Đói / khát + quầy hàng xóm trong mục Ăn uống + khách réo khi chủ vắng ✅ (bản đầu)
+**Hệ thống:** 🧍 Nhân vật · 🍜 Ăn uống · 🏪 Làm ăn · **Luật:** 17.2 (không khoá việc chơi), 12.1 (HUD gọn), 15 (dữ liệu).
+**Đời thật:** đứng bán cả buổi quên ăn, bụng réo, tay chậm; tranh thủ chạy đi làm tô phở, ly nước mía. Quầy bỏ trống thì khách
+tới gọi "ơi có ai bán không", hàng xóm nhắn "khách đứng chờ kìa" — chạy về bán.
+**Luật game (`content.needs`, `packages/sim/src/needs.ts`):**
+- 🍚 No / 💧 Đỡ khát 0–100: no tụt ~10/giờ game, khát ~14/giờ; đêm ngủ chỉ tính 4 giờ; người mới 80/80.
+- Món ở sạp có `food`/`drink` (phở +70 no, nước mía +60 đỡ khát…); mua ở quầy hàng xóm theo loại hàng (đồ ăn sáng +45 no, đồ uống +55 khát).
+- Dưới 30%: tay giữ nút chậm ×1,25 + nhắc một lần ("🍚 Bụng réo rồi — ghé 🍜 Ăn uống…"). **Không khoá gì.**
+- HUD: chip 🍚/💧 chỉ hiện khi dưới 50% (đỏ nhấp nháy khi dưới 30%), chạm mở *Quán ăn quanh xóm*; Hồ sơ → Tôi có 2 thanh.
+- *Quán ăn quanh xóm* có thêm **Quầy hàng xóm đang bán** (đồ ăn/uống, người thật đứng quầy) → *🛒 Tới quầy*.
+- Quầy mở mà chủ đi vắng: mỗi ≤ 20 phút game khách réo ở quầy (khung thoại tại quầy) + chủ được báo
+  "🔔 Khách đang réo ở quầy … — chạy về bán thôi!".
+**Kiểm chứng:** unit `needs.test.ts`; e2e server `needs.e2e-spec.ts` (nhắc đói, ăn phở no lại, khách réo); Playwright `an-sang.spec.ts`
+(chip đói → mở quán ăn → ăn xôi → chip biến mất).
+**Chưa:** NPC hàng xóm nhắn hộ, uống nước ở nhà, món tự nấu.
+
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.
@@ -253,8 +280,13 @@ Quán cơm Cô Tư xin việc → làm 2 việc vặt → Chú Bảy gợi ý t�
 **Kiểm chứng:** Playwright: bấm câu rao → khung thoại trên đầu nhân vật; server: hệ số khách tăng trong thời gian hiệu lực.
 
 **Kiểm chứng (đã chạy):** e2e server (rao hàng → thông báo, hồi chiêu); Playwright (câu rao hiện trên đầu).
-### UC-D4 · Chat với người chơi khác ⏳ (Phase 2)
-Gõ chữ (tối đa 80 ký tự) hoặc câu nhanh; hiện trên đầu. Lọc từ ngữ thô tục; bấm vào người chơi → *Chặn* / *Báo cáo*. Người bị chặn không thấy tin nhắn của mình.
+### UC-D4 · Chat với người chơi khác 🚧 (gõ chữ ✅, chặn/báo cáo ⏳)
+**Luồng:** icon 💬 (bong bóng, không nền) → khung *Chat xóm*: 30 câu gần nhất của người chơi trong xóm (của mình bên phải),
+ô *Nói gì với cả xóm…* + *Gửi* (Enter để gửi), bên dưới là câu nói nhanh dạng chip. Có tin mới khi đang đóng khung thì icon hiện số.
+**Luật game:** server nhận `chat:text` (1–80 ký tự, gộp khoảng trắng), che từ tục (`content.reviews.banned`), mỗi người cách nhau ≥ 1,5 giây;
+câu hiện trên đầu nhân vật cho cả xóm (sự kiện `say`) + vào khung chat; chỉ ghi độ dài vào GameEvent (không lưu nội dung).
+**Kiểm chứng:** e2e server `chat.e2e-spec.ts`; Playwright `chat.spec.ts`.
+**Chưa:** bấm vào người chơi → *Chặn* / *Báo cáo*; người bị chặn không thấy tin nhắn của mình.
 
 ### UC-D5 · Âm thanh: nhạc nền, tiếng thao tác, giọng nói ✅ (bản đầu)
 Tổng hợp bằng WebAudio (không file, không lo bản quyền): **nhạc nền** ngũ cung kiểu đàn tranh (ngày tươi, đêm chậm/dịu);
@@ -262,6 +294,21 @@ Tổng hợp bằng WebAudio (không file, không lo bản quyền): **nhạc n�
 (mỗi người một cao độ; khách bực/cãi nhau thì gắt, nhanh — kèm câu càu nhàu "Làm ăn kiểu gì chậm như rùa vậy!", "Muốn gây hả?").
 Cài đặt ⚙️: thanh âm lượng nhạc / hiệu ứng / giọng, nút tắt tiếng (nhớ trên máy). Âm thanh chỉ bật sau cú chạm đầu tiên (luật trình duyệt).
 **Chưa:** đọc chữ thật (TTS tiếng Việt), âm thanh môi trường (xe cộ, chợ ồn).
+
+### UC-D6 · Giọng thoại theo kiểu khách (Gen Z, teencode, cô chú) + "thoại mặn" + AI tuỳ chọn ✅ (bản đầu)
+**Hệ thống:** 🎭 Bản sắc · 🧠 Hành vi NPC · **Luật:** 10 (bản sắc), 15 (dữ liệu).
+**Đời thật:** học sinh "Shop ơi cho em … nha 🥺", "rẻ vãi"; dân văn phòng "nhanh giúp anh, 8h chấm công rồi";
+cô chú "bán cho cô … nghen con", "hồi xưa có mấy ngàn hà"; reviewer "chấm 8.5/10".
+**Luật game:**
+- `content.voice.voices`: mỗi kiểu khách có câu gọi món (`{dish}`), câu khen rẻ / chê đắt / cảm ơn / bỏ đi; thiếu thì dùng câu chung.
+- **Thoại mặn** (Cài đặt ⚙️, mặc định bật): câu có thể hơi suồng sã ("vãi", "xỉu ngang"); tắt thì client đổi từ theo
+  `content.voice.soften` ngay khi nhận (`soften` trong sim) — áp cho lời gọi món, lời khách, khung thoại.
+- **AI tuỳ chọn** (server có `ANTHROPIC_API_KEY`): game **không bao giờ chờ AI** — trả ngay câu dữ liệu hoặc câu AI đã sinh sẵn;
+  kho thiếu thì nạp ngầm (claude-haiku-4-5, tối đa 30 lần gọi/giờ, timeout 8s); câu AI phải một dòng, ≤ 120 ký tự,
+  không dính từ tục nặng mới dùng; lỗi thì chỉ dùng dữ liệu. Áp cho lời khách khi trả tiền/bỏ đi và đánh giá NPC.
+**Kiểm chứng:** unit `progression.test.ts` (voiceAsk, voiceLine, soften); e2e server `voice.e2e-spec.ts` (giọng gọi món, AI giả:
+kho nạp ngầm, lọc câu bẩn, lỗi thì quay về dữ liệu).
+**Chưa:** giọng riêng cho người bán NPC (Bà Năm, Chú Bảy…), thoại theo thời tiết/sự kiện.
 
 ---
 
@@ -293,6 +340,17 @@ Cài đặt ⚙️: thanh âm lượng nhạc / hiệu ứng / giọng, nút t�
 **Luồng:** tới quầy đang mở (NPC hoặc người chơi khác) → "🛎 Gọi món" → chọn món + yêu cầu (không hành, ít đá…) → đứng chờ → nhận món → trả tiền (có thể boa).
 **Đời thật:** chủ quầy làm sai món → mình được *đổi món* hoặc *đòi lại tiền* · chờ lâu → được bỏ đi không trả tiền · món ngon → *khen* (tăng uy tín quầy đó).
 **Luật:** ăn uống có tác dụng nhẹ: làm việc nhanh hơn 10% trong 2 giờ game (không bắt buộc, không có thanh "đói" ép chơi).
+
+### UC-E5 · Đứng trước quầy: chân dung người bán + ô thoại ✅ (bản đầu)
+**Ai:** người chơi tới mua / nói chuyện ở sạp NPC (xôi, phở…), chợ Bà Năm, vựa xe Ông Sáu, hoặc quầy của hàng xóm.
+**Luồng:** tới nơi → bottom sheet mở như cũ (thực đơn, giá, nút mua). **Phía trên sheet**, trên nền bản đồ, có **chân dung người bán** (tròn, có tên) và **ô thoại** của họ: câu rao / lời chào → chọn món ở quầy hàng xóm thì câu mình dặn ("cho mình bánh mì thịt, không hành") hiện **bên phải** (bong bóng tối), chủ quầy "xác nhận" món + giá bên trái. Nói chuyện với Bà Năm: câu hỏi của mình bên phải, câu trả lời mới nhất bên trái; các câu cũ lùi xuống lịch sử trong sheet.
+**Đời thật:** đứng trước quầy là nhìn mặt người bán, nghe họ nói — không phải đọc một danh sách khô; sạp nhỏ thì người bán rao, quầy hàng xóm thì chủ quầy chào khách.
+**Luật:**
+- Ảnh chân dung là render từ đúng model nhân vật đang đứng trong cảnh 3D (`art/blender/chan_dung.py` → `public/portraits/*.webp`, 160px, ~5KB/ảnh). Dáng người bán sạp là dữ liệu: `vendors[].seller` trong `packages/content`; hàng xóm theo `modelFor(playerId)` (cùng hàm với cảnh 3D).
+- Lời chào / xác nhận ở quầy hàng xóm là dữ liệu `counterLines` (`{dish}`, `{price}`); lời sạp NPC lấy từ `vendors[].lines`, lời Bà Năm / Ông Sáu từ `places[].keeper`.
+- Đang mở khung thì khung thoại 3D trên đầu người bán và của chính mình **ẩn đi** (tránh lặp chữ); người khác trong xóm vẫn thấy bình thường.
+- Không thêm nút lên HUD (Luật 12.1): khung chỉ hiện khi sheet đang mở và nằm trong cùng hộp thoại (trình đọc màn hình đọc "Bà Năm: …", "Bạn: …").
+**Kiểm chứng:** Playwright `an-sang` (chân dung Bà Bảy + câu rao trước sạp xôi), `ky-nang` (nói chuyện với Bà Năm: câu "Chào hỏi" bên phải, chân dung Bà Năm), `mua-cua-nhau` (chân dung An, câu dặn "không hành" bên phải, chủ quầy xác nhận món).
 
 ---
 
@@ -400,27 +458,62 @@ Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 
 ---
 
-## G. Dịch vụ sửa xe (nghề mới, template SERVICE)
+### UC-F12 · Mở tiệm theo quy trình đời thật ✅ (bản đầu)
+> Góp ý: "mở tiệm khi đủ vốn, đặt tên quán" + "research cách thức hoạt động ngoài đời". Tham khảo: thủ tục mở quán ăn nhỏ
+> (đăng ký hộ kinh doanh ở cơ quan cấp huyện 3–5 ngày, giấy chứng nhận cơ sở đủ điều kiện ATTP có kiểm tra thực tế, nhân viên tập
+> huấn + khám sức khoẻ), kinh nghiệm thuê mặt bằng (cọc 3–6 tháng, giữ vốn dự phòng 3–6 tháng), biển hiệu + khai trương.
 
-### UC-G1 · Mở tiệm sửa xe ⏳
-**Luồng:** vựa xe Ông Sáu bán *Bộ đồ nghề sửa xe* (bơm, mỏ lết, ruột xe mẫu) → thuê chỗ (tiệm sửa xe thường ở đầu hẻm, gần ngã tư) → mua **phụ tùng** ở *Tiệm phụ tùng Chú Chín* (ruột xe, bugi, xích, bóng đèn, má phanh).
-**Luật:** không có món ăn hỏng; phụ tùng không hỏng nhưng vốn lớn.
+**Luồng (Làm ăn → 🏪 Mở tiệm, có checklist ✅ từng bước, dự toán trước):**
+1. **📝 Ký hợp đồng thuê nhà mặt tiền** — cọc **3 ngày tiền thuê** (ví giữ hộ, trả nhà thì hoàn), chủ nhà chỉ cho thuê khi còn
+   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** (cuối ngày) **từ ngày sau
+   ngày ký** (ngày ký có thể đã trả tiền chỗ xe đẩy); hết tiền thì trừ cọc, **hết cọc thì chủ nhà lấy lại nhà**. Đang thuê nhà
+   thì **không dọn quầy ra vỉa hè** (tránh vừa tiền nhà vừa tiền chỗ) — muốn ra thì trả nhà (hoàn cọc).
+2. **🏛️ Đăng ký hộ kinh doanh ở UBND phường** — **đặt tên quán** (3–24 ký tự, chữ/số, không trùng trong xóm), lệ phí 100k,
+   **chờ xét 3 giờ game** (báo 🏛️ khi duyệt); ghi 📖 *Đăng ký hộ kinh doanh: quán "…" ra đời*.
+3. **🧑‍🍳 Giấy ATTP** (chỉ quán ăn uống — bánh mì, trà sữa; sạp phụ kiện, sửa xe không cần): **tập huấn** (150k) → **hẹn đoàn
+   kiểm tra** (tới sau 1,5 giờ game) → đoàn tới báo 👮, **chủ phải có mặt ở tiệm trong 60 phút** (trước cửa hoặc trong tiệm) bấm
+   *Đón đoàn* → cấp giấy; vắng mặt thì đoàn về, phải hẹn lại.
+4. **🪧 Biển hiệu tên quán** (200k) — ngoài phố căn nhà treo biển **tên quán** thay cho "BÁNH MÌ <TÊN NGƯỜI CHƠI>".
+5. **Mở tiệm** — ngay trong tiệm có nút **🔓 Mở cửa tiệm**; mở tiệm **không trả tiền chỗ** (tiền nhà đã tính theo hợp đồng), chỉ
+   **thuế khoán** ngày có mở + điện nước theo giờ; có nhân viên thì tới ca **nhân viên tự mở cửa** (UC-M6). Ngoài phố có biển chính
+   trên mặt tiền + **biển vẫy** vuông góc (nhìn dọc phố vẫn đọc được tên quán). Muốn rình rang thì *tổ chức khai trương* (UC-K).
+> Góp ý chơi thử (rà lại): trước đây mở tiệm bị trừ cả "tiền chỗ" như xe đẩy dù tiền nhà đã tính theo hợp đồng, ngày ký bị tính
+> tiền nhà dù đã trả tiền chỗ xe đẩy, đang thuê nhà vẫn dọn ra vỉa hè được (trả hai lần) — đã sửa, server e2e `shop-flow`.
+**Luật game:** nhà mặt tiền **không khoá theo cấp nữa** — mở bằng vốn + giấy tờ; chọn nhà ở *Chỗ bán* chỉ được khi đang thuê
+đúng căn đó; mở tiệm thiếu giấy nào server báo đúng giấy đó; mọi khoản qua sổ cái (`lease_deposit`, `lease_refund`,
+`license_fee`, `food_training`, `sign`, `rent`, `rent_from_deposit`); đo lường `shop_lease`, `shop_register`, `shop_certified`,
+`shop_unlease` (kèm trả / bị lấy nhà).
+**Dữ liệu:** `content.shopSetup`; Prisma `Lease` (ACTIVE / ENDED / EVICTED), `Business.shopName / licenseAt / trained /
+inspectAt / certified / signed`; sim `shopEstimate`, `needsFoodCert`, `shopNameError`, `normalizeShopName`, `nextShopStep`.
+**Kiểm chứng:** sim `shop.test.ts`; e2e server `shop.e2e-spec.ts` (đi hết quy trình, tên bậy bị từ chối, chưa giấy không mở được,
+đón đoàn phải ở tiệm, biển tên quán ngoài phố, trả nhà hoàn cọc; hết tiền trừ cọc rồi bị lấy nhà); Playwright `mo-tiem.spec.ts`;
+`tiem-rieng.spec.ts` dùng lệnh dev `debug:shop`.
+**Sau này:** gia hạn / tăng giá nhà, khám sức khoẻ nhân viên, đoàn kiểm tra đột xuất phạt khi đồ hỏng, thuế khoán theo doanh thu,
+đổi tên quán (làm lại biển), tiệm thứ hai (chuỗi).
 
-### UC-G2 · Khách dắt xe tới 🚧 (thiết kế)
-**Luồng:** khách dắt xe máy tới, khung thoại kể **triệu chứng**, không nói bệnh: *"Xe chú đạp hoài không nổ"*, *"Đi nghe cạch cạch ở bánh sau"*, *"Bánh trước xẹp lép"*.
-**Đời thật:** một triệu chứng có thể do nhiều bệnh (không nổ: bugi / hết xăng / bình yếu).
+## G. Dịch vụ sửa xe (nghề mới, template SERVICE — docs/NGHE.md §3.1)
 
-### UC-G3 · Chẩn đoán ⏳
-**Luồng:** màn hình xe máy với các bộ phận chạm được: *lốp trước / lốp sau / bugi / xích / bình / đèn / phanh* → chọn **thao tác kiểm tra** (nhìn, bóp thử, nhúng nước tìm lỗ thủng, thử đề) → mỗi lần kiểm tra tốn thời gian và hiện kết quả ("Lốp sau: có lỗ thủng nhỏ").
-**Luật:** kiểm tra đúng chỗ nhanh → khách tin tưởng; kiểm tra lung tung quá lâu → khách sốt ruột.
+### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
+**Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
+**Luật:** phụ tùng không hỏng theo ngày nhưng vốn lớn (ruột xe 55k/cái). Biển hiệu "SỬA XE {tên}". Khách đông buổi sáng/chiều tan tầm.
+**Chưa:** *Tiệm phụ tùng Chú Chín* riêng + Chú Chín dẫn nghề; model xe đồ nghề riêng (đang mượn model sạp).
 
-### UC-G4 · Báo giá & sửa ⏳
-**Luồng:** báo giá (tiền công + phụ tùng) → khách *đồng ý* / *chê đắt* (trả giá) / *thôi để đi chỗ khác* → sửa theo quy trình (ví dụ vá ruột: tháo bánh → lấy ruột → chà nhám → dán miếng vá → bơm → lắp lại) → khách chạy thử → trả tiền.
-**Đời thật & rẽ nhánh:**
-- Sửa sai bệnh → khách chạy thử vẫn hư → phải sửa tiếp miễn phí hoặc trả tiền lại.
-- **Bảo hành**: sửa ẩu → 1–2 ngày sau khách quay lại bắt đền.
-- Thay phụ tùng không cần thiết để lấy thêm tiền → xác suất khách phát hiện (người quen chỉ) → uy tín −−.
-- Khách xin **khất nợ** ("mai chú gửi") → *Cho khất* (80% khách trả đúng hẹn) / *Không*.
+### UC-G2 · Khách dắt xe tới ✅
+**Luồng:** khách tới, nói **triệu chứng** chứ không nói bệnh: *"Bánh sau xẹp lép rồi con ơi"*, *"Đạp hoài không nổ máy"*, *"Thắng kêu két két"*.
+**Đời thật:** một triệu chứng có thể do nhiều bệnh — *bánh sau xẹp* có thể là đinh cắm (vá được) hoặc rách ruột (phải thay).
+**Dữ liệu:** `products[sua_xe].recipe.variants[].symptoms` (7 bệnh: lủng lốp, rách ruột, non hơi, hỏng bugi, mòn má phanh, cháy đèn, chùng xích).
+
+### UC-G3 · Chẩn đoán ✅
+**Luồng:** khung **🔍 Kiểm tra xe** với 6 bộ phận (lốp trước, lốp sau, bugi, xích, phanh, đèn) → chạm một bộ phận → *"Đang xem…"* ~1,2 giây → kết quả: chỗ có bệnh tô đỏ (*"Có cây đinh cắm ở lốp sau, lỗ nhỏ — vá được"*), chỗ khác *"Bình thường"*.
+**Luật (server quyết định):** intent `order:inspect` — server mới biết bệnh và trả kết quả; kiểm tra quá 3 chỗ thì mỗi lần khách bớt ~6 giây kiên nhẫn (*"khách bắt đầu sốt ruột…"*). Nghe triệu chứng mà xem đúng chỗ là nhanh nhất.
+
+### UC-G4 · Sửa & chạy thử ✅ (bản đầu)
+**Luồng:** các bước tay: *🔧 Tháo ra* → **Cách sửa** (vá ruột / thay ruột / bơm hơi / thay bugi / thay má phanh / thay bóng đèn / tăng xích — lấy phụ tùng trong kho) → *🔩 Lắp lại* → *🛵 Nổ máy thử* → **🛵 Giao xe cho khách chạy thử**.
+**Rẽ nhánh:**
+- Sửa đúng → *"Máy nổ giòn rồi! Hay quá con!"* → tính tiền (tiền mặt thì thối).
+- Sửa sai bệnh → *"Ủa chạy thử vẫn y chang à… chưa đúng bệnh rồi!"* — phụ tùng đã thay thì mất → **🔁 Kiểm tra lại, sửa tiếp** hoặc **💸 Lấy nửa tiền công**.
+**Chưa:** báo giá & trả giá trước khi sửa, bảo hành (sửa ẩu 1–2 ngày sau khách quay lại), thay phụ tùng không cần thiết bị phát hiện, khách xin khất nợ, mưa thì nhiều xe hư.
+**Kiểm chứng:** sim `recipe.test.ts` (triệu chứng, kết quả kiểm tra, chấm sai bệnh, phụ tùng tiêu hao); e2e server `repair.e2e-spec.ts` (kiểm tra 6 bộ phận, bộ phận lạ bị từ chối, sửa sai → "vẫn hư", sửa đúng → tính tiền); Playwright `sua-xe.spec.ts` (mua xe đồ nghề, phụ tùng, mở tiệm, kiểm tra đúng lốp, sửa sai rồi sửa đúng, thối tiền). `pnpm balance`: tiệm sửa xe ~18 khách/ngày, lãi ~367k (ngang trà sữa / phụ kiện).
 
 ---
 
@@ -609,7 +702,7 @@ có không gian quán như Cô Tư** (UC-W6).
 **Kiểm chứng:** unit `floor.test.ts` (vòng đời, than/xin lỗi, quỵt, gây lộn, bàn/đi bộ); e2e server `work.e2e-spec.ts`
 (bưng bê cầm dĩa → đi tới bàn, khách trả tiền ra về có đánh giá); Playwright `nguoi-moi-lam-thue.spec.ts` (3 vai, iPhone 16 Pro + Pixel 7).
 
-### UC-W6 · Tiệm riêng — thuê một căn nhà mặt tiền, có không gian quán như Cô Tư 🚧
+### UC-W6 · Tiệm riêng — thuê một căn nhà mặt tiền, có không gian quán như Cô Tư 🚧 (thuê + giấy tờ: UC-F12)
 > Người chơi yêu cầu: user có tiệm là một căn nhà (như quán Cô Tư) thì mới có không gian quán; cách bày quầy tham khảo
 > ảnh quầy trà sữa (ly M/L, bình trà, lưới topping, máy dán nắp) — khách tới quầy gọi món, mình chạm từng ô rồi bấm đưa món.
 
@@ -621,7 +714,7 @@ Khách mua mang về đi ra cửa; khách ăn tại chỗ ngồi bàn (như quá
 **Đời thật:** tiệm đông thì cần người phụ (UC-H, tuyển NPC/người chơi) — vị trí mình không làm thì người phụ làm;
 tiền điện nước tính vào tiền thuê; bảng hiệu, bàn ghế nâng cấp dần.
 **Luật:** mở tiệm = đứng quầy trong tiệm; ra khỏi tiệm = quầy vắng chủ (như UC-F3); một người một chỗ bán (xe đẩy **hoặc** nhà).
-**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 70k/ngày, số 24 cạnh ngã tư đông 140k/ngày) trong danh sách Chỗ bán;
+**Đã làm (bản đầu):** 2 nhà mặt tiền cho thuê (số 10 phố chính 105k/ngày, số 24 cạnh ngã tư đông 210k/ngày) trong danh sách Chỗ bán;
 ngoài phố căn nhà có mái hiên + biển "🏪 BÁNH MÌ <TÊN>"; đứng trước cửa bấm "🏪 Vào tiệm" → cảnh trong tiệm (quầy, đồ bày, bàn ghế,
 camera xoay được), khách đi từ cửa vào xếp hàng, khung thoại gọi món, nhận món xong đi ra; "👨‍🍳 Làm món cho khách" dùng màn làm món,
 "📖 Công thức" ngay trong tiệm. **Chưa:** khách ngồi ăn tại bàn, thuê người phụ. (Bảng quầy dạng lưới cho trà sữa: ✅ 1.11, xem UC-F5.)
@@ -655,6 +748,7 @@ Xem từng khoản tiền vào/ra (sổ cái) theo ngày: bán món, boa, nhập
 **Hệ thống:** 💰 Kinh tế · **Luật:** 2 (💵/🏦 tách riêng), 2.1 (sổ cái kép), 2.3 (lãi có trần), 12.1 (HUD chỉ 💵), 14 (đứng gần mới dùng ATM).
 **Đời thật:** khách quét mã chuyển khoản thì tiền vào tài khoản, không cầm được ngay; muốn đi chợ trả tiền mặt thì phải ra cây ATM rút;
 cuối tháng ngân hàng trả chút lãi, không ai sống bằng lãi gửi vài trăm nghìn.
+**Vốn người mới:** 1.500.000đ tiền mặt + **1.000.000đ dự phòng sẵn trong 🏦** (`economy.startingBank`, góp ý chơi thử: mua xe xong chỉ còn ~300k, khó sống) — rút ở ATM khi cần, mua món lớn thì chuyển khoản.
 **Luồng:** khách trả chuyển khoản → tiền vào 🏦; khách trả tiền mặt (+ tiền boa) → 💵. Hàng xóm mua của nhau: chuyển khoản nếu tài khoản đủ,
 không thì trả tiền mặt. HUD chỉ hiện 💵; 🏦 xem ở Hồ sơ (*🚶 Tới cây ATM gần nhất*) hoặc bảng ATM. Tới cây ATM (ô **N** trên bản đồ: cạnh chợ Bà Năm,
 giữa phố gần quán cơm) → *🏧 Rút / gửi tiền · ATM* → chọn số tiền (bội số 10.000đ).
@@ -663,7 +757,17 @@ không bao giờ âm; ATM chỉ chuyển giữa hai ví của chính mình qua s
 cuối ngày lãi 0,2% cho số dư từ 100k, **tối đa 3.000đ/ngày**, làm tròn xuống 500đ (`bankInterest` trong sim) — có trong báo cáo cuối ngày.
 **Kiểm chứng:** unit `economy.test.ts` (lãi, trần, bội số ATM); e2e server `bank.e2e-spec.ts` (chuyển khoản vào 🏦, tiền mặt vào 💵, ATM xa/gần,
 bội số, rút quá số dư, lãi có trần); Playwright `atm.spec.ts`.
-**Chưa:** phí rút ở ATM khác ngân hàng, chuyển tiền tự do giữa người chơi, trả lương nhân viên qua tài khoản.
+**Máy ATM như thật (bản 2, modal):** màn hình xanh + bàn phím (Huỷ đỏ / Xoá vàng / Đồng ý xanh) + khe thẻ, khe tiền:
+*💳 Đưa thẻ vào* → lần đầu **tạo PIN 6 số** (nhập 2 lần; không 6 số giống nhau, không dãy liên tiếp — `pinError`) → **nhập PIN**
+→ menu *Rút tiền · Nộp tiền · Xem số dư · Đổi PIN · Nhận lại thẻ* → chọn số tiền (hoặc *Số khác*, nhập theo nghìn đồng)
+→ màn xác nhận (rút: **phí 1.000đ/lần** trừ vào tài khoản) → *Máy đang đếm tiền…* → *Mời nhận tiền* → *In biên lai?* (mã GD FTxxx…,
+máy, ngày giờ game, số tiền, phí, số dư) → *Giao dịch khác?* → *Nhận lại thẻ*.
+**Luật PIN (server):** PIN băm sha256 kèm id người chơi, không lưu thô; mọi giao dịch phải gửi kèm PIN; sai **3 lần** máy giữ thẻ tới hết
+ngày game (`Player.atmLockDay`, migration `atm_pin`); đổi PIN phải đúng PIN cũ. e2e `bank.e2e-spec.ts` (tạo/đổi PIN, phí, biên lai, giữ thẻ).
+**Model 3D:** cây ATM vẽ bằng Blender (`cay_atm` trong `art/blender/nha_que.py` → bundle village "cay-atm", ~200 tam giác, 1 material,
+vẽ instanced): bệ đá, thân tủ xanh ngân hàng, băng vàng, màn hình lõm, bàn phím nghiêng, khe thẻ/tiền/biên lai, mái che + đèn LED, camera;
+biển "🏧 XÓM BANK".
+**Chưa:** phòng giao dịch + quầy giao dịch viên (mở thẻ, cấp lại PIN khi bị giữ thẻ), chuyển tiền tự do giữa người chơi.
 
 ### UC-I8 · Trả bằng gì: 💵 tiền mặt / 🏦 chuyển khoản / tự chọn ✅ (bản đầu)
 **Hệ thống:** 💰 Kinh tế · **Luật:** 2 (tách tiền mặt / ngân hàng), 14 (server kiểm ví, kiểm sạp nhận gì).
@@ -732,6 +836,47 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 - **UC-J5 Tranh chỗ** — chỗ bán đã có người thuê trong ngày thì người khác không thuê được; đấu giá chỗ đẹp theo tuần (⏳).
 - **UC-J6 Chống quấy rối** — chặn, báo cáo, lọc từ ngữ; không cho đứng chắn trước quầy người khác quá 1 phút (bị đẩy nhẹ ra).
 
+### UC-J5 · Quỹ xóm + công trình chung (đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu) ✅ (bản đầu)
+**Hệ thống:** 🤝 Xã hội · 💸 Money sink · 🎲 Sự kiện do người chơi tạo · **Luật:** 2.2 (chỗ tiêu chung), 9 (sự kiện người chơi tạo),
+13 (nhiều người chơi), 15 (dữ liệu).
+**Đời thật:** xóm họp tổ dân phố bàn đổ bê tông hẻm, dựng đèn đường, bắc cầu qua mương; nhà nhà góp tiền theo khả năng,
+tổ trưởng giữ quỹ, thuê thợ làm vài ngày rồi cả xóm ra nghiệm thu.
+**Luồng:** *Hàng xóm* → *🏗️ Quỹ xóm*:
+- Đầu sheet: số dư quỹ + nút *Góp 10k/50k/100k/500k* (chọn 💵/🏦 như mọi khoản trả).
+- Tab **📋 Đề xuất**: 6 công trình (`content.projects`) — lý do đời thật, giá, số ngày thi công, chỗ bán được hưởng;
+  công trình nâng cấp phải làm cái trước (cầu tre → cầu bê tông).
+- Tab **🗳️ Đang bàn / làm**: thẻ đề xuất có 👍 Thuận / 👎 Chống, hạn bỏ phiếu; qua rồi thì thanh "còn thiếu …đ";
+  đang thi công thì "nghiệm thu ngày N". Tab **✅ Đã xong**.
+**Luật game:**
+- Quỹ = ví sổ cái `fund:<xóm>` (không âm): 60% phí chợ/thuế khoán mỗi ngày + tiền hàng xóm góp (không rút ra được).
+- Mỗi lúc một đề xuất đang bỏ phiếu; người đề xuất tự thuận. Kiểm phiếu khi cả xóm đã bỏ hoặc hết 4 giờ game:
+  thuận > chống thì qua (xóm một người tự quyết).
+- Qua → chờ quỹ đủ → trừ quỹ, thi công `buildDays` ngày → nghiệm thu: khách ở các chỗ bán liên quan ×`demand.mult` (nhân dồn).
+- Mọi bước báo cho cả xóm (đề xuất, kết quả phiếu, khởi công, nghiệm thu, ai góp bao nhiêu).
+**Kiểm chứng:** unit `projects.test.ts`; e2e server `projects.e2e-spec.ts`; Playwright `quy-xom.spec.ts`.
+**Chưa:** công trình hiện trên bản đồ 3D (đường lát, đèn, cầu), mở rộng đất/lô bán mới, hạng mục "Người vì xóm" trong Bảng xóm.
+
+### UC-J6 · 🏗️ Phụ hồ công trình xóm ✅ (1.14a)
+**Nhân vật:** **Cai Lâm** — cai thầu công trình của xóm, đứng ở công trường chỉ việc.
+**Đời thật (đã tra):** phụ hồ trộn vữa theo định mức — vữa xây tường 1 bao xi măng 50 kg : ~9 thùng cát 18 lít, vữa trát 1 : 8,
+vữa mác 75 1 : 10; ~18–22 lít nước mỗi bao tuỳ độ ẩm cát. Công nhật phụ hồ 300–450k/ngày (TP HCM cao hơn tỉnh).
+**Luồng:** xóm khởi công một công trình (UC-J5) → thông báo *"🏗️ Khởi công … Cai Lâm cần người phụ hồ"* (bấm mở Việc làm) →
+công trường hiện trên bản đồ cạnh chỗ bán liên quan (đống cát, bao xi măng, thùng trộn, rào sọc, biển *"x/8 mẻ"*, Cai Lâm) →
+Việc làm › 💼 Làm thuê › **🏗️ Phụ hồ** → **🚶 Tới công trường** (tới nơi bảng tự mở) → Cai giao *"Trộn 2 bao vữa xây tường"* + bảng
+định mức → đổ **🧱 xi măng (bao) / ⛱️ cát (thùng, +5) / 💧 nước (lít, +20)** → **🪣 Trộn** → đạt: *"Vữa ngon!"* +12k, công trường
+thêm một mẻ; sai: Cai nói lỗi (*"ít cát quá, vữa dễ nứt"*, *"nhão quá, chảy hết"*…), đổ bỏ, trộn lại mẻ đó. Mỗi mẻ ~10 phút game.
+Đủ số mẻ (8) → **nghiệm thu sớm** *"nhờ bà con phụ hồ"*.
+**Luật game:** tiền công **không sinh mới**: khi khởi công, 25% chi phí công trình giữ trong ví `escrow:project:<id>` làm khoản
+nhân công, phần còn lại trả nhà thầu; xong công trình mà còn dư thì trả nốt nhà thầu; hết khoản nhân công thì Cai không thuê nữa.
+Server kiểm đứng ở công trường, không đang mở quầy / trong ca khác, đợi mẻ trước; xi măng + cát phải đúng, nước lệch ≤ 15%.
+Sổ cái: `project`, `project_labor`, `crew_wage`, `project_labor_left`; đo lường `crew_mix` (đạt / hỏng).
+**Dữ liệu:** `content.crew` (keeper, laborShare, wagePerMix, mixMinutes, waterTolerance, bags, mixes); `projects[].crewMixes / site`;
+`RoomProject.mixes`; `WorldView.sites`; sim `mixOrder`, `mixTarget`, `checkMix`, `laborBudget`, `siteOf`.
+**Kiểm chứng:** sim `crew.test.ts`; e2e server `crew.e2e-spec.ts` (khởi công → công trường trong `world` → đứng xa bị từ chối → trộn
+thiếu cát bị bắt làm lại, không tiền → trộn đúng có công, ví nhân công giảm → chưa xong mẻ trước không trộn tiếp → đủ mẻ xong sớm,
+ví nhân công về 0); Playwright `phu-ho.spec.ts`.
+**Sau này:** khiêng gạch, đẩy xe rùa; nhiều người cùng làm một ca (Cai chia việc); kỹ năng *tay nghề phụ hồ* lên thợ hồ.
+
 ---
 
 ## K. Sự kiện đời sống
@@ -747,6 +892,188 @@ Làm sai → người mua thấy "❌ Sai phần rau rồi", chủ làm lại ho
 | UC-K7 | Lễ Tết | Giá nguyên liệu tăng, khách tăng, món đặc biệt theo mùa |
 
 ---
+
+## M. Thế giới sống & ký ức (docs/THEGIOI.md)
+
+### UC-M1 · Chuyện của tôi ✅ (bản đầu)
+**Ai:** mọi người chơi. **Luật:** THEGIOI §1, 17.1 (không ép, chỉ ghi lại).
+**Luồng:** làm thật thì server ghi **mốc** kèm ngày game: dọn về xóm (với bao nhiêu tiền) → mua xe đầu tiên / đổi nghề →
+mở quầy đầu tiên (ở đâu) → thuê nhà mặt tiền mở tiệm → đi làm thuê lần đầu → góp quỹ xóm lần đầu → các thành tựu có câu kể
+(món đầu tiên, 100 khách, 1.000 khách, doanh thu 1 triệu / 10 triệu, 10 đánh giá 5★…). Mốc mới hiện thông báo **📖** (thành
+tựu đã có 🏅 nên không báo thêm). **Hồ sơ → 📖 Chuyện**: dòng thời gian *Ngày 1 · Dọn về xóm với 1.500.000đ trong túi*…
+**Đời thật:** nhìn lại thấy *"quầy này mình bắt đầu từ 1,5 triệu"* — tiến trình có ký ức.
+**Dữ liệu:** `content.story` (mốc sự kiện, câu có chỗ trống `{money}`, `{lot}`, `{product}`…) + `achievements[].story`.
+Bảng `StoryEntry` (mỗi mốc một lần theo `key`; câu lưu nguyên văn lúc xảy ra — đổi content sau không làm sai ký ức).
+**Kiểm chứng:** sim `story.test.ts`; e2e server `story.e2e-spec.ts` (thứ tự mốc, mở lại quầy không ghi trùng, đi làm thuê báo 📖);
+Playwright `chuyen-cua-toi.spec.ts` (iPhone + Pixel).
+**Sau này:** chia sẻ chuyện thành ảnh, chuyện riêng của từng quầy (ngày khai trương, khách thứ 1.000).
+
+### UC-M2 · Lịch tuần & chợ đêm thứ Bảy ✅ (bản đầu)
+**Luồng:** ngày 1 của xóm là **Thứ Hai**; thanh trạng thái ghi `T7·N6` (cuối tuần chữ vàng; giữ lâu xem "Thứ Bảy, ngày 6 · trời…").
+Sang ngày mới dải tin báo *"☀️ Sang Thứ Bảy, ngày 6 — cuối tuần, trong hẻm đông vui"*. Bảng **Xóm → 📅 Hôm nay** liệt kê sự kiện cả
+xóm trong ngày kèm giờ (*🏮 Chợ đêm thứ Bảy 18:00–22:00*, đang diễn ra thì chữ đỏ).
+**Luật (dữ liệu):** `calendar.weekendTraffic` — cuối tuần cổng trường ×0,55, văn phòng ×0,5, trong hẻm ×1,25, gần chợ ×1,2 (vào công
+thức khách trong sim). Sự kiện kiểu `weekly` (chợ đêm: thứ Bảy 18:00, 240 phút) với hiệu ứng `categoryDemand` (ăn vặt ×1,4, đồ uống
+×1,7, phụ kiện ×1,8) cho mọi quầy đang mở. `pnpm balance` vẫn không cảnh báo.
+**Đời thật:** cuối tuần học sinh nghỉ thì xe bánh mì cổng trường vắng — phải dời vào hẻm; tối thứ Bảy cả xóm ra chợ đêm.
+**Kiểm chứng:** sim `events.test.ts` (chợ đêm chỉ thứ Bảy, hệ số theo nhóm hàng, cuối tuần theo khu); e2e server `events.e2e-spec.ts`
+(nhảy tới thứ Bảy có chợ đêm, ngày thường không); Playwright `cho-dem.spec.ts` (T2 → T7, 📅 Hôm nay có chợ đêm).
+**Sau này:** ngày lễ (Tết, Trung Thu, 2/9), mùa mưa, thuê sạp ở chợ đêm (booth), sự kiện cả server.
+
+### UC-M3 · Bản sắc khu phố & khu có tiếng ✅ (bản đầu)
+**Luồng:** mỗi chỗ bán thuộc một **khu** (cổng trường 🏫, khu văn phòng 🏢, trong hẻm 🏘️, gần chợ 🧺, ngã tư 🚦). Chọn chỗ bán
+thấy *"🏫 Cổng trường · hợp phụ kiện, trà sữa, bánh mì"*. **Bảng xóm → 🏙️ Khu phố**: mỗi khu hợp hàng gì, đang có mấy quầy mở;
+khu tụ ≥ 2 quầy cùng nhóm hàng thì *"🍜 Đang thành khu ăn uống · +8% người qua lại"*.
+**Luật (dữ liệu, sim):** `trafficProfiles[].likes` (khẩu vị khu theo nhóm hàng) nhân vào người qua lại;
+`districtFame` — mỗi quầy cùng nhóm (ăn uống / mua sắm / sửa xe) đang mở trong khu từ quầy thứ hai cộng +8% người qua lại cho
+cả nhóm, tối đa +30% (cạnh tranh trực tiếp cùng món vẫn chia khách). `pnpm balance` không cảnh báo.
+**Đời thật / emergent:** khu vắng → một người mở quán cà phê → người khác mở trà sữa, quán ăn → khu thành "khu ăn uống".
+**Kiểm chứng:** sim `economy.test.ts` (khẩu vị khu, tiếng khu có trần, quầy khác nhóm không ảnh hưởng); Playwright `khu-pho.spec.ts`.
+**Sau này:** bãi giữ xe (người chơi mở) tăng lưu lượng khu, giá thuê chỗ theo độ đông, khu có tên riêng do người chơi đặt.
+
+### UC-M4 · Trong lúc bạn vắng… ✅ (bản đầu)
+**Luồng:** rời game (đóng tab / mất mạng) thì server ghi mốc `lastSeenAt` + ngày game. Vào lại sau ≥ 10 phút (`content.away.minMinutes`)
+thì hiện hộp **🌙 Trong lúc bạn vắng (8 giờ)…**: 📅 xóm đã qua mấy ngày (hàng xóm vẫn chơi), ⭐ đánh giá mới về quầy (số lượng,
+trung bình, câu mới nhất), 🧳 hàng xóm mới dọn về, 🏪 ai đang mở quầy, 🏗️ công trình xong / 🗳️ đề xuất chờ bỏ phiếu, 📈📉 giá chợ
+nguyên liệu nghề mình đổi bao nhiêu. Không có gì đáng kể thì không hiện.
+**Luật:** chỉ kể **chuyện thật** — xóm không có ai online thì đồng hồ dừng (không bịa doanh thu). **Không có tiền tự sinh khi vắng**
+(DESIGN: tiền chỉ vào khi có người làm); doanh thu khi vắng chỉ có sau này khi **thuê nhân viên** bán thay (có lương, có trần).
+**Kiểm chứng:** sim `away.test.ts` (giá chợ đổi giữa hai ngày); e2e server `away.e2e-spec.ts` (vừa rời → không báo; vắng 30 phút →
+đánh giá mới + số ngày, tiền không đổi); Playwright `khi-vang.spec.ts` (lệnh dev `debug:away`, tải lại trang).
+
+### UC-M5 · Khách quen — NPC có trí nhớ ✅ (bản đầu)
+**Nhân vật:** 18 cư dân có tên (`content.residents`): Bé Su lớp 5 mê trà sữa, Khoa lớp 9 đá banh, Chị Thảo kế toán, Anh Duy IT, Bà Tư
+bán vé số, Chú Lực xe ôm, Bác Hai thợ mộc… (khách vãng lai vẫn là người lạ không tên).
+**Luồng:** khách tới quầy là một **cư dân cụ thể** (ưa đúng nhóm hàng ×2, đã quen ×1,5, khách quen ×3). Màn làm món ghi tên +
+*"ghé lần 4"*; từ lần thứ 3 khách mở lời *"Bữa nay ghé nữa nè!"*. Mua đúng món lần thứ 5 → **❤️ Khách quen** (báo ❤️, ghi vào
+📖 Chuyện "Có khách quen đầu tiên: …"): kiên nhẫn ×1,3, mở lời *"Như mọi khi nha!"*, 20% rủ bạn tới (thêm một khách nhịp sau).
+Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 giận, mất ❤️. **Làm ăn → ❤️ Khách quen**: sổ ai ghé mấy lần.
+**Dữ liệu:** bảng `ResidentVisit` (chủ × cư dân: số lần, chuỗi thất vọng, ngày thành khách quen); `content.regulars` (ngưỡng, hệ số, câu).
+**Kiểm chứng:** sim `regulars.test.ts`; e2e server `regulars.e2e-spec.ts` (lần 5 → ❤️, sổ, Chuyện); Playwright `khach-quen.spec.ts`
+(lệnh dev `debug:regulars`).
+**Sau này:** khách quen giận khi quầy đóng nhiều ngày liền, khách quen giới thiệu bạn bè cụ thể, khách quen dặn món riêng.
+
+### UC-M6 · Thuê nhân viên — bán thay khi vắng ✅ (bản đầu)
+**Nhân vật:** bảng tuyển người của Anh Tám (`content.staff.people`): **Thu** (sinh viên năm hai, đúng 95%, 6 phút/món, 15k/giờ),
+**Khoa** (lanh tay mà hay quên lời dặn, đúng 80%, 4 phút/món, 13k/giờ), **Dì Sáu** (chậm mà kỹ, đúng 98%, 8 phút/món, 10k/giờ).
+**Luồng:** Làm ăn → **👩‍🍳 Nhân viên** → chọn ca (sáng 6–11h, trưa 11–14h, chiều 14–18h, tối 18–22h) → **Thuê** (ghi 📖 "Thuê người
+đầu tiên…"). Trong ca, quầy đang mở mà chủ **rời quầy** (đi chợ, đi làm thuê) → nhân viên bán thay từng nhịp (báo *"👩‍🍳 Thu vừa bán
+2 món thay bạn"*, khách không réo chủ). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy
+*"Trong lúc bạn vắng…"* có dòng **👩‍🍳 Thu bán thay 12 món (1 món sai) · thu … · trả lương …**. Có **phiếu ca** (giờ, bán, sai, thu,
+lương, khách hụt). Đổi người / đổi ca / cho nghỉ bất cứ lúc nào.
+**Có nhân viên thì chủ không bắt buộc đứng bán** (góp ý chơi thử): trong ca, chủ ở quầy / trong tiệm thấy *"👩‍🍳 Khoa đang bán — bạn
+cứ đứng xem"* (trong tiệm nhân viên đứng quầy, chủ đứng bên); bấm **🙋 Tôi bán** để giành bán (khách vào bếp của chủ), bấm *Để
+Khoa bán* để trả quầy. **Tới ca mà quầy đang đóng thì nhân viên tự mở cửa** (còn hàng làm được ít nhất một món, trả phí ngày như
+chủ mở; báo *"🔓 Khoa tới ca, mở cửa giúp bạn"*); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
+**Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
+viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
+**Luật game (không thu nhập thụ động không trần):** nhân viên **không tự nhập hàng, không tự mở quầy**; doanh thu có trần = kho
+hàng × lãi − lương; lương theo giờ đi qua sổ cái (`staff_wage` → employer), tiền bán (`staff_sale`) vào ví chủ; uy tín quầy thay
+đổi theo tay nghề nhân viên; mỗi quầy một người, một ca/ngày.
+**Dữ liệu:** `Employee` (quầy → người, ca, ngày thuê), `StaffShift` (phiếu ca); sim `staffShift` (lưu lượng như quầy thường,
+sức làm theo phút/món, kho, đúng/sai); báo cáo ngày cộng lương vào dòng phí.
+**Kiểm chứng:** sim `staff.test.ts` (bán + lương, hết hàng về sớm, người kỹ ít sai, nhịp 5 phút vẫn bán); e2e server
+`staff.e2e-spec.ts` (thuê/cho nghỉ/Chuyện, bán thay khi rời quầy, thoát game → "Trong lúc bạn vắng" có doanh thu + lương);
+Playwright `thue-nguoi.spec.ts`.
+**Bản 2 (góp ý chơi thử: "đi vắng mà nhân viên không bán, vẫn báo về quầy"):** thêm ca **Cả ngày 6–22h**; mặc định chọn ca
+đang diễn ra; báo trước khi chọn ca chưa tới giờ; tab Nhân viên có **📘 Cách dùng** (chọn ca → nhập hàng + mở quầy → rời quầy
+trong giờ ca, đừng đóng quầy) và dòng trạng thái *đang trong ca / ngoài giờ làm*; rời quầy thì thanh dưới báo **"👩‍🍳 Thu đang bán
+thay — tới 22:00"** thay vì "Quầy vắng chủ" (ngoài ca thì ghi rõ *Thu ngoài giờ làm*).
+**Sau này:** người chơi thật nhận làm thuê ở quầy người khác (UC-H2…H9), nhân viên lên tay nghề theo ngày làm, nhiều ca/ngày.
+
+### UC-M7 · Bảng việc xóm + 🤝 điểm tin cậy ✅ (bản đầu: việc NPC đặt)
+**Nhân vật:** **Chú Hai tổ trưởng** giữ bảng, ghi sổ; người đặt việc là cư dân: *Cô Hạnh giáo viên* (bánh mì cho đội bóng),
+*Chú tài xế tuyến 19*, *Chị Thảo kế toán* (trà sữa họp chiều), *Bà Năm chợ đầu mối*, *Bé Su lớp 5* (quà sinh nhật), và việc lớn
+*họp tổ dân phố* của Chú Hai (cần tin cậy ≥ 60).
+**Luồng:** Việc làm → **📋 Việc xóm**: mỗi ngày 3 việc (dữ liệu `content.contracts`), mỗi việc ghi *"Giao 6 bánh mì thịt cho đội
+bóng lớp 5 ở Cổng trường trước 11:00"*, 💰 thưởng (đặt số lượng + giao tận nơi nên cao hơn bán lẻ ~20–35%), 🔒 cọc 20%, ⏰ hạn.
+**Nhận việc** → tiền thưởng của người đặt + cọc của mình vào **ví giữ hộ (escrow)** → **🔪 Làm N phần** ở quầy mình (trừ nguyên
+liệu thật, thiếu thì báo thiếu gì) → **🚶 Tới nơi** (đi bộ thật) → **📦 Giao hàng** (server kiểm đứng đúng chỗ, còn hạn) → nhận
+thưởng + lại cọc, 🤝 +5, ghi 📖 "Xong việc đầu tiên trên bảng việc xóm…".
+**Tình huống đời thật:** trễ giờ hẹn → người đặt lấy lại tiền, mình **mất cọc** + 🤝 −15 (đã làm hàng thì mất luôn nguyên liệu);
+bỏ ngang cũng vậy; bị khách bắt **thối thiếu** → 🤝 −2; người khác nhận trước thì bảng ghi *"🙋 Lan đã nhận"*; không có đồ nghề
+đúng nghề thì không nhận được; tin cậy < 30 Chú Hai nhắc, **< 15 bị khoá nhận việc 3 ngày**.
+**Luật game:** tiền chỉ vào khi **làm thật** (làm hàng + đi giao); mỗi người một việc một lúc; việc có hạn trong ngày; cọc mất là
+money sink (`penalty:contract`); mọi đồng tiền qua sổ cái (`contract_escrow`, `contract_deposit`, `contract_reward`,
+`contract_deposit_back`, `contract_refund`); đo lường `contract_take` / `contract_done` / `contract_fail` trong `GameEvent`.
+**Dữ liệu:** `Contract` (xóm, ngày, mẫu, số lượng, thưởng, cọc, hạn, người nhận, trạng thái), `Player.trust` / `trustLockDay`,
+ví `escrow:<id>` (WalletKind ESCROW); sim `contractOffers`, `contractPay`, `contractIngredients`, `contractText`, `trustAfter`.
+**Kiểm chứng:** sim `contracts.test.ts`; e2e server `contracts.e2e-spec.ts` (nhận → làm → giao xa bị từ chối → giao đúng chỗ, tiền
++ cọc + tin cậy + Chuyện; vượt tin cậy / khác nghề bị từ chối; trễ hạn mất cọc; bỏ ngang mãi bị khoá); Playwright `bang-viec.spec.ts`
+(lệnh dev `debug:contract`).
+**Sau này:** ~~người chơi đăng việc cho nhau~~ (UC-M8), việc phụ hồ / sửa xe tận nhà, tin cậy mở chợ người chơi.
+
+### UC-M8 · 📸 Thuê nhau: chủ quầy thuê thợ chụp ảnh quầy ✅ (1.20b, việc đầu tiên người chơi đăng)
+**Nhân vật:** **Chú Hai tổ trưởng** giữ sổ + tiền, phân xử; **Bé Na** (kênh "Na Ăn Gì") chỉ nghề chụp; chủ quầy (người đăng) và
+hàng xóm (thợ ảnh).
+**Đời thật (đã tra):** sàn việc tự do kiểu Upwork: bên thuê **nạp tiền vào ký quỹ trước**, bên làm nộp sản phẩm → bên thuê có
+**hạn duyệt**, quá hạn không phản hồi thì **tự giải ngân**; tranh chấp thì bên thứ ba **xem sản phẩm rồi phân xử**. Thợ chụp tự do
+ngoài đời ~150k/giờ, chụp món ~150k/món; quầy nhỏ trong xóm thuê buổi ngắn 60–150k.
+**Luồng (chủ quầy):** Việc làm → **📸 Thuê nhau** → *Thuê người chụp ảnh quầy mình* → chọn tiền công (60k/100k/150k) + hạn (2/4/8
+giờ) → **Đăng việc · trả trước** (tiền công vào ví giữ hộ, **phí ghi sổ 5%** tối thiểu 2k vào **quỹ xóm**) → có người nhận: thông
+báo bấm được → giữ quầy mở → thợ nộp ảnh: thông báo *"bấm để nghiệm thu"* → xem 3 tấm đẹp nhất + điểm bộ ảnh + sao của thợ →
+**chấm sao + ✅ Nghiệm thu** hoặc **⚖️ Khiếu nại**. Chưa ai nhận thì **gỡ việc** (hoàn tiền công, phí không hoàn).
+**Luồng (thợ ảnh):** tab 📸 Thuê nhau → **Nhận việc · đặt cọc 20%** → **🚶 Tới quầy** (tới nơi bảng tự mở) → **📷 Chụp** (lần đầu
+**thuê máy 20k**) → khung ngắm phủ lên cảnh 3D: khoảnh khắc đẹp (😄 khách cười, ♨️ món bốc khói, 🌤️ nắng xiên…) hiện dần, **vòng
+ngắm co lại**, xanh khít là lúc bấm → mỗi tấm có điểm (🌟 / 🖼️ / 🌫️), tối đa 8 kiểu → **🖼️ Nộp ảnh** (≥ 3 tấm) → chờ nghiệm thu.
+**Tình huống đời thật:** quầy đang đóng → *"chờ chủ quầy mở hàng rồi chụp mới có không khí"*; đứng xa → không chụp được; chủ bận
+quên nghiệm thu → **quá 2 giờ Chú Hai tự trả**; ảnh xấu (< 55/100) bị khiếu nại → **hoàn tiền công cho chủ**, thợ lấy lại cọc nhưng
+🤝 −5; ảnh đạt mà chủ vẫn khiếu nại → **vẫn trả tiền**, chủ 🤝 −5; trễ hạn / bỏ ngang → hoàn tiền chủ, thợ **mất cọc** + 🤝 −15
+(có thể bị khoá).
+**Luật game:** tiền công là tiền **người chơi trả người chơi** (không sinh tiền mới); money sink: phí ghi sổ (vào quỹ xóm), thuê máy
+ảnh, cọc mất; ảnh được duyệt **đăng lên nhóm xóm**: khách ghé quầy ×(1 + 0,6 × chất lượng) trong 3 giờ; **server chấm từng tấm theo
+giờ server** (khoảnh khắc server sinh; bù trễ mạng tối đa 400 ms); mỗi người đăng 1 việc, nhận 1 việc một lúc; không tự nhận việc
+mình; cần 🤝 ≥ 30; sổ cái: `gig_escrow`, `gig_fee`, `gig_deposit`, `camera_rent`, `gig_reward`, `gig_deposit_back`, `gig_refund`,
+`penalty:gig`; đo lường `gig_post`, `gig_take`, `gig_done`, `gig_disputed`, `gig_fail`.
+**Dữ liệu:** `content.gigs` (phí, hạn nghiệm thu, mức tiền công, hạn, máy ảnh, khoảnh khắc, chuẩn đạt, hiệu ứng quảng cáo);
+`Gig` (Prisma), `Player.gigs / gigStars`, `Business.adDay / adUntil / adMul`; ví `escrow:gig:<id>`; sim `gigFee`, `gigDeposit`,
+`photoMoments`, `shotScore`, `photoQuality`, `adMultiplier`, `disputeVerdict`.
+**Kiểm chứng:** sim `gigs.test.ts`; e2e server `gigs.e2e-spec.ts` (đăng → nhận → đứng xa bị từ chối → chụp đẹp → nộp → nghiệm thu
+5⭐: tiền, cọc, quỹ xóm, tin cậy, sao, quảng cáo; ảnh xấu → khiếu nại → hoàn tiền; gỡ việc; quá hạn tự trả); Playwright
+`thue-chup-anh.spec.ts` (hai người chơi; hook dev `xomShoot()` để bấm đúng lúc vì máy test chỉ vài khung hình/giây).
+**Sau này:** thêm loại việc (phụ hồ, sửa xe tận nhà, giao hàng hộ), người nhận đặt giá (đấu thầu), ảnh hiện trên bảng tin xóm.
+
+---
+
+## N. Đi lại & giao thông (docs/KIENTRUC.md §4–5)
+
+### UC-N1 · Chạy xe ôm ✅ (bản đầu)
+**Nhân vật:** **Chú Lực** — trưởng trạm xe ôm gốc me (đầu đường, gần ngã tư phía tây), cho người mới thuê *Wave cũ*; khách là
+cư dân có tên (Bé Su, Bà Tư vé số, Chị Thảo kế toán…).
+**Luồng:** Việc làm → 💼 Làm thuê → **🛵 Chạy xe ôm** → đi tới trạm (tới nơi tự mở sheet) → **Thuê xe 30k/ngày** →
+**xe Wave hiện dưới người** (cả ngày, đi đâu cũng ngồi trên xe) → chạy ra chỗ đông người (đầu hẻm, ngã tư, cổng chợ — như xe ôm
+ngoài đời đậu chờ bất cứ góc phố nào, trạm chỉ là nơi thuê xe) → chip **🛵 Đậu xe ở đây chờ khách** → **🙋 Đậu xe ở đây chờ khách**
+(giờ cao điểm khách tới nhanh, giữa trưa / khuya chờ lâu gấp 3; đi đâu tuỳ ý, ở trong nhà / trong tiệm thì khách chưa thấy) →
+khách vẫy **ngay chỗ mình đứng**: thông báo *"🙋 Chị Mai vẫy xe … — bấm để trả giá"* (bấm là mở bảng) + chip đỏ nhấp nháy trên thanh
+hành động → *"Chú ơi, chở tui tới Nhà số 15
+bao nhiêu?"* (quãng đường, giá chuẩn = 12k + 8k/100 m) → **trả giá**: *Bớt chút ×0,9 · Giá chuẩn · Nhích lên ×1,25 · Nói thách
+×1,6* (nói thách thì khách hay *"Mắc quá, thôi tui đi bộ"*; mưa bão khách dễ chịu giá) → **chọn đường**: 🛣️ *đường lớn* (nhanh lúc
+vắng, giờ cao điểm kẹt cứng — chậm tới 60%) hay 🏘️ *đi hẻm* (không kẹt, mưa thì trơn, xóc) — sheet báo ước số giây mỗi đường +
+độ kẹt → khách **ngồi sau xe** → **chạy thật** theo đường đã chọn (tìm đường A* có trọng số loại ô) → tới nơi **🛬 Tới nơi rồi** → khách chấm sao (nhanh
+hơn mong đợi 5⭐, chậm quá 1–2⭐; đi hẻm lúc mưa −1⭐) + boa (5⭐: 2–5k) → **thu tiền**: chuyển khoản, đưa đủ, hoặc tờ lớn phải
+**thối tiền** (thối thiếu: −2⭐, mất boa, 🤝 −2) → **trừ xăng** (1k/100 m, cả lượt về trạm) → đậu luôn chỗ vừa trả khách chờ cuốc tiếp.
+**Luật game:** tiền chỉ có khi chở thật — server kiểm thuê xe ở trạm, xuất phát đúng **chỗ khách vẫy** (nơi tới
+tính từ chỗ đón, ≥ 18 m), tới đúng nơi và **không tới nhanh hơn tốc độ xe cho phép**
+(×1,4 sai số); đang mở quầy / đang trong ca làm thuê thì không chạy xe ôm; money sink: thuê xe + xăng; mọi đồng tiền qua sổ cái
+(`bike_rent`, `ride_fare`, `ride_tip`, `fuel`), đo lường `ride_rent`, `ride_haggle`, `ride_done`, `ride_abandon`.
+**Dữ liệu:** `content.rides` (giá, xăng, mức trả giá, tốc độ đường, câu thoại, sao); `Player.bikeRentDay / rides / rideStars`;
+sim `congestion`, `rideFare`, `rideFuel`, `haggleChance`, `routeSpeed`, `rideStars`, `rideTip`, `passengerWait`,
+`Grid.path(…, ROUTE_WEIGHTS)`.
+**Kiểm chứng:** sim `rides.test.ts`; e2e server `rides.e2e-spec.ts` (chưa thuê / thuê xa trạm bị từ chối; đậu giữa xóm vẫn có khách, thông báo
+`open: "ride"`, khách có model, rời chỗ đón thì không xuất phát được; cuốc đủ bước: tiền thuê,
+giá, tới nhanh quá bị từ chối, thu tiền + xăng, Chuyện; nói thách bị từ chối); Playwright `xe-om.spec.ts` (thuê xe → xe dưới người → ra đường lớn giữa xóm đậu chờ → bấm
+thông báo / chip → trả giá → khách ngồi sau xe → tới nơi, thu tiền).
+**Sau này:** khách quen gọi riêng xe ôm uy tín, xe hao mòn → tiệm sửa xe, mua xe riêng, chở hàng thuê, giao thông 3D (UC-N2).
+
+### UC-N2 · Giao thông trên đường ✅ (bản đầu)
+**Luồng:** đường lớn có **xe máy** (nhiều nhất, người lái áo màu), **ô tô**, **xe buýt** xanh chạy theo làn hai chiều (đường ngang
+và dọc từ bản đồ ô). **Giờ cao điểm** (7:00, 18:00) đông gấp ~4 lần giữa trưa và chạy chậm lại (kẹt); **mưa** bớt xe máy.
+Cùng một độ kẹt `congestion(minute)` với xe ôm (UC-N1): đường lớn chậm, xe **giao hàng** (UC-W5) chậm tới 35% giờ cao điểm,
+tiếng phố (xe rì rì, xe máy chạy ngang, còi) dày theo độ kẹt.
+**Luật / hiệu năng (PLAN §1):** tối đa 60 xe, 4 InstancedMesh = 4 draw call, mỗi khung chỉ cập nhật ma trận; xe chỉ để nhìn (không
+va chạm). Đo CPU ×4 (Playwright + CDP, máy không GPU): giờ tan tầm tắt giao thông 3,9 FPS, bật 56 xe 4,4 FPS → không tốn thêm đáng kể.
+**Kiểm chứng:** Playwright `giao-thong.spec.ts` (giờ tan tầm nhiều xe hơn giữa trưa ≥ 15 xe, không quá 60).
+**Sau này:** đèn đỏ ở ngã tư, xe dừng nhường người đi bộ, model xe máy / xe buýt vẽ bằng Blender, tiếng xe theo vị trí xe.
 
 ## L. Hệ thống & lỗi
 

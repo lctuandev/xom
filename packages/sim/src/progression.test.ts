@@ -12,7 +12,10 @@ import {
   reviewSummary,
   reviewTagOf,
   skillLevel,
+  soften,
   unlockLevel,
+  voiceAsk,
+  voiceLine,
   XP,
   xpForLevel,
 } from "./progression.js";
@@ -58,8 +61,7 @@ describe("kỹ năng & mở khoá (DESIGN §4, Luật 4.2)", () => {
     expect(remembersOrders(content, {})).toBe(false);
     expect(remembersOrders(content, { nho_mon: 10 })).toBe(true);
   });
-  it("nhà mặt tiền mở ở cấp 3, khai trương ở cấp 2", () => {
-    expect(unlockLevel(content, "lot_house")).toBe(3);
+  it("khai trương mở ở cấp 2 (nhà mặt tiền giờ mở bằng vốn + giấy tờ, UC-F12)", () => {
     expect(unlockLevel(content, "event_host")).toBe(2);
   });
 });
@@ -108,5 +110,30 @@ describe("sổ đánh giá", () => {
       "vip_bad",
     ] as const)
       expect(content.data.reviews.lines[tag]?.length).toBeGreaterThan(1);
+  });
+});
+
+describe("giọng thoại theo kiểu khách", () => {
+  const rand = () => 0;
+  it("học sinh nói kiểu Gen Z, kiểu khách chưa có giọng thì dùng câu chung", () => {
+    expect(voiceAsk(content, "hoc_sinh", "bánh mì thịt", rand)).toBe(
+      "Shop ơi cho em bánh mì thịt nha 🥺",
+    );
+    expect(voiceAsk(content, "vip", "bánh mì thịt", rand)).toBeNull();
+    // Câu mở đầu bằng tên món vẫn viết hoa chữ đầu.
+    expect(voiceAsk(content, "khach_vang_lai", "bánh mì thịt", () => 0.5)).toBe(
+      "Bánh mì thịt một phần, bạn ơi",
+    );
+    expect(voiceLine(content, "vip", "thanks", rand)).toBe(content.data.customerLines.thanks[0]);
+    // Khách vãng lai không có câu "rẻ" riêng → câu chung.
+    expect(voiceLine(content, "khach_vang_lai", "cheap", rand)).toBe(
+      content.data.customerLines.cheap[0],
+    );
+  });
+  it("tắt thoại mặn thì đổi từ, không đụng chữ khác", () => {
+    const map = content.data.voice.soften;
+    expect(soften("Rẻ vãi, mai em rủ cả lớp ra", map)).toBe("Rẻ quá, mai em rủ cả lớp ra");
+    expect(soften("U là trời rẻ dữ dzậy", map)).toBe("trời ơi rẻ dữ dzậy");
+    expect(soften("vãi chưởng", {})).toBe("vãi chưởng");
   });
 });

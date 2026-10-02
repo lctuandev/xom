@@ -18,7 +18,10 @@ test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", 
   await page.getByRole("button", { name: "💬 Nói chuyện" }).tap();
   const talk = page.getByRole("dialog", { name: "Nói chuyện với Bà Năm" });
   await talk.getByRole("button", { name: "👋 Chào hỏi" }).tap();
-  await expect(talk.getByRole("listitem").filter({ hasText: "👋 Chào hỏi" })).toBeVisible();
+  // Câu mới nhất hiện ở khung đứng đối diện (UC-E5): chân dung Bà Năm + ô thoại, câu mình bên phải.
+  await expect(talk.locator("[data-me]")).toContainText("Chào hỏi");
+  await expect(talk.getByRole("img", { name: "Chân dung Bà Năm" })).toBeVisible();
+  await shot(page, "94-noi-chuyen-ba-nam");
   await talk.getByRole("button", { name: "Đóng" }).tap();
   await expect(talk).toBeHidden();
 
@@ -26,6 +29,7 @@ test("hồ sơ: kỹ năng nhích lên khi chào hỏi, mở khoá theo cấp", 
   await page.getByRole("tab", { name: "📈 Kỹ năng" }).tap();
   const skills = page.getByRole("region", { name: "Kỹ năng" });
   await expect(skills.locator('[data-skill="an_noi"]')).toBeVisible();
-  await expect(skills.getByText("🔒 Cấp 3: Thuê nhà mặt tiền mở tiệm")).toBeVisible();
+  // Nhà mặt tiền giờ mở bằng vốn + giấy tờ (UC-F12); còn khoá theo cấp: tổ chức khai trương.
+  await expect(skills.getByText(/Cấp 2: Tổ chức khai trương/)).toBeVisible();
   await shot(page, "95-ky-nang");
 });

@@ -10,11 +10,11 @@ test("trời đổi: báo trước có mưa, mưa xuống, rồi giông bão", a
   const sky = page.locator("[data-weather]");
   await expect(sky).toHaveAttribute("data-weather", /^(sunny|cloudy|rain|storm)$/);
 
-  // Trời nắng, nửa tiếng nữa có mưa → dải tin báo trước, thanh giờ hiện "→🌧️".
+  // Trời nắng, nửa tiếng nữa có mưa → dải tin báo trước, thanh giờ hiện "› (mây mưa)".
   await setWeather(page, "sunny", 0, 30);
   await setWeather(page, "rain", 30, 120);
   await expect(sky).toHaveAttribute("data-weather", "sunny");
-  await expect(sky).toContainText("→🌧️");
+  await expect(sky.locator("[data-next]")).toHaveAttribute("data-next", "rain");
   await expect(page.getByText(/có mưa — chuẩn bị dời vô chỗ có mái/)).toBeVisible({
     timeout: 30_000,
   });

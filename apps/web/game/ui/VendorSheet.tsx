@@ -9,6 +9,7 @@ import { send } from "../net/socket";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
 import { vendorOpen, vendorSeats } from "../world";
+import { Counterpart } from "./Counterpart";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { Sheet } from "./Sheet";
 
@@ -22,8 +23,11 @@ export function VendorSheet() {
   const [busy, setBusy] = useState(false);
   const check = usePayCheck();
   const pay = usePayMethod((s) => s.method);
+  // Câu rao lúc mới tới sạp; chọn một lần cho mỗi lần mở.
+  const [pick] = useState(() => Math.random());
   const v = content.data.vendors.find((x) => x.id === id);
   if (!v) return null;
+  const line = v.lines[Math.floor(pick * v.lines.length)] ?? v.lines[0];
 
   const buy = async (itemId: string) => {
     setBusy(true);
@@ -44,7 +48,13 @@ export function VendorSheet() {
   };
 
   return (
-    <Sheet title={v.sign} onClose={() => close(null)}>
+    <Sheet
+      title={v.sign}
+      onClose={() => close(null)}
+      face={
+        <Counterpart model={v.seller} name={v.name} line={line ?? ""} anchor={`vendor:${v.id}`} />
+      }
+    >
       <p className="mb-2 text-sm text-ink/60">
         {v.name} bán từ {formatClock(v.open)} tới {formatClock(v.close)} · ăn tại chỗ, ghế nhựa có
         sẵn.
@@ -79,14 +89,75 @@ export function VendorSheet() {
 /** Danh sách quán ăn quanh xóm: sạp nào đang bày, mấy giờ mở; chạm để đi tới (UC-B9). */
 export function FoodSheet() {
   const minute = useGame((s) => s.clock?.minute ?? 0);
+  const lots = useGame((s) => s.world.lots);
+  const needs = useGame((s) => s.me?.needs);
   const close = useGame((s) => s.openSheet);
   const setGoal = useGame((s) => s.setGoal);
   const list = [...content.data.vendors].sort(
     (a, b) =>
       Number(vendorOpen(b.id, minute)) - Number(vendorOpen(a.id, minute)) || a.open - b.open,
   );
+  const myId = useGame.getState().me?.playerId;
+  // Quầy hàng xóm đang mở bán đồ ăn / uống (UC-B11) — ăn uống ủng hộ nhau.
+  const stalls = lots.filter(
+    (l) =>
+      l.open &&
+      l.ownerId !== myId &&
+      content.data.needs.byCategory[content.product(l.productId).category] !== undefined,
+  );
   return (
     <Sheet title="Quán ăn quanh xóm" onClose={() => close(null)}>
+      {needs && (
+        <p className="mb-2 text-sm" data-food-needs>
+          🍚 No {needs.food}% · 💧 Đỡ khát {needs.drink}%
+          {(needs.food < content.data.needs.lowAt || needs.drink < content.data.needs.lowAt) &&
+            " — đang đói/khát, tay làm chậm hơn"}
+        </p>
+      )}
+      {stalls.length > 0 && (
+        <>
+          <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-ink/60 uppercase">
+            Quầy hàng xóm đang bán
+          </h3>
+          <ul className="mb-3 flex flex-col gap-1.5" data-player-stalls>
+            {stalls.map((l) => {
+              const p = content.product(l.productId);
+              return (
+                <li
+                  key={l.businessId}
+                  className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 shadow-sm"
+                >
+                  <span className="text-xl" aria-hidden>
+                    {p.emoji}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-extrabold">
+                      {p.name} · {l.ownerName}
+                    </p>
+                    <p className="text-xs text-ink/60">
+                      {content.lot(l.lotId).name} · 🧑 người thật đứng quầy
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Tới quầy ${l.ownerName}`}
+                    onClick={() => {
+                      close(null);
+                      setGoal({ kind: "shop", id: l.businessId, lotId: l.lotId, open: "shop" });
+                    }}
+                    className="h-9 shrink-0 rounded-xl bg-red px-3 text-sm font-semibold text-cream"
+                  >
+                    🛒 Tới quầy
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <h3 className="mb-1.5 text-xs font-semibold tracking-wide text-ink/60 uppercase">
+            Sạp quanh xóm
+          </h3>
+        </>
+      )}
       <ul className="flex flex-col gap-1.5">
         {list.map((v) => {
           const open = vendorOpen(v.id, minute);

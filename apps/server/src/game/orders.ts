@@ -3,25 +3,34 @@ import { Injectable } from "@nestjs/common";
 import { content, type GameEventDef } from "@xom/content";
 import type {
   DishView,
+  InspectResult,
   OrderEvent,
   OrderResultEvent,
   OrderUpdateEvent,
   PayMethod,
 } from "@xom/shared";
 import {
+  absMinute,
   addSkill,
   billFor,
   choosePayment,
   customOrder,
+  eat,
   generateOrder,
   hasIngredients,
   ingredientsFor,
+  inspectPart,
+  type LineKind,
   LOST_WEIGHT,
+  needsFrom,
   nextReputation,
   patienceFactor,
   pickArchetype,
   pickPayment,
+  pickResident,
   priceScore,
+  regularGreeting,
+  regularStage,
   reviewStars,
   reviewTagOf,
   type SkillPoints,
@@ -29,6 +38,8 @@ import {
   seededRandom,
   settleCash,
   validateBuild,
+  voiceAsk,
+  voiceLine,
   wearAfter,
   XP,
 } from "@xom/sim";
@@ -42,10 +53,23 @@ import {
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { ContractService } from "./contracts.js";
 import { consume, stockMap } from "./inventory.js";
 import { availableMenu, menuOf } from "./menu.js";
+import { RegularService } from "./regulars.js";
 import { addToReport } from "./report.js";
 import { purchaseKey, ReviewService } from "./reviews.js";
+import { VoiceAiService } from "./voice-ai.js";
+
+/** Mô tả tình huống cho lớp AI thoại (tuỳ chọn). */
+const SITUATION: Record<LineKind, string> = {
+  cheap: "vừa trả tiền ở xe đẩy, khen giá rẻ",
+  fair: "đang gọi món ở xe đẩy",
+  pricey: "vừa trả tiền ở xe đẩy, chê giá hơi đắt",
+  thanks: "vừa nhận món ngon, làm nhanh, nói cảm ơn khi trả tiền",
+  impatient: "chờ ở xe đẩy quá lâu nên bỏ đi",
+};
+
 import { GameError, type RoomRuntime } from "./room.js";
 
 /** Khách đã có món đúng thì đợi thêm chừng này để tính tiền (ms). */
@@ -54,6 +78,9 @@ const PAY_WAIT_MS = 20_000;
 const MAKING_WAIT_MS = 45_000;
 /** Người chơi thật chờ món lâu hơn khách NPC (họ còn đứng nhìn chủ quầy làm). */
 const PLAYER_PATIENCE_MS = 180_000;
+/** Sửa xe: số lần kiểm tra bộ phận khách không phiền; quá thì mỗi lần bớt chừng này kiên nhẫn (ms). */
+const FREE_CHECKS = 3;
+const CHECK_COST_MS = 6_000;
 const vnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
 const pick = <T>(list: readonly T[], rand: () => number): T =>
@@ -82,7 +109,24 @@ export class OrderService {
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
     private readonly reviews: ReviewService,
+    private readonly ai: VoiceAiService,
+    private readonly regulars: RegularService,
+    private readonly contracts: ContractService,
   ) {}
+
+  /** Câu khách nói theo giọng kiểu khách; có AI (tuỳ chọn) thì đôi khi là câu AI đã sinh sẵn. */
+  private voice(archetype: string, kind: LineKind, rand: () => number) {
+    const fallback = voiceLine(content, archetype, kind, rand);
+    const own = content.data.voice.voices.find((v) => v.archetype === archetype)?.[kind];
+    const name = content.data.npcs.find((n) => n.id === archetype)?.name ?? "Khách";
+    return this.ai.line(
+      `${archetype}:${kind}`,
+      `${name} ${SITUATION[kind]}`,
+      fallback,
+      own ?? content.data.customerLines[kind],
+      rand,
+    );
+  }
 
   setEmitter(emit: OrderEmitter) {
     this.emit = emit;
@@ -111,6 +155,8 @@ export class OrderService {
     const patienceMul = patienceFactor(content, (owner?.skills ?? {}) as SkillPoints);
     let created = 0;
     let lost = 0;
+    // Khách quen (KIENTRUC §1): quầy nhớ cư dân nào đã ghé mấy lần.
+    const memory = await this.regulars.memory(biz.ownerId);
     for (let k = 0; k < arrivals; k++) {
       const rand = seededRandom("order", biz.id, room.day, room.minute, k);
       const order =
@@ -124,7 +170,21 @@ export class OrderService {
       }
       const archetype = opts.vip ? "vip" : pickArchetype(content, product.category, rand);
       const npc = content.data.npcs.find((n) => n.id === archetype);
-      const patienceMs = (npc?.patienceSec ?? 45) * 1000 * (opts.vip?.patience ?? 1) * patienceMul;
+      const residentId = opts.vip
+        ? null
+        : pickResident(content, archetype, product.category, memory, rand);
+      const resident = residentId
+        ? content.data.residents.find((r) => r.id === residentId)
+        : undefined;
+      const mem = residentId ? memory.get(residentId) : undefined;
+      const stage = regularStage(content, mem?.visits ?? 0, mem?.regular ?? false);
+      const greeting = regularGreeting(content, stage, rand);
+      const patienceMs =
+        (npc?.patienceSec ?? 45) *
+        1000 *
+        (opts.vip?.patience ?? 1) *
+        patienceMul *
+        (stage === "regular" ? content.data.regulars.patienceMul : 1);
       // Khai trương giảm giá: làm tròn 500đ, không dưới 1.000đ.
       const price = opts.discount
         ? Math.max(1_000, round500(order.price * (1 - opts.discount)))
@@ -138,7 +198,16 @@ export class OrderService {
         productId: biz.productId,
         variantId: order.variantId,
         archetype,
-        ask: order.ask,
+        // Giọng theo kiểu khách: học sinh nói teencode, cô chú kiểu xóm… (content.voice).
+        // Dịch vụ (sửa xe): khách kể triệu chứng nguyên văn, không ghép vào câu "cho con …".
+        ask: [
+          greeting,
+          product.template === "SERVICE"
+            ? order.ask
+            : (voiceAsk(content, archetype, order.dish, rand) ?? order.ask),
+        ]
+          .filter(Boolean)
+          .join(" "),
         dish: order.dish,
         spec: order.spec,
         price,
@@ -147,6 +216,14 @@ export class OrderService {
         expiresAt: now + patienceMs,
         ...(opts.vip ? { vip: true } : {}),
         ...(opts.discount ? { promo: true } : {}),
+        ...(resident
+          ? {
+              residentId: resident.id,
+              residentName: resident.name,
+              visits: mem?.visits ?? 0,
+              regular: stage === "regular",
+            }
+          : {}),
       };
       room.orders.set(event.orderId, { event, patienceMs, dish: null, vip: opts.vip });
       this.emit?.order(room.id, event);
@@ -241,13 +318,37 @@ export class OrderService {
     });
   }
 
+  /**
+   * Sửa xe — kiểm tra một bộ phận (UC-G3). Server mới biết bệnh; mỗi lần kiểm tra quá FREE_CHECKS lần
+   * thì khách sốt ruột (bớt kiên nhẫn) — kiểm tra đúng chỗ mới nhanh.
+   */
+  inspect(room: RoomRuntime, playerId: string, orderId: string, part: string): InspectResult {
+    const order = this.requireOrder(room, playerId, orderId);
+    const finding = inspectPart(content, order.event.productId, order.event.variantId, part);
+    if (finding === null)
+      throw new GameError("invalid_payload", "Không có bộ phận này để kiểm tra");
+    order.checks = (order.checks ?? 0) + 1;
+    if (order.checks > FREE_CHECKS) {
+      order.event.expiresAt = Math.max(Date.now() + 5_000, order.event.expiresAt - CHECK_COST_MS);
+      this.emit?.update(room.id, {
+        orderId,
+        stage: "making",
+        line: "",
+        mistakes: [],
+        expiresAt: order.event.expiresAt,
+      });
+    }
+    return { part, finding, expiresAt: order.event.expiresAt };
+  }
+
   /** Người chơi làm xong một món: kiểm tra, trừ nguyên liệu, chấm điểm; sai thì khách phàn nàn. */
   async make(room: RoomRuntime, playerId: string, orderId: string, build: DishView) {
     const order = this.requireOrder(room, playerId, orderId);
     if (order.dish && order.dish.mistakes.length === 0) {
       throw new GameError("invalid_state", "Món này làm xong rồi, tính tiền cho khách đi");
     }
-    const recipe = content.product(order.event.productId).recipe;
+    const product = content.product(order.event.productId);
+    const recipe = product.recipe;
     const invalid = validateBuild(recipe, build);
     if (invalid) throw new GameError("invalid_payload", invalid);
     const need = ingredientsFor(recipe, build);
@@ -270,7 +371,12 @@ export class OrderService {
       // Khách là người thật: không nói thay họ, chỉ báo kết quả.
       line = order.event.buyerId
         ? "✅ Đúng món mình gọi"
-        : pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
+        : product.diagnosis
+          ? pick(["Máy nổ giòn rồi! Hay quá con!", "Êm ru luôn, cảm ơn nha!"], rand)
+          : pick(["Đúng ý con luôn!", "Nhìn ngon ghê!", "Lẹ ghê ta!"], rand);
+    } else if (product.diagnosis && mistakes.includes("sua")) {
+      // Sửa sai bệnh: khách chạy thử vẫn hư (UC-G4) — phụ tùng đã thay thì mất.
+      line = product.diagnosis.stillBroken;
     } else {
       line = order.event.buyerId
         ? `❌ Sai phần ${part} rồi`
@@ -283,6 +389,7 @@ export class OrderService {
       mistakes,
       expiresAt: order.event.expiresAt,
     });
+    if (!correct) await this.regulars.disappointed(order.event).catch(() => undefined);
     return { correct, score, mistakes };
   }
 
@@ -383,6 +490,18 @@ export class OrderService {
     room.orders.delete(orderId);
     if (e.buyerId) {
       room.purchases.add(purchaseKey(e.buyerId, e.ownerId, room.day));
+      // Hàng xóm ăn / uống món vừa mua (UC-B11).
+      const add = content.data.needs.byCategory[content.product(e.productId).category];
+      if (add) {
+        const buyer = await this.prisma.player.findUnique({ where: { id: e.buyerId } });
+        if (buyer) {
+          const next = eat(content, needsFrom(buyer.needs), absMinute(room.day, room.minute), add);
+          await this.prisma.player.update({
+            where: { id: buyer.id },
+            data: { needs: { ...next } },
+          });
+        }
+      }
       this.emit?.charged(e.buyerId);
       const line =
         e.pay.kind === "transfer"
@@ -400,7 +519,6 @@ export class OrderService {
       })
       .catch(() => undefined);
 
-    const lines = content.data.customerLines;
     const line = vip
       ? correct && fast && !short
         ? `Chuẩn! Lâu lắm mới gặp quầy làm kỹ vậy — boa ${vnd(tip)} nè!`
@@ -412,11 +530,23 @@ export class OrderService {
           : discount
             ? "Thôi được, lần sau làm kỹ nha."
             : ratio > 1.15
-              ? pick(lines.pricey, rand)
+              ? this.voice(e.archetype, "pricey", rand)
               : ratio < 0.9
-                ? pick(lines.cheap, rand)
-                : pick(lines.thanks, rand);
+                ? this.voice(e.archetype, "cheap", rand)
+                : this.voice(e.archetype, "thanks", rand);
     this.emit?.result(room.id, { orderId, served: true, tip, line, outcome, received });
+    // Khách quen (KIENTRUC §1): mua đúng món, trả đủ → +1 lần ghé; khách quen có khi rủ bạn tới (thêm khách nhịp sau).
+    if (!e.buyerId && e.residentId) {
+      if (correct && !discount && !short) {
+        const { friend } = await this.regulars.served(e, room.day).catch(() => ({ friend: false }));
+        if (friend)
+          await this.prisma.business
+            .update({ where: { id: e.businessId }, data: { demandCarry: { increment: 1 } } })
+            .catch(() => undefined);
+      } else if (short) await this.regulars.disappointed(e).catch(() => undefined); // làm sai đã tính lúc làm
+      // Bị bắt thối thiếu: mất chút tin cậy (KIENTRUC §3).
+      if (short) await this.contracts.trustEvent(e.ownerId, "short").catch(() => undefined);
+    }
   }
 
   /**
@@ -451,6 +581,7 @@ export class OrderService {
     const order = this.requireOrder(room, playerId, orderId);
     room.orders.delete(orderId);
     await this.recordLost(room, playerId, order.event.businessId, 1, order.vip);
+    await this.regulars.disappointed(order.event).catch(() => undefined);
     const line = order.event.buyerId
       ? "🙏 Quầy xin lỗi, không bán được món này"
       : "Vậy thôi, để bữa khác.";
@@ -499,6 +630,7 @@ export class OrderService {
       }
       room.orders.delete(id);
       await this.recordLost(room, e.ownerId, e.businessId, 1, order.vip);
+      await this.regulars.disappointed(e).catch(() => undefined);
       if (!e.buyerId)
         void this.reviews
           .npc(e, room.day, 1 + Math.round(seededRandom("lost", id)()), "lost", {
@@ -511,7 +643,7 @@ export class OrderService {
         tip: 0,
         line: e.buyerId
           ? "⌛ Chờ lâu quá, thôi để bữa khác"
-          : pick(content.data.customerLines.impatient, seededRandom("late", id)),
+          : this.voice(e.archetype, "impatient", seededRandom("late", id)),
       });
     }
   }

@@ -130,7 +130,11 @@ export function generateOrder(
     }
   }
 
-  const dish = [variant.name, ...says].join(", ");
+  // Dịch vụ (sửa xe, UC-G2): khách chỉ kể triệu chứng — chủ tiệm phải tự kiểm tra ra bệnh.
+  const symptoms = variant.symptoms ?? [];
+  const dish = symptoms.length
+    ? (symptoms[Math.floor(rand() * symptoms.length)] ?? symptoms[0] ?? variant.name)
+    : [variant.name, ...says].join(", ");
   return {
     variantId: variant.id,
     spec,
@@ -138,6 +142,19 @@ export function generateOrder(
     ask: recipe.ask.replace("{dish}", dish),
     price: item.price + extrasPrice(recipe, spec, variant.id),
   };
+}
+
+/** Kết quả kiểm tra một bộ phận khi chẩn đoán (UC-G3); null nếu sản phẩm không có bước chẩn đoán. */
+export function inspectPart(
+  content: Content,
+  productId: string,
+  variantId: string,
+  partId: string,
+): string | null {
+  const product = content.product(productId);
+  if (!product.diagnosis?.parts.some((p) => p.id === partId)) return null;
+  const variant = product.recipe.variants.find((v) => v.id === variantId);
+  return variant?.findings[partId] ?? product.diagnosis.ok;
 }
 
 type Mod = Recipe["mods"][number];
@@ -347,4 +364,14 @@ export function settleCash(
   if (change < correct) return { received: price, outcome: "short" };
   if (rand() < 0.4) return { received: price, outcome: "over_returned" };
   return { received: bill - change, outcome: "over_kept" };
+}
+
+/** Nguyên liệu mà một công thức dùng tới (mọi bước, mọi lựa chọn). */
+export function recipeIngredients(recipe: Recipe): string[] {
+  const ids = new Set<string>();
+  for (const step of recipe.steps) {
+    if (step.ingredient) ids.add(step.ingredient);
+    for (const o of step.options) if (o.ingredient) ids.add(o.ingredient);
+  }
+  return [...ids];
 }

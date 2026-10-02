@@ -14,17 +14,20 @@ import { Atms } from "./Atms";
 import { registerAnchor } from "./anchors";
 import { BubbleProjector } from "./BubbleProjector";
 import { CameraRig, pinchState } from "./CameraRig";
-import { Character, useWanderer, Walker } from "./Character";
+import { Character, Pillion, useWanderer, Walker } from "./Character";
 import { Customers } from "./Customers";
 import { DayNight } from "./DayNight";
+import { Motorbike } from "./Motorbike";
 import { NightLights } from "./NightLights";
 import { Peers } from "./Peers";
 import { Places, ProximityWatcher } from "./Places";
 import { getPlayer } from "./player";
 import { Rain } from "./Rain";
+import { Sites } from "./Sites";
 import { Stalls } from "./Stalls";
 import { Street } from "./Street";
 import { TargetArrow } from "./TargetArrow";
+import { Traffic } from "./Traffic";
 import { Spoon, Vendors } from "./Vendors";
 
 const NPC_MODELS: CharacterModel[] = [
@@ -110,6 +113,7 @@ function World() {
   return (
     <>
       <Street />
+      <Traffic />
       {/* Nền đất rộng để không thấy mép bản đồ. */}
       <mesh rotation-x={-Math.PI / 2} position-y={-0.02}>
         <planeGeometry args={[400, 400]} />
@@ -126,6 +130,7 @@ function World() {
       <NightLights />
       <Stalls />
       <Atms />
+      <Sites />
       <Vendors />
       <Customers />
       <ProximityWatcher />
@@ -143,13 +148,49 @@ function World() {
   );
 }
 
-/** Nhân vật của mình: ngồi xuống ăn khi đang ăn ở sạp (tới ghế rồi mới ngồi). */
+/** Ngồi trên yên xe: nâng người lên so với mặt đất (m). */
+const RIDER_LIFT = 0.3;
+
+/**
+ * Nhân vật của mình: ngồi xuống ăn khi đang ăn ở sạp (tới ghế rồi mới ngồi); đã thuê xe ôm hôm nay thì ngồi trên xe, đang
+ * chở khách thì khách ngồi sau (UC-N1).
+ */
 function PlayerCharacter({ walker }: { walker: Walker }) {
   const eating = useGame((s) => s.eating);
+  const onBike = useGame((s) => !!s.ride?.bikeToday && !s.eating);
+  const carrying = useGame((s) => (s.ride?.stage === "riding" ? s.ride.passenger : undefined));
+  const pillion = useMemo(() => new Pillion(walker, 0.75), [walker]);
   const sit = !!eating && !walker.target;
+  // Bản dev: kịch bản Playwright đọc vị trí + đang ngồi xe / chở ai.
+  const state = useRef({ bike: false, passenger: "" });
+  state.current = { bike: onBike, passenger: (onBike && carrying?.residentId) || "" };
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const w = window as unknown as { xomRider?: () => unknown };
+    w.xomRider = () => ({ x: walker.position.x, z: walker.position.z, ...state.current });
+    return () => {
+      w.xomRider = undefined;
+    };
+  }, [walker]);
   return (
     <group>
-      <Character model="character-male-a" walker={walker} pose={sit ? "sit" : "auto"} />
+      {onBike ? (
+        <>
+          <Motorbike walker={walker} />
+          <Character model="character-male-a" walker={walker} pose="ride" lift={RIDER_LIFT} />
+        </>
+      ) : (
+        <Character model="character-male-a" walker={walker} pose={sit ? "sit" : "auto"} />
+      )}
+      {onBike && carrying && (
+        <Character
+          key={carrying.residentId}
+          model={(carrying.model ?? "character-female-a") as CharacterModel}
+          walker={pillion}
+          pose="ride"
+          lift={RIDER_LIFT}
+        />
+      )}
       {sit && <Spoon at={walker.position} />}
     </group>
   );

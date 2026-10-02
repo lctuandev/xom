@@ -50,6 +50,12 @@ PALETTE = {
     "lu": "#8a5a3c",
     "co_do": "#e4432d",
     "vang": "#f5c542",
+    "atm_xanh": "#1f5aa6",  # thân cây ATM màu ngân hàng
+    "atm_dam": "#123764",
+    "man_hinh": "#7fd0ff",
+    "xam": "#c9d1d9",
+    "den": "#2b2f36",
+    "da": "#9a948a",  # bệ đá
 }
 
 _mats = {}
@@ -396,6 +402,35 @@ def dong_rom():
     export("dong-rom")
 
 
+def cay_atm():
+    """Cây ATM vỉa hè (UC-I6): bệ đá, thân tủ xanh ngân hàng, băng vàng logo, màn hình lõm, bàn phím nghiêng,
+    khe thẻ / khe tiền, mái che nhỏ + đèn LED, camera. Mặt máy quay -Y (= +Z trong three)."""
+    box((1.0, 0.8, 0.12), (0, 0, 0.06), "da")
+    # Thân tủ + hai vách hông nhô ra che màn hình (như cabin thật).
+    box((0.84, 0.62, 1.62), (0, 0.04, 0.12 + 0.81), "atm_xanh")
+    for sx in (-1, 1):
+        box((0.08, 0.2, 1.3), (sx * 0.43, -0.32, 0.12 + 0.65 + 0.2), "atm_dam")
+    # Băng vàng đầu máy (logo XÓM BANK vẽ bằng biển chữ trong game).
+    box((0.86, 0.66, 0.2), (0, 0.04, 1.84), "vang")
+    # Mái che.
+    box((1.1, 0.95, 0.06), (0, -0.08, 2.0), "atm_dam")
+    box((1.0, 0.04, 0.05), (0, -0.54, 1.95), "man_hinh")  # đèn LED viền mái
+    # Màn hình lõm: khung tối + kính sáng.
+    box((0.62, 0.06, 0.48), (0, -0.28, 1.36), "den")
+    box((0.52, 0.04, 0.38), (0, -0.315, 1.37), "man_hinh")
+    # Bàn phím nghiêng + phím màu (huỷ đỏ, đồng ý xanh lá).
+    box((0.62, 0.3, 0.05), (0, -0.4, 1.0), "xam", rot=(math.radians(-25), 0, 0))
+    box((0.08, 0.06, 0.03), (0.2, -0.44, 1.035), "co_do", rot=(math.radians(-25), 0, 0))
+    box((0.08, 0.06, 0.03), (0.2, -0.36, 1.07), "la", rot=(math.radians(-25), 0, 0))
+    # Khe thẻ (bên phải màn hình) + khe tiền (dưới bàn phím).
+    box((0.1, 0.05, 0.03), (0.24, -0.33, 1.14), "den")
+    box((0.4, 0.06, 0.05), (0, -0.31, 0.82), "den")
+    box((0.16, 0.05, 0.1), (-0.22, -0.31, 0.84), "xam")  # khe biên lai
+    # Camera nhỏ trên màn hình.
+    sphere(0.035, (0, -0.31, 1.66), "den")
+    export("cay-atm")
+
+
 if __name__ == "__main__":
     reset()
     nha_tranh()
@@ -413,3 +448,4 @@ if __name__ == "__main__":
     hang_rao_tre()
     lu_nuoc()
     dong_rom()
+    cay_atm()

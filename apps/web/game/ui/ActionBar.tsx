@@ -1,10 +1,12 @@
 "use client";
 
 import { content } from "@xom/content";
+import { formatClock, openDue } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { send, sendWork } from "../net/socket";
 import { useGame } from "../store";
 import { sheetForPlace } from "../world";
+import { StaffSellChip } from "./StaffSellChip";
 
 /**
  * Hành động theo ngữ cảnh, ngay trên thanh điều hướng (vùng ngón cái):
@@ -14,7 +16,8 @@ export function ActionBar() {
   const sheet = useGame((s) => s.sheet);
   const dialogue = useGame((s) => s.dialogue);
   const kitchen = useGame((s) => s.kitchen);
-  if (sheet || dialogue || kitchen) return null;
+  const shoot = useGame((s) => s.shoot);
+  if (sheet || dialogue || kitchen || shoot) return null;
   return (
     <div className="pointer-events-none fixed inset-x-3 bottom-[calc(var(--nav-h)+0.5rem)] z-20 flex flex-col items-center gap-2">
       <DoorButton />
@@ -22,13 +25,32 @@ export function ActionBar() {
       <EatingChip />
       <VendorButton />
       <AtmButton />
+      <SiteButton />
       <ShopButton />
       <KitchenButton />
       <AwayChip />
+      <AtStallStaffChip />
+      <RideChip />
       <OpenStallButton />
       <EnterShopButton />
       <PlaceButton />
     </div>
+  );
+}
+
+/** Đứng ở công trường đang thi công: phụ hồ cho Cai thầu (UC-J6). */
+function SiteButton() {
+  const id = useGame((s) => s.nearSite);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!id) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("site")}
+      className="pointer-events-auto h-12 w-full max-w-xs rounded-2xl bg-sun px-4 font-semibold shadow-lg active:scale-[0.97]"
+    >
+      🏗️ Phụ hồ · {content.data.crew.keeper}
+    </button>
   );
 }
 
@@ -158,14 +180,80 @@ function KitchenButton() {
   );
 }
 
+/**
+ * 🛵 Xe ôm (UC-N1): đã thuê xe thì đứng đâu cũng mở được bảng chạy xe; khách vẫy thì chip đỏ nhấp nháy, bấm vào để trả giá.
+ * Một chip duy nhất theo từng bước (chờ khách → trả giá → chọn đường → chở → thu tiền).
+ */
+function RideChip() {
+  const ride = useGame((s) => s.ride);
+  const inside = useGame((s) => s.inside);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!ride?.bikeToday || inside) return null;
+  const who = ride.passenger?.name ?? "khách";
+  const [text, tone] =
+    ride.stage === "offer"
+      ? [`🙋 ${who} vẫy xe — bấm để trả giá`, "bg-red text-cream animate-pulse"]
+      : ride.stage === "route"
+        ? [`🛵 Chốt giá với ${who} — chọn đường`, "bg-red text-cream"]
+        : ride.stage === "riding"
+          ? [`🛵 Chở ${who} tới ${ride.dest?.label ?? ""}`, "bg-ink/85 text-cream"]
+          : ride.stage === "pay"
+            ? [`💵 Tới nơi — thu tiền ${who}`, "bg-leaf text-cream"]
+            : ride.stage === "waiting"
+              ? ["⏳ Đang đậu xe chờ khách…", "bg-ink/85 text-cream"]
+              : ["🛵 Đậu xe ở đây chờ khách", "bg-cream text-ink"];
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("ride")}
+      data-ride-chip={ride.stage}
+      className={`pointer-events-auto h-11 w-full max-w-xs truncate rounded-2xl px-4 text-sm font-semibold shadow-lg active:scale-[0.97] ${tone}`}
+    >
+      {text}
+    </button>
+  );
+}
+
+/** Đứng ở quầy mà nhân viên đang trong ca: xem nhân viên bán hoặc giành tự bán. */
+function AtStallStaffChip() {
+  const atStall = useGame((s) => s.atStall);
+  if (!atStall) return null;
+  return <StaffSellChip />;
+}
+
 function AwayChip() {
   const open = useGame((s) => s.me?.business?.open ?? false);
+  const staff = useGame((s) => s.me?.business?.staff);
+  const minute = useGame((s) => s.clock?.minute ?? 0);
   const atStall = useGame((s) => s.atStall);
   const setGoal = useGame((s) => s.setGoal);
   if (!open || atStall) return null;
+  // Nhân viên trong ca thì quầy vẫn bán (KIENTRUC §2) — báo rõ, không giục chủ về.
+  const onDuty = !!staff && minute >= staff.from && minute < staff.to;
+  if (staff && onDuty)
+    return (
+      <div
+        className="pointer-events-auto flex w-full max-w-xs items-center gap-2 rounded-2xl bg-leaf/90 py-2 pr-2 pl-3 text-cream shadow-lg"
+        data-staff-duty="on"
+      >
+        <span className="text-xs font-semibold">
+          👩‍🍳 {staff.name} đang bán thay — tới {formatClock(staff.to)}
+        </span>
+      </div>
+    );
   return (
-    <div className="pointer-events-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg">
-      <span className="text-xs font-semibold">Quầy vắng chủ — khách không mua được</span>
+    <div
+      className="pointer-events-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg"
+      data-staff-duty={staff ? "off" : undefined}
+    >
+      <span className="text-xs font-semibold">
+        Quầy vắng chủ — khách không mua được
+        {staff && (
+          <span className="block text-[11px] font-normal text-cream/80">
+            {staff.name} ngoài giờ làm ({staff.shift})
+          </span>
+        )}
+      </span>
       <button
         type="button"
         onClick={() => setGoal({ kind: "stall" })}
@@ -213,7 +301,7 @@ function OpenStallButton() {
   const biz = useGame((s) => s.me?.business);
   const [busy, setBusy] = useState(false);
   if (!atStall || !biz || biz.open) return null;
-  const rent = biz.lotId && !biz.rentPaidToday ? content.lot(biz.lotId).rentPerDay : 0;
+  const due = biz.lotId && !biz.rentPaidToday ? openDue(content, biz.lotId) : null;
   return (
     <button
       type="button"
@@ -226,7 +314,8 @@ function OpenStallButton() {
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
       🔓 {biz.lotId && content.lotById.get(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
-      {rent ? ` · thuê chỗ ${Math.round(rent / 1000)}k` : ""}
+      {due?.rent ? ` · thuê chỗ ${Math.round(due.rent / 1000)}k` : ""}
+      {due?.fee ? ` · ${due.rent ? "phí" : "thuế khoán"} ${Math.round(due.fee / 1000)}k` : ""}
     </button>
   );
 }

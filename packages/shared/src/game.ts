@@ -35,10 +35,26 @@ export interface BusinessView {
   reputation: number;
   /** Đã trả tiền thuê chỗ hiện tại cho hôm nay chưa (mở lại trong ngày không mất thêm). */
   rentPaidToday: boolean;
+  /** Nhân viên đang thuê (KIENTRUC §2): ai, ca mấy giờ, bây giờ có đang trong ca không. */
+  staff?: {
+    name: string;
+    shift: string;
+    from: number;
+    to: number;
+    onDuty: boolean;
+    /** Nhân viên đang đứng bán (trong ca, chủ không giành bán). */
+    selling: boolean;
+    /** Model nhân vật (vẽ nhân viên đứng quầy trong tiệm). */
+    model: string;
+  } | null;
+  /** Chủ đứng quầy tự bán thay nhân viên (khi nhân viên đang trong ca). */
+  selfSell?: boolean;
   /** Ngày gần nhất tổ chức khai trương (tính thời gian chờ). */
   promoDay: number | null;
   /** Độ mòn xe/quầy 0–1 (sửa ở vựa xe). */
   wear: number;
+  /** Nhà mặt tiền đang thuê theo hợp đồng (UC-F12) — tiền nhà tính mỗi ngày dù mở hay đóng. */
+  leaseLotId?: string | null;
 }
 
 export interface InventoryView {
@@ -67,6 +83,12 @@ export interface MeView {
   money: number;
   /** 🏦 Số dư tài khoản ngân hàng (xem trong Hồ sơ / ATM). */
   bank: number;
+  /** 🤝 Điểm tin cậy 0–100 (bảng việc xóm, KIENTRUC §3) — không phải tiền. */
+  trust: number;
+  /** Thẻ ATM: đã tạo PIN chưa, có đang bị máy giữ thẻ không. */
+  atm: { hasPin: boolean; locked: boolean };
+  /** 🍚 No / 💧 khát (0–100, UC-B11). */
+  needs: { food: number; drink: number };
   jobId: string | null;
   /** Bước kịch bản người mới hiện tại. */
   tutorial: string;
@@ -95,6 +117,8 @@ export interface LotOccupant {
   businessId: string;
   ownerId: string;
   ownerName: string;
+  /** Tên quán trên biển hiệu (đã đăng ký + làm biển, UC-F12). */
+  shopName?: string | null;
   /** Thực đơn đang bày (hàng xóm xem để gọi món, UC-J3). */
   menu: MenuItemView[];
   /** Món làm được ngay (đang bật và đủ nguyên liệu lúc cập nhật gần nhất). */
@@ -106,6 +130,39 @@ export interface LotOccupant {
 
 export interface WorldView {
   lots: LotOccupant[];
+  /** 🏗️ Công trường đang thi công (UC-J6). */
+  sites?: SiteView[];
+}
+
+/** Công trường của một công trình đang thi công (UC-J6). */
+export interface SiteView {
+  /** Id dòng công trình của xóm. */
+  id: string;
+  projectId: string;
+  x: number;
+  z: number;
+  /** Mẻ vữa đã trộn đúng / cần để xong sớm. */
+  mixes: number;
+  need: number;
+  /** Tiền công còn lại trong khoản nhân công. */
+  budget: number;
+}
+
+/** Bảng phụ hồ: lệnh trộn của Cai thầu cho mình. */
+export interface CrewView {
+  site: SiteView;
+  order: { mixId: string; bags: number };
+  /** Phút game được trộn mẻ tiếp (đang chờ mẻ trước). */
+  readyAt: number | null;
+  today: { mixes: number; earned: number };
+}
+
+export interface MixResultView {
+  ok: boolean;
+  /** Lời Cai thầu khi trộn sai. */
+  problems: string[];
+  pay: number;
+  view: CrewView;
 }
 
 /** Một sự kiện đang/sắp diễn ra trong xóm (DESIGN §9). */
@@ -123,6 +180,28 @@ export interface EventView {
   lotId?: string;
 }
 
+/** "Trong lúc bạn vắng…" (docs/THEGIOI.md §4): chuyện thật đã xảy ra ở xóm khi mình offline — không có tiền tự sinh. */
+export interface AwayView {
+  /** Vắng bao lâu (phút thật). */
+  minutes: number;
+  /** Số ngày game xóm đã qua (hàng xóm vẫn chơi thì xóm vẫn chạy). */
+  days: number;
+  reviews: {
+    count: number;
+    avg: number;
+    latest: { name: string; stars: number; text: string } | null;
+  };
+  /** Người mới dọn về xóm. */
+  newNeighbors: string[];
+  /** Quầy hàng xóm đang mở lúc mình vào lại. */
+  stalls: { name: string; productId: string }[];
+  projects: { done: string[]; voting: string[] };
+  /** Giá chợ đổi (nguyên liệu nghề mình), khi đã sang ngày khác. */
+  prices: { itemId: string; change: number }[];
+  /** Nhân viên bán thay trong lúc vắng (KIENTRUC §2) — có người làm thật, có trả lương. */
+  staff: { name: string; served: number; wrong: number; revenue: number; wages: number } | null;
+}
+
 export interface Snapshot {
   me: MeView;
   clock: ClockView;
@@ -135,6 +214,8 @@ export interface Snapshot {
   roster: RosterView;
   /** Sự kiện hôm nay (đang diễn ra hoặc đã báo trước). */
   events: EventView[];
+  /** Vào lại sau một lúc vắng: chuyện đã xảy ra ở xóm (chỉ có trong snapshot lúc vào). */
+  away?: AwayView;
 }
 
 // ───────── Xóm chung (Phase 2, docs/USECASES.md nhóm J) ─────────
@@ -192,6 +273,12 @@ export interface OrderEvent {
   buyerName?: string;
   /** Khách VIP (sự kiện cá nhân): dặn kỹ, ít kiên nhẫn, boa đậm. */
   vip?: boolean;
+  /** Cư dân có tên (khách quen, KIENTRUC §1); khách vãng lai thì không có. */
+  residentId?: string;
+  residentName?: string;
+  /** Đã mua ở quầy này bao nhiêu lần (trước lần này) và có phải khách quen ❤️. */
+  visits?: number;
+  regular?: boolean;
   /** Giá đã giảm do quầy đang khai trương. */
   promo?: boolean;
 }
@@ -217,6 +304,14 @@ export interface OrderResultEvent {
   line: string;
   outcome?: ChangeOutcomeView;
   received?: number;
+}
+
+/** Kết quả kiểm tra một bộ phận (UC-G3). */
+export interface InspectResult {
+  part: string;
+  finding: string;
+  /** Hạn chờ mới của khách (kiểm tra quá nhiều thì khách sốt ruột). */
+  expiresAt: number;
 }
 
 export interface MakeResult {
@@ -298,6 +393,33 @@ export interface MyStatsView {
   days: { day: number; revenue: number; profit: number; served: number; wages: number }[];
   avg: { stalls: number; revenue: number; served: number; rating: number } | null;
   achievements: AchievementView[];
+}
+
+/** Công trình chung đang bàn/làm (UC-J5). */
+export interface ProjectView {
+  id: string;
+  projectId: string;
+  status: "VOTING" | "FUNDING" | "BUILDING" | "DONE" | "REJECTED";
+  proposerName: string;
+  yes: number;
+  no: number;
+  /** Phiếu của mình (null = chưa bỏ). */
+  mine: boolean | null;
+  /** Hết hạn bỏ phiếu (ngày, phút game). */
+  voteDay: number;
+  voteMinute: number;
+  /** Ngày xong thi công (đang làm). */
+  doneDay: number | null;
+}
+
+export interface FundView {
+  /** Số dư quỹ xóm. */
+  balance: number;
+  /** Số người trong xóm (được bỏ phiếu). */
+  members: number;
+  active: ProjectView[];
+  /** Công trình đã nghiệm thu (id content). */
+  done: string[];
 }
 
 export interface TalkResult {
@@ -498,9 +620,204 @@ export interface DayReportView {
   moneyEnd: number;
 }
 
+/** Một dòng trong sổ khách quen của quầy (KIENTRUC §1). */
+export interface RegularView {
+  residentId: string;
+  name: string;
+  bio: string;
+  visits: number;
+  regular: boolean;
+  lastDay: number;
+}
+
+/** 🏪 Mở tiệm trong nhà mặt tiền theo quy trình (UC-F12). */
+export interface ShopSetupView {
+  /** Nhà mình đang thuê. */
+  lease: { lotId: string; deposit: number; signedDay: number } | null;
+  shopName: string | null;
+  /** Hộ kinh doanh: chưa nộp / đang xét (xong lúc readyAt) / đã có. */
+  license: "none" | "pending" | "done";
+  licenseReady: { day: number; minute: number } | null;
+  /** Nghề này có cần giấy ATTP không (quán ăn uống). */
+  needCert: boolean;
+  trained: boolean;
+  /** Đoàn kiểm tra ATTP: tới lúc nào, đón được tới lúc nào. */
+  inspect: { day: number; minute: number; until: number; arrived: boolean } | null;
+  certified: boolean;
+  signed: boolean;
+  step: "lease" | "license" | "cert" | "sign" | "ready";
+  houses: {
+    lotId: string;
+    rentPerDay: number;
+    estimate: {
+      deposit: number;
+      reserve: number;
+      license: number;
+      training: number;
+      sign: number;
+      total: number;
+    };
+    /** Người khác đang thuê (tên) — null = trống hoặc của mình. */
+    leasedBy: string | null;
+  }[];
+}
+
+/** 🛵 Xe ôm (KIENTRUC §4, UC-N1): trạng thái cuốc xe của mình. */
+export interface RideView {
+  /** idle: chưa chờ khách · waiting: đang chờ · offer: khách hỏi giá · route: đã chốt giá, chọn đường ·
+   *  riding: đang chở · pay: tới nơi, thu tiền. */
+  stage: "idle" | "waiting" | "offer" | "route" | "riding" | "pay";
+  /** Đã thuê xe hôm nay chưa. */
+  bikeToday: boolean;
+  today: { rides: number; earned: number };
+  /** Sao trung bình khách chấm (cả đời). */
+  rating: { rides: number; avg: number };
+  /** Phút game khách tới (khi đang chờ). */
+  readyAt?: number;
+  passenger?: {
+    residentId: string;
+    name: string;
+    bio: string;
+    line: string;
+    /** Model nhân vật (theo kiểu khách) để vẽ khách ngồi sau xe. */
+    model?: string;
+  };
+  dest?: { kind: "address" | "lot"; id: string; label: string; x: number; z: number };
+  /** Quãng đường (m) theo đường lớn — để báo giá. */
+  meters?: number;
+  /** Giá chuẩn cuốc này. */
+  fare?: number;
+  /** Giá đã chốt. */
+  price?: number;
+  /** Ước thời gian (giây) mỗi đường, độ kẹt xe, trời mưa. */
+  routes?: { road: number; alley: number; jam: number; wet: boolean };
+  route?: "road" | "alley";
+  /** Tốc độ chạy (m/s) khi đang chở. */
+  speed?: number;
+  /** Tới nơi: khách trả tiền thế nào, chấm mấy sao, nói gì, boa bao nhiêu. */
+  pay?: { kind: "transfer" } | { kind: "cash"; bill: number };
+  stars?: number;
+  comment?: string;
+  tip?: number;
+}
+
+/** Một việc trên bảng việc xóm (KIENTRUC §3). */
+export interface ContractView {
+  id: string;
+  templateId: string;
+  /** Người đặt (NPC). */
+  poster: string;
+  /** Câu ghi trên bảng (đã điền số, món, chỗ, giờ). */
+  text: string;
+  productId: string;
+  variantId: string;
+  /** Chỗ giao. */
+  lotId: string;
+  qty: number;
+  reward: number;
+  deposit: number;
+  /** Hạn giao (phút trong ngày). */
+  deadline: number;
+  minTrust: number;
+  status: "OPEN" | "TAKEN" | "READY" | "DONE" | "FAILED" | "EXPIRED";
+  /** Ai đã nhận (người khác thì chỉ thấy tên). */
+  takerName: string | null;
+  mine: boolean;
+}
+
+export interface ContractBoardView {
+  day: number;
+  /** 🤝 Điểm tin cậy của mình (0–100). */
+  trust: number;
+  /** Đang bị khoá nhận việc tới hết ngày này. */
+  lockedUntil: number | null;
+  offers: ContractView[];
+}
+
+/** Việc người chơi đăng cho nhau (1.20b, UC-M8) — hiện có 📸 chụp ảnh quầy. */
+export interface GigView {
+  id: string;
+  kind: "photo";
+  posterName: string;
+  /** Tên quán / quầy cần chụp + chỗ. */
+  shopName: string;
+  lotId: string;
+  reward: number;
+  deposit: number;
+  fee: number;
+  /** Hạn làm (phút trong ngày). */
+  deadline: number;
+  status: "OPEN" | "TAKEN" | "SUBMITTED" | "DONE" | "REFUNDED" | "CANCELLED" | "EXPIRED" | "FAILED";
+  takerName: string | null;
+  /** Sao trung bình + số việc của người nhận (người đăng xem khi nghiệm thu). */
+  takerRating: { gigs: number; avg: number } | null;
+  /** Mình là người đăng / người nhận. */
+  posted: boolean;
+  taken: boolean;
+  cameraPaid: boolean;
+  /** Điểm từng tấm đã chụp; chất lượng bộ ảnh nộp. */
+  shots: number[];
+  quality: number | null;
+  stars: number | null;
+  /** Hạn nghiệm thu (phút trong ngày nếu cùng ngày). */
+  reviewBy: number | null;
+  verdict: "accepted" | "auto" | "dispute_taker" | "dispute_poster" | null;
+}
+
+export interface GigBoardView {
+  day: number;
+  trust: number;
+  lockedUntil: number | null;
+  /** Mình có quầy (đăng được việc chụp ảnh). */
+  canPost: boolean;
+  gigs: GigView[];
+}
+
+/** Bắt đầu buổi chụp: server sinh khoảnh khắc (ms kể từ lúc bắt đầu). */
+export interface PhotoSessionView {
+  gigId: string;
+  sessionMs: number;
+  shotsMax: number;
+  moments: { at: number; kind: number }[];
+}
+
+export interface PhotoShotView {
+  /** Điểm tấm vừa chụp + mọi tấm trong buổi. */
+  score: number;
+  shots: number[];
+}
+
+/** Một phiếu ca của nhân viên (KIENTRUC §2). */
+export interface StaffShiftView {
+  staffId: string;
+  day: number;
+  fromMinute: number;
+  toMinute: number;
+  served: number;
+  wrong: number;
+  lost: number;
+  revenue: number;
+  wages: number;
+}
+
+/** Nhân viên của quầy mình + vài phiếu ca gần nhất. */
+export interface StaffView {
+  employee: { staffId: string; shiftId: string; hiredDay: number } | null;
+  recent: StaffShiftView[];
+}
+
+/** Một dòng trong "Chuyện của tôi" (docs/THEGIOI.md §1). */
+export interface StoryEntryView {
+  day: number;
+  emoji: string;
+  text: string;
+}
+
 export interface NotifyEvent {
   kind: "info" | "good" | "warn";
   text: string;
+  /** Bấm vào thông báo thì mở bảng này (vd. "ride" khi khách vẫy xe). */
+  open?: string;
 }
 
 const contentId = z.string().regex(/^[a-z0-9_]+$/);
@@ -543,6 +860,14 @@ export const payOrderSchema = z.object({
   discount: z.boolean().default(false),
 });
 export const orderIdSchema = z.object({ orderId: z.string().min(1).max(64) });
+/** Kiểm tra một bộ phận khi chẩn đoán (sửa xe, UC-G3). */
+export const inspectSchema = z.object({
+  orderId: z.string().min(1).max(64),
+  part: z
+    .string()
+    .regex(/^[a-z0-9_]+$/)
+    .max(32),
+});
 export const talkSchema = z.object({
   npcId: contentId,
   topic: z.enum(["greet", "price", "gossip"]),
@@ -578,6 +903,8 @@ export const workActSchema = z.discriminatedUnion("kind", [
 ]);
 export type WorkAct = z.infer<typeof workActSchema>;
 export const attendSchema = z.object({ on: z.boolean() });
+/** Có nhân viên trong ca: chủ tự đứng bán (true) hay để nhân viên bán (false). */
+export const selfSellSchema = z.object({ on: z.boolean() });
 export const tutorialSchema = z.object({ step: contentId });
 const coord = z.number().min(-200).max(200);
 export const moveSchema = z.object({
@@ -612,15 +939,80 @@ export const emptySchema = z.object({}).optional();
 export const debugGrantSchema = z.object({
   money: z.number().int().min(1_000).max(10_000_000).optional(),
   xp: z.number().int().min(1).max(100_000).optional(),
+  /** Đặt mức no / khát (UC-B11). */
+  food: z.number().int().min(0).max(100).optional(),
+  drink: z.number().int().min(0).max(100).optional(),
 });
 /** Rút/gửi ở cây ATM (UC-I6): phải đứng gần cây ATM đó. */
+const atmId = z.string().regex(/^atm_[0-9]+_[0-9]+$/);
+const pin = z.string().max(12);
 export const atmSchema = z.object({
-  atmId: z.string().regex(/^atm_[0-9]+_[0-9]+$/),
+  atmId,
   action: z.enum(["deposit", "withdraw"]),
   amount: z.number().int().min(1_000).max(100_000_000),
+  pin,
 });
+export const atmAuthSchema = z.object({ atmId, pin });
+export const atmPinSchema = z.object({ atmId, pin, old: pin.optional() });
+
+/** Biên lai ATM (UC-I6). */
+export interface AtmReceipt {
+  code: string;
+  atmId: string;
+  action: "deposit" | "withdraw";
+  amount: number;
+  fee: number;
+  /** Số dư tài khoản sau giao dịch. */
+  balance: number;
+  day: number;
+  minute: number;
+}
 /** Dev/test: đặt giờ trong ngày của xóm mình (kịch bản dài không bị hết ngày giữa chừng). */
-export const debugClockSchema = z.object({ minute: z.number().int().min(360).max(1300) });
+export const debugClockSchema = z.object({
+  minute: z.number().int().min(360).max(1300),
+  /** Nhảy tới ngày này (thử lịch tuần: chợ đêm thứ Bảy…). */
+  day: z.number().int().min(1).max(10_000).optional(),
+});
+/** Dev/test: lần rời xóm tới ghi mốc như đã vắng `minutes` phút, xóm qua `days` ngày (thử "Trong lúc bạn vắng"). */
+/** Dev/test: đặt số lần ghé của mọi cư dân ở quầy mình (thử khách quen). */
+export const shopLeaseSchema = z.object({ lotId: contentId });
+export const shopRegisterSchema = z.object({ name: z.string().min(1).max(60) });
+export const rideRentSchema = z.object({ pay: payMethodSchema.optional() });
+export const rideOfferSchema = z.object({ ratio: z.number().min(0.5).max(3) });
+export const rideGoSchema = z.object({ route: z.enum(["road", "alley"]) });
+export const ridePaySchema = z.object({
+  change: z.number().int().min(0).max(1_000_000).nullable(),
+});
+export const contractIdSchema = z.object({ id: z.string().uuid() });
+export const gigPostSchema = z.object({
+  kind: z.literal("photo"),
+  reward: z.number().int().positive(),
+  hours: z.number().int().positive(),
+});
+/** Bấm máy: `at` = ms kể từ lúc bắt đầu buổi chụp theo máy người chơi (để bù trễ mạng). */
+export const gigShotSchema = z.object({
+  id: z.string().uuid(),
+  at: z.number().int().min(0).max(120_000).optional(),
+});
+export const crewViewSchema = z.object({ siteId: z.string().uuid() });
+export const crewMixSchema = z.object({
+  siteId: z.string().uuid(),
+  cement: z.number().int().min(0).max(20),
+  sand: z.number().int().min(0).max(200),
+  water: z.number().int().min(0).max(400),
+});
+export const gigReviewSchema = z.object({
+  id: z.string().uuid(),
+  stars: z.number().int().min(1).max(5),
+});
+/** Dev/test: đăng ngay một việc theo mẫu lên bảng xóm mình. */
+export const debugContractSchema = z.object({ templateId: contentId });
+export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
+export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });
+export const debugAwaySchema = z.object({
+  minutes: z.number().int().min(1).max(100_000),
+  days: z.number().int().min(0).max(1000),
+});
 export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({
@@ -638,3 +1030,13 @@ export const reviewWriteSchema = z.object({
   text: reviewText,
 });
 export const reviewReplySchema = z.object({ reviewId: z.string().uuid(), text: reviewText });
+
+export const fundDonateSchema = z.object({
+  amount: z.number().int().min(10_000).max(10_000_000),
+  pay: payMethodSchema,
+});
+export const projectProposeSchema = z.object({ projectId: contentId });
+export const projectVoteSchema = z.object({ id: z.string().uuid(), yes: z.boolean() });
+
+/** Chat tự gõ (UC-D4): một dòng ngắn, server che từ tục. */
+export const chatTextSchema = z.object({ text: z.string().trim().min(1).max(80) });

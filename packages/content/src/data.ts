@@ -1,5 +1,16 @@
 import type { ContentInput } from "./schema.js";
 
+/** Vốn khởi nghiệp: 💵 tiền mặt + 🏦 tài khoản (dùng chung cho economy và lời Chú Bảy để không lệch nhau). */
+const START_CASH = 1_500_000;
+const START_BANK = 1_000_000;
+/** 1_500_000 → "1 triệu rưỡi", 1_000_000 → "1 triệu", 500_000 → "500 ngàn" (cách nói ngoài đời). */
+const spoken = (n: number) =>
+  n >= 1_000_000
+    ? n % 1_000_000 === 500_000
+      ? `${Math.floor(n / 1_000_000)} triệu rưỡi`
+      : `${(n / 1_000_000).toLocaleString("vi-VN")} triệu`
+    : `${n / 1000} ngàn`;
+
 // Dữ liệu MVP: 1 xóm, 3 business (bánh mì, trà sữa, phụ kiện), 2 template (docs/PLAN.md §3.1).
 // Mọi con số ở đây là điểm khởi đầu để cân bằng bằng tools/balance.
 
@@ -7,6 +18,7 @@ export const data: ContentInput = {
   templates: [
     { id: "FOOD", name: "Đồ ăn · thức uống" },
     { id: "RETAIL", name: "Bán lẻ" },
+    { id: "SERVICE", name: "Dịch vụ" },
   ],
 
   // Mỗi nghề có công thức làm món từng bước (docs/USECASES.md UC-F4…F6).
@@ -401,6 +413,133 @@ export const data: ContentInput = {
         ],
       },
     },
+    {
+      // Tiệm sửa xe (docs/NGHE.md §3.1, UC-G2…G4): khách kể triệu chứng, chủ tiệm kiểm tra bộ phận,
+      // chọn đúng cách sửa, lấy phụ tùng trong kho, khách nổ máy chạy thử.
+      id: "sua_xe",
+      template: "SERVICE",
+      category: "repair",
+      name: "Sửa xe",
+      emoji: "🔧",
+      sign: "SỬA XE",
+      signColor: "#37474f",
+      elasticity: 1.6,
+      interestByHour: {
+        "6": 0.0075,
+        "7": 0.015,
+        "9": 0.01,
+        "12": 0.0075,
+        "16": 0.0125,
+        "17": 0.0175,
+        "19": 0.01,
+        "21": 0.005,
+      },
+      diagnosis: {
+        checkMs: 1200,
+        ok: "Bình thường, không có gì",
+        stillBroken: "Ủa chạy thử vẫn y chang à… chưa đúng bệnh rồi!",
+        parts: [
+          { id: "lop_truoc", label: "Lốp trước", emoji: "🛞" },
+          { id: "lop_sau", label: "Lốp sau", emoji: "🛞" },
+          { id: "bugi", label: "Bugi", emoji: "⚡" },
+          { id: "xich", label: "Xích", emoji: "⛓️" },
+          { id: "phanh", label: "Phanh", emoji: "🛑" },
+          { id: "den", label: "Đèn", emoji: "💡" },
+        ],
+      },
+      recipe: {
+        ask: "{dish}",
+        steps: [
+          { id: "thao", label: "Tháo ra", kind: "action", verb: "🔧 Tháo ra", weight: 0.5 },
+          {
+            id: "sua",
+            label: "Cách sửa",
+            kind: "single",
+            weight: 4,
+            options: [
+              { id: "va_ruot", label: "Vá ruột", emoji: "🩹", ingredient: "mieng_va" },
+              { id: "thay_ruot", label: "Thay ruột", emoji: "⭕", ingredient: "ruot_xe" },
+              { id: "bom_hoi", label: "Bơm hơi", emoji: "💨" },
+              { id: "thay_bugi", label: "Thay bugi", emoji: "⚡", ingredient: "bugi" },
+              { id: "thay_phanh", label: "Thay má phanh", emoji: "🛑", ingredient: "ma_phanh" },
+              { id: "thay_den", label: "Thay bóng đèn", emoji: "💡", ingredient: "bong_den" },
+              { id: "tang_xich", label: "Tăng xích", emoji: "⛓️" },
+            ],
+          },
+          { id: "lap", label: "Lắp lại", kind: "action", verb: "🔩 Lắp lại", weight: 0.5 },
+          { id: "thu", label: "Nổ máy thử", kind: "action", verb: "🛵 Nổ máy thử", weight: 0.5 },
+        ],
+        defaults: {},
+        variants: [
+          {
+            id: "lop_dinh",
+            name: "lủng lốp sau (đinh)",
+            fixed: { sua: "va_ruot" },
+            refPrice: 30_000,
+            popularity: 3,
+            symptoms: ["Bánh sau xẹp lép rồi con ơi", "Chạy cán trúng gì mà bánh sau xẹp quá"],
+            findings: { lop_sau: "Có cây đinh cắm ở lốp sau, lỗ nhỏ — vá được 🔍" },
+          },
+          {
+            id: "ruot_nat",
+            name: "rách ruột sau",
+            fixed: { sua: "thay_ruot" },
+            refPrice: 100_000,
+            popularity: 1,
+            symptoms: ["Bánh sau xẹp lép rồi con ơi", "Bánh sau mới vá hôm qua lại xẹp nữa"],
+            findings: { lop_sau: "Ruột rách một đường dài, vá không nổi — phải thay ruột" },
+          },
+          {
+            id: "non_hoi",
+            name: "lốp non hơi",
+            fixed: { sua: "bom_hoi" },
+            refPrice: 5_000,
+            popularity: 2,
+            symptoms: ["Chạy thấy bánh nặng nặng sao á", "Xe chạy ì ì, bánh hơi lún"],
+            findings: {
+              lop_truoc: "Lốp trước non hơi, không thủng",
+              lop_sau: "Lốp sau non hơi, không thủng",
+            },
+          },
+          {
+            id: "bugi_hong",
+            name: "hỏng bugi",
+            fixed: { sua: "thay_bugi" },
+            refPrice: 70_000,
+            popularity: 2,
+            symptoms: ["Đạp hoài không nổ máy", "Sáng giờ đề không lên, đạp muốn rụng chân"],
+            findings: { bugi: "Bugi đen sì, đánh lửa yếu ⚡" },
+          },
+          {
+            id: "mon_phanh",
+            name: "mòn má phanh",
+            fixed: { sua: "thay_phanh" },
+            refPrice: 80_000,
+            popularity: 1.5,
+            symptoms: ["Bóp thắng không ăn, sợ quá", "Thắng kêu két két mỗi lần bóp"],
+            findings: { phanh: "Má phanh mòn sát gót" },
+          },
+          {
+            id: "chay_den",
+            name: "cháy bóng đèn",
+            fixed: { sua: "thay_den" },
+            refPrice: 35_000,
+            popularity: 1,
+            symptoms: ["Tối chạy không thấy đường, đèn không sáng"],
+            findings: { den: "Bóng đèn đứt dây tóc" },
+          },
+          {
+            id: "chung_xich",
+            name: "chùng xích",
+            fixed: { sua: "tang_xich" },
+            refPrice: 20_000,
+            popularity: 1.5,
+            symptoms: ["Chạy nghe lạch cạch ở dưới gầm", "Lên ga xe giật giật"],
+            findings: { xich: "Xích chùng, chạm vỏ xích" },
+          },
+        ],
+      },
+    },
   ],
 
   // Nguyên liệu / hàng nhập ở chợ Bà Năm (giá gốc mỗi phần; mua theo gói).
@@ -685,6 +824,52 @@ export const data: ContentInput = {
       costPerUnit: 1_500,
       shelfLifeDays: null,
     },
+    // Phụ tùng sửa xe (sạp phụ tùng Chú Chín trong chợ): không hỏng nhưng vốn lớn (UC-G1).
+    {
+      id: "mieng_va",
+      name: "Miếng vá",
+      emoji: "🩹",
+      unit: "miếng",
+      packSize: 10,
+      costPerUnit: 2_000,
+      shelfLifeDays: null,
+    },
+    {
+      id: "ruot_xe",
+      name: "Ruột xe",
+      emoji: "⭕",
+      unit: "cái",
+      packSize: 2,
+      costPerUnit: 55_000,
+      shelfLifeDays: null,
+    },
+    {
+      id: "bugi",
+      name: "Bugi",
+      emoji: "⚡",
+      unit: "cái",
+      packSize: 2,
+      costPerUnit: 35_000,
+      shelfLifeDays: null,
+    },
+    {
+      id: "ma_phanh",
+      name: "Má phanh",
+      emoji: "🛑",
+      unit: "bộ",
+      packSize: 2,
+      costPerUnit: 40_000,
+      shelfLifeDays: null,
+    },
+    {
+      id: "bong_den",
+      name: "Bóng đèn xe",
+      emoji: "💡",
+      unit: "cái",
+      packSize: 2,
+      costPerUnit: 15_000,
+      shelfLifeDays: null,
+    },
   ],
 
   equipment: [
@@ -712,12 +897,51 @@ export const data: ContentInput = {
       queueSize: 3,
       model: "sap-phu-kien",
     },
+    {
+      id: "xe_do_nghe",
+      name: "Xe đồ nghề sửa xe",
+      price: 900_000,
+      products: ["sua_xe"],
+      queueSize: 3,
+      model: "sap-phu-kien",
+    },
   ],
+
+  // Lịch tuần (docs/THEGIOI.md §2): cuối tuần học sinh nghỉ, văn phòng vắng; trong hẻm, gần chợ đông hơn.
+  calendar: {
+    weekdays: [
+      { name: "Thứ Hai", short: "T2" },
+      { name: "Thứ Ba", short: "T3" },
+      { name: "Thứ Tư", short: "T4" },
+      { name: "Thứ Năm", short: "T5" },
+      { name: "Thứ Sáu", short: "T6" },
+      { name: "Thứ Bảy", short: "T7", weekend: true },
+      { name: "Chủ nhật", short: "CN", weekend: true },
+    ],
+    weekendTraffic: { school: 0.55, office: 0.5, residential: 1.25, market: 1.2 },
+  },
+
+  // Vào lại sau ít nhất 10 phút thì tóm tắt "Trong lúc bạn vắng…" (THEGIOI §4).
+  away: { minMinutes: 10 },
+
+  // Tiếng khu (THEGIOI §3): khu tụ nhiều quầy cùng nhóm hàng thì có tiếng, người qua lại tăng cho cả nhóm.
+  districtFame: {
+    perShop: 0.08,
+    cap: 0.3,
+    minShops: 2,
+    groups: [
+      { id: "an_uong", name: "khu ăn uống", emoji: "🍜", categories: ["breakfast", "drink"] },
+      { id: "mua_sam", name: "khu mua sắm", emoji: "🛍️", categories: ["accessory"] },
+      { id: "dich_vu", name: "phố sửa xe", emoji: "🔧", categories: ["repair"] },
+    ],
+  },
 
   trafficProfiles: [
     {
       id: "school",
       name: "Cổng trường",
+      emoji: "🏫",
+      likes: { drink: 1.3, accessory: 1.35, breakfast: 1.1, repair: 0.7 },
       peoplePerHour: {
         "6": 160,
         "7": 220,
@@ -735,6 +959,8 @@ export const data: ContentInput = {
     {
       id: "office",
       name: "Khu văn phòng",
+      emoji: "🏢",
+      likes: { drink: 1.2, breakfast: 1.2, accessory: 0.8, repair: 0.9 },
       peoplePerHour: {
         "6": 40,
         "7": 160,
@@ -752,6 +978,8 @@ export const data: ContentInput = {
     {
       id: "residential",
       name: "Trong hẻm",
+      emoji: "🏘️",
+      likes: { repair: 1.2, breakfast: 1, accessory: 0.9, drink: 0.95 },
       peoplePerHour: {
         "6": 60,
         "7": 80,
@@ -766,6 +994,8 @@ export const data: ContentInput = {
     {
       id: "market",
       name: "Gần chợ",
+      emoji: "🧺",
+      likes: { breakfast: 1.2, repair: 1.15, accessory: 1.05, drink: 0.9 },
       peoplePerHour: {
         "6": 180,
         "7": 200,
@@ -780,6 +1010,8 @@ export const data: ContentInput = {
     {
       id: "crossroad",
       name: "Ngã tư",
+      emoji: "🚦",
+      likes: { repair: 1.05, drink: 1.05 },
       peoplePerHour: {
         "6": 120,
         "7": 180,
@@ -802,7 +1034,7 @@ export const data: ContentInput = {
       hint: "Dân trong hẻm, đông chiều tối",
       traffic: "residential",
       trafficScale: 1,
-      rentPerDay: 25_000,
+      rentPerDay: 40_000,
       position: { x: -18, z: -2.8 },
       facing: 0,
     },
@@ -812,7 +1044,7 @@ export const data: ContentInput = {
       hint: "Học sinh đông sáng sớm, trưa, chiều",
       traffic: "school",
       trafficScale: 1,
-      rentPerDay: 40_000,
+      rentPerDay: 60_000,
       position: { x: -12, z: 2.8 },
       facing: Math.PI,
     },
@@ -822,7 +1054,7 @@ export const data: ContentInput = {
       hint: "Sáng rất đông, chiều vắng",
       traffic: "market",
       trafficScale: 1,
-      rentPerDay: 35_000,
+      rentPerDay: 50_000,
       position: { x: -4.5, z: -2.8 },
       facing: 0,
     },
@@ -832,7 +1064,7 @@ export const data: ContentInput = {
       hint: "Đông cả ngày, thuê đắt",
       traffic: "crossroad",
       trafficScale: 1.1,
-      rentPerDay: 120_000,
+      rentPerDay: 180_000,
       position: { x: 2.8, z: 2.8 },
       facing: Math.PI,
     },
@@ -842,7 +1074,7 @@ export const data: ContentInput = {
       hint: "Giờ đi làm, giờ trưa, tan tầm",
       traffic: "office",
       trafficScale: 1,
-      rentPerDay: 50_000,
+      rentPerDay: 75_000,
       position: { x: 9, z: -2.8 },
       facing: 0,
     },
@@ -852,7 +1084,7 @@ export const data: ContentInput = {
       hint: "Mát, khách lai rai",
       traffic: "residential",
       trafficScale: 0.8,
-      rentPerDay: 15_000,
+      rentPerDay: 20_000,
       position: { x: 14, z: 2.8 },
       facing: Math.PI,
     },
@@ -862,7 +1094,7 @@ export const data: ContentInput = {
       hint: "Vắng, rẻ",
       traffic: "residential",
       trafficScale: 0.6,
-      rentPerDay: 10_000,
+      rentPerDay: 15_000,
       position: { x: 20, z: -2.8 },
       facing: 0,
     },
@@ -872,7 +1104,7 @@ export const data: ContentInput = {
       hint: "Người chờ xe cả ngày",
       traffic: "office",
       trafficScale: 0.9,
-      rentPerDay: 30_000,
+      rentPerDay: 45_000,
       position: { x: -22, z: 2.8 },
       facing: Math.PI,
     },
@@ -882,7 +1114,7 @@ export const data: ContentInput = {
       hint: "Có tiệm trong nhà, bàn ghế cho khách ngồi, không lo mưa nắng",
       traffic: "residential",
       trafficScale: 1.15,
-      rentPerDay: 70_000,
+      rentPerDay: 105_000,
       position: { x: -12, z: -4.6 },
       facing: 0,
       kind: "house",
@@ -893,7 +1125,7 @@ export const data: ContentInput = {
       hint: "Tiệm sát ngã tư phía đông, khách đi làm ghé đông",
       traffic: "crossroad",
       trafficScale: 1.05,
-      rentPerDay: 140_000,
+      rentPerDay: 210_000,
       position: { x: 24, z: 4.6 },
       facing: Math.PI,
       kind: "house",
@@ -1149,6 +1381,7 @@ export const data: ContentInput = {
       sign: "XÔI BÀ BẢY",
       signColor: "#c0392b",
       model: "sap-phu-kien",
+      seller: "character-female-d",
       position: { x: -44, z: -3 },
       facing: 0,
       open: 330,
@@ -1157,8 +1390,8 @@ export const data: ContentInput = {
       cashOnly: true,
       lines: ["Xôi nóng đây con!", "Ăn xôi cho chắc bụng đi học!"],
       items: [
-        { id: "xoi_ga", name: "Xôi gà", emoji: "🍗", price: 20_000 },
-        { id: "xoi_xeo", name: "Xôi xéo", emoji: "🍚", price: 15_000 },
+        { id: "xoi_ga", name: "Xôi gà", emoji: "🍗", price: 20_000, food: 55 },
+        { id: "xoi_xeo", name: "Xôi xéo", emoji: "🍚", price: 15_000, food: 45 },
       ],
     },
     {
@@ -1167,6 +1400,7 @@ export const data: ContentInput = {
       sign: "PHỞ CHÚ HAI",
       signColor: "#8e44ad",
       model: "xe-banh-mi",
+      seller: "character-male-c",
       position: { x: -36, z: 3 },
       facing: Math.PI,
       open: 330,
@@ -1174,8 +1408,8 @@ export const data: ContentInput = {
       seats: 3,
       lines: ["Phở bò tái nạm đây!", "Nước lèo ninh từ khuya đó."],
       items: [
-        { id: "pho_tai", name: "Phở tái", emoji: "🍜", price: 40_000 },
-        { id: "pho_ga", name: "Phở gà", emoji: "🍲", price: 35_000 },
+        { id: "pho_tai", name: "Phở tái", emoji: "🍜", price: 40_000, food: 70, drink: 15 },
+        { id: "pho_ga", name: "Phở gà", emoji: "🍲", price: 35_000, food: 65, drink: 15 },
       ],
     },
     {
@@ -1184,6 +1418,7 @@ export const data: ContentInput = {
       sign: "CÀ PHÊ CÓC",
       signColor: "#6d4c41",
       model: "xe-tra-sua",
+      seller: "character-female-a",
       position: { x: 36, z: 3 },
       facing: Math.PI,
       open: 360,
@@ -1192,8 +1427,8 @@ export const data: ContentInput = {
       cashOnly: true,
       lines: ["Cà phê sữa đá hông con?", "Ngồi đây coi người qua lại nè."],
       items: [
-        { id: "cf_sua_da", name: "Cà phê sữa đá", emoji: "🧋", price: 18_000 },
-        { id: "bac_xiu", name: "Bạc xỉu", emoji: "🥛", price: 20_000 },
+        { id: "cf_sua_da", name: "Cà phê sữa đá", emoji: "🧋", price: 18_000, food: 5, drink: 45 },
+        { id: "bac_xiu", name: "Bạc xỉu", emoji: "🥛", price: 20_000, food: 10, drink: 45 },
       ],
     },
     {
@@ -1202,13 +1437,16 @@ export const data: ContentInput = {
       sign: "NƯỚC MÍA",
       signColor: "#27ae60",
       model: "xe-tra-sua",
+      seller: "character-male-c",
       position: { x: 32, z: -3 },
       facing: 0,
       open: 600,
       close: 1020,
       seats: 2,
       lines: ["Nước mía tắc đây, mát lạnh!", "Trưa nắng uống ly nước mía đi em."],
-      items: [{ id: "nuoc_mia_ly", name: "Nước mía", emoji: "🥤", price: 12_000 }],
+      items: [
+        { id: "nuoc_mia_ly", name: "Nước mía", emoji: "🥤", price: 12_000, food: 5, drink: 60 },
+      ],
     },
     {
       id: "banh_trang_tron",
@@ -1216,6 +1454,7 @@ export const data: ContentInput = {
       sign: "BÁNH TRÁNG TRỘN",
       signColor: "#e67e22",
       model: "sap-phu-kien",
+      seller: "character-female-a",
       position: { x: 44, z: -3 },
       facing: 0,
       open: 840,
@@ -1223,8 +1462,8 @@ export const data: ContentInput = {
       seats: 2,
       lines: ["Bánh tráng trộn nè mấy đứa!", "Tan học ghé chị nha!"],
       items: [
-        { id: "banh_trang", name: "Bánh tráng trộn", emoji: "🥗", price: 15_000 },
-        { id: "banh_trang_nuong", name: "Bánh tráng nướng", emoji: "🫓", price: 18_000 },
+        { id: "banh_trang", name: "Bánh tráng trộn", emoji: "🥗", price: 15_000, food: 30 },
+        { id: "banh_trang_nuong", name: "Bánh tráng nướng", emoji: "🫓", price: 18_000, food: 30 },
       ],
     },
     {
@@ -1233,6 +1472,7 @@ export const data: ContentInput = {
       sign: "CHÈ CÔ NĂM",
       signColor: "#d35493",
       model: "xe-tra-sua",
+      seller: "character-female-d",
       position: { x: -12, z: 17.5 },
       facing: 0,
       open: 840,
@@ -1240,8 +1480,8 @@ export const data: ContentInput = {
       seats: 3,
       lines: ["Chè thái, chè đậu đây!", "Ăn chè cho mát nha con."],
       items: [
-        { id: "che_thai", name: "Chè thái", emoji: "🍧", price: 20_000 },
-        { id: "che_dau", name: "Chè đậu", emoji: "🍨", price: 15_000 },
+        { id: "che_thai", name: "Chè thái", emoji: "🍧", price: 20_000, food: 20, drink: 35 },
+        { id: "che_dau", name: "Chè đậu", emoji: "🍨", price: 15_000, food: 20, drink: 30 },
       ],
     },
     {
@@ -1250,6 +1490,7 @@ export const data: ContentInput = {
       sign: "ỐC ĐÊM",
       signColor: "#16a085",
       model: "sap-phu-kien",
+      seller: "character-male-c",
       position: { x: -8, z: -17.5 },
       facing: Math.PI,
       open: 1050,
@@ -1257,8 +1498,8 @@ export const data: ContentInput = {
       seats: 4,
       lines: ["Ốc hương xào bơ tỏi đây!", "Tối rồi, làm dĩa ốc đi anh em!"],
       items: [
-        { id: "oc_huong", name: "Ốc hương xào bơ", emoji: "🐚", price: 50_000 },
-        { id: "so_diep", name: "Sò điệp nướng", emoji: "🦪", price: 45_000 },
+        { id: "oc_huong", name: "Ốc hương xào bơ", emoji: "🐚", price: 50_000, food: 40 },
+        { id: "so_diep", name: "Sò điệp nướng", emoji: "🦪", price: 45_000, food: 35 },
       ],
     },
     {
@@ -1267,6 +1508,7 @@ export const data: ContentInput = {
       sign: "NƯỚNG ĐÊM",
       signColor: "#d35400",
       model: "xe-banh-mi",
+      seller: "character-male-c",
       position: { x: 12, z: 17.5 },
       facing: 0,
       open: 1080,
@@ -1274,8 +1516,8 @@ export const data: ContentInput = {
       seats: 4,
       lines: ["Thịt nướng thơm lừng đây!", "Nướng tới đâu ăn tới đó!"],
       items: [
-        { id: "xien_nuong", name: "Xiên nướng", emoji: "🍢", price: 10_000 },
-        { id: "bap_nuong", name: "Bắp nướng", emoji: "🌽", price: 12_000 },
+        { id: "xien_nuong", name: "Xiên nướng", emoji: "🍢", price: 10_000, food: 20 },
+        { id: "bap_nuong", name: "Bắp nướng", emoji: "🌽", price: 12_000, food: 25 },
       ],
     },
   ],
@@ -1415,6 +1657,36 @@ export const data: ContentInput = {
       ],
     },
     {
+      id: "tram_xe_om",
+      name: "Trạm xe ôm gốc me",
+      kind: "ride",
+      sign: "XE ÔM",
+      signColor: "#d4881c",
+      action: "🛵 Ra trạm xe ôm",
+      keeper: {
+        name: "Chú Lực",
+        model: "character-male-c",
+        greeting: "Muốn chạy xe ôm hả? Chú cho thuê con Wave cũ, xăng tự đổ nghen.",
+        talk: {
+          price: [
+            "Xe chú cho thuê 30 ngàn một ngày, xăng con tự lo.",
+            "Nói thách vừa thôi, khách quen người ta biết giá hết đó.",
+          ],
+          gossip: [
+            "Giờ tan tầm đường lớn kẹt cứng, chui hẻm cho lẹ.",
+            "Trời mưa khách dễ chịu giá, mà hẻm trơn lắm, chạy từ từ.",
+          ],
+        },
+      },
+      jobs: [],
+      position: { x: -32, z: -3.6 },
+      facing: 0,
+      props: [
+        { model: "road-sign-street", dx: 1.2, dz: 0.2, rot: 0 },
+        { model: "ghe-nhua-do", dx: -1, dz: 0.3, rot: 0.6 },
+      ],
+    },
+    {
       id: "buu_cuc",
       name: "Bưu cục",
       kind: "job",
@@ -1460,7 +1732,8 @@ export const data: ContentInput = {
       speaker: "chu_bay",
       lines: [
         "Ủa, con là người mới dọn về xóm hả? Chú là Bảy, chạy xe ôm đầu hẻm nè.",
-        "Ở xóm này ai cũng tự lo lấy cái nghề. Trong túi con có 500 ngàn — đủ mua một chiếc xe đẩy nhỏ.",
+        `Ở xóm này ai cũng tự lo lấy cái nghề. Trong túi con có ${spoken(START_CASH)} tiền mặt, thêm ${spoken(START_BANK)} trong tài khoản ngân hàng.`,
+        "Đủ sắm một chiếc xe đẩy, nhập hàng mà vẫn còn dư phòng thân — tiền ngân hàng rút ở cây ATM nha.",
         "Còn chưa chắc tay thì qua quán cơm Cô Tư phụ việc, kiếm vốn trước cũng được.",
       ],
       choices: [
@@ -1562,6 +1835,132 @@ export const data: ContentInput = {
     { id: "vay_tay", text: "👋" },
   ],
 
+  // Khung đứng trước quầy hàng xóm (UC-E5): lời chào / xác nhận món hiện cạnh chân dung chủ quầy.
+  counterLines: {
+    hello: [
+      "Ghé quầy nè! Ăn gì nói mình nha 😄",
+      "Chào nha! Món nào cũng làm liền tay.",
+      "Mời ghé! Hôm nay đồ tươi lắm.",
+    ],
+    picked: ["{dish} hả? Có liền, {price} nha!", "Ok {dish}, {price} — đợi xíu là có!"],
+    soldOut: "Nay bán hết sạch rồi, ghé lại sau nha!",
+  },
+
+  // Đói / khát (UC-B11): no tụt từ 100 xuống 0 trong ~10 giờ game, khát ~7 giờ; ngủ đêm chỉ tính 4 giờ.
+  needs: {
+    foodPerHour: 10,
+    drinkPerHour: 14,
+    nightMinutes: 240,
+    lowAt: 30,
+    slowHold: 1.25,
+    byCategory: { breakfast: { food: 45, drink: 0 }, drink: { food: 10, drink: 55 } },
+    callouts: [
+      "Ơi có ai bán không dạ?",
+      "Chủ quán đâu rồi ta?",
+      "Bán cho con với… có ai không?",
+      "Quầy mở mà không thấy ai, thôi đi chỗ khác",
+    ],
+  },
+
+  // Quỹ xóm + công trình chung (UC-J5). Giá tham khảo công trình nông thôn (đã nén như mọi số tiền trong game).
+  fund: { feeShare: 0.6, voteMinutes: 240, donateStep: 10_000 },
+  crew: {
+    keeper: "Cai Lâm",
+    // Ngoài đời phụ hồ 300–450k/ngày, một ngày trộn ~25–30 mẻ vữa → ~12k/mẻ.
+    laborShare: 0.25,
+    wagePerMix: 12_000,
+    mixMinutes: 10,
+    waterTolerance: 0.15,
+    bags: [1, 3],
+    // Định mức hay dùng ở công trình (1 bao xi măng 50 kg : thùng cát 18 lít : lít nước).
+    mixes: [
+      {
+        id: "vua_xay",
+        name: "Vữa xây tường",
+        use: "xây tường 110, 220",
+        sandPerBag: 9,
+        waterPerBag: 20,
+      },
+      {
+        id: "vua_trat",
+        name: "Vữa trát tường",
+        use: "tô trát mặt tường",
+        sandPerBag: 8,
+        waterPerBag: 20,
+      },
+      {
+        id: "vua_mac75",
+        name: "Vữa mác 75",
+        use: "tường chịu lực nhẹ, lót nền",
+        sandPerBag: 10,
+        waterPerBag: 22,
+      },
+    ],
+  },
+  projects: [
+    {
+      id: "lat_hem_12",
+      name: "Lát bê tông hẻm 12",
+      emoji: "🛣️",
+      description: "Đổ bê tông con hẻm đất đầu xóm, mưa không còn sình lầy.",
+      why: "Mưa xuống hẻm sình, khách ngại vô đầu hẻm mua đồ.",
+      cost: 600_000,
+      buildDays: 2,
+      demand: { lots: ["dau_hem", "goc_cay"], mult: 1.15 },
+    },
+    {
+      id: "den_duong",
+      name: "Đèn đường năng lượng mặt trời",
+      emoji: "💡",
+      description: "Dựng 6 trụ đèn dọc trục chính, tối đi lại sáng sủa.",
+      why: "Chiều tối đường tối thui, người ta ngại ra đường ăn uống.",
+      cost: 900_000,
+      buildDays: 2,
+      demand: { lots: ["nga_tu", "ben_xe_buyt", "nha_so_10", "nha_so_24"], mult: 1.08 },
+    },
+    {
+      id: "mo_rong_cho",
+      name: "Mở rộng mái che chợ",
+      emoji: "⛺",
+      description: "Dựng thêm mái tôn che nắng mưa quanh chợ đầu mối.",
+      why: "Trời mưa là khách chạy hết, sạp gần chợ vắng hoe.",
+      cost: 1_200_000,
+      buildDays: 3,
+      demand: { lots: ["gan_cho"], mult: 1.2 },
+    },
+    {
+      id: "cau_tre",
+      name: "Cầu tre qua mương cuối phố",
+      emoji: "🌉",
+      description: "Bắc cầu tre qua con mương, bà con xóm bên kia sang mua bán được.",
+      why: "Cuối phố vắng vì xóm bên kia phải đi vòng cả cây số.",
+      cost: 800_000,
+      buildDays: 3,
+      demand: { lots: ["cuoi_pho"], mult: 1.35 },
+    },
+    {
+      id: "cau_be_tong",
+      name: "Nâng cầu tre thành cầu bê tông",
+      emoji: "🌁",
+      description: "Thay cầu tre bằng cầu bê tông, xe máy chạy qua được.",
+      why: "Cầu tre chỉ đi bộ được, xe chở hàng không qua nổi.",
+      cost: 2_500_000,
+      buildDays: 5,
+      demand: { lots: ["cuoi_pho", "goc_cay"], mult: 1.2 },
+      requires: "cau_tre",
+    },
+    {
+      id: "ao_ca",
+      name: "Đào ao cá + ghế đá công viên",
+      emoji: "🎣",
+      description: "Đào cái ao nhỏ thả cá, đặt ghế đá — chiều chiều người ta ra hóng mát.",
+      why: "Xóm chưa có chỗ ngồi chơi, chiều tối ai cũng ở nhà.",
+      cost: 1_500_000,
+      buildDays: 4,
+      demand: { lots: ["cong_truong", "van_phong", "goc_cay"], mult: 1.1 },
+    },
+  ],
+
   // Bảng giải của xóm (UC-P2): 7 ngày gần nhất, mỗi hạng mục một kiểu người chơi — không chỉ người giàu nhất.
   awards: [
     {
@@ -1616,6 +2015,379 @@ export const data: ContentInput = {
     },
   ],
 
+  // Cư dân có tên (KIENTRUC §1): khách tới quầy là người cụ thể, quầy nhớ họ ghé mấy lần → khách quen ❤️.
+  residents: [
+    {
+      id: "be_su",
+      name: "Bé Su",
+      archetype: "hoc_sinh",
+      favorite: "drink",
+      bio: "học lớp 5, mê trà sữa",
+    },
+    {
+      id: "ti_sun",
+      name: "Tí Sún",
+      archetype: "hoc_sinh",
+      favorite: "breakfast",
+      bio: "lớp 7, sáng nào cũng trễ học",
+    },
+    {
+      id: "be_na",
+      name: "Bé Na",
+      archetype: "hoc_sinh",
+      favorite: "accessory",
+      bio: "lớp 11, có kênh 'Na Ăn Gì'",
+    },
+    {
+      id: "khoa_lop9",
+      name: "Khoa lớp 9",
+      archetype: "hoc_sinh",
+      favorite: "drink",
+      bio: "đá banh chiều nào cũng khát",
+    },
+    {
+      id: "bong",
+      name: "Bông",
+      archetype: "hoc_sinh",
+      favorite: "accessory",
+      bio: "sưu tầm móc khóa",
+    },
+    {
+      id: "chi_thao",
+      name: "Chị Thảo",
+      archetype: "dan_van_phong",
+      favorite: "breakfast",
+      bio: "kế toán, ăn sáng vội",
+    },
+    {
+      id: "anh_duy",
+      name: "Anh Duy",
+      archetype: "dan_van_phong",
+      favorite: "drink",
+      bio: "dân IT, cà phê thay nước",
+    },
+    {
+      id: "chi_mai",
+      name: "Chị Mai",
+      archetype: "dan_van_phong",
+      favorite: "breakfast",
+      bio: "làm ngân hàng đầu phố",
+    },
+    {
+      id: "anh_vu",
+      name: "Anh Vũ",
+      archetype: "dan_van_phong",
+      favorite: "repair",
+      bio: "chạy sale, xe hay hư",
+    },
+    {
+      id: "chi_quyen",
+      name: "Chị Quyên",
+      archetype: "dan_van_phong",
+      favorite: "drink",
+      bio: "ghiền trà sữa ít đường",
+    },
+    {
+      id: "ba_tu",
+      name: "Bà Tư",
+      archetype: "co_chu",
+      favorite: "breakfast",
+      bio: "bán vé số đầu hẻm",
+    },
+    {
+      id: "chu_phuc",
+      name: "Chú Phúc",
+      archetype: "co_chu",
+      favorite: "breakfast",
+      bio: "bảo vệ trường làng",
+    },
+    {
+      id: "co_hanh",
+      name: "Cô Hạnh",
+      archetype: "co_chu",
+      favorite: "drink",
+      bio: "giáo viên dạy văn",
+    },
+    {
+      id: "ong_tam",
+      name: "Ông Tám",
+      archetype: "co_chu",
+      favorite: "breakfast",
+      bio: "hưu trí, đi bộ mỗi sáng",
+    },
+    {
+      id: "di_ut",
+      name: "Dì Út",
+      archetype: "co_chu",
+      favorite: "breakfast",
+      bio: "bán rau ở chợ",
+    },
+    {
+      id: "chu_luc",
+      name: "Chú Lực",
+      archetype: "co_chu",
+      favorite: "repair",
+      bio: "chạy xe ôm gốc me",
+    },
+    {
+      id: "bac_hai",
+      name: "Bác Hai",
+      archetype: "co_chu",
+      favorite: "repair",
+      bio: "thợ mộc, xe Cub cũ",
+    },
+    {
+      id: "co_lan",
+      name: "Cô Lan",
+      archetype: "co_chu",
+      favorite: "accessory",
+      bio: "thợ may, mua quà cho cháu",
+    },
+  ],
+
+  regulars: {
+    greetAt: 3,
+    regularAt: 5,
+    patienceMul: 1.3,
+    friendChance: 0.2,
+    angryStreak: 2,
+    returning: ["Bữa nay ghé nữa nè!", "Lại là tui nè!", "Ghé quầy quen nè!"],
+    usual: ["Như mọi khi nha!", "Món quen nha con!", "Cũ người cũ món nha!"],
+  },
+
+  // Nhân viên thuê đứng quầy thay (KIENTRUC §2): bán khi chủ rời quầy / thoát game, tới hết ca; trả lương theo giờ.
+  shopSetup: {
+    depositDays: 3,
+    reserveDays: 2,
+    license: { office: "UBND phường", fee: 100_000, minutes: 180 },
+    foodCert: { templates: ["FOOD"], trainingFee: 150_000, inspectAfter: 90, inspectWindow: 60 },
+    signFee: 200_000,
+    name: { min: 3, max: 24 },
+  },
+
+  rides: {
+    stationPlaceId: "tram_xe_om",
+    jamProfile: "crossroad",
+    bikeRentPerDay: 30_000,
+    fuelPer100m: 1_000,
+    baseFare: 12_000,
+    farePer100m: 8_000,
+    minMeters: 18,
+    haggle: [
+      { ratio: 0.9, label: "Bớt chút" },
+      { ratio: 1, label: "Giá chuẩn" },
+      { ratio: 1.25, label: "Nhích lên" },
+      { ratio: 1.6, label: "Nói thách" },
+    ],
+    acceptSlope: 1.4,
+    rainAcceptBonus: 0.25,
+    routes: {
+      road: { name: "Đường lớn", speed: 7.5, jamSlow: 0.6 },
+      alley: { name: "Đi hẻm", speed: 5.5, rainSlow: 0.35 },
+    },
+    expectSpeed: 5.5,
+    waitMinutes: 6,
+    tip: { five: [2_000, 5_000], four: [0, 2_000] },
+    lines: {
+      ask: [
+        "Chú ơi, chở tui tới {place} bao nhiêu?",
+        "Anh xe ôm ơi, ra {place} nhiêu tiền?",
+        "Con ơi chở cô về {place}, lấy bao nhiêu?",
+      ],
+      accept: ["Ừ, đi lẹ giùm cái.", "Được, chạy đi con.", "Ok chốt, đi thôi!"],
+      refuse: [
+        "Mắc quá, thôi tui đi bộ cho khoẻ.",
+        "Giá cắt cổ vậy ai đi, thôi khỏi!",
+        "Hông được đâu, để kêu xe khác.",
+      ],
+      stars: {
+        "5": ["Chạy êm mà lẹ ghê, lần sau kêu nữa nha!", "Tay lái lụa luôn, boa nè."],
+        "4": ["Cũng được, cảm ơn nghen.", "Ổn áp, hôm sau đi tiếp."],
+        "3": ["Hơi lâu ha, mà thôi cũng tới.", "Lần sau chạy lẹ chút nha."],
+        "2": ["Trời đất, đi gì lâu dữ vậy!", "Xóc muốn rớt ruột luôn á."],
+        "1": ["Thôi khỏi đi nữa.", "Lần sau tui kêu xe khác."],
+      },
+    },
+  },
+
+  gigs: {
+    // Phí ghi sổ nhỏ vào quỹ xóm (Chú Hai giữ sổ, đứng ra phân xử) — money sink.
+    feeRate: 0.05,
+    feeMin: 2000,
+    reviewMinutes: 120,
+    disputeLostTrust: 5,
+    photo: {
+      mentor: "Bé Na (kênh Na Ăn Gì)",
+      // Ngoài đời thợ chụp tự do ~150k/giờ, chụp món ~150k/món; quầy nhỏ trong xóm thuê buổi ngắn rẻ hơn.
+      rewards: [60000, 100000, 150000],
+      hours: [2, 4, 8],
+      minTrust: 30,
+      cameraRent: 20000,
+      sessionMs: 20000,
+      moments: 6,
+      windowMs: 900,
+      perfectMs: 180,
+      shots: 8,
+      keep: 3,
+      passQuality: 55,
+      adBoost: 0.6,
+      adMinutes: 180,
+      kinds: [
+        { emoji: "😄", label: "Khách cười tươi" },
+        { emoji: "♨️", label: "Món bốc khói" },
+        { emoji: "🌤️", label: "Nắng xiên đẹp" },
+        { emoji: "🙌", label: "Chủ quầy tạo dáng" },
+        { emoji: "🥢", label: "Gắp miếng đầu tiên" },
+      ],
+    },
+  },
+  contracts: {
+    keeper: "Chú Hai tổ trưởng",
+    perDay: 3,
+    depositRate: 0.2,
+    trust: { start: 50, done: 5, fail: 15, short: 2, lowAt: 30, lockAt: 15, lockDays: 3 },
+    templates: [
+      {
+        id: "truong_banh_mi",
+        poster: "Cô Hạnh giáo viên",
+        productId: "banh_mi",
+        variantId: "banh_mi_thit",
+        qty: [5, 8],
+        lotId: "cong_truong",
+        deadline: 11 * 60,
+        priceMul: 1.25,
+        minTrust: 0,
+        text: "Giao {qty} {dish} cho đội bóng lớp 5 ở {place} trước {deadline}",
+      },
+      {
+        id: "xe_buyt_banh_mi",
+        poster: "Chú tài xế tuyến 19",
+        productId: "banh_mi",
+        variantId: "banh_mi_trung",
+        qty: [4, 6],
+        lotId: "ben_xe_buyt",
+        deadline: 14 * 60,
+        priceMul: 1.2,
+        minTrust: 0,
+        text: "Mang {qty} {dish} ra {place} cho cánh tài xế trước {deadline}",
+      },
+      {
+        id: "tiec_xom_banh_mi",
+        poster: "Chú Hai tổ trưởng",
+        productId: "banh_mi",
+        variantId: "banh_mi_thit",
+        qty: [12, 16],
+        lotId: "dau_hem",
+        deadline: 19 * 60,
+        priceMul: 1.35,
+        minTrust: 60,
+        text: "Họp tổ dân phố: {qty} {dish} giao tới {place} trước {deadline}",
+      },
+      {
+        id: "van_phong_tra_sua",
+        poster: "Chị Thảo kế toán",
+        productId: "tra_sua",
+        variantId: "tra_sua_truyen_thong",
+        qty: [5, 8],
+        lotId: "van_phong",
+        deadline: 16 * 60,
+        priceMul: 1.2,
+        minTrust: 0,
+        text: "Phòng kế toán họp chiều: {qty} ly {dish} giao tới {place} trước {deadline}",
+      },
+      {
+        id: "cho_tra_sua",
+        poster: "Bà Năm chợ đầu mối",
+        productId: "tra_sua",
+        variantId: "hong_tra_sua",
+        qty: [4, 6],
+        lotId: "gan_cho",
+        deadline: 12 * 60,
+        priceMul: 1.2,
+        minTrust: 0,
+        text: "Mấy bà bạn hàng khát nước: {qty} ly {dish} ra {place} trước {deadline}",
+      },
+      {
+        id: "sinh_nhat_phu_kien",
+        poster: "Bé Su lớp 5",
+        productId: "phu_kien",
+        variantId: "kep_hong",
+        qty: [4, 6],
+        lotId: "cong_truong",
+        deadline: 17 * 60,
+        priceMul: 1.25,
+        minTrust: 40,
+        text: "Sinh nhật bạn thân: {qty} {dish} gói sẵn, đưa tới {place} trước {deadline}",
+      },
+    ],
+  },
+
+  staff: {
+    shifts: [
+      { id: "sang", name: "Ca sáng 6–11h", from: 6 * 60, to: 11 * 60 },
+      { id: "trua", name: "Ca trưa 11–14h", from: 11 * 60, to: 14 * 60 },
+      { id: "chieu", name: "Ca chiều 14–18h", from: 14 * 60, to: 18 * 60 },
+      { id: "toi", name: "Ca tối 18–22h", from: 18 * 60, to: 22 * 60 },
+      { id: "ca_ngay", name: "Cả ngày 6–22h", from: 6 * 60, to: 22 * 60 },
+    ],
+    people: [
+      {
+        id: "thu",
+        name: "Thu",
+        bio: "sinh viên năm hai, siêng, cẩn thận",
+        model: "character-female-a",
+        accuracy: 0.95,
+        serveMinutes: 6,
+        wagePerHour: 15_000,
+      },
+      {
+        id: "khoa_phu",
+        name: "Khoa",
+        bio: "lanh tay mà hay quên lời khách dặn",
+        model: "character-male-c",
+        accuracy: 0.8,
+        serveMinutes: 4,
+        wagePerHour: 13_000,
+      },
+      {
+        id: "di_sau",
+        name: "Dì Sáu",
+        bio: "chậm mà kỹ, khách lớn tuổi quý",
+        model: "character-female-d",
+        accuracy: 0.98,
+        serveMinutes: 8,
+        wagePerHour: 10_000,
+      },
+    ],
+  },
+
+  // Chuyện của tôi (docs/THEGIOI.md §1): mốc đời người chơi, server ghi một lần kèm ngày game.
+  story: [
+    { id: "join", emoji: "🧳", text: "Dọn về xóm với {money} trong túi" },
+    { id: "first_cart", emoji: "🛒", text: "Mua {equipment} — bắt đầu đi buôn" },
+    { id: "switch_trade", emoji: "🔄", text: "Đổi nghề: bán xe cũ, mua {equipment}" },
+    { id: "first_open", emoji: "🎪", text: "Mở quầy {product} đầu tiên ở {lot}" },
+    { id: "first_shop", emoji: "🏠", text: "Thuê nhà mặt tiền {lot}, mở tiệm đàng hoàng" },
+    { id: "first_job", emoji: "💼", text: "Đi làm thuê lần đầu: {job}" },
+    {
+      id: "first_donate",
+      emoji: "🏗️",
+      text: "Lần đầu góp {money} vào quỹ xóm làm công trình chung",
+    },
+    { id: "first_regular", emoji: "❤️", text: "Có khách quen đầu tiên: {name} ({bio})" },
+    { id: "first_hire", emoji: "👩‍🍳", text: "Thuê người đầu tiên: {name} đứng quầy phụ" },
+    { id: "first_contract", emoji: "📋", text: "Xong việc đầu tiên trên bảng việc xóm: {text}" },
+    { id: "first_license", emoji: "🏛️", text: 'Đăng ký hộ kinh doanh: quán "{name}" ra đời' },
+    { id: "first_ride", emoji: "🛵", text: "Chạy cuốc xe ôm đầu tiên: chở {name} tới {place}" },
+    { id: "first_gig", emoji: "📸", text: "Lần đầu chụp ảnh thuê: chụp quầy {shop} cho {name}" },
+    {
+      id: "first_gig_post",
+      emoji: "📣",
+      text: "Lần đầu thuê {name} chụp ảnh quầy — ảnh đăng lên nhóm xóm",
+    },
+    { id: "first_crew", emoji: "🏗️", text: "Lần đầu đi phụ hồ: trộn vữa cho {name}" },
+  ],
+
   achievements: [
     {
       id: "mo_hang",
@@ -1624,6 +2396,7 @@ export const data: ContentInput = {
       description: "Bán món đầu tiên",
       metric: "served",
       goal: 1,
+      story: "Bán được món đầu tiên — tiền lẻ đầu tiên của nghề buôn",
     },
     {
       id: "khoi_nghiep",
@@ -1632,6 +2405,7 @@ export const data: ContentInput = {
       description: "Bán 100 món",
       metric: "served",
       goal: 100,
+      story: "Quầy phục vụ đủ 100 khách",
     },
     {
       id: "tay_to",
@@ -1640,6 +2414,7 @@ export const data: ContentInput = {
       description: "Bán 1.000 món",
       metric: "served",
       goal: 1000,
+      story: "Quầy đạt 1.000 khách — cả xóm biết mặt",
     },
     {
       id: "trieu_dau",
@@ -1648,6 +2423,7 @@ export const data: ContentInput = {
       description: "Doanh thu cộng dồn 1.000.000đ",
       metric: "revenue",
       goal: 1_000_000,
+      story: "Doanh thu cộng dồn chạm 1 triệu",
     },
     {
       id: "chuc_trieu",
@@ -1656,6 +2432,7 @@ export const data: ContentInput = {
       description: "Doanh thu cộng dồn 10.000.000đ",
       metric: "revenue",
       goal: 10_000_000,
+      story: "Doanh thu cộng dồn chạm 10 triệu",
     },
     {
       id: "cham_chi",
@@ -1664,6 +2441,7 @@ export const data: ContentInput = {
       description: "Kiếm 300.000đ tiền công làm thuê",
       metric: "wages",
       goal: 300_000,
+      story: "Kiếm đủ 300.000đ tiền công làm thuê",
     },
     {
       id: "nam_sao",
@@ -1672,6 +2450,7 @@ export const data: ContentInput = {
       description: "Nhận 10 đánh giá 5★",
       metric: "five_stars",
       goal: 10,
+      story: "Nhận đánh giá 5★ thứ 10",
     },
     {
       id: "co_tam",
@@ -1780,6 +2559,132 @@ export const data: ContentInput = {
     banned: ["đm", "dm", "đmm", "vcl", "vl", "đéo", "địt", "lồn", "cặc", "đĩ"],
   },
 
+  // Giọng thoại theo kiểu khách (#12, USECASES UC-D6). Câu "mặn" nhẹ thôi — người chơi tắt được trong Cài đặt.
+  voice: {
+    voices: [
+      {
+        archetype: "hoc_sinh",
+        ask: [
+          "Shop ơi cho em {dish} nha 🥺",
+          "Cho e {dish} vớiii, nhanh nhanh e trễ học r",
+          "Chị ơi {dish} một cái nha, hôm nay đói xỉu ngang",
+          "1 {dish} nha shop, ko lấy bịch đâu ạ",
+        ],
+        cheap: [
+          "Rẻ vãi, mai em rủ cả lớp ra 🤩",
+          "Giá học sinh luôn, iu shop",
+          "U là trời rẻ dữ dzậy",
+        ],
+        pricey: [
+          "Hơi chát á shop, tiền tiêu vặt e có nhiêu đâu 🥲",
+          "Mắc dữ, tuần này nhịn trà sữa luôn",
+          "Ủa sao mắc z trời",
+        ],
+        thanks: [
+          "Ngon xỉu, 10 điểm ko có nhưng 💯",
+          "Iu shop, mai ghé tiếp nha",
+          "Đỉnh của chóp luôn á",
+          "Tks shop nhaaa",
+        ],
+        impatient: [
+          "Trễ học r, thôi em đi đây 😭",
+          "Lâu vãi, thôi khum chờ nữa",
+          "Chờ mòn mỏi luôn á, bye",
+        ],
+      },
+      {
+        archetype: "dan_van_phong",
+        ask: [
+          "Cho anh {dish}, nhanh giúp anh nha, 8h chấm công rồi",
+          "Em ơi {dish} nha, chuyển khoản được không?",
+          "Một {dish}, anh lấy mang đi",
+          "Cho chị {dish} nha, deadline dí quá chưa kịp ăn",
+        ],
+        cheap: ["Giá này hợp lý ghê, mai anh dẫn team ra", "Rẻ mà chất lượng, recommend"],
+        pricey: [
+          "Giá hơi cao so với mặt bằng chung á em",
+          "Ngang giá quán máy lạnh luôn rồi đó",
+          "Lương chưa về mà giá này hơi căng",
+        ],
+        thanks: [
+          "Ok em, chuyển rồi nha",
+          "Ngon, cứu đói buổi sáng",
+          "Nhanh gọn, 5 sao",
+          "Ổn áp, mai ghé",
+        ],
+        impatient: [
+          "Trễ giờ rồi, thôi anh đi",
+          "Sếp gọi rồi, để bữa khác nha",
+          "Đợi lâu quá, chịu không nổi",
+        ],
+      },
+      {
+        archetype: "co_chu",
+        ask: [
+          "Bán cho cô {dish} nghen con",
+          "Con ơi lấy chú {dish}, đừng có cay nha",
+          "Cho cô {dish}, gói kỹ kỹ cô mang về cho thằng cháu",
+          "Con bé ơi, {dish} một phần coi",
+        ],
+        cheap: ["Rẻ vậy con, để cô giới thiệu mấy bà trong xóm", "Giá vậy là có lương tâm nè"],
+        pricey: [
+          "Hồi xưa có mấy ngàn hà, giờ mắc quá con ơi",
+          "Mắc dữ vậy con, bớt cho cô chút coi",
+          "Giá này chợ bán rẻ hơn á nghen",
+        ],
+        thanks: [
+          "Cảm ơn con nghen, con làm khéo ghê",
+          "Được đó con, mai cô ghé",
+          "Ngon, giữ tiền lẻ luôn con",
+        ],
+        impatient: [
+          "Thôi cô đi chợ đã, lát ghé",
+          "Đợi lâu quá con, cô về nấu cơm đây",
+          "Thôi để bữa khác nghen",
+        ],
+      },
+      {
+        archetype: "khach_vang_lai",
+        ask: [
+          "Cho mình {dish} nhé",
+          "{dish} một phần, bạn ơi",
+          "Ở đây có {dish} không bạn? Cho mình một cái",
+        ],
+        pricey: ["Hơi mắc nha bạn", "Giá này hơi chát á", "Chà, giá du lịch ha"],
+        thanks: ["Cảm ơn bạn nha!", "Ok, ngon đó", "Lẹ ghê, cảm ơn nhé"],
+        impatient: ["Thôi mình đi, gấp quá", "Lâu quá bạn ơi", "Đợi hoài, thôi đi tiếp"],
+      },
+      {
+        archetype: "reviewer",
+        ask: [
+          "Cho mình {dish}, mình quay clip review xíu được hông? 📸",
+          "Hello shop, {dish} nha, nghe bảo hot lắm",
+        ],
+        cheap: [
+          "Giá này mà chất lượng vậy là deal hời đó mọi người 🔥",
+          "Rẻ mà ngon, quẹo lựa nha",
+        ],
+        pricey: ["Hơi đắt so với chất lượng nha, 6/10", "Mức giá này thì cần cải thiện thêm"],
+        thanks: [
+          "Ngon nha, chấm 8.5/10, sẽ quay lại",
+          "Okela, lên clip liền",
+          "Chất lượng ổn, phục vụ nhanh, ủng hộ!",
+        ],
+        impatient: [
+          "Chờ lâu quá, cái này phải ghi vào review rồi",
+          "Hơi lâu nha shop, trừ điểm phục vụ",
+        ],
+      },
+    ],
+    soften: {
+      vãi: "quá",
+      "xỉu ngang": "lắm luôn",
+      "đỉnh của chóp": "tuyệt",
+      "u là trời": "trời ơi",
+      "chịu không nổi": "hết chờ nổi",
+    },
+  },
+
   customerLines: {
     cheap: ["Rẻ vậy! Mai ghé nữa nha", "Giá này hời quá", "Cho thêm ổ nữa được hông?"],
     fair: ["Cho một phần nha", "Bán cho con với", "Như mọi khi nha"],
@@ -1789,12 +2694,16 @@ export const data: ContentInput = {
   },
 
   economy: {
-    startingMoney: 1_500_000,
+    startingMoney: START_CASH,
+    // Góp ý chơi thử: mua xe xong còn ~300k, khó sống → mở sẵn tài khoản có 1tr dự phòng.
+    startingBank: START_BANK,
     dayStartMinute: 6 * 60,
     dayEndMinute: 22 * 60,
     economyTickMinutes: 5,
     marketPriceSwing: 0.1,
     outsideOption: 1,
+    // Nhịp chơi (góp ý chơi thử: khách thưa, đứng chờ lâu): quầy đông gấp đôi lưu lượng "thật".
+    demandScale: 1.6,
     reputationRate: 0.08,
     startingReputation: 0.5,
     afternoonMarkup: 0.2,
@@ -1827,6 +2736,9 @@ export const data: ContentInput = {
       depositStep: 10_000,
       // Mua lặt vặt (dưới 200k) thì móc tiền mặt; mua xe, trả tiền nhà thì quét mã chuyển khoản.
       cashFirstBelow: 200_000,
+      // Rút ATM mất phí như ngoài đời; sai PIN 3 lần máy nuốt thẻ (UC-I6).
+      withdrawFee: 1_000,
+      pinTries: 3,
     },
     serveReputationBonus: 0.01,
     interactRadius: 2.5,
@@ -1864,10 +2776,7 @@ export const data: ContentInput = {
     },
   ],
   // Mở khoá theo cấp (Luật 4.2): làm thật mới mở — không mua bằng tiền thật.
-  unlocks: [
-    { id: "event_host", level: 2, label: "Tổ chức khai trương" },
-    { id: "lot_house", level: 3, label: "Thuê nhà mặt tiền mở tiệm" },
-  ],
+  unlocks: [{ id: "event_host", level: 2, label: "Tổ chức khai trương" }],
 
   // Xóm quê (góp ý chủ dự án 10/2026): ít nhà cao tầng; nhà dân phần lớn là nhà cấp 4 mái ngói, vài nhà tranh,
   // lác đác nhà ống — sau này người chơi mua/xây nhà thì nâng cấp dần lên (DESIGN §5).
@@ -1916,6 +2825,17 @@ export const data: ContentInput = {
       news: "🕴️ Có khách sộp ghé {shop} — dặn kỹ lắm, làm chuẩn là được boa đậm",
     },
     {
+      // Chợ đêm thứ Bảy (THEGIOI §2): cả xóm ra đường, quầy ăn vặt / đồ uống / phụ kiện đông hẳn.
+      id: "cho_dem",
+      name: "Chợ đêm thứ Bảy",
+      emoji: "🏮",
+      scope: "neighborhood",
+      minutes: 240,
+      trigger: { kind: "weekly", weekdays: [5], from: 18 * 60 },
+      effects: { categoryDemand: { breakfast: 1.4, drink: 1.7, accessory: 1.8 } },
+      news: "🏮 Tối nay chợ đêm thứ Bảy — 18:00 tới 22:00, bày hàng ra là đông!",
+    },
+    {
       id: "mua_lon",
       name: "Mưa lớn toàn xóm",
       emoji: "⛈️",
@@ -1956,15 +2876,15 @@ export const data: ContentInput = {
       {
         id: "cloudy",
         name: "Âm u",
-        emoji: "🌫️",
+        emoji: "☁️",
         outdoor: 0.9,
         indoor: 1,
         category: {},
         delivery: { speed: 1, surcharge: 0, damage: 1 },
         dim: 0.18,
         rain: 0,
-        news: "🌫️ Trời âm u, người ta ít ra đường hơn",
-        forecast: "🌫️ Khoảng {time} trời kéo mây âm u",
+        news: "☁️ Trời âm u, người ta ít ra đường hơn",
+        forecast: "☁️ Khoảng {time} trời kéo mây âm u",
       },
       {
         id: "rain",

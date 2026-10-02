@@ -15,6 +15,7 @@ import {
 } from "@xom/sim";
 import { PrismaService } from "../prisma/prisma.service.js";
 import type { RoomRuntime } from "./room.js";
+import { StoryService } from "./story.js";
 
 const WINDOW = 7;
 
@@ -27,7 +28,10 @@ const WINDOW = 7;
 export class StatsService {
   private notify?: (playerId: string, n: NotifyEvent) => void;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly story: StoryService,
+  ) {}
 
   setNotifier(fn: (playerId: string, n: NotifyEvent) => void) {
     this.notify = fn;
@@ -180,8 +184,13 @@ export class StatsService {
     if (fresh.length) {
       for (const a of fresh) got[a.id] = day;
       await this.prisma.player.update({ where: { id: playerId }, data: { achievements: got } });
-      for (const a of fresh)
+      for (const a of fresh) {
         this.notify?.(playerId, { kind: "good", text: `🏅 Thành tựu mới: ${a.emoji} ${a.name}` });
+        // Chuyện của tôi: thành tựu có câu kể thì ghi thành một mốc (đã báo 🏅 rồi nên không báo thêm).
+        const story = content.data.achievements.find((x) => x.id === a.id)?.story;
+        if (story)
+          await this.story.write(playerId, `ach:${a.id}`, day, a.emoji, story, { quiet: true });
+      }
     }
     // Đã mở thì giữ "xong" kể cả khi số liệu sau này đổi (vd. đánh giá bị xoá).
     return list.map((a) => ({ ...a, done: a.done || got[a.id] !== undefined }));

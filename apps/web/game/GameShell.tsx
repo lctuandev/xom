@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import { formatClock } from "@xom/sim";
+import { congestion, formatClock } from "@xom/sim";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -16,25 +16,30 @@ import {
 import { refreshAccessToken, useAuth } from "./auth/store";
 import Interior from "./interior/Interior";
 import ShopInterior from "./interior/ShopInterior";
-import { connectGame } from "./net/socket";
+import { connectGame, send } from "./net/socket";
 import { Scene } from "./scene/Scene";
 import { useGame } from "./store";
 import { useTutorial } from "./tutorial";
 import { ActionBar } from "./ui/ActionBar";
 import { AtmSheet } from "./ui/AtmSheet";
+import { AwayModal } from "./ui/AwayModal";
 import { BoardSheet } from "./ui/BoardSheet";
 import { BubbleLayer } from "./ui/BubbleLayer";
 import { BusinessSheet } from "./ui/BusinessSheet";
 import { DaySummary } from "./ui/DaySummary";
 import { Dialogue } from "./ui/Dialogue";
 import { EquipmentSheet } from "./ui/EquipmentSheet";
+import { FundSheet } from "./ui/FundSheet";
 import { ProfileSheet, QuestsSheet, RecipeSheet, SettingsSheet } from "./ui/HubSheets";
 import { Hud } from "./ui/Hud";
 import { JobsSheet } from "./ui/JobsSheet";
 import { Kitchen } from "./ui/Kitchen";
 import { MarketSheet } from "./ui/MarketSheet";
+import { PhotoShoot } from "./ui/PhotoShoot";
 import { QuickChat } from "./ui/QuickChat";
+import { RideSheet } from "./ui/RideSheet";
 import { ShopSheet } from "./ui/ShopSheet";
+import { SiteSheet } from "./ui/SiteSheet";
 import { TalkSheet } from "./ui/TalkSheet";
 import { FoodSheet, VendorSheet } from "./ui/VendorSheet";
 import { DoorSheet } from "./ui/work/DoorSheet";
@@ -60,6 +65,7 @@ export default function GameShell() {
   useNews();
   useEventNews();
   useSound();
+  useRideSync();
 
   // Cổng đăng nhập: có access token trong bộ nhớ hoặc refresh được bằng cookie thì mới kết nối.
   useEffect(() => {
@@ -130,15 +136,20 @@ export default function GameShell() {
       {sheet === "recipes" && <RecipeSheet />}
       {sheet === "atm" && <AtmSheet />}
       {sheet === "board" && <BoardSheet />}
+      {sheet === "fund" && <FundSheet />}
       {sheet === "equipment" && <EquipmentSheet />}
       {sheet === "talk" && <TalkSheet />}
+      {sheet === "ride" && <RideSheet />}
+      {sheet === "site" && <SiteSheet />}
       <ActionBar />
       <QuickChat />
       <Kitchen />
+      <PhotoShoot />
       <DoorSheet />
       <Payslip />
       <Dialogue />
       <DaySummary />
+      <AwayModal />
     </div>
   );
 }
@@ -147,6 +158,17 @@ export default function GameShell() {
  * Link mời /play?xom=… (UC-J1): nhớ mã, đợi vào game xong (và không đang hội thoại) thì mở bảng Xóm
  * để người chơi tự bấm vào — không tự chuyển xóm khi chưa hỏi.
  */
+/** Xe ôm (UC-N1): nạp trạng thái xe khi vào game / sang ngày mới — đã thuê xe thì vẽ xe dưới người và hiện chip chạy xe. */
+function useRideSync() {
+  const online = useGame((s) => s.status === "online" && !!s.me);
+  const day = useGame((s) => s.clock?.day);
+  const setRide = useGame((s) => s.setRide);
+  useEffect(() => {
+    if (!online || day === undefined) return;
+    void send("ride:view", {}).then((r) => r.ok && setRide(r.data));
+  }, [online, day, setRide]);
+}
+
 function useInvite() {
   const roster = useGame((s) => s.roster);
   const invite = useGame((s) => s.invite);
@@ -208,7 +230,12 @@ function useNews() {
       content.data.vendors.filter((v) => minute >= v.open && minute < v.close).map((v) => v.id),
     );
     const prev = last.current;
-    if (prev && prev.day !== day) push(`☀️ Sang ngày ${day} — xóm lại nhộn nhịp`);
+    if (prev && prev.day !== day) {
+      const w = content.weekday(day);
+      push(
+        `☀️ Sang ${w.name}, ngày ${day} — ${w.weekend ? "cuối tuần, trong hẻm đông vui" : "xóm lại nhộn nhịp"}`,
+      );
+    }
     if (prev)
       for (const v of content.data.vendors) {
         if (open.has(v.id) && !prev.open.has(v.id)) push(`🍜 ${v.sign} vừa bày hàng`);
@@ -259,10 +286,9 @@ function useSound() {
   const inside = useGame((s) => s.inside);
   useEffect(() => {
     setMusicMood(minute >= 1080 || minute < 330 ? "night" : "day");
-    // Giờ cao điểm (sáng đi làm, trưa, tan tầm) phố ồn hơn; khuya vắng.
+    // Giờ cao điểm phố ồn hơn, khuya vắng — cùng độ kẹt xe với xe ôm / giao thông 3D (sim congestion).
     const h = minute / 60;
-    const rush = (h >= 7 && h < 9) || (h >= 11 && h < 13) || (h >= 17 && h < 19.5);
-    const crowd = rush ? 1 : h >= 21 || h < 6 ? 0.25 : 0.55;
+    const crowd = h >= 21 || h < 6 ? 0.2 : 0.25 + 0.75 * congestion(content, minute);
     setAmbient(inside ? "inside" : "street", crowd);
   }, [minute, inside]);
   const sky = useGame((s) => s.clock?.weather.now ?? "sunny");

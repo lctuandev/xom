@@ -3,9 +3,10 @@ import { HttpException, HttpStatus, Injectable, UnauthorizedException } from "@n
 import { hash, verify } from "@node-rs/argon2";
 import { content } from "@xom/content";
 import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from "@xom/shared";
+import { storyText } from "@xom/sim";
 import { jwtVerify, SignJWT } from "jose";
 import { config } from "../config.js";
-import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
+import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface AccessClaims {
@@ -68,7 +69,31 @@ export class AuthService {
         eco.startingMoney,
         "starting_money",
       );
+      if (eco.startingBank > 0) {
+        await this.ledger.transfer(
+          tx,
+          SYSTEM.bank,
+          bankWallet(player.id),
+          eco.startingBank,
+          "starting_bank",
+        );
+      }
       await tx.gameEvent.create({ data: { playerId: player.id, type: "register", payload: {} } });
+      // Chuyện của tôi (docs/THEGIOI.md §1): mốc đầu tiên — dọn về xóm với bao nhiêu tiền.
+      const join = content.data.story.find((b) => b.id === "join");
+      if (join) {
+        await tx.storyEntry.create({
+          data: {
+            playerId: player.id,
+            key: join.id,
+            day: room.day,
+            emoji: join.emoji,
+            text: storyText(join.text, {
+              money: `${eco.startingMoney.toLocaleString("vi-VN")}đ`,
+            }),
+          },
+        });
+      }
       return created;
     });
     return this.startSession(user.id, userAgent);

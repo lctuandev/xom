@@ -17,15 +17,16 @@ describe("Thống kê & bảng giải (e2e)", () => {
     const a = await openBanhMiStall(url);
     const o = await next(a.socket, "order");
     await emit(a.socket, "order:make", { orderId: o.orderId, build: o.spec });
+    // Thành tựu báo ngay khi tính tiền xong (không đợi cuối ngày / mở bảng).
+    const badge = next(a.socket, "notify", (n: NotifyEvent) => n.text.startsWith("🏅"));
     const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: changeFor(o) });
     if (!paid.ok) throw new Error(`tính tiền: ${paid.message}`);
+    expect((await badge).text).toBe("🏅 Thành tựu mới: 🥖 Mở hàng");
 
-    const badge = next(a.socket, "notify", (n: NotifyEvent) => n.text.startsWith("🏅"));
     const mine = await emit<MyStatsView>(a.socket, "stats:me", {});
     if (!mine.ok) throw new Error(`stats:me: ${mine.message}`);
     expect(mine.data.days.at(-1)).toMatchObject({ served: 1, revenue: o.price });
     expect(mine.data.achievements.find((x) => x.id === "mo_hang")).toMatchObject({ done: true });
-    expect((await badge).text).toBe("🏅 Thành tựu mới: 🥖 Mở hàng");
     expect(mine.data.avg).toMatchObject({ stalls: 1, served: 1 });
     // Mở rồi thì không báo lại.
     const again = await emit<MyStatsView>(a.socket, "stats:me", {});

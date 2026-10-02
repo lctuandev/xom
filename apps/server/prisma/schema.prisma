@@ -52,6 +52,26 @@ model Player {
   skills      Json     @default("{}")
   /// Thành tựu đã mở: { id: ngày game mở } (content.achievements, UC-P2).
   achievements Json    @default("{}")
+  /// Mã PIN thẻ ATM (băm sha256 kèm id người chơi) — null = chưa tạo (UC-I6).
+  atmPin       String?
+  /// Sai PIN quá số lần cho phép: máy giữ thẻ tới hết ngày game này.
+  atmLockDay   Int?
+  /// Đói / khát (UC-B11): { food, drink, at } — giảm theo giờ game, tính lại khi đọc (sim needsAt).
+  needs        Json     @default("{}")
+  /// Lần cuối rời xóm (thời gian thật + ngày game) — để tóm tắt "Trong lúc bạn vắng" (THEGIOI §4).
+  lastSeenAt   DateTime?
+  lastSeenDay  Int?
+  /// 🤝 Điểm tin cậy 0–100 (KIENTRUC §3) — tách khỏi uy tín quầy; lên khi giữ lời, xuống khi bỏ việc / thối thiếu.
+  trust        Int      @default(50)
+  /// Tin cậy quá thấp: khoá nhận việc trên bảng việc xóm tới hết ngày game này.
+  trustLockDay Int?
+  /// 🛵 Xe ôm (KIENTRUC §4): ngày game đã thuê xe Wave của Chú Lực; số cuốc đã chạy; tổng sao khách chấm.
+  bikeRentDay  Int?
+  rides        Int      @default(0)
+  rideStars    Int      @default(0)
+  /// Việc người chơi thuê (UC-M8): số việc đã được nghiệm thu + tổng sao người thuê chấm.
+  gigs         Int      @default(0)
+  gigStars     Int      @default(0)
   createdAt   DateTime @default(now())
 
   businesses Business[]
@@ -59,6 +79,8 @@ model Player {
   inventory  InventoryItem[]
   reports    DailyReport[]
   reviews    Review[]       @relation("ReviewsReceived")
+  stories    StoryEntry[]
+  residentVisits ResidentVisit[]
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -70,6 +92,38 @@ model Room {
   minute    Int
   createdAt DateTime @default(now())
   players   Player[]
+  projects  RoomProject[]
+}
+
+enum ProjectStatus {
+  VOTING
+  FUNDING
+  BUILDING
+  DONE
+  REJECTED
+}
+
+/// Công trình chung của xóm (UC-J5): đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu.
+model RoomProject {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  roomId     String        @db.Uuid
+  room       Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  /// Id công trình trong content.projects.
+  projectId  String
+  status     ProjectStatus @default(VOTING)
+  proposerId String        @db.Uuid
+  /// Phiếu: { playerId: true (thuận) | false (chống) }.
+  votes      Json          @default("{}")
+  /// Hết hạn bỏ phiếu: ngày + phút game.
+  voteDay    Int
+  voteMinute Int
+  /// Ngày game xong thi công (khi đang BUILDING).
+  doneDay    Int?
+  /// Số mẻ vữa bà con phụ hồ đã trộn đúng (UC-J6) — đủ `crewMixes` thì xong sớm.
+  mixes      Int           @default(0)
+  createdAt  DateTime      @default(now())
+
+  @@index([roomId, status])
 }
 
 enum WalletKind {
@@ -77,6 +131,10 @@ enum WalletKind {
   PLAYER
   /// 🏦 Tài khoản ngân hàng của người chơi ("bank:<id>"): nhận chuyển khoản, rút/gửi ở ATM (DESIGN §2).
   PLAYER_BANK
+  /// 🏗️ Quỹ xóm ("fund:<roomId>"): phí chợ một phần + hàng xóm góp, chi cho công trình chung (UC-J5).
+  ROOM_FUND
+  /// 🔒 Tiền giữ hộ của một hợp đồng ("escrow:<contractId>"): thưởng + cọc, nghiệm thu xong mới chi (KIENTRUC §3).
+  ESCROW
   SYSTEM
 }
 
@@ -130,8 +188,167 @@ model Business {
   /// Ngày game gần nhất tổ chức khai trương (sự kiện người chơi tạo, có thời gian chờ).
   promoDay    Int?
   createdAt   DateTime       @default(now())
+  /// Nhân viên đang thuê (KIENTRUC §2), mỗi quầy một người ở bản đầu.
+  employee    Employee?
+  /// Mở tiệm (UC-F12): tên quán đăng ký hộ kinh doanh; phút game tuyệt đối hồ sơ được duyệt (null = chưa nộp).
+  shopName    String?
+  licenseAt   Int?
+  /// ATTP: đã tập huấn; giờ đoàn kiểm tra tới (phút tuyệt đối); đã có giấy chứng nhận.
+  trained     Boolean        @default(false)
+  inspectAt   Int?
+  certified   Boolean        @default(false)
+  /// Đã làm biển hiệu tên quán.
+  signed      Boolean        @default(false)
+  /// Ảnh quầy đăng lên nhóm xóm (UC-M8): khách ghé ×adMul tới phút `adUntil` của ngày `adDay`.
+  adDay       Int?
+  adUntil     Int?
+  adMul       Float          @default(1)
 
   @@index([ownerId])
+}
+
+enum LeaseStatus {
+  ACTIVE
+  /// Tự trả nhà (hoàn cọc).
+  ENDED
+  /// Hết tiền trả tiền nhà, cọc trừ hết — chủ nhà lấy lại.
+  EVICTED
+}
+
+/// Hợp đồng thuê nhà mặt tiền (UC-F12): cọc giữ trong ví "deposit:<id>", tiền nhà tính mỗi ngày dù mở hay đóng.
+model Lease {
+  id        String      @id @default(uuid(7)) @db.Uuid
+  roomId    String      @db.Uuid
+  lotId     String
+  ownerId   String      @db.Uuid
+  deposit   Int
+  signedDay Int
+  endedDay  Int?
+  status    LeaseStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+
+  @@index([roomId, lotId, status])
+  @@index([ownerId, status])
+}
+
+/// Nhân viên NPC đứng quầy thay khi chủ rời quầy / thoát game (docs/KIENTRUC.md §2).
+model Employee {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @unique @db.Uuid
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  /// Id người trong content.staff.people.
+  staffId    String
+  /// Ca trong content.staff.shifts.
+  shiftId    String
+  hiredDay   Int
+  createdAt  DateTime @default(now())
+}
+
+/// Một phiên bán thay của nhân viên (để báo "Trong lúc bạn vắng" + phiếu ca).
+model StaffShift {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  businessId String   @db.Uuid
+  ownerId    String   @db.Uuid
+  staffId    String
+  day        Int
+  fromMinute Int
+  toMinute   Int
+  served     Int
+  wrong      Int
+  lost       Int
+  revenue    Int
+  wages      Int
+  createdAt  DateTime @default(now())
+
+  @@index([ownerId, createdAt])
+}
+
+enum ContractStatus {
+  /// Đang treo trên bảng, chưa ai nhận.
+  OPEN
+  /// Đã nhận (tiền thưởng + cọc nằm trong escrow), chưa chuẩn bị hàng.
+  TAKEN
+  /// Đã làm đủ hàng, đang mang đi giao.
+  READY
+  DONE
+  /// Trễ hạn / bỏ ngang: hoàn thưởng cho người đăng, mất cọc, trừ tin cậy.
+  FAILED
+  /// Hết hạn mà không ai nhận.
+  EXPIRED
+}
+
+/// Việc trên bảng việc xóm (KIENTRUC §3): NPC đăng mỗi ngày, người chơi nhận → làm → giao tận nơi trước hạn.
+model Contract {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  roomId     String         @db.Uuid
+  day        Int
+  /// Mẫu việc trong content.contracts.templates.
+  templateId String
+  qty        Int
+  reward     Int
+  deposit    Int
+  deadline   Int
+  takerId    String?        @db.Uuid
+  status     ContractStatus @default(OPEN)
+  createdAt  DateTime       @default(now())
+  doneAt     DateTime?
+
+  @@index([roomId, day])
+  @@index([takerId, status])
+}
+
+enum GigStatus {
+  /// Đang treo trên bảng (tiền công nằm trong ví giữ hộ của người đăng).
+  OPEN
+  /// Đã có người nhận (cọc người nhận cũng vào ví giữ hộ).
+  TAKEN
+  /// Đã nộp việc, chờ người đăng nghiệm thu (quá hạn thì tự trả).
+  SUBMITTED
+  /// Đã trả tiền cho người nhận (nghiệm thu / tự trả / phân xử người nhận thắng).
+  DONE
+  /// Phân xử người đăng thắng: hoàn tiền công cho người đăng.
+  REFUNDED
+  /// Người đăng gỡ khi chưa ai nhận.
+  CANCELLED
+  /// Hết hạn mà chưa ai nhận: hoàn tiền người đăng.
+  EXPIRED
+  /// Người nhận trễ hạn / bỏ ngang: hoàn tiền người đăng, người nhận mất cọc.
+  FAILED
+}
+
+/// Việc người chơi đăng cho nhau (docs/KIENTRUC.md §3 — 1.20b, UC-M8). Hiện có: 📸 chụp ảnh quầy.
+model Gig {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  roomId     String    @db.Uuid
+  day        Int
+  kind       String
+  posterId   String    @db.Uuid
+  /// Quầy cần chụp (của người đăng) + chỗ bán lúc đăng.
+  businessId String    @db.Uuid
+  lotId      String
+  reward     Int
+  deposit    Int
+  fee        Int
+  /// Hạn làm (phút trong ngày `day`).
+  deadline   Int
+  takerId    String?   @db.Uuid
+  status     GigStatus @default(OPEN)
+  /// Đã thuê máy ảnh cho việc này (thuê một lần).
+  cameraPaid Boolean   @default(false)
+  /// Điểm từng tấm đã chụp (0–100).
+  shots      Int[]     @default([])
+  quality    Int?
+  stars      Int?
+  /// Hạn nghiệm thu (phút tuyệt đối = day × 1440 + phút).
+  reviewBy   Int?
+  /// Kết quả: "accepted" | "auto" | "dispute_taker" | "dispute_poster".
+  verdict    String?
+  createdAt  DateTime  @default(now())
+  doneAt     DateTime?
+
+  @@index([roomId, day])
+  @@index([takerId, status])
+  @@index([posterId, status])
 }
 
 /// Tồn kho theo lô nhập (batchDay) để tính hàng hỏng và xuất FIFO.
@@ -219,4 +436,38 @@ model NpcRelation {
   lastGreetDay Int    @default(0)
 
   @@id([playerId, npcId])
+}
+
+/// "Chuyện của tôi" (docs/THEGIOI.md §1): mốc đời người chơi, mỗi mốc (key) ghi một lần với câu đã viết sẵn.
+model StoryEntry {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  playerId  String   @db.Uuid
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  /// id mốc trong content.story / thành tựu (`ach:<id>`), có thể kèm hậu tố (đổi nghề theo từng nghề).
+  key       String
+  /// Ngày game xảy ra.
+  day       Int
+  emoji     String
+  text      String
+  createdAt DateTime @default(now())
+
+  @@unique([playerId, key])
+  @@index([playerId, day])
+}
+
+/// Khách quen (docs/KIENTRUC.md §1): cư dân có tên đã mua ở quầy của người chơi bao nhiêu lần.
+model ResidentVisit {
+  id           String  @id @default(uuid(7)) @db.Uuid
+  ownerId      String  @db.Uuid
+  owner        Player  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Id cư dân trong content.residents.
+  residentId   String
+  visits       Int     @default(0)
+  lastDay      Int     @default(0)
+  /// Bị làm sai / bỏ về liên tiếp (khách quen giận khi đủ chuỗi).
+  streakWrong  Int     @default(0)
+  /// Ngày thành khách quen ❤️ (null = chưa / đã giận).
+  regularSince Int?
+
+  @@unique([ownerId, residentId])
 }

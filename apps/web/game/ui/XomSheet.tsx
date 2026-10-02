@@ -1,6 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
+import { formatClock } from "@xom/sim";
 import { useState } from "react";
 import { send } from "../net/socket";
 import { useGame } from "../store";
@@ -58,6 +59,7 @@ export function XomSheet() {
 
   return (
     <Sheet title="Xóm" onClose={() => close(null)}>
+      <TodayCard />
       {invite && invite !== roster.code && (
         <p className="mb-3 rounded-2xl bg-sun/30 p-3 text-sm font-semibold">
           📨 Bạn được mời vào xóm <span className="font-mono">{invite}</span>. Bấm "Vào xóm" bên
@@ -82,10 +84,10 @@ export function XomSheet() {
 
       <button
         type="button"
-        onClick={() => close("board")}
-        className="mt-3 h-11 w-full rounded-xl bg-sun font-semibold"
+        onClick={() => close("fund")}
+        className="mt-3 h-12 w-full rounded-xl bg-leaf font-semibold text-cream"
       >
-        🏆 Bảng xóm · giải tuần, thị phần, đang hot
+        🏗️ Quỹ xóm & công trình chung
       </button>
 
       <p className="mt-4 mb-1.5 text-sm font-extrabold">
@@ -157,5 +159,49 @@ export function XomSheet() {
           : "Chuyển xóm thì mang theo tiền, hàng tồn và xe hàng; chỗ bán cũ có người dùng thì chọn chỗ khác."}
       </p>
     </Sheet>
+  );
+}
+
+/** Lịch hôm nay (docs/THEGIOI.md §2): thứ, ngày và sự kiện cả xóm trong ngày (chợ đêm thứ Bảy, mưa lớn…). */
+function TodayCard() {
+  const clock = useGame((s) => s.clock);
+  const events = useGame((s) => s.events);
+  if (!clock) return null;
+  const w = content.weekday(clock.day);
+  const xom = events.filter((e) => !e.ownerId);
+  return (
+    <section
+      aria-label="Hôm nay trong xóm"
+      className="mb-3 rounded-2xl bg-white p-3 shadow-sm"
+      data-today={w.short}
+    >
+      <p className="text-sm font-extrabold">
+        📅 {w.name}, ngày {clock.day}
+        {w.weekend && (
+          <span className="ml-1.5 rounded-full bg-sun/40 px-1.5 text-xs">cuối tuần</span>
+        )}
+      </p>
+      {xom.length === 0 ? (
+        <p className="mt-1 text-xs text-ink/60">Hôm nay xóm không có sự kiện gì đặc biệt.</p>
+      ) : (
+        <ul className="mt-1.5 flex flex-col gap-1">
+          {xom.map((e) => {
+            const def = content.event(e.eventId);
+            const on = clock.minute >= e.from && clock.minute < e.to;
+            return (
+              <li key={e.key} className="flex items-center gap-2 text-sm" data-event={e.eventId}>
+                <span aria-hidden>{def.emoji}</span>
+                <span className="flex-1 font-semibold">{def.name}</span>
+                <span
+                  className={`text-xs tabular-nums ${on ? "font-bold text-red" : "text-ink/60"}`}
+                >
+                  {on ? "đang diễn ra" : `${formatClock(e.from)}–${formatClock(e.to)}`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

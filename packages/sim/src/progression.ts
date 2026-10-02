@@ -97,7 +97,7 @@ export function addSkill(
 }
 
 /** Cấp cần để mở một thứ (1 nếu không khoá). */
-export function unlockLevel(content: Content, id: "lot_house" | "event_host"): number {
+export function unlockLevel(content: Content, id: "event_host"): number {
   return content.data.unlocks.find((u) => u.id === id)?.level ?? 1;
 }
 
@@ -159,4 +159,46 @@ export function reviewSummary(stars: readonly number[]): {
     ? Math.round((stars.reduce((a, b) => a + b, 0) / stars.length) * 10) / 10
     : 0;
   return { avg, count: stars.length, dist };
+}
+
+// ───────── Giọng thoại theo kiểu khách (content.voice, UC-D6) ─────────
+
+export type LineKind = "cheap" | "fair" | "pricey" | "thanks" | "impatient";
+
+/** Câu khách nói theo kiểu khách; kiểu khách chưa có giọng riêng thì dùng câu chung. */
+export function voiceLine(
+  c: Content,
+  archetype: string,
+  kind: LineKind,
+  rand: () => number,
+): string {
+  const own = c.data.voice.voices.find((v) => v.archetype === archetype)?.[kind];
+  const list = own?.length ? own : c.data.customerLines[kind];
+  return list[Math.floor(rand() * list.length)] ?? "";
+}
+
+/** Câu gọi món theo giọng kiểu khách (null = dùng câu mặc định của món). */
+export function voiceAsk(
+  c: Content,
+  archetype: string,
+  dish: string,
+  rand: () => number,
+): string | null {
+  const list = c.data.voice.voices.find((v) => v.archetype === archetype)?.ask;
+  if (!list?.length) return null;
+  const line = (list[Math.floor(rand() * list.length)] ?? "").replace("{dish}", dish);
+  return line.charAt(0).toUpperCase() + line.slice(1);
+}
+
+/** Tắt "thoại mặn": đổi từ mặn sang từ hiền (không phân biệt hoa thường, giữ phần còn lại của câu). */
+export function soften(text: string, map: Readonly<Record<string, string>>): string {
+  let out = text;
+  for (const [from, to] of Object.entries(map)) {
+    const re = new RegExp(
+      `(^|[^\\p{L}])${from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[^\\p{L}])`,
+      "giu",
+    );
+    out = out.replace(re, (_m, pre: string) => `${pre}${to}`);
+  }
+  return out;
 }

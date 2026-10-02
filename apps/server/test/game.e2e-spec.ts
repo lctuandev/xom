@@ -119,7 +119,8 @@ describe("Vòng chơi làm thật (e2e)", () => {
     const { socket } = await openBanhMiStall(url);
     const order = await nextOrder(socket);
     expect(order.variantId).toBe("banh_mi_thit"); // chỉ đủ nguyên liệu bánh mì thịt
-    expect(order.ask).toMatch(/^Cho con ổ bánh mì thịt/);
+    // Lời gọi món theo giọng kiểu khách (UC-D6) — luôn nhắc đúng món.
+    expect(order.ask.toLowerCase()).toContain("bánh mì thịt");
 
     // Chưa làm món mà tính tiền → từ chối.
     const early = await emit(socket, "order:pay", { orderId: order.orderId, change: 0 });
@@ -180,6 +181,8 @@ describe("Vòng chơi làm thật (e2e)", () => {
       await emit(socket, "order:decline", { orderId: order.orderId });
       order = await nextOrder(socket);
     }
+    // Khách tới dồn dập (Luật 7.2) → vừa từ chối nhiều lượt; nghỉ chút cho khỏi chạm giới hạn 20 thao tác/giây.
+    await new Promise((r) => setTimeout(r, 1_100));
     // Thử làm bằng xíu mại (không có trong kho) → bị từ chối, không trừ gì.
     const noStock = await emit(socket, "order:make", {
       orderId: order.orderId,
@@ -191,7 +194,7 @@ describe("Vòng chơi làm thật (e2e)", () => {
     const result = nextResult(socket, order.orderId);
     const short = (changeFor(order) ?? 0) - 2_000;
     const paid = await emit(socket, "order:pay", { orderId: order.orderId, change: short });
-    expect(paid.ok && paid.data.today.revenue).toBe(order.price);
+    expect(paid.ok ? paid.data.today.revenue : paid.message).toBe(order.price);
     expect(await result).toMatchObject({ outcome: "short" });
     socket.disconnect();
   });

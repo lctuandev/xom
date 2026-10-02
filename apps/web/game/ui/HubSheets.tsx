@@ -9,9 +9,11 @@ import { logout } from "../auth/store";
 import { vnd } from "../format";
 import { getPlayer } from "../scene/player";
 import { useGame } from "../store";
+import { isSpicy, setSpicy } from "../voice";
 import { nearestAtm } from "../world";
 import { Achievements, useMyStats } from "./BoardSheet";
 import { Sheet } from "./Sheet";
+import { StoryTimeline } from "./Story";
 import { Tabs } from "./Tabs";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
@@ -91,7 +93,7 @@ export function ProfileSheet() {
   const me = useGame((s) => s.me);
   const close = useGame((s) => s.openSheet);
   const stats = useMyStats();
-  const [tab, setTab] = useState<"me" | "skills" | "badges" | "friends">("me");
+  const [tab, setTab] = useState<"me" | "story" | "skills" | "badges" | "friends">("me");
   if (!me) return null;
   const friends = Object.entries(me.friendship)
     .filter(([, v]) => v > 0)
@@ -115,6 +117,7 @@ export function ProfileSheet() {
         onChange={setTab}
         tabs={[
           { id: "me", label: "🧑 Tôi" },
+          { id: "story", label: "📖 Chuyện" },
           { id: "skills", label: "📈 Kỹ năng" },
           {
             id: "badges",
@@ -124,6 +127,7 @@ export function ProfileSheet() {
           { id: "friends", label: "🫶 Người quen" },
         ]}
       />
+      {tab === "story" && <StoryTimeline name={me.displayName} />}
       {tab === "me" && (
         <>
           <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
@@ -143,11 +147,32 @@ export function ProfileSheet() {
             </div>
             <p className="mt-2 text-sm">
               Danh tiếng: <b>{FAME_LABEL[me.progress.fame]}</b> · đã phục vụ {me.progress.served}{" "}
-              khách
+              khách · 🤝 tin cậy <b data-trust={me.trust}>{me.trust}</b>
             </p>
             <p className="text-xs text-ink/60">
               KN có được khi bán món, làm thuê, giao hàng — làm thật mới lên cấp.
             </p>
+          </div>
+          <div className="mb-3 grid grid-cols-2 gap-2" data-needs-bars>
+            {(
+              [
+                ["🍚 No", me.needs.food, "bg-sun"],
+                ["💧 Đỡ khát", me.needs.drink, "bg-[#5aa9e6]"],
+              ] as const
+            ).map(([label, v, color]) => (
+              <div key={label} className="rounded-2xl bg-white p-2.5 shadow-sm">
+                <p className="flex justify-between text-xs font-semibold">
+                  <span>{label}</span>
+                  <span className="tabular-nums">{v}%</span>
+                </p>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
+                  <div
+                    className={`h-full rounded-full ${v < content.data.needs.lowAt ? "bg-red" : color}`}
+                    style={{ width: `${v}%` }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
           <div className="rounded-2xl bg-white p-3 shadow-sm">
             {row("💵 Tiền mặt", vnd(me.money))}
@@ -260,6 +285,7 @@ export function SettingsSheet() {
       </div>
       <AudioSettings />
       <div className="flex flex-col gap-2">
+        <SpicyToggle className={btn} />
         <button type="button" className={btn} onClick={() => setShowPerf(!showPerf)}>
           📊 {showPerf ? "Ẩn số đo hiệu năng" : "Hiện số đo hiệu năng"}
         </button>
@@ -403,5 +429,24 @@ function Skills({ points, level }: { points: Record<string, number | undefined>;
         ))}
       </ul>
     </section>
+  );
+}
+
+/** Bật/tắt "thoại mặn": khách teencode, đôi khi hơi tục nhẹ (UC-D6). */
+function SpicyToggle({ className }: { className: string }) {
+  const [on, setOn] = useState(isSpicy);
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className={className}
+      onClick={() => {
+        setSpicy(!on);
+        setOn(!on);
+      }}
+    >
+      🌶️ Thoại mặn: {on ? "Bật — khách nói teencode, đôi khi hơi tục" : "Tắt — lời lẽ hiền"}
+    </button>
   );
 }

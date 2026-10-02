@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallGuide } from "@/game/ui/InstallGuide";
 import { Logo } from "@/game/ui/Logo";
 import { XomArt } from "@/game/ui/XomArt";
 
@@ -14,10 +15,11 @@ export default function Home() {
       </div>
       <Link
         href="/play"
-        className="mx-6 mb-4 flex h-12 items-center justify-center rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98]"
+        className="mx-6 mb-3 flex h-12 items-center justify-center rounded-2xl bg-red text-base font-semibold text-cream active:scale-[0.98]"
       >
         Vào xóm
       </Link>
+      <InstallGuide />
     </main>
   );
 }

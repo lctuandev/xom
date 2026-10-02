@@ -114,7 +114,7 @@ export async function makeDish(page: Page, opts: { mistake?: string; timeout?: n
       await panel.getByRole("button", { name: /Xong bước này|Không bỏ gì/ }).tap(t);
     }
   }
-  await kitchen.getByRole("button", { name: /Giao món cho khách/ }).tap(t);
+  await kitchen.getByRole("button", { name: /Giao món cho khách|Giao xe cho khách/ }).tap(t);
   return { orderId, spec };
 }
 
@@ -316,20 +316,28 @@ export async function setWeather(page: Page, kind: string, after = 0, minutes = 
 }
 
 /** Đặt giờ của xóm (lệnh thử nghiệm, chỉ bản dev): kịch bản dài khỏi bị hết ngày giữa chừng. */
-export async function setClock(page: Page, minute: number) {
-  const ok = await page.evaluate(async (m) => {
-    const dbg = (
-      window as unknown as {
-        xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
-      }
-    ).xomDebug;
-    return (await dbg?.send("debug:clock", { minute: m }))?.ok ?? false;
-  }, minute);
+export async function setClock(page: Page, minute: number, day?: number) {
+  const ok = await page.evaluate(
+    async (p) => {
+      const dbg = (
+        window as unknown as {
+          xomDebug?: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+        }
+      ).xomDebug;
+      return (await dbg?.send("debug:clock", p))?.ok ?? false;
+    },
+    day === undefined ? { minute } : { minute, day },
+  );
   expect(ok).toBe(true);
 }
 
 /** Cộng tiền mặt / KN (lệnh thử nghiệm, chỉ bản dev). */
-export async function grantMoney(page: Page, money: number, xp?: number) {
+export async function grantMoney(
+  page: Page,
+  money: number | undefined,
+  xp?: number,
+  needs?: { food?: number; drink?: number },
+) {
   const ok = await page.evaluate(
     async (p) => {
       const dbg = (
@@ -339,7 +347,7 @@ export async function grantMoney(page: Page, money: number, xp?: number) {
       ).xomDebug;
       return (await dbg?.send("debug:grant", p))?.ok ?? false;
     },
-    { money, xp },
+    { money, xp, ...needs },
   );
   expect(ok).toBe(true);
 }

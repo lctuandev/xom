@@ -1,7 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
 import type { MeView, NotifyEvent, OrderEvent, Snapshot } from "@xom/shared";
-import { emit, join, next, openBanhMiStall } from "./client.js";
+import { atmDeposit, emit, join, next, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
 
 // Chọn cách trả tiền (DESIGN §2, docs/USECASES.md UC-I8): 💵 tiền mặt · 🏦 chuyển khoản · tự chọn.
@@ -15,8 +15,10 @@ describe("Trả bằng gì (e2e)", () => {
   afterAll(() => app.close());
 
   const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  /** Vốn dự phòng có sẵn trong tài khoản người mới. */
+  const B0 = content.economy.startingBank;
 
-  it("mua xe: chọn chuyển khoản mà tài khoản trống thì báo; tự chọn thì khoản lớn đi tài khoản", async () => {
+  it("mua xe: chọn chuyển khoản mà tài khoản không đủ thì báo; tự chọn thì khoản lớn đi tài khoản", async () => {
     const { socket, snap } = await join(url);
     const start = snap.me.money;
     const price = content.equipment("xe_banh_mi").price;
@@ -34,7 +36,7 @@ describe("Trả bằng gì (e2e)", () => {
     socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await wait(80);
     const deposit = start - 100_000;
-    await emit(socket, "atm:use", { atmId: atm.id, action: "deposit", amount: deposit });
+    await atmDeposit(socket, deposit);
     const yard = content.place("vua_xe").position;
     socket.emit("move", { x: yard.x, z: yard.z + 1.4, yaw: 0, moving: false, inside: null });
     await wait(80);
@@ -48,7 +50,7 @@ describe("Trả bằng gì (e2e)", () => {
     });
     const ting = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("🏦"));
     const bought = await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
-    expect(bought.ok && bought.data).toMatchObject({ money: 100_000, bank: deposit - price });
+    expect(bought.ok && bought.data).toMatchObject({ money: 100_000, bank: B0 + deposit - price });
     expect((await ting).text).toBe(`🏦 Đã chuyển khoản ${price.toLocaleString("vi-VN")}đ`);
 
     // Mua lặt vặt ở chợ: tự chọn trả tiền mặt; chọn chuyển khoản thì trừ tài khoản.
@@ -60,7 +62,7 @@ describe("Trả bằng gì (e2e)", () => {
       data: MeView;
     };
     expect(cashBuy.data.money).toBeLessThan(100_000);
-    expect(cashBuy.data.bank).toBe(deposit - price);
+    expect(cashBuy.data.bank).toBe(B0 + deposit - price);
     const bankBuy = (await emit(socket, "market:buy", {
       itemId: "pate",
       packs: 1,
@@ -70,7 +72,7 @@ describe("Trả bằng gì (e2e)", () => {
       data: MeView;
     };
     expect(bankBuy.data.money).toBe(cashBuy.data.money);
-    expect(bankBuy.data.bank).toBeLessThan(deposit - price);
+    expect(bankBuy.data.bank).toBeLessThan(B0 + deposit - price);
     socket.disconnect();
   });
 
@@ -106,7 +108,7 @@ describe("Trả bằng gì (e2e)", () => {
     if (!atm) throw new Error("bản đồ không có ATM");
     b.socket.emit("move", { x: atm.x, z: atm.z + 1, yaw: 0, moving: false, inside: null });
     await wait(80);
-    await emit(b.socket, "atm:use", { atmId: atm.id, action: "deposit", amount: 100_000 });
+    await atmDeposit(b.socket, 100_000);
     const lot = content.lot("dau_hem").position;
     b.socket.emit("move", { x: lot.x + 1, z: lot.z + 1.2, yaw: 0, moving: false, inside: null });
     await wait(120);
@@ -124,10 +126,10 @@ describe("Trả bằng gì (e2e)", () => {
     // Nghỉ chút cho khỏi chạm giới hạn 20 thao tác/giây (vừa mời bớt khách NPC).
     await wait(1100);
     await emit(a.socket, "order:make", { orderId: o.orderId, build: o.spec });
-    const charged = next(b.socket, "me", (m: MeView) => m.bank === 100_000 - o.price);
+    const charged = next(b.socket, "me", (m: MeView) => m.bank === B0 + 100_000 - o.price);
     const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: null });
     if (!paid.ok) throw new Error(`tính tiền: ${paid.error} ${paid.message}`);
-    expect(paid.data.bank).toBe(o.price);
+    expect(paid.data.bank).toBe(B0 + o.price);
     const bMe = await charged;
     expect(bMe.money).toBe(b.snap.me.money - 100_000);
     a.socket.disconnect();

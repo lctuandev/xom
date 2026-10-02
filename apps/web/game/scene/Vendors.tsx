@@ -92,7 +92,7 @@ function Stall({ v, hour }: { v: Vendor; hour: number }) {
         bg={v.signColor}
         size={[2.2, 0.5]}
       />
-      <Character model="character-male-c" walker={seller} />
+      <Character model={v.seller as CharacterModel} walker={seller} />
       {patrons.map((s, i) => (
         <Seated
           key={`${hour}-${s.x}`}

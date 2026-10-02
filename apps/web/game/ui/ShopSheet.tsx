@@ -4,8 +4,10 @@ import { content } from "@xom/content";
 import { customOrder } from "@xom/sim";
 import { useState } from "react";
 import { vnd } from "../format";
+import { modelFor } from "../looks";
 import { send } from "../net/socket";
 import { useGame } from "../store";
+import { Counterpart } from "./Counterpart";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { RatingLine, ReviewBook, useReviews } from "./Reviews";
 import { Sheet } from "./Sheet";
@@ -27,6 +29,7 @@ export function ShopSheet() {
   const { view: rating, setView: setRating } = useReviews(lot?.ownerId);
   // Vừa mua thì mở sẵn sổ để chấm sao; viết xong vẫn để mở cho thấy đánh giá của mình.
   const [bookOpen, setBookOpen] = useState(false);
+  const [hello] = useState(() => Math.random());
   if (!lot) return null;
 
   const recipe = content.product(lot.productId).recipe;
@@ -38,6 +41,19 @@ export function ShopSheet() {
   const order = variant ? customOrder(recipe, menu, variant.id, picks, mods) : null;
   const priced = order && typeof order !== "string" ? order : null;
   const src = priced ? check(priced.price) : null;
+  // Khung đứng trước quầy (UC-E5): chủ quầy chào / xác nhận món, câu mình dặn hiện bên phải.
+  const lines = content.data.counterLines;
+  const say = (list: string[], seed: number) =>
+    list[Math.floor(seed * list.length)] ?? list[0] ?? "";
+  const raw =
+    menu.length === 0
+      ? lines.soldOut
+      : priced
+        ? say(lines.picked, hello)
+            .replace("{dish}", priced.dish)
+            .replace("{price}", vnd(priced.price))
+        : say(lines.hello, hello);
+  const ownerLine = raw.charAt(0).toUpperCase() + raw.slice(1);
 
   const place = async () => {
     if (!variant) return;
@@ -54,7 +70,19 @@ export function ShopSheet() {
   };
 
   return (
-    <Sheet title={`Quầy ${lot.ownerName}`} onClose={() => close(null)}>
+    <Sheet
+      title={`Quầy ${lot.ownerName}`}
+      onClose={() => close(null)}
+      face={
+        <Counterpart
+          model={modelFor(lot.ownerId)}
+          name={lot.ownerName}
+          tag="Chủ quầy"
+          line={ownerLine}
+          me={priced ? priced.ask : null}
+        />
+      }
+    >
       <p className="mb-2 text-sm text-ink/60">
         {content.product(lot.productId).name} · người thật đứng quầy, làm tay theo lời bạn dặn.
       </p>
@@ -158,8 +186,11 @@ export function ShopSheet() {
           )}
           <div className="sticky bottom-0 mt-3 bg-cream pt-2 pb-1">
             {priced && (
-              <p className="mb-1.5 text-center text-sm" data-dish={priced.dish}>
-                “{priced.ask}”
+              <p
+                className="mb-1.5 text-center text-sm font-semibold first-letter:uppercase"
+                data-dish={priced.dish}
+              >
+                {priced.dish}
               </p>
             )}
             {typeof order === "string" && (

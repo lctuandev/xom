@@ -178,6 +178,11 @@ describe("Xóm chung (e2e)", () => {
       expect((await emit(a.socket, "market:buy", { itemId, packs: 1 })).ok).toBe(true);
     await emit(a.socket, "biz:update", { lotId: "dau_hem" });
     await emit(a.socket, "biz:attend", { on: true });
+    // Quầy đông khách NPC (Luật 7.2) thì An mời khách qua đường đi chỗ khác để chừa chỗ cho hàng xóm.
+    const shoo = (o: OrderEvent) => {
+      if (!o.buyerId) void emit(a.socket, "order:decline", { orderId: o.orderId });
+    };
+    a.socket.on("order", shoo);
     expect((await emit(a.socket, "biz:open", {})).ok).toBe(true);
 
     // Bình vào xóm An, thấy quầy An kèm thực đơn.
@@ -204,7 +209,10 @@ describe("Xóm chung (e2e)", () => {
 
     const got = next(a.socket, "order", (o: OrderEvent) => o.buyerId === b.snap.me.playerId);
     const placed = await emit(b.socket, "shop:order", order);
-    expect(placed.ok).toBe(true);
+    expect(placed.ok ? "ok" : placed.message).toBe("ok");
+    // Hàng xóm đã vào hàng: thôi mời khách khác đi (khỏi dính giới hạn thao tác/giây khi tính tiền).
+    a.socket.off("order", shoo);
+    await new Promise((r) => setTimeout(r, 1_100));
     const o = await got;
     expect(o).toMatchObject({ buyerName: "Tuấn Test", dish: "bánh mì thịt, không hành" });
     expect(o.spec.rau).not.toContain("hanh");
@@ -229,7 +237,7 @@ describe("Xóm chung (e2e)", () => {
     const bMoney = next(b.socket, "me", (m: MeView) => m.money === b.snap.me.money - o.price);
     const done = next(b.socket, "orderResult", (r: OrderResultEvent) => r.orderId === o.orderId);
     const paid = await emit(a.socket, "order:pay", { orderId: o.orderId, change: changeFor(o) });
-    expect(paid.ok && paid.data.today.revenue).toBe(o.price);
+    expect(paid.ok ? paid.data.today.revenue : paid.message).toBe(o.price);
     expect(paid.ok && paid.data.today.tips).toBe(0);
     await bMoney;
     expect(await done).toMatchObject({ served: true, received: o.price });

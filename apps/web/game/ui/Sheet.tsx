@@ -10,10 +10,13 @@ export function Sheet({
   title,
   onClose,
   children,
+  face,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  /** Người đang đứng đối diện (chân dung + ô thoại, UC-E5) — nằm ngay trên mép sheet. */
+  face?: ReactNode;
 }) {
   return (
     <div className="pointer-events-auto fixed inset-x-0 top-0 bottom-(--nav-h) z-30 flex flex-col justify-end">
@@ -23,25 +26,28 @@ export function Sheet({
         onClick={onClose}
         className="absolute inset-0 bg-ink/20"
       />
-      <section
+      <div
         role="dialog"
         aria-label={title}
-        className="relative flex max-h-[68dvh] flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.15)]"
+        className="relative flex max-h-full flex-col justify-end"
       >
-        <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-ink/20" />
-        <header className="flex items-center justify-between px-4 pt-1 pb-2">
-          <h2 className="text-lg font-extrabold">{title}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex size-9 items-center justify-center rounded-full bg-ink/5 text-base"
-            aria-label="Đóng"
-          >
-            ✕
-          </button>
-        </header>
-        <div className="overflow-y-auto overscroll-contain px-4 pb-3">{children}</div>
-      </section>
+        {face}
+        <section className="relative flex max-h-[68dvh] flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.15)]">
+          <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-ink/20" />
+          <header className="flex items-center justify-between px-4 pt-1 pb-2">
+            <h2 className="text-lg font-extrabold">{title}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex size-9 items-center justify-center rounded-full bg-ink/5 text-base"
+              aria-label="Đóng"
+            >
+              ✕
+            </button>
+          </header>
+          <div className="overflow-y-auto overscroll-contain px-4 pb-3">{children}</div>
+        </section>
+      </div>
     </div>
   );
 }

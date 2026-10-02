@@ -9,7 +9,7 @@ const byHour = z.record(z.string().regex(/^([0-9]|1[0-9]|2[0-3])$/), z.number().
 
 /** Template quy định HÀNH VI; sản phẩm chỉ là số liệu. */
 export const templateSchema = z.object({
-  id: z.enum(["FOOD", "RETAIL"]),
+  id: z.enum(["FOOD", "RETAIL", "SERVICE"]),
   name: z.string(),
 });
 
@@ -71,6 +71,13 @@ export const recipeVariantSchema = z.object({
   refPrice: vnd,
   /** Độ phổ biến khi khách chọn món. */
   popularity: z.number().positive().default(1),
+  /**
+   * Dịch vụ (SERVICE, UC-G2): khách chỉ kể triệu chứng, không nói bệnh — "Bánh sau xẹp lép rồi".
+   * Có symptoms thì câu khách nói lấy từ đây thay cho tên món.
+   */
+  symptoms: z.array(z.string()).optional(),
+  /** Kết quả khi kiểm tra từng bộ phận (UC-G3); bộ phận không ghi = bình thường. */
+  findings: z.record(id, z.string()).default({}),
 });
 
 /** Yêu cầu riêng của khách: "không hành", "nhiều ớt", "thêm pudding". */
@@ -112,9 +119,20 @@ export const counterSchema = z.object({
     .min(1),
 });
 
+/** Chẩn đoán trước khi sửa (SERVICE, UC-G3): các bộ phận chạm vào để kiểm tra. */
+export const diagnosisSchema = z.object({
+  parts: z.array(z.object({ id, label: z.string(), emoji: z.string() })).min(1),
+  /** Thời gian một lần kiểm tra (ms thật) — kiểm tra lung tung thì khách sốt ruột. */
+  checkMs: z.number().int().positive(),
+  /** Câu khi bộ phận không có gì. */
+  ok: z.string(),
+  /** Khách chạy thử mà xe vẫn hư (sửa sai bệnh). */
+  stillBroken: z.string(),
+});
+
 export const productSchema = z.object({
   id,
-  template: z.enum(["FOOD", "RETAIL"]),
+  template: z.enum(["FOOD", "RETAIL", "SERVICE"]),
   category: id,
   name: z.string(),
   emoji: z.string(),
@@ -129,6 +147,8 @@ export const productSchema = z.object({
   recipe: recipeSchema,
   /** Quầy dạng lưới thay cho danh sách bước (bỏ trống = làm theo từng bước). */
   counter: counterSchema.optional(),
+  /** Dịch vụ: kiểm tra bộ phận trước khi sửa (bỏ trống = không có bước chẩn đoán). */
+  diagnosis: diagnosisSchema.optional(),
 });
 
 export const equipmentSchema = z.object({
@@ -143,11 +163,37 @@ export const equipmentSchema = z.object({
   model: z.string(),
 });
 
+/** Lịch tuần (docs/THEGIOI.md §2): ngày 1 của xóm là Thứ Hai; cuối tuần lưu lượng mỗi kiểu khu khác nhau. */
+export const calendarSchema = z.object({
+  weekdays: z
+    .array(z.object({ name: z.string(), short: z.string(), weekend: z.boolean().default(false) }))
+    .length(7),
+  /** Ngày cuối tuần: nhân người qua lại theo kiểu khu (trafficProfile id); không khai báo = như ngày thường. */
+  weekendTraffic: z.record(id, z.number().positive()).default({}),
+});
+export type Calendar = z.infer<typeof calendarSchema>;
+
 export const trafficProfileSchema = z.object({
   id,
   name: z.string(),
   /** Số người qua lại mỗi giờ. */
   peoplePerHour: byHour,
+  /** Bản sắc khu (THEGIOI §3): người ở khu này ưa nhóm hàng nào (category → hệ số; không ghi = 1). */
+  likes: z.record(id, z.number().positive()).default({}),
+  emoji: z.string().default("🏘️"),
+});
+
+/**
+ * Tiếng khu (THEGIOI §3, emergent): nhiều quầy cùng nhóm hàng đang mở trong một khu thì khu "có tiếng" — người qua
+ * lại tăng cho cả nhóm (mỗi quầy thêm `perShop`, tối đa `cap`). Khu đạt `minShops` thì bảng xóm gọi tên (vd. khu ăn uống).
+ */
+export const districtFameSchema = z.object({
+  perShop: z.number().min(0).max(1),
+  cap: z.number().min(0).max(2),
+  minShops: z.number().int().min(2),
+  groups: z
+    .array(z.object({ id, name: z.string(), emoji: z.string(), categories: z.array(id).min(1) }))
+    .min(1),
 });
 
 export const lotSchema = z.object({
@@ -164,6 +210,233 @@ export const lotSchema = z.object({
   facing: z.number(),
   /** cart = xe đẩy trên vỉa hè; house = nhà mặt tiền có không gian tiệm bên trong (UC-W6). */
   kind: z.enum(["cart", "house"]).default("cart"),
+});
+
+/** Cư dân có tên trong xóm (KIENTRUC §1): khách tới quầy là một người cụ thể, có món ưa; quầy nhớ họ ghé mấy lần. */
+export const residentSchema = z.object({
+  id,
+  name: z.string(),
+  /** Kiểu khách (npcs id) — giọng nói, kiên nhẫn, model. */
+  archetype: id,
+  /** Nhóm hàng ưa (category) — hay ghé quầy bán nhóm này hơn. */
+  favorite: id.optional(),
+  /** Một dòng giới thiệu: "bán vé số đầu hẻm". */
+  bio: z.string(),
+});
+
+/** Khách quen (KIENTRUC §1): ghé đủ lần thì thành ❤️; làm sai liên tiếp thì giận. */
+export const regularsSchema = z.object({
+  greetAt: z.number().int().min(1),
+  regularAt: z.number().int().min(2),
+  patienceMul: z.number().min(1).max(3),
+  /** Khách quen ăn xong có thể dắt thêm bạn (thêm một khách ở nhịp sau). */
+  friendChance: z.number().min(0).max(1),
+  /** Làm sai / để chờ bỏ về liên tiếp chừng này lần thì khách quen giận, mất ❤️. */
+  angryStreak: z.number().int().min(1),
+  /** Câu mở lời: khách quay lại (đã ghé ≥ greetAt) / khách quen ❤️. */
+  returning: z.array(z.string()).min(1),
+  usual: z.array(z.string()).min(1),
+});
+
+/**
+ * Nhân viên thuê đứng quầy thay (KIENTRUC §2): tay nghề (tỉ lệ làm đúng), tốc độ, lương/giờ; ca làm cố định trong ngày.
+ * Nhân viên không tự nhập hàng, không tự mở quầy — chủ mở quầy rồi giao lại; hết hàng thì nghỉ bán.
+ */
+/**
+ * Mở tiệm trong nhà mặt tiền theo quy trình đời thật (UC-F12): thuê nhà (đặt cọc + vốn dự phòng) → đăng ký hộ kinh doanh
+ * (đặt tên quán, chờ xét) → ATTP cho quán ăn uống (tập huấn + đoàn kiểm tra tới tận tiệm) → biển hiệu → mở tiệm.
+ */
+export const shopSetupSchema = z.object({
+  /** Cọc = bấy nhiêu ngày tiền thuê (ngoài đời 3–6 tháng); trả nhà thì hoàn cọc. */
+  depositDays: z.number().int().min(1),
+  /** Phải còn đủ tiền thuê bấy nhiêu ngày sau khi đặt cọc (vốn dự phòng). */
+  reserveDays: z.number().int().min(0),
+  license: z.object({
+    office: z.string(),
+    fee: vnd,
+    /** Phút game chờ xét hồ sơ. */
+    minutes: z.number().int().positive(),
+  }),
+  foodCert: z.object({
+    /** Template sản phẩm cần giấy ATTP. */
+    templates: z.array(z.string()).min(1),
+    trainingFee: vnd,
+    /** Đoàn kiểm tra tới sau bấy nhiêu phút game kể từ lúc hẹn. */
+    inspectAfter: z.number().int().positive(),
+    /** Có mặt ở tiệm trong khoảng này (phút game) kể từ lúc đoàn tới. */
+    inspectWindow: z.number().int().positive(),
+  }),
+  signFee: vnd,
+  name: z.object({ min: z.number().int().min(1), max: z.number().int().max(40) }),
+});
+
+/** Xe ôm (docs/KIENTRUC.md §4) + kẹt xe (§5). Tốc độ tính bằng mét/giây trong cảnh 3D. */
+export const ridesSchema = z.object({
+  /** Trạm xe ôm (place kind "ride"). */
+  stationPlaceId: id,
+  /** Lưu lượng khu nào quyết định độ kẹt xe (trafficProfiles). */
+  jamProfile: id,
+  /** Thuê xe Wave cũ một ngày. */
+  bikeRentPerDay: vnd,
+  /** Tiền xăng mỗi 100 m (cả lượt đi lẫn quay về trạm), làm tròn 500đ. */
+  fuelPer100m: vnd,
+  /** Giá chuẩn = mở cửa + theo quãng đường, làm tròn nghìn. */
+  baseFare: vnd,
+  farePer100m: vnd,
+  /** Không chở chỗ gần hơn (đi bộ được). */
+  minMeters: z.number().positive(),
+  /** Các mức giá người chơi đưa ra so với giá chuẩn (trả giá). */
+  haggle: z.array(z.object({ ratio: z.number().min(0.5).max(3), label: z.string() })).min(2),
+  /** Khách đồng ý: 1 khi ≤ giá chuẩn, giảm dần theo mức nói thách; mưa bão khách dễ chịu hơn. */
+  acceptSlope: z.number().positive(),
+  rainAcceptBonus: z.number().min(0).max(1),
+  routes: z.object({
+    road: z.object({
+      name: z.string(),
+      /** m/s khi đường vắng. */
+      speed: z.number().positive(),
+      /** Giảm tốc tối đa khi kẹt cứng (congestion = 1). */
+      jamSlow: z.number().min(0).max(0.9),
+    }),
+    alley: z.object({
+      name: z.string(),
+      speed: z.number().positive(),
+      /** Mưa / bão: đường trơn, chạy chậm lại. */
+      rainSlow: z.number().min(0).max(0.9),
+    }),
+  }),
+  /** Khách chờ bao lâu là bình thường: m/s ước của "xe ôm vừa phải". */
+  expectSpeed: z.number().positive(),
+  /** Phút game chờ khách khi ngã tư đông nhất (vắng thì lâu hơn). */
+  waitMinutes: z.number().positive(),
+  /** Tiền boa theo sao (khoảng min–max, làm tròn nghìn). */
+  tip: z.object({
+    five: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+    four: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
+  }),
+  lines: z.object({
+    ask: z.array(z.string()).min(1),
+    accept: z.array(z.string()).min(1),
+    refuse: z.array(z.string()).min(1),
+    stars: z.record(z.string(), z.array(z.string()).min(1)),
+  }),
+});
+
+/** Bảng việc xóm + điểm tin cậy (docs/KIENTRUC.md §3). */
+export const contractsSchema = z.object({
+  /** Người giữ bảng, ghi sổ, phân xử. */
+  keeper: z.string(),
+  /** Số việc NPC đăng mỗi ngày ở mỗi xóm. */
+  perDay: z.number().int().min(1).max(10),
+  /** Cọc người nhận đặt (tỉ lệ tiền thưởng) — mất nếu bỏ ngang / trễ hạn. */
+  depositRate: z.number().min(0).max(1),
+  trust: z.object({
+    start: z.number().int().min(0).max(100),
+    /** Giao đúng hạn. */
+    done: z.number().int().min(0),
+    /** Trễ hạn / bỏ ngang. */
+    fail: z.number().int().min(0),
+    /** Bị khách bắt thối thiếu. */
+    short: z.number().int().min(0),
+    /** Dưới mức này: Chú Hai nhắc, chỉ nhận việc nhỏ. */
+    lowAt: z.number().int().min(0).max(100),
+    /** Dưới mức này: khoá nhận việc `lockDays` ngày. */
+    lockAt: z.number().int().min(0).max(100),
+    lockDays: z.number().int().min(1),
+  }),
+  templates: z
+    .array(
+      z.object({
+        id,
+        /** Người đăng (NPC) — ai đặt hàng. */
+        poster: z.string(),
+        productId: id,
+        /** Món phải giao (công thức chuẩn). */
+        variantId: id,
+        qty: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+        /** Nơi giao (chỗ bán trên bản đồ). */
+        lotId: id,
+        /** Hạn giao (phút trong ngày). */
+        deadline: z.number().int().min(360).max(1320),
+        /** Thưởng = số phần × giá chuẩn × hệ số (đặt số lượng + giao tận nơi nên cao hơn bán lẻ). */
+        priceMul: z.number().min(1).max(3),
+        /** Tin cậy tối thiểu để nhận. */
+        minTrust: z.number().int().min(0).max(100),
+        /** Câu ghi trên bảng: {qty} {dish} {place} {deadline}. */
+        text: z.string(),
+      }),
+    )
+    .min(1),
+});
+
+/**
+ * 📋 Việc người chơi đăng cho nhau (docs/KIENTRUC.md §3, 1.20b — UC-M8): người đăng trả tiền vào ví giữ hộ trước, người nhận
+ * đặt cọc; nộp việc → người đăng nghiệm thu (quá hạn thì tự trả), khiếu nại → người giữ bảng xem sản phẩm rồi phân xử.
+ */
+export const gigsSchema = z.object({
+  /** Phí ghi sổ (tỉ lệ tiền công, tối thiểu `feeMin`) — vào quỹ xóm. */
+  feeRate: z.number().min(0).max(0.5),
+  feeMin: z.number().int().min(0),
+  /** Phút game người đăng có để nghiệm thu; quá hạn tự trả cho người nhận (như sàn freelance tự giải ngân). */
+  reviewMinutes: z.number().int().min(10),
+  /** Khiếu nại thua (việc đạt chuẩn mà vẫn kêu) / nộp việc kém bị xử thua: trừ tin cậy. */
+  disputeLostTrust: z.number().int().min(0),
+  /** 📸 Thợ ảnh (NGHE §3.3): chủ quầy thuê chụp ảnh quầy đăng lên nhóm xóm → khách ghé nhiều hơn vài giờ. */
+  photo: z.object({
+    /** Người dẫn nghề. */
+    mentor: z.string(),
+    /** Mức tiền công người đăng chọn. */
+    rewards: z.array(z.number().int().min(1000)).min(1),
+    /** Hạn làm (giờ game kể từ lúc đăng) người đăng chọn. */
+    hours: z.array(z.number().int().min(1).max(12)).min(1),
+    minTrust: z.number().int().min(0).max(100),
+    /** Thuê máy ảnh mỗi buổi chụp (money sink). */
+    cameraRent: z.number().int().min(0),
+    /** Một buổi chụp kéo dài (ms thật) và số khoảnh khắc đẹp xuất hiện. */
+    sessionMs: z.number().int().min(5000),
+    moments: z.number().int().min(3),
+    /** Bấm lệch khoảnh khắc trong khoảng này (ms) thì vẫn có điểm; trong `perfectMs` là 100 điểm. */
+    windowMs: z.number().int().min(100),
+    perfectMs: z.number().int().min(0),
+    /** Số kiểu ảnh tối đa một buổi; nộp `keep` tấm đẹp nhất. */
+    shots: z.number().int().min(3),
+    keep: z.number().int().min(1),
+    /** Điểm ảnh (trung bình `keep` tấm) từ mức này trở lên là đạt khi phân xử. */
+    passQuality: z.number().int().min(0).max(100),
+    /** Đăng ảnh lên nhóm xóm: khách ghé ×(1 + adBoost × chất lượng) trong `adMinutes`. */
+    adBoost: z.number().min(0).max(2),
+    adMinutes: z.number().int().min(10),
+    /** Khoảnh khắc: emoji + chữ hiện trong khung ngắm. */
+    kinds: z.array(z.object({ emoji: z.string(), label: z.string() })).min(1),
+  }),
+});
+
+export const staffSchema = z.object({
+  shifts: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        from: z.number().int().min(0).max(1440),
+        to: z.number().int().min(0).max(1440),
+      }),
+    )
+    .min(1),
+  people: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        bio: z.string(),
+        model: z.string(),
+        /** Tỉ lệ làm đúng món (0–1); sai thì giảm nửa giá cho khách. */
+        accuracy: z.number().min(0).max(1),
+        /** Phút game cho mỗi khách. */
+        serveMinutes: z.number().positive(),
+        wagePerHour: vnd,
+      }),
+    )
+    .min(1),
 });
 
 export const npcArchetypeSchema = z.object({
@@ -229,6 +502,8 @@ export const vendorSchema = z.object({
   signColor: z.string(),
   /** Model xe/sạp trong city bundle. */
   model: z.string(),
+  /** Dáng người bán (model nhân vật) — cũng là ảnh chân dung khi đứng trước sạp (UC-E5). */
+  seller: z.string().default("character-male-c"),
   position: point,
   /** 0 = mặt quầy quay về +z. */
   facing: z.number(),
@@ -239,7 +514,19 @@ export const vendorSchema = z.object({
   /** Sạp nhỏ không có mã QR — chỉ nhận tiền mặt. */
   cashOnly: z.boolean().default(false),
   lines: z.array(z.string()).min(1),
-  items: z.array(z.object({ id, name: z.string(), emoji: z.string(), price: vnd })).min(1),
+  items: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        emoji: z.string(),
+        price: vnd,
+        /** Ăn xong no thêm / đỡ khát thêm bao nhiêu (0–100, UC-B11). */
+        food: z.number().min(0).max(100).default(0),
+        drink: z.number().min(0).max(100).default(0),
+      }),
+    )
+    .min(1),
 });
 export type Vendor = z.infer<typeof vendorSchema>;
 
@@ -317,7 +604,7 @@ const position = z.object({ x: z.number(), z: z.number() });
 export const placeSchema = z.object({
   id,
   name: z.string(),
-  kind: z.enum(["equipment_shop", "market", "job"]),
+  kind: z.enum(["equipment_shop", "market", "job", "ride"]),
   /** Chữ trên biển hiệu. */
   sign: z.string(),
   signColor: z.string().regex(/^#[0-9a-f]{6}$/i),
@@ -457,11 +744,127 @@ export const achievementSchema = z.object({
   description: z.string(),
   metric: achievementMetric,
   goal: z.number().int().positive(),
+  /** Câu ghi vào "Chuyện của tôi" khi đạt (docs/THEGIOI.md §1); bỏ trống = không ghi. */
+  story: z.string().optional(),
 });
 export type Achievement = z.infer<typeof achievementSchema>;
 
+/**
+ * Một mốc trong "Chuyện của tôi" (docs/THEGIOI.md §1): câu có chỗ trống {money}, {lot}, {product}…
+ * Server điền và lưu nguyên câu lúc xảy ra — đổi content sau này không làm sai ký ức.
+ */
+export const storyBeatSchema = z.object({ id, emoji: z.string(), text: z.string() });
+export type StoryBeat = z.infer<typeof storyBeatSchema>;
+
+/**
+ * Giọng thoại theo kiểu khách (#12): học sinh nói teencode, dân văn phòng Gen Z, cô chú kiểu xóm…
+ * Câu có thể hơi "mặn"; người chơi tắt "thoại mặn" thì client đổi từ theo `soften`.
+ */
+const lineList = z.array(z.string()).min(2).optional();
+export const voiceSchema = z.object({
+  archetype: id,
+  /** Câu gọi món, có {dish}. */
+  ask: z.array(z.string()).min(2),
+  cheap: lineList,
+  fair: lineList,
+  pricey: lineList,
+  thanks: lineList,
+  impatient: lineList,
+});
+export type Voice = z.infer<typeof voiceSchema>;
+export const voicesSchema = z.object({
+  voices: z.array(voiceSchema),
+  /** Từ "mặn" → từ hiền (khi người chơi tắt thoại mặn). Khoá là chữ thường. */
+  soften: z.record(z.string(), z.string()),
+});
+
+/**
+ * Công trình chung của xóm (UC-J5): đề xuất → bỏ phiếu → góp quỹ → thi công → nghiệm thu.
+ * Tiền lấy từ quỹ xóm (phí chợ một phần + hàng xóm góp) — chỗ tiêu chung (Luật 2.2).
+ */
+export const projectSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  description: z.string(),
+  /** Đời thật: vì sao cần (hiện khi đề xuất). */
+  why: z.string(),
+  cost: vnd,
+  /** Số ngày game thi công. */
+  buildDays: z.number().int().min(1).max(14),
+  /** Hiệu ứng khi xong: khách ở các chỗ bán này ghé nhiều hơn. */
+  demand: z.object({ lots: z.array(id).min(1), mult: z.number().min(1).max(1.5) }),
+  /** Phải xong công trình này trước. */
+  requires: id.optional(),
+  /** Chỗ dựng công trường (mặc định cạnh chỗ bán đầu tiên trong `demand.lots`). */
+  site: z.object({ x: z.number(), z: z.number() }).optional(),
+  /** Số mẻ vữa bà con phụ hồ trộn đúng thì công trình xong sớm (UC-J6). */
+  crewMixes: z.number().int().min(1).default(8),
+});
+export type Project = z.infer<typeof projectSchema>;
+
+/**
+ * 🏗️ Phụ hồ công trình xóm (NGHE §3.4, UC-J6): công trình đang thi công mở công trường, Cai thầu giao từng mẻ vữa; trộn đúng
+ * công thức thật (xi măng : cát : nước) thì được trả công từ khoản nhân công của công trình (trích trong chi phí).
+ */
+export const crewSchema = z.object({
+  keeper: z.string(),
+  /** Phần chi phí công trình dành trả công phụ hồ (giữ trong ví riêng của công trình; dư thì trả nhà thầu khi xong). */
+  laborShare: z.number().min(0).max(0.6),
+  /** Tiền công một mẻ trộn đúng. */
+  wagePerMix: vnd,
+  /** Mỗi mẻ mất bấy nhiêu phút game (không trộn dồn). */
+  mixMinutes: z.number().int().min(1),
+  /** Nước lệch trong tỉ lệ này vẫn đạt (cát ẩm / khô). */
+  waterTolerance: z.number().min(0).max(0.5),
+  /** Số bao xi măng mỗi mẻ (thấp nhất, cao nhất). */
+  bags: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+  mixes: z
+    .array(
+      z.object({
+        id,
+        name: z.string(),
+        /** Dùng làm gì (đời thật). */
+        use: z.string(),
+        /** Thùng cát 18 lít mỗi bao xi măng 50 kg. */
+        sandPerBag: z.number().int().min(1),
+        /** Lít nước mỗi bao. */
+        waterPerBag: z.number().int().min(1),
+      }),
+    )
+    .min(1),
+});
+export const fundSchema = z.object({
+  /** Phần phí chợ / thuế khoán hằng ngày đi vào quỹ xóm (phần còn lại cho ban quản lý chợ). */
+  feeShare: z.number().min(0).max(1),
+  /** Hạn bỏ phiếu (phút game kể từ lúc đề xuất). */
+  voteMinutes: z.number().int().min(30),
+  /** Góp quỹ: bước tiền. */
+  donateStep: vnd,
+});
+
+/**
+ * Đói / khát (UC-B11): giảm dần theo giờ game, ăn uống thì hồi. Chỉ làm tay chậm đi chút + nhắc — KHÔNG khoá việc
+ * chơi (DESIGN Luật 17: không ép giờ chơi).
+ */
+export const needsSchema = z.object({
+  foodPerHour: z.number().min(0).max(50),
+  drinkPerHour: z.number().min(0).max(50),
+  /** Ban đêm (ngủ) chỉ tính bấy nhiêu phút game cho mỗi đêm. */
+  nightMinutes: z.number().int().min(0).max(600),
+  /** Dưới mức này là đói / khát: giữ nút lâu hơn hệ số `slowHold`. */
+  lowAt: z.number().min(0).max(100),
+  slowHold: z.number().min(1).max(2),
+  /** Mua món ở quầy hàng xóm: no / đỡ khát theo loại hàng. */
+  byCategory: z.record(z.string(), z.object({ food: z.number(), drink: z.number() })),
+  /** Khách réo khi quầy mở mà chủ vắng. */
+  callouts: z.array(z.string()).min(2),
+});
+
 export const economySchema = z.object({
   startingMoney: vnd,
+  /** Vốn dự phòng gửi sẵn trong tài khoản 🏦 cho người mới (mua xe xong vẫn còn tiền sống, rút ở ATM). */
+  startingBank: z.number().int().nonnegative().default(0),
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
   dayStartMinute: z.number().int().min(0).max(1439),
   dayEndMinute: z.number().int().min(1).max(1440),
@@ -471,6 +874,8 @@ export const economySchema = z.object({
   marketPriceSwing: z.number().min(0).max(0.5),
   /** Lựa chọn "không mua ai" trong mô hình chia khách. */
   outsideOption: z.number().positive(),
+  /** Nhân số khách ghé quầy (nhịp chơi): 1 = theo lưu lượng thật; >1 cho quầy đông tay hơn. */
+  demandScale: z.number().positive().default(1),
   /** Tốc độ reputation bám theo độ hài lòng. */
   reputationRate: z.number().positive().max(1),
   startingReputation: z.number().min(0).max(1),
@@ -526,6 +931,10 @@ export const economySchema = z.object({
     depositStep: vnd,
     /** "Tự chọn" cách trả: dưới mức này trả tiền mặt trước, từ mức này chuyển khoản trước (như ngoài đời). */
     cashFirstBelow: vnd,
+    /** Phí mỗi lần rút tiền ở ATM (nội mạng ~1.000đ ngoài đời). */
+    withdrawFee: vnd,
+    /** Sai PIN bấy nhiêu lần thì máy giữ thẻ tới hôm sau. */
+    pinTries: z.number().int().min(1).max(5),
   }),
 });
 
@@ -597,6 +1006,13 @@ export const gameEventSchema = z.object({
       to: z.number().int().min(0).max(1440),
     }),
     z.object({ kind: z.literal("per_hour"), perHour: z.number().positive() }),
+    /** Theo lịch tuần (THEGIOI §2): đúng thứ đó thì diễn ra trong khung giờ (chợ đêm thứ Bảy). */
+    z.object({
+      kind: z.literal("weekly"),
+      /** Thứ trong tuần (0 = Thứ Hai … 6 = Chủ nhật, theo calendar.weekdays). */
+      weekdays: z.array(z.number().int().min(0).max(6)).min(1),
+      from: z.number().int().min(0).max(1440),
+    }),
   ]),
   effects: z.object({
     /** Hệ số khách cho quầy của người tổ chức. */
@@ -605,6 +1021,8 @@ export const gameEventSchema = z.object({
     discount: z.number().min(0).max(0.5).optional(),
     /** Đè thời tiết cả xóm. */
     weather: weatherIdSchema.optional(),
+    /** Sự kiện cả xóm: nhân khách theo nhóm hàng (category) cho mọi quầy đang mở (chợ đêm: ăn vặt, đồ uống). */
+    categoryDemand: z.record(id, z.number().min(0).max(5)).optional(),
     /** Khách VIP: dặn nhiều, ít kiên nhẫn, boa đậm; làm hoàn hảo thì uy tín lên, hỏng thì tụt. */
     vip: z
       .object({
@@ -659,7 +1077,7 @@ export const skillSchema = z.object({
 
 /** Mở khoá theo cấp (Luật 4.2 — mở bằng làm thật). */
 export const unlockSchema = z.object({
-  id: z.enum(["lot_house", "event_host"]),
+  id: z.enum(["event_host"]),
   level: z.number().int().min(1),
   label: z.string(),
 });
@@ -669,6 +1087,10 @@ export const contentSchema = z.object({
   products: z.array(productSchema),
   equipment: z.array(equipmentSchema),
   trafficProfiles: z.array(trafficProfileSchema),
+  calendar: calendarSchema,
+  districtFame: districtFameSchema,
+  /** "Trong lúc bạn vắng" (THEGIOI §4): vắng ít nhất chừng này phút thật thì mới tóm tắt. */
+  away: z.object({ minMinutes: z.number().int().positive() }),
   lots: z.array(lotSchema),
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
@@ -682,10 +1104,29 @@ export const contentSchema = z.object({
   tutorial: z.array(tutorialStepSchema).min(1),
   /** Câu nói nhanh của người chơi; shout = câu rao hàng, kéo thêm khách khi đứng quầy (UC-D3). */
   quickPhrases: z.array(z.object({ id, text: z.string(), shout: z.boolean().default(false) })),
+  /** Câu chủ quầy hàng xóm "nói" trong khung đứng trước quầy (UC-E5); {dish} {price} được thay. */
+  counterLines: z.object({
+    hello: z.array(z.string()).min(1),
+    picked: z.array(z.string()).min(1),
+    soldOut: z.string(),
+  }),
   customerLines: customerLinesSchema,
+  voice: voicesSchema,
   reviews: reviewsSchema,
   awards: z.array(awardSchema).min(1),
+  projects: z.array(projectSchema).min(1),
+  needs: needsSchema,
+  fund: fundSchema,
+  crew: crewSchema,
   achievements: z.array(achievementSchema).min(1),
+  story: z.array(storyBeatSchema).min(1),
+  residents: z.array(residentSchema).min(1),
+  regulars: regularsSchema,
+  staff: staffSchema,
+  contracts: contractsSchema,
+  gigs: gigsSchema,
+  rides: ridesSchema,
+  shopSetup: shopSetupSchema,
   economy: economySchema,
   weather: weatherSchema,
   events: z.array(gameEventSchema).default([]),

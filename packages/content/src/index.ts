@@ -1,5 +1,6 @@
 import { data } from "./data.js";
 import {
+  type Calendar,
   type ContentData,
   contentSchema,
   MAP_WALKABLE,
@@ -190,6 +191,35 @@ export function loadContent(raw: unknown): Content {
   const eco = parsed.economy;
   if (eco.dayEndMinute <= eco.dayStartMinute)
     errors.push("economy: dayEndMinute phải sau dayStartMinute");
+  // Công trình: chỗ bán và công trình tiên quyết phải có thật.
+  const lotIds = new Set(parsed.lots.map((l) => l.id));
+  const projectIds = new Set(parsed.projects.map((p) => p.id));
+  for (const p of parsed.projects) {
+    for (const l of p.demand.lots)
+      if (!lotIds.has(l)) errors.push(`công trình ${p.id}: không có chỗ bán ${l}`);
+    if (p.requires && !projectIds.has(p.requires))
+      errors.push(`công trình ${p.id}: không có công trình ${p.requires}`);
+  }
+  // Giọng thoại: kiểu khách phải có thật, câu gọi món phải có chỗ điền món.
+  const npcIds = new Set(parsed.npcs.map((n) => n.id));
+  for (const v of parsed.voice.voices) {
+    if (!npcIds.has(v.archetype)) errors.push(`giọng thoại: không có kiểu khách ${v.archetype}`);
+    for (const a of v.ask)
+      if (!a.includes("{dish}")) errors.push(`giọng thoại ${v.archetype}: câu "${a}" thiếu {dish}`);
+  }
+  // Xe ôm: trạm phải là địa điểm kind "ride".
+  const station = parsed.places.find((p) => p.id === parsed.rides.stationPlaceId);
+  if (!station || station.kind !== "ride")
+    errors.push(`xe ôm: trạm ${parsed.rides.stationPlaceId} phải là địa điểm kind "ride"`);
+  // Bảng việc xóm: món, chỗ giao phải có thật; số lượng hợp lệ.
+  for (const t of parsed.contracts.templates) {
+    const prod = parsed.products.find((p) => p.id === t.productId);
+    if (!prod) errors.push(`việc ${t.id}: không có sản phẩm ${t.productId}`);
+    else if (!prod.recipe.variants.some((v) => v.id === t.variantId))
+      errors.push(`việc ${t.id}: ${t.productId} không có món ${t.variantId}`);
+    if (!lotIds.has(t.lotId)) errors.push(`việc ${t.id}: không có chỗ ${t.lotId}`);
+    if (t.qty[0] > t.qty[1]) errors.push(`việc ${t.id}: số lượng ${t.qty.join("–")} ngược`);
+  }
   if (errors.length) throw new Error(`Nội dung game không hợp lệ:\n- ${errors.join("\n- ")}`);
   return new Content(parsed);
 }
@@ -286,6 +316,14 @@ export class Content {
     );
   }
   /** Kiểu trời theo id (luôn có đủ 4 kiểu — đã kiểm khi nạp). */
+  /** Thứ trong tuần của ngày game (ngày 1 = Thứ Hai), kèm chỉ số 0–6 (THEGIOI §2). */
+  weekday(day: number): Calendar["weekdays"][number] & { index: number } {
+    const index = (((day - 1) % 7) + 7) % 7;
+    const w = this.data.calendar.weekdays[index] ?? this.data.calendar.weekdays[0];
+    if (!w) throw new Error("Lịch không có thứ nào");
+    return { ...w, index };
+  }
+
   weatherKind(id: WeatherId): WeatherKind {
     return must(
       this.data.weather.kinds.find((k) => k.id === id),

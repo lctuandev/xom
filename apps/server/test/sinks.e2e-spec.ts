@@ -22,8 +22,6 @@ describe("Money sink (e2e)", () => {
   async function stall(lotId: string) {
     const { socket, snap } = await join(url);
     await emit(socket, "debug:weather", { kind: "sunny", minutes: 960 });
-    // Nhà mặt tiền mở ở cấp 3 (Luật 4.2) — kịch bản cộng sẵn KN.
-    await emit(socket, "debug:grant", { xp: 300 });
     // Vốn đủ thuê nhà mặt tiền (người mới thường phải bán vài ngày).
     await app
       .get(PrismaService)
@@ -34,7 +32,13 @@ describe("Money sink (e2e)", () => {
       );
     await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
     for (const itemId of BANH_MI_THIT) await emit(socket, "market:buy", { itemId, packs: 1 });
-    await emit(socket, "biz:update", { lotId });
+    // Nhà mặt tiền: thuê + đủ giấy tờ (UC-F12) bằng lệnh dev; xe đẩy thì chọn chỗ như thường.
+    await new Promise((r) => setTimeout(r, 1_100)); // tránh giới hạn 20 thao tác/giây
+    const placed =
+      content.lot(lotId).kind === "house"
+        ? await emit(socket, "debug:shop", { lotId })
+        : await emit(socket, "biz:update", { lotId });
+    if (!placed.ok) throw new Error(`chọn chỗ: ${placed.message}`);
     await emit(socket, "biz:attend", { on: true });
     return { socket, id: snap.me.playerId };
   }
@@ -57,7 +61,7 @@ describe("Money sink (e2e)", () => {
   it("tiệm (nhà mặt tiền) trả thêm điện nước mỗi giờ mở cửa", async () => {
     const { socket } = await stall("nha_so_10");
     const opened = await emit(socket, "biz:open", {});
-    expect(opened.ok).toBe(true);
+    if (!opened.ok) throw new Error(`${opened.error}: ${opened.message}`);
     const billed = await next(socket, "me", (m) => m.today.fees > eco.fees.daily.house);
     expect(billed.today.fees - eco.fees.daily.house).toBe(eco.fees.utilitiesPerHour);
     socket.disconnect();

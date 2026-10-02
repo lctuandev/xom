@@ -35,7 +35,7 @@ async function servePlate(page: Page) {
   for (const id of items) {
     const food = R.foods.find((f) => f.id === id);
     if (!food) throw new Error(id);
-    const scoop = page.getByRole("button", { name: `Múc ${food.name}` });
+    const scoop = page.getByRole("button", { name: `Múc ${food.name}`, exact: true });
     // Khay hết thì báo bếp, chờ bếp làm xong rồi múc.
     const refill = page.getByRole("button", { name: new RegExp(`Báo bếp: hết ${food.name}`, "i") });
     if (await refill.isVisible()) await refill.tap();

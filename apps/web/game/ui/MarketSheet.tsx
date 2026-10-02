@@ -1,14 +1,14 @@
 "use client";
 
 import { content, type Ingredient } from "@xom/content";
-import { marketPackPrice, resaleValue } from "@xom/sim";
+import { marketPackPrice, openDue, resaleValue } from "@xom/sim";
 import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { ingredientsOfProduct } from "../recipes";
 import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
-import { PlaceGate } from "./PlaceGate";
+import { PlaceFace, PlaceGate } from "./PlaceGate";
 import { Sheet, Stepper } from "./Sheet";
 import { Tabs } from "./Tabs";
 
@@ -46,12 +46,16 @@ export function MarketSheet() {
   // Tiền thuê chỗ còn phải trả hôm nay: nhắc chừa lại để không kẹt vốn.
   const biz = me.business;
   const reserve =
-    biz?.lotId && !biz.open && !biz.rentPaidToday ? content.lot(biz.lotId).rentPerDay : 0;
+    biz?.lotId && !biz.open && !biz.rentPaidToday ? openDue(content, biz.lotId).total : 0;
   const eco = content.economy;
   const friend = (me.friendship.cho_dau_moi ?? 0) >= eco.friendDiscountAt;
 
   return (
-    <Sheet title="Chợ đầu mối Bà Năm" onClose={() => close(null)}>
+    <Sheet
+      title="Chợ đầu mối Bà Năm"
+      onClose={() => close(null)}
+      face={<PlaceFace placeId="cho_dau_moi" />}
+    >
       <PlaceGate placeId="cho_dau_moi" open="market">
         <p className="mb-3 text-xs text-ink/60">
           Giá ngày {clock.day}

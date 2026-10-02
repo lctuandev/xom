@@ -2,13 +2,31 @@
 
 import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { vnd } from "../format";
+import { vnd, vndHud } from "../format";
 import { type SheetId, useGame } from "../store";
+import {
+  IconCash,
+  IconDrop,
+  IconFood,
+  IconGear,
+  IconJob,
+  IconMap,
+  IconMarket,
+  IconNeighbors,
+  IconQuest,
+  IconRice,
+  IconShop,
+  IconStar,
+  IconTrophy,
+  IconWeather,
+} from "./icons";
+import { type JobsTab, setJobsTab } from "./JobsSheet";
 import { Objective } from "./Objective";
 import { DeliveryHud } from "./work/DeliveryHud";
 
-type NavItem = { id: SheetId | null; label: string; icon: string };
+type NavItem = { id: SheetId | null; label: string; icon: (c: string) => ReactNode };
 
 /**
  * Điều hướng chính (docs/PLAN.md — HUD): 5 mục theo nhóm tính năng, giữa là Nhiệm vụ (nổi lên).
@@ -16,11 +34,11 @@ type NavItem = { id: SheetId | null; label: string; icon: string };
  * Việc làm = làm thuê (sau này: bảng tuyển dụng) · Hàng xóm = ai online, mời bạn (sau này: bạn bè, chat).
  */
 const NAV: NavItem[] = [
-  { id: null, label: "Xóm", icon: "🗺️" },
-  { id: "business", label: "Làm ăn", icon: "🏪" },
-  { id: "quests", label: "Nhiệm vụ", icon: "🎯" },
-  { id: "jobs", label: "Việc làm", icon: "💼" },
-  { id: "xom", label: "Hàng xóm", icon: "👥" },
+  { id: null, label: "Xóm", icon: (c) => <IconMap className={c} /> },
+  { id: "business", label: "Làm ăn", icon: (c) => <IconShop className={c} /> },
+  { id: "quests", label: "Nhiệm vụ", icon: (c) => <IconQuest className={c} /> },
+  { id: "jobs", label: "Việc làm", icon: (c) => <IconJob className={c} /> },
+  { id: "xom", label: "Hàng xóm", icon: (c) => <IconNeighbors className={c} /> },
 ];
 
 export function Hud() {
@@ -31,35 +49,43 @@ export function Hud() {
 
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-      <header className="pt-safe pointer-events-auto flex items-start gap-2 px-3">
+      <header className="pt-safe pointer-events-auto flex items-start gap-2 pr-2 pl-3">
         <ProfileBadge />
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        {/* Container query: màn hẹp thì thanh trạng thái tự ẩn bớt phần phụ, không tràn ra ngoài. */}
+        <div className="@container flex min-w-0 flex-1 flex-col gap-1.5">
           <ResourceBar />
           <NewsTicker />
         </div>
-        <button
-          type="button"
-          onClick={() => openSheet(sheet === "settings" ? null : "settings")}
-          aria-label="Cài đặt"
-          className="relative flex size-11 shrink-0 items-center justify-center rounded-full bg-cream/95 text-xl shadow-md ring-2 ring-sun/70 active:scale-95"
-        >
-          ⚙️
-          <ConnectionDot />
-        </button>
       </header>
 
       <Toasts />
       <div className="flex flex-1 flex-col">
         <Objective />
         <DeliveryHud />
-        <SideRail />
+        {/* Icon neo hai bên bản đồ: trái = ăn uống, chợ, bảng xóm · phải = cài đặt (góp ý UI: gỡ khỏi thanh trên). */}
+        <div className="flex items-start justify-between">
+          <SideRail />
+          <div className="mt-2 flex flex-col gap-1.5 px-2">
+            <button
+              type="button"
+              onClick={() => openSheet(sheet === "settings" ? null : "settings")}
+              aria-label="Cài đặt"
+              title="Cài đặt"
+              className="pointer-events-auto relative flex size-12 items-center justify-center active:scale-90"
+            >
+              <IconGear className="icon-halo size-10" />
+              <ConnectionDot />
+            </button>
+          </div>
+        </div>
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
           {showPerf && <PerfPanel />}
           <JobBadge />
         </div>
       </div>
 
-      <nav className="pb-safe pointer-events-auto relative z-40 grid grid-cols-5 items-end gap-0.5 bg-cream px-1.5 pt-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.08)]">
+      {/* Không nền (góp ý UI): chỉ icon vẽ tay + nhãn chữ, nổi trên bản đồ nhờ quầng sáng như cột icon neo. */}
+      <nav className="pb-safe pointer-events-none relative z-40 grid grid-cols-5 items-end gap-0.5 px-1.5 pt-1">
         {NAV.map((item) => {
           const center = item.id === "quests";
           const active = sheet === item.id;
@@ -71,24 +97,28 @@ export function Hud() {
               aria-label={label}
               onClick={() => openSheet(active ? null : item.id)}
               aria-current={active ? "page" : undefined}
-              className={
-                center
-                  ? "-mt-6 flex flex-col items-center gap-0.5 text-[11px] font-semibold"
-                  : "relative flex h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold aria-[current=page]:bg-red aria-[current=page]:text-cream"
-              }
+              className={`group pointer-events-auto relative flex flex-col items-center ${center ? "-mt-5" : "h-14 justify-end"}`}
             >
+              {/* Icon vẽ tay cỡ lớn; nhãn chữ đè nhẹ ở chân icon (góp ý UI) — mục đang mở nổi lên + nhãn đỏ. */}
               {center ? (
-                <span className="flex size-14 items-center justify-center rounded-full bg-red text-2xl text-cream shadow-lg ring-4 ring-cream">
-                  {item.icon}
+                <span className="flex size-16 items-end justify-center transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
+                  {item.icon("icon-halo size-14")}
                 </span>
               ) : (
-                <span className="text-lg leading-none" aria-hidden>
-                  {item.icon}
+                <span className="flex h-11 items-end transition-transform group-active:scale-90 group-aria-[current=page]:-translate-y-1 group-aria-[current=page]:scale-110">
+                  {item.icon("icon-halo size-10")}
                 </span>
               )}
-              {item.label}
+              <span
+                aria-hidden
+                className={`relative -mt-2.5 rounded-full px-1.5 py-px text-[10px] leading-tight font-extrabold whitespace-nowrap shadow-sm ring-1 ring-cream/80 ${
+                  active ? "bg-red text-cream" : "bg-ink/80 text-cream"
+                }`}
+              >
+                {item.label}
+              </span>
               {item.id === "xom" && online > 1 && (
-                <span className="absolute top-0.5 right-3 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream">
+                <span className="absolute top-0 right-2 flex size-4 items-center justify-center rounded-full bg-leaf text-[10px] font-bold text-cream ring-2 ring-cream">
                   {online}
                 </span>
               )}
@@ -126,42 +156,65 @@ function ProfileBadge() {
   );
 }
 
-/** Thanh chỉ số: tiền · uy tín quầy · giờ (mặt trời/trăng). */
+/** Thanh chỉ số: tiền · uy tín quầy · no/khát · ngày, trời, giờ — icon vẽ tay, trải tới mép phải. */
 function ResourceBar() {
   const me = useGame((s) => s.me);
   const clock = useGame((s) => s.clock);
   const minute = clock?.minute ?? 0;
   const night = minute >= 1080 || minute < 330;
   const sky = clock?.weather.now ?? "sunny";
-  // Trời quang ban đêm thì là trăng; còn lại hiện kiểu trời (UC-B4) — không thêm nút mới (Luật 12.1).
-  const icon = night && sky === "sunny" ? "🌙" : content.weatherKind(sky).emoji;
   const next = clock?.weather.next;
-  const skyLabel = `${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
+  const skyLabel = `${content.weekday(clock?.day ?? 1).name}, ngày ${clock?.day ?? 1} · ${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
   const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
-    <div className="flex items-center gap-2 rounded-full bg-ink/80 py-1 pr-3 pl-1 text-cream shadow-md">
+    <div
+      className="flex h-9 min-w-0 items-center gap-1 overflow-hidden rounded-full bg-ink/85 py-1 pr-2 pl-1 text-cream shadow-md @min-[320px]:gap-1.5 @min-[320px]:pr-2.5"
+      data-status-bar
+    >
       <span
-        className="rounded-full bg-cream/15 px-2 py-0.5 text-sm font-extrabold tabular-nums"
+        className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold whitespace-nowrap tabular-nums"
         data-money={me?.money}
+        title={me ? `Tiền mặt ${vnd(me.money)}` : undefined}
       >
-        💵 {me ? vnd(me.money) : "…"}
+        <IconCash className="size-5 shrink-0" />
+        {me ? vndHud(me.money) : "…"}
       </span>
       {rep !== null && (
-        <span className="text-xs font-semibold tabular-nums">⭐ {rep.toFixed(1)}</span>
+        <span
+          className="flex shrink-0 items-center gap-0.5 text-xs font-bold tabular-nums"
+          title="Uy tín quầy"
+        >
+          <IconStar className="size-4" />
+          {rep.toFixed(1)}
+        </span>
       )}
+      <NeedsChip />
       <span
-        className="ml-auto text-xs font-semibold tabular-nums"
+        className="ml-auto flex shrink-0 items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums"
         data-clock={clock ? minute : undefined}
         data-weather={clock ? sky : undefined}
         title={skyLabel}
       >
-        N{clock?.day ?? 1} <span aria-hidden>{icon}</span>
+        {/* Thứ + ngày (THEGIOI §2): cuối tuần chữ vàng. */}
+        <span
+          className={`opacity-90 ${content.weekday(clock?.day ?? 1).weekend ? "text-sun" : ""}`}
+          data-weekday={content.weekday(clock?.day ?? 1).short}
+        >
+          {content.weekday(clock?.day ?? 1).short}
+          {/* Màn hẹp chỉ ghi thứ; số ngày xem trong 📅 Hôm nay / title. */}
+          <span className="hidden @min-[330px]:inline">·N{clock?.day ?? 1}</span>
+        </span>
+        <IconWeather kind={sky} night={night} className="size-5" />
         <span className="sr-only">{skyLabel}</span>
         {next && (
-          <span aria-hidden className="opacity-80">
-            →{content.weatherKind(next.kind).emoji}
+          <span
+            aria-hidden
+            className="hidden items-center opacity-80 @min-[380px]:flex"
+            data-next={next.kind}
+          >
+            ›<IconWeather kind={next.kind} className="size-4" />
           </span>
-        )}{" "}
+        )}
         {clock ? formatClock(minute) : "…"}
       </span>
     </div>
@@ -172,14 +225,20 @@ function ResourceBar() {
 function NewsTicker() {
   const news = useGame((s) => s.news);
   const [i, setI] = useState(0);
+  const newest = news.at(-1)?.id;
   useEffect(() => {
-    if (news.length < 2) return;
+    // Tin mới về thì hiện ngay (về đầu vòng), rồi mới xoay vòng các tin cũ mỗi 5 giây.
+    setI(0);
+    if (newest === undefined) return;
     const id = setInterval(() => setI((v) => v + 1), 5000);
     return () => clearInterval(id);
-  }, [news.length]);
+  }, [newest]);
   const item = news.length ? news[news.length - 1 - (i % news.length)] : null;
   return (
-    <div className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm">
+    <div
+      className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm"
+      data-news-ticker
+    >
       <span aria-hidden>📺</span>
       <span key={item?.id} className="truncate">
         {item?.text ?? "Một ngày mới trong xóm…"}
@@ -188,27 +247,32 @@ function NewsTicker() {
   );
 }
 
-/** Nút nhanh bên trái bản đồ: ăn uống, ra chợ. */
+/**
+ * Icon neo bên trái bản đồ (góp ý UX): ăn uống, ra chợ, bảng xóm — icon vẽ tay nhìn là biết, không nền, không chữ
+ * (tên đầy đủ ở aria-label / title).
+ */
 function SideRail() {
   const openSheet = useGame((s) => s.openSheet);
   const nearPlace = useGame((s) => s.nearPlace);
   const setGoal = useGame((s) => s.setGoal);
   const toast = useGame((s) => s.toast);
-  const btn =
-    "pointer-events-auto flex size-12 flex-col items-center justify-center rounded-2xl bg-cream/95 text-xl shadow-md active:scale-95";
+  const btn = "pointer-events-auto flex size-12 items-center justify-center active:scale-90";
+  const icon = "icon-halo size-11";
   return (
-    <div className="mt-2 flex flex-col gap-2 self-start px-3">
+    <div className="mt-2 flex flex-col gap-1.5 self-start px-2">
       <button
         type="button"
         aria-label="Quán ăn quanh xóm"
+        title="Ăn uống"
         className={btn}
         onClick={() => openSheet("food")}
       >
-        🍜<span className="text-[9px] font-bold">Ăn uống</span>
+        <IconFood className={icon} />
       </button>
       <button
         type="button"
         aria-label="Ra chợ"
+        title="Chợ đầu mối"
         className={btn}
         onClick={() => {
           if (nearPlace === "cho_dau_moi") return openSheet("market");
@@ -217,9 +281,52 @@ function SideRail() {
           toast({ kind: "info", text: "Đang đi ra chợ đầu mối…" });
         }}
       >
-        🧺<span className="text-[9px] font-bold">Chợ</span>
+        <IconMarket className={icon} />
+      </button>
+      <button
+        type="button"
+        aria-label="Bảng xóm"
+        title="Bảng xóm: giải tuần, thị phần, đang hot"
+        className={btn}
+        onClick={() => openSheet("board")}
+      >
+        <IconTrophy className={icon} />
       </button>
     </div>
+  );
+}
+
+/**
+ * Đói / khát (UC-B11): chỉ hiện khi dưới 50% — HUD gọn (Luật 12.1). Dưới mức đói thì đỏ, nhấp nháy; chạm để mở
+ * danh sách quán ăn.
+ */
+function NeedsChip() {
+  const needs = useGame((s) => s.me?.needs);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!needs || (needs.food >= 50 && needs.drink >= 50)) return null;
+  const low = content.data.needs.lowAt;
+  const item = (icon: ReactNode, v: number, label: string) =>
+    v < 50 ? (
+      <span
+        className={`flex items-center gap-0.5 tabular-nums ${v < low ? "animate-pulse text-[#ff9b8a]" : ""}`}
+        title={`${label} ${v}%`}
+      >
+        {icon}
+        {/* Màn hẹp chỉ còn icon (đỏ, nhấp nháy khi đói/khát); số % ở title. */}
+        <span className="hidden @min-[320px]:inline">{v}%</span>
+      </span>
+    ) : null;
+  return (
+    <button
+      type="button"
+      onClick={() => openSheet("food")}
+      aria-label={`No ${needs.food}%, khát ${needs.drink}% — mở quán ăn`}
+      data-needs={`${needs.food}:${needs.drink}`}
+      className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 px-1.5 py-0.5 text-xs font-semibold"
+    >
+      {item(<IconRice className="size-4" />, needs.food, "No")}
+      {item(<IconDrop className="size-4" />, needs.drink, "Đỡ khát")}
+    </button>
   );
 }
 
@@ -247,26 +354,42 @@ function JobBadge() {
 export function Toasts() {
   const toasts = useGame((s) => s.toasts);
   const dismiss = useGame((s) => s.dismissToast);
+  const openSheet = useGame((s) => s.openSheet);
+  if (!toasts.length) return null;
   return (
-    // Nằm trên mọi sheet/modal để thông báo lỗi không bị che.
+    // Một khối duy nhất đè tạm lên thanh trạng thái + dải tin (3,5 giây), mới nhất trên cùng — không còn các mẩu rời căn
+    // giữa chồng lên dải tin / thanh nhiệm vụ (góp ý chơi thử). Nằm trên mọi sheet/modal để lỗi không bị che.
     <div
-      className="pointer-events-none fixed inset-x-3 top-[calc(max(env(safe-area-inset-top),0.75rem)+3.5rem)] z-60 flex flex-col items-center gap-2"
+      className="pointer-events-none fixed inset-x-3 top-[max(env(safe-area-inset-top),0.75rem)] z-60 flex flex-col overflow-hidden rounded-2xl bg-cream shadow-lg ring-1 ring-ink/10"
       aria-live="polite"
+      data-toasts={toasts.length}
     >
-      {toasts.map((t) => (
+      {[...toasts].reverse().map((t, i) => (
         <button
           key={t.id}
           type="button"
-          onClick={() => dismiss(t.id)}
-          className={`pointer-events-auto rounded-xl px-3 py-2 text-left text-sm font-semibold shadow-md ${
+          onClick={() => {
+            dismiss(t.id);
+            if (t.open) {
+              // "jobs:gigs" = sheet Việc làm, mở sẵn tab thuê nhau.
+              const [sheet, tab] = t.open.split(":");
+              if (sheet === "jobs" && tab) setJobsTab(tab as JobsTab);
+              openSheet(sheet as SheetId);
+            }
+          }}
+          data-toast-open={t.open}
+          className={`pointer-events-auto flex items-start gap-2 border-l-4 px-3 py-2 text-left text-sm leading-snug font-semibold ${
+            i > 0 ? "border-t border-t-ink/10 text-ink/75" : ""
+          } ${
             t.kind === "warn"
-              ? "bg-red text-cream"
+              ? "border-l-red bg-red/10"
               : t.kind === "good"
-                ? "bg-leaf text-cream"
-                : "bg-cream"
+                ? "border-l-leaf bg-leaf/10"
+                : "border-l-sun"
           }`}
         >
-          {t.text}
+          <span className="line-clamp-2 flex-1">{t.text}</span>
+          {t.open && <span className="shrink-0 self-center text-xs text-red">Xem ›</span>}
         </button>
       ))}
     </div>
