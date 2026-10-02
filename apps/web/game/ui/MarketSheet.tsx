@@ -72,6 +72,14 @@ export function MarketSheet() {
             hàng ở 🏬 Các cửa hàng
           </p>
         )}
+        {!me.business && (
+          <p
+            className="mb-2 rounded-xl bg-red/10 px-3 py-2 text-xs font-semibold"
+            data-market-noshop
+          >
+            🛒 Hàng nhập về kho của quầy — mua xe hàng ở vựa Ông Sáu trước rồi mới nhập hàng được.
+          </p>
+        )}
         <PayPicker />
         <Tabs
           label="Quầy hàng ở chợ"
@@ -153,7 +161,7 @@ function Row({ ing, reserve, friend }: { ing: Ingredient; reserve: number; frien
         </div>
         <button
           type="button"
-          disabled={busy || typeof src !== "string"}
+          disabled={busy || typeof src !== "string" || !me.business}
           onClick={async () => {
             setBusy(true);
             await send("market:buy", { itemId: ing.id, packs, pay });
@@ -195,6 +203,7 @@ export function Liquidate() {
           return (
             <li
               key={i.itemId}
+              data-liquidate-item={i.itemId}
               className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm shadow-sm"
             >
               <span>
