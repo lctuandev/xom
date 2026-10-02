@@ -44,6 +44,7 @@ import {
 } from "@xom/sim";
 import { LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 
@@ -153,6 +154,7 @@ export class WorkService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
   ) {}
 
@@ -254,9 +256,7 @@ export class WorkService {
     if (!job || !r || !place) throw new GameError("invalid_payload", "Không có việc này");
     if (room.shifts.has(playerId))
       throw new GameError("invalid_state", "Đang trong ca — ra ca rồi mới đổi việc");
-    const openBiz = await this.prisma.business.findFirst({
-      where: { ownerId: playerId, status: "OPEN" },
-    });
+    const openBiz = await this.businesses.openOf(playerId);
     if (openBiz)
       throw new GameError("invalid_state", "Đang mở quầy — đóng quầy rồi mới đi làm thuê được");
     const trays: Record<string, number> = {};

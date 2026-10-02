@@ -30,6 +30,7 @@ import {
 } from "../economy/ledger.service.js";
 import type { Gig } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
@@ -68,6 +69,7 @@ export class GigService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
     private readonly story: StoryService,
   ) {}
@@ -83,7 +85,7 @@ export class GigService {
   async board(room: RoomRuntime, playerId: string): Promise<GigBoardView> {
     const [player, biz, rows] = await Promise.all([
       this.prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
-      this.prisma.business.findFirst({ where: { ownerId: playerId } }),
+      this.businesses.of(playerId),
       this.prisma.gig.findMany({
         where: {
           roomId: room.id,
@@ -162,7 +164,7 @@ export class GigService {
     if (!p.rewards.includes(reward))
       throw new GameError("invalid_payload", "Mức tiền công không có");
     if (!p.hours.includes(hours)) throw new GameError("invalid_payload", "Hạn làm không có");
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.of(playerId);
     if (!biz?.lotId)
       throw new GameError("invalid_state", "Có quầy rồi mới thuê chụp ảnh quầy được");
     const open = await this.prisma.gig.count({

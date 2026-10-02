@@ -28,8 +28,7 @@ describe("Đói / khát (e2e)", () => {
       data: { needs: { food: 20, drink: 90, at: absMinute(room.day, room.minute) } },
     });
     const warned = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("🍚"));
-    // biome-ignore lint/complexity/useLiteralKeys: gọi nhịp giờ trực tiếp cho nhanh
-    await game["needsTick"](room);
+    await game.needs.needsTick(room);
     expect((await warned).text).toMatch(/Bụng réo/);
 
     const pho = content.data.vendors.find((v) => v.items.some((i) => i.id === "pho_tai"));
@@ -54,8 +53,7 @@ describe("Đói / khát (e2e)", () => {
     const told = next(a.socket, "notify", (n: NotifyEvent) => n.text.startsWith("🔔"));
     for (let i = 0; i < 20 && !room.calloutAt.size; i++) {
       room.minute += 5;
-      // biome-ignore lint/complexity/useLiteralKeys: gọi nhịp trực tiếp
-      await game["calloutTick"](room);
+      await game.needs.calloutTick(room);
     }
     expect(content.data.needs.callouts).toContain((await said).text);
     expect((await told).text).toMatch(/Khách đang réo ở quầy Đầu hẻm 12/);

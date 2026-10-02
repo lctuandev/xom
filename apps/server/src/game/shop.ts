@@ -3,7 +3,6 @@ import { content } from "@xom/content";
 import type { LandlordEvent, NotifyEvent, PayMethod, RentView, ShopSetupView } from "@xom/shared";
 import {
   absMinute,
-  choosePayment,
   needsFoodCert,
   nextShopStep,
   normalizeShopName,
@@ -16,16 +15,11 @@ import {
   shopNameError,
   trustAfter,
 } from "@xom/sim";
-import {
-  bankWallet,
-  InsufficientFundsError,
-  LedgerService,
-  playerWallet,
-  SYSTEM,
-  type Tx,
-} from "../economy/ledger.service.js";
+import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import type { Business, Lease } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
+import { PaymentService } from "./payment.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
@@ -60,7 +54,9 @@ export class ShopService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
+    private readonly payment: PaymentService,
     private readonly story: StoryService,
   ) {}
 
@@ -87,7 +83,7 @@ export class ShopService {
   }
 
   private async business(playerId: string) {
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.of(playerId);
     if (!biz)
       throw new GameError(
         "invalid_state",
@@ -98,7 +94,7 @@ export class ShopService {
 
   async view(room: RoomRuntime, playerId: string): Promise<ShopSetupView> {
     const [biz, lease, others] = await Promise.all([
-      this.prisma.business.findFirst({ where: { ownerId: playerId } }),
+      this.businesses.of(playerId),
       this.activeLease(playerId),
       this.prisma.lease.findMany({
         where: { roomId: room.id, status: "ACTIVE", ownerId: { not: playerId } },
@@ -190,7 +186,7 @@ export class ShopService {
           paidDay: room.day,
         },
       });
-      await this.pay(
+      await this.payment.cashThenBank(
         tx,
         playerId,
         est.deposit,
@@ -264,7 +260,14 @@ export class ShopService {
       throw new GameError("invalid_state", "Trong xóm có quán trùng tên rồi — đặt tên khác nha");
     const lic = content.data.shopSetup.license;
     await this.prisma.$transaction(async (tx) => {
-      await this.pay(tx, playerId, lic.fee, SYSTEM.landlord, "license_fee", "Không đủ tiền lệ phí");
+      await this.payment.cashThenBank(
+        tx,
+        playerId,
+        lic.fee,
+        SYSTEM.landlord,
+        "license_fee",
+        "Không đủ tiền lệ phí",
+      );
       await tx.business.update({
         where: { id: biz.id },
         data: { shopName: name, licenseAt: this.now(room) + lic.minutes },
@@ -285,7 +288,14 @@ export class ShopService {
     if (biz.trained) throw new GameError("invalid_state", "Tập huấn rồi");
     const fee = content.data.shopSetup.foodCert.trainingFee;
     await this.prisma.$transaction(async (tx) => {
-      await this.pay(tx, playerId, fee, SYSTEM.landlord, "food_training", "Không đủ tiền tập huấn");
+      await this.payment.cashThenBank(
+        tx,
+        playerId,
+        fee,
+        SYSTEM.landlord,
+        "food_training",
+        "Không đủ tiền tập huấn",
+      );
       await tx.business.update({ where: { id: biz.id }, data: { trained: true } });
       await addToReport(tx, playerId, room.day, { fees: fee });
     });
@@ -340,7 +350,14 @@ export class ShopService {
     if (biz.signed) throw new GameError("invalid_state", "Biển hiệu treo rồi");
     const fee = content.data.shopSetup.signFee;
     await this.prisma.$transaction(async (tx) => {
-      await this.pay(tx, playerId, fee, SYSTEM.market, "sign", "Không đủ tiền làm biển hiệu");
+      await this.payment.cashThenBank(
+        tx,
+        playerId,
+        fee,
+        SYSTEM.market,
+        "sign",
+        "Không đủ tiền làm biển hiệu",
+      );
       await tx.business.update({ where: { id: biz.id }, data: { signed: true } });
       await addToReport(tx, playerId, room.day, { fees: fee });
     });
@@ -475,20 +492,12 @@ export class ShopService {
     if (owed <= 0) throw new GameError("invalid_state", "Tiền nhà trả đủ tới hôm nay rồi");
     const fee = lease.lateFee;
     await this.prisma.$transaction(async (tx) => {
-      const [cash, bank] = await Promise.all([
-        this.ledger.balance(tx, playerWallet(playerId)),
-        this.ledger.balance(tx, bankWallet(playerId)),
-      ]);
-      const src = choosePayment({
-        amount: owed + fee,
-        cash,
-        bank,
+      const { wallet: from, source: src } = await this.payment.walletFor(
+        tx,
+        playerId,
+        owed + fee,
         method,
-        cashOnly: false,
-        cashFirstBelow: content.economy.bank.cashFirstBelow,
-      });
-      if (typeof src !== "string") throw new GameError("insufficient_funds", src.error);
-      const from = src === "cash" ? playerWallet(playerId) : bankWallet(playerId);
+      );
       await this.ledger.transfer(tx, from, SYSTEM.landlord, owed, "rent", lease.id);
       if (fee > 0)
         await this.ledger.transfer(tx, from, SYSTEM.landlord, fee, "rent_late_fee", lease.id);
@@ -733,28 +742,6 @@ export class ShopService {
     });
     room.attending.delete(lease.ownerId);
     this.onWorld?.(room);
-  }
-
-  private async pay(
-    tx: Tx,
-    playerId: string,
-    amount: number,
-    to: string,
-    reason: string,
-    broke: string,
-  ) {
-    try {
-      await this.ledger.transfer(tx, playerWallet(playerId), to, amount, reason);
-    } catch (err) {
-      if (!(err instanceof InsufficientFundsError)) throw err;
-      try {
-        await this.ledger.transfer(tx, bankWallet(playerId), to, amount, reason);
-      } catch (err2) {
-        if (err2 instanceof InsufficientFundsError)
-          throw new GameError("insufficient_funds", broke);
-        throw err2;
-      }
-    }
   }
 
   private log(playerId: string, type: string, payload: Record<string, unknown>) {

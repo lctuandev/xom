@@ -18,6 +18,7 @@ import {
 } from "../economy/ledger.service.js";
 import type { Business } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { consume, stockMap } from "./inventory.js";
 import { menuOf } from "./menu.js";
 import { addToReport } from "./report.js";
@@ -40,6 +41,7 @@ export class StaffService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ledger: LedgerService,
     private readonly story: StoryService,
   ) {}
@@ -49,10 +51,7 @@ export class StaffService {
   }
 
   async view(playerId: string): Promise<StaffView> {
-    const biz = await this.prisma.business.findFirst({
-      where: { ownerId: playerId },
-      include: { employee: true },
-    });
+    const biz = await this.businesses.withEmployee(playerId);
     const recent = await this.prisma.staffShift.findMany({
       where: { ownerId: playerId },
       orderBy: { createdAt: "desc" },
@@ -84,7 +83,7 @@ export class StaffService {
     const person = content.data.staff.people.find((p) => p.id === staffId);
     if (!person || !content.data.staff.shifts.some((s) => s.id === shiftId))
       throw new GameError("invalid_payload", "Không có người / ca này");
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.of(playerId);
     if (!biz) throw new GameError("invalid_state", "Chưa có quầy thì thuê người làm gì");
     await this.prisma.employee.upsert({
       where: { businessId: biz.id },
@@ -96,7 +95,7 @@ export class StaffService {
   }
 
   async fire(playerId: string) {
-    const biz = await this.prisma.business.findFirst({ where: { ownerId: playerId } });
+    const biz = await this.businesses.of(playerId);
     if (biz) await this.prisma.employee.deleteMany({ where: { businessId: biz.id } });
     return this.view(playerId);
   }
@@ -142,10 +141,7 @@ export class StaffService {
 
   /** Chủ thoát game mà quầy đang mở: nhân viên bán nốt tới hết ca hôm nay (tính ngay), rồi dọn quầy. */
   async finishShift(room: RoomRuntime, playerId: string) {
-    const biz = await this.prisma.business.findFirst({
-      where: { ownerId: playerId, status: "OPEN", lotId: { not: null } },
-      include: { employee: true },
-    });
+    const biz = await this.businesses.openWithEmployee(playerId);
     const e = biz?.employee;
     const shift = e ? content.data.staff.shifts.find((s) => s.id === e.shiftId) : undefined;
     if (!biz || !e || !shift) return;

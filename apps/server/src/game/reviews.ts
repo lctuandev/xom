@@ -4,6 +4,7 @@ import type { NotifyEvent, OrderEvent, ReviewsView } from "@xom/shared";
 import { addSkill, maskText, reviewSummary, type SkillPoints, seededRandom } from "@xom/sim";
 import { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { BusinessRepo } from "./business-repo.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { VoiceAiService } from "./voice-ai.js";
 
@@ -23,6 +24,7 @@ export class ReviewService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly businesses: BusinessRepo,
     private readonly ai: VoiceAiService,
   ) {}
 
@@ -83,7 +85,7 @@ export class ReviewService {
     if (author.id === ownerId) throw new GameError("invalid_state", "Tự khen quầy mình thì ai tin");
     if (!room.purchases.has(purchaseKey(author.id, ownerId, room.day)))
       throw new GameError("invalid_state", "Mua ở quầy này rồi mới đánh giá được");
-    const biz = await this.prisma.business.findFirst({ where: { ownerId } });
+    const biz = await this.businesses.of(ownerId);
     const clean = maskText(text.trim(), content.data.reviews.banned);
     try {
       await this.prisma.review.create({
@@ -121,7 +123,7 @@ export class ReviewService {
         data: { reply: clean, repliedAt: new Date() },
       });
       if (r.stars > 3) return;
-      const biz = await tx.business.findFirst({ where: { ownerId } });
+      const biz = await this.businesses.of(ownerId, tx);
       if (biz)
         await tx.business.update({
           where: { id: biz.id },
