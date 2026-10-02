@@ -36,6 +36,30 @@ export function conditionMet(cond: Condition, s: State): boolean {
 }
 
 /**
+ * Lời thoại kịch bản đã nghe — nhớ qua các lần vào game (góp ý: "mỗi lần vào game lại bị Chú Bảy bắt chuyện").
+ * Bước còn dở thì chỉ hiện mục tiêu, không bắt chuyện lại.
+ */
+const SEEN_KEY = "xom:seen-dialogues";
+function heard(playerId: string, stepId: string): boolean {
+  try {
+    const list = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[];
+    return list.includes(`${playerId}:${stepId}`);
+  } catch {
+    return false;
+  }
+}
+function markHeard(playerId: string, stepId: string) {
+  try {
+    const list = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]") as string[];
+    const key = `${playerId}:${stepId}`;
+    if (!list.includes(key))
+      localStorage.setItem(SEEN_KEY, JSON.stringify([...list, key].slice(-50)));
+  } catch {
+    // trình duyệt chặn lưu: chỉ nhớ trong phiên
+  }
+}
+
+/**
  * Điều phối kịch bản người mới: bước mới có lời thoại → mở hội thoại; đạt điều kiện → sang bước tiếp.
  * Tiến độ lưu trên server (Player.tutorial) qua intent "tutorial:set".
  */
@@ -51,8 +75,12 @@ export function useTutorial() {
       if (!s.me || s.status !== "online") return;
       const step = content.stepById.get(s.me.tutorial);
       if (!step) return;
-      if (step.lines.length > 0 && !s.seenDialogues.includes(step.id)) {
+      const playerId = s.me.playerId;
+      // Bước có lựa chọn phải chọn mới đi tiếp → vẫn hỏi lại; bước chỉ nói thì nghe một lần là đủ.
+      const replay = step.choices.length > 0 || !heard(playerId, step.id);
+      if (step.lines.length > 0 && !s.seenDialogues.includes(step.id) && replay) {
         if (s.dialogue !== step.id) {
+          markHeard(playerId, step.id);
           // NPC bắt chuyện: đóng bảng đang mở để người chơi tập trung vào lời thoại.
           if (s.sheet) s.openSheet(null);
           if (s.kitchen) s.openKitchen(null);

@@ -1743,6 +1743,7 @@ export const data: ContentInput = {
       choices: [
         { text: "Con muốn buôn bán", next: "den_vua_xe" },
         { text: "Con đi làm thuê trước", next: "den_quan_com" },
+        { text: "Con tự lo được, cảm ơn chú", next: "hoan_thanh" },
       ],
     },
     {
@@ -2843,6 +2844,8 @@ export const data: ContentInput = {
     bulkPacks: 5,
     // Chuyển kho giữa các cửa hàng của mình: bấm chuyển, chở tới sau 30 phút game (đang chở thì chưa bán được).
     transferMinutes: 30,
+    xomResidents: 40,
+    xomOnline: 30,
     bulkDiscount: 0.05,
     resaleRate: 0.4,
     friendDiscountAt: 30,

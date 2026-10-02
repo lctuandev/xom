@@ -13,6 +13,7 @@ import type {
   TalkResult,
   WeatherIdView,
   WorldView,
+  XomListItem,
 } from "@xom/shared";
 import {
   absMinute,
@@ -89,7 +90,7 @@ const _pinHash = (playerId: string, pin: string) =>
 /** Khoảng cách tối thiểu giữa hai tin chat của một người. */
 const CHAT_GAP_MS = 1500;
 /** Tối đa người online trong một xóm (docs/PLAN.md Phase 2). */
-export const MAX_MEMBERS = 8;
+export const MAX_MEMBERS = content.economy.xomOnline;
 /** Nhịp phát vị trí người chơi cho cả xóm. */
 const PEER_FLUSH_MS = 100;
 /** Khoảng cách tối đa (m) tới cây ATM. */
@@ -469,15 +470,18 @@ export class GameService implements OnModuleDestroy {
     const loaded = this.rooms.get(target.id);
     const online = loaded ? this.roster(loaded).peers.length : 0;
     if (online >= MAX_MEMBERS)
-      throw new GameError("invalid_state", `Xóm đã đủ ${MAX_MEMBERS} người, đợi chút nha`);
+      throw new GameError("invalid_state", `Xóm đã đủ ${MAX_MEMBERS} người online, đợi chút nha`);
+    const residents = await this.prisma.player.count({ where: { roomId: target.id } });
+    if (residents >= content.economy.xomResidents)
+      throw new GameError("invalid_state", "Xóm đã kín nhà, chọn xóm khác nha");
     const to = loaded ?? (await this.loadRoom(target.id));
     // Ngày của xóm đích lấy từ bộ nhớ nếu đang chạy (DB có thể chưa kịp lưu).
     const offset = to.day - from.day;
 
     await from.run(async () => {
-      const biz = await this.businesses.of(playerId);
-      if (biz?.status === "OPEN")
-        throw new GameError("invalid_state", "Dọn quầy (đóng quầy) trước khi chuyển xóm");
+      // Nhiều cửa hàng: cửa hàng nào đang mở (chủ hay nhân viên bán) cũng phải đóng trước.
+      if (await this.businesses.openOf(playerId))
+        throw new GameError("invalid_state", "Đóng hết các quầy đang mở trước khi chuyển xóm");
       if (from.shifts.has(playerId))
         throw new GameError("invalid_state", "Ra ca trước khi chuyển xóm");
       const m = from.members.get(playerId);
@@ -507,6 +511,42 @@ export class GameService implements OnModuleDestroy {
     this.logger.log(`người chơi ${playerId} chuyển xóm ${from.id} → ${to.id}`);
     void this.log(playerId, "xom_join", { from: from.id, to: to.id });
     return { from: from.id, to: to.id };
+  }
+
+  /** Danh sách xóm có người ở (HANDOFF 3.8): đang online nhiều trước, rồi tới đông cư dân. */
+  async xomList({ room }: IntentContext): Promise<XomListItem[]> {
+    // Xóm đang chạy (có người online) luôn có mặt; thêm các xóm đông cư dân nhất.
+    const select = { id: true, code: true, day: true, _count: { select: { players: true } } };
+    const [live, top] = await Promise.all([
+      this.prisma.room.findMany({ where: { id: { in: [...this.rooms.keys()] } }, select }),
+      this.prisma.room.findMany({
+        where: { players: { some: {} } },
+        select,
+        orderBy: { players: { _count: "desc" } },
+        take: 30,
+      }),
+    ]);
+    const rows = [...live, ...top.filter((r) => !this.rooms.has(r.id))];
+    const shops = await this.prisma.business.findMany({
+      where: { owner: { roomId: { in: rows.map((r) => r.id) } } },
+      select: { owner: { select: { roomId: true } } },
+    });
+    const cap = content.economy.xomResidents;
+    return rows
+      .map((r) => {
+        const live = this.rooms.get(r.id);
+        return {
+          code: r.code,
+          residents: r._count.players,
+          online: live ? this.roster(live).peers.length : 0,
+          shops: shops.filter((s) => s.owner.roomId === r.id).length,
+          day: live?.day ?? r.day,
+          mine: r.id === room.id,
+          full: r._count.players >= cap,
+        };
+      })
+      .sort((a, b) => b.online - a.online || b.residents - a.residents)
+      .slice(0, 30);
   }
 
   // ───────────────────────── Intent ─────────────────────────

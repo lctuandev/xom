@@ -6,7 +6,13 @@ import type { AuthResponse, AuthUser, LoginInput, RegisterInput } from "@xom/sha
 import { storyText } from "@xom/sim";
 import { jwtVerify, SignJWT } from "jose";
 import { config } from "../config.js";
-import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
+import {
+  bankWallet,
+  LedgerService,
+  playerWallet,
+  SYSTEM,
+  type Tx,
+} from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface AccessClaims {
@@ -48,9 +54,11 @@ export class AuthService {
     const passwordHash = await hash(input.password);
     const eco = content.economy;
     const user = await this.prisma.$transaction(async (tx) => {
-      const room = await tx.room.create({
-        data: { code: randomBytes(4).toString("hex"), minute: eco.dayStartMinute },
-      });
+      const room =
+        (await pickRoom(tx, input)) ??
+        (await tx.room.create({
+          data: { code: randomBytes(4).toString("hex"), minute: eco.dayStartMinute },
+        }));
       const created = await tx.user.create({
         data: {
           username: input.username,
@@ -193,4 +201,26 @@ export class AuthService {
     const cutoff = Date.now() - LOGIN_WINDOW_MS;
     return (this.failures.get(key) ?? []).filter((t) => t > cutoff);
   }
+}
+
+/**
+ * Xóm chung (HANDOFF 3.8): người mới vào xóm của link mời nếu còn chỗ; không có link thì vào xóm còn chỗ ĐÔNG nhất
+ * (cho xóm nhộn nhịp thay vì mỗi người một xóm vắng). Tick "Lập xóm riêng" (solo) hoặc hết chỗ thì lập xóm mới.
+ */
+async function pickRoom(tx: Tx, input: RegisterInput): Promise<{ id: string; day: number } | null> {
+  const cap = content.economy.xomResidents;
+  if (input.xom) {
+    const invited = await tx.room.findUnique({
+      where: { code: input.xom },
+      select: { id: true, day: true, _count: { select: { players: true } } },
+    });
+    if (invited && invited._count.players < cap) return invited;
+  }
+  if (input.solo) return null;
+  const rooms = await tx.room.findMany({
+    select: { id: true, day: true, _count: { select: { players: true } } },
+    orderBy: { players: { _count: "desc" } },
+    take: 50,
+  });
+  return rooms.find((r) => r._count.players > 0 && r._count.players < cap) ?? null;
 }

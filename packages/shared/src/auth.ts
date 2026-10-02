@@ -21,6 +21,15 @@ export const registerSchema = z.object({
     .trim()
     .min(2, "Tên hiển thị tối thiểu 2 ký tự")
     .max(24, "Tên hiển thị tối đa 24 ký tự"),
+  /** Mã xóm từ link mời (?xom=…): vào thẳng xóm đó nếu còn chỗ. */
+  xom: z
+    .string()
+    .regex(/^[0-9a-f]{8}$/i)
+    .transform((s) => s.toLowerCase())
+    .optional()
+    .catch(undefined),
+  /** Lập xóm riêng thay vì vào xóm đông vui còn chỗ (ô tick "on" từ form hoặc true từ JSON). */
+  solo: z.preprocess((v) => v === true || v === "on" || v === "true", z.boolean()).optional(),
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 

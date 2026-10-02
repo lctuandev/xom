@@ -7,9 +7,14 @@ import { type FeatureId, featureMeta } from "./registry";
 /**
  * Mở một chức năng theo id (Menu ☰, icon neo, nút "›", thông báo). Chức năng phải dùng tại chỗ (chợ, vựa xe, ATM, công
  * trường): đang đứng đó thì mở ngay, chưa thì tự đi tới rồi mở khi tới nơi (luật server: phải đứng gần mới mua/bán).
+ * `from: "sheet"` (nút "›", ô trong Menu): nhớ sheet đang mở để có nút ‹ Quay lại.
  */
-export function openFeature(id: FeatureId) {
-  const st = useGame.getState();
+export function openFeature(id: FeatureId, opts: { from?: "sheet" } = {}) {
+  const st0 = useGame.getState();
+  const st =
+    opts.from === "sheet"
+      ? { ...st0, openSheet: (s: typeof st0.sheet) => (s ? st0.pushSheet(s) : st0.openSheet(null)) }
+      : st0;
   const meta = featureMeta(id);
   if (meta.place) {
     if (st.nearPlace === meta.place) return st.openSheet(id);

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openBanhMiStall, register, shot, waitForMorning } from "./helpers";
+import { openBanhMiStall, openFeature, register, shot, waitForMorning } from "./helpers";
 
 // Giọng thoại theo kiểu khách + công tắc "thoại mặn" (docs/USECASES.md UC-D6).
 test("khách gọi món theo giọng riêng; tắt thoại mặn trong Cài đặt thì nhớ trên máy", async ({
@@ -19,7 +19,7 @@ test("khách gọi món theo giọng riêng; tắt thoại mặn trong Cài đ�
   await kitchen.getByRole("button", { name: "Để đó, làm sau" }).tap();
   await expect(kitchen).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Cài đặt" }).tap();
+  await openFeature(page, "settings");
   const toggle = page.getByRole("switch", { name: /Thoại mặn/ });
   await expect(toggle).toHaveAttribute("aria-checked", "true");
   await toggle.tap();
@@ -27,7 +27,7 @@ test("khách gọi món theo giọng riêng; tắt thoại mặn trong Cài đ�
   await expect(toggle).toContainText("Tắt — lời lẽ hiền");
   await shot(page, "97-thoai-man");
   await page.reload();
-  await page.getByRole("button", { name: "Cài đặt" }).tap();
+  await openFeature(page, "settings");
   await expect(page.getByRole("switch", { name: /Thoại mặn/ })).toHaveAttribute(
     "aria-checked",
     "false",

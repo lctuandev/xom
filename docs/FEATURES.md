@@ -49,7 +49,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Đăng nhập Google/Zalo | 💤 | sau | |
 | Hồ sơ người chơi, ID, nickname | ⏳ | 2 | Đang có tên hiển thị |
 | Xóm (room) có đồng hồ riêng, tải/lưu | ✅ | 1 | Mỗi người có xóm riêng khi đăng ký, sau đó vào xóm bạn |
-| Tạo / vào xóm của bạn (mã, link mời) | ✅ | 2 | UC-J1 · tối đa 8 người online/xóm |
+| Tạo / vào xóm của bạn (mã, link mời) | ✅ | 2 | UC-J1 · đăng ký từ link vào thẳng xóm; ô link khi không chép được; 30 online / 40 cư dân |
 | Sức chứa xóm ✅ · matchmaking, kick ⏳ | 🚧 | 2 | |
 | Kết nối lại khi mất mạng / app xuống nền | ✅ | 1 | 30 giây ân hạn, UC-A3 |
 | Trạng thái kết nối + ping | ✅ | 0 | HUD |
@@ -145,6 +145,9 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | 🏠 Đòi tiền nhà: chủ nhà NPC (chân dung + thoại) tới nhắc 17h, trả ngay / hẹn **ngày** (phí trễ theo số ngày) / để sau; quá hạn trừ cọc + 🤝, trễ lần 3 hoặc hết cọc thì dẹp tiệm (cả xóm biết); offline chưa hẹn không tính trễ | ✅ | 1.23 | UC-F13 |
 | ⚖️ Cân lại kinh tế tiệm: mặt tiền đông khách hơn + khách chịu giá cao hơn ~20% (`priceTolerance`), nhân viên tay ngang người chơi, sửa lương làm tròn mỗi nhịp (10k→12k/giờ); `pnpm balance` có bảng Tiệm + cảnh báo tiệm thua xe đẩy / nhân viên lỗ / nhân viên hơn chủ | ✅ | 1.23 | UC-F12, UC-M6 |
 | 🧭 Tổ chức lại giao diện: **mỗi chức năng một sheet riêng** (35 chức năng, registry), ☰ Menu lưới icon 5 nhóm + chấm đỏ, cột neo trái tự ghim tối đa 4, bỏ thanh dưới 5 mục; tách Làm ăn 9 tab, Hồ sơ 5 tab, Việc làm 3 tab, Hàng xóm, Thanh lý | ✅ | 1.24 | docs/IA.md, DESIGN Luật 12.3–12.6 |
+| Nút ☰ Menu icon không nền + chữ "Menu" đè dưới; bỏ neo ⚙️ (Cài đặt trong Menu); ghim icon **cả trái lẫn phải** (mỗi bên 4) | ✅ | 1.24 | UC-A6 |
+| Nút **‹ Quay lại** ở đầu sheet mở từ sheet khác (nút "›", ô trong Menu) — ngăn xếp `sheetBack` | ✅ | 1.24 | UC-A6 |
+| Chú Bảy không bắt chuyện lại mỗi lần vào game (nhớ lời đã nghe); thêm lựa chọn "Con tự lo được" bỏ qua hướng dẫn | ✅ | 1.24 | UC-A1 |
 | 🏗️ Tách server theo miền (BusinessRepo, PaymentService, Broadcast, Bank/Needs/Market/BusinessService, gateway theo nhóm + IntentRunner) — không đổi hành vi | ✅ | 1.24 | docs/IA.md bước A |
 | 📊 Sổ sách: thu/chi theo từng khoản (lương nhân viên, điện nước tách khỏi phí), lãi/lỗ hôm nay & 7 ngày, chỉ ra khoản chi lớn nhất; Tổng kết ngày tính đủ khoản | ✅ | 1.24 | docs/IA.md bước C |
 | 🚶 Chủ tự do khi có nhân viên: quầy mở mà có nhân viên trong ca thì chủ đi làm thuê / xe ôm / phụ hồ được (chỉ chặn khi không ai bán) | ✅ | 1.24 | UC-M6, HANDOFF 3.4 |
@@ -323,5 +326,6 @@ Chụp ảnh/quay trong game, đăng lên "XÓM Social", thích/bình luận, tr
 | Đòi tiền nhà: nhắc trước hạn, hẹn ngày, chủ nhà dẹp tiệm, modal chân dung NPC | ⏳ | HANDOFF §3.5 |
 | Nội thất riêng theo nghề | ⏳ | HANDOFF §3.6 |
 | Khách ra vào tiệm (ngoài phố + trong tiệm, cả khi nhân viên bán) | ⏳ | HANDOFF §3.7 |
-| Xóm chung: tự xếp xóm, danh sách xóm, bảng tin xóm | ⏳ | HANDOFF §3.8 |
+| Xóm chung: tự xếp xóm đông, lập xóm riêng, danh sách xóm + dọn về | ✅ | UC-J7 |
+| Bảng tin xóm (tin nhắn lưu + tin tự động), tên xóm | ⏳ | HANDOFF §3.8 |
 | Trang admin `/quan-tri` | ⏳ (đã có plan) | docs/ADMIN.md |

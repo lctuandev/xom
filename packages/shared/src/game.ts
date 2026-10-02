@@ -260,6 +260,18 @@ export interface PeerView extends PeerPos {
   inside: string | null;
 }
 
+/** Một xóm trong danh sách xóm (HANDOFF 3.8): để tìm xóm đông vui mà vào. */
+export interface XomListItem {
+  code: string;
+  residents: number;
+  online: number;
+  /** Số tiệm / quầy đang có trong xóm. */
+  shops: number;
+  day: number;
+  mine: boolean;
+  full: boolean;
+}
+
 export interface RosterView {
   /** Mã xóm để mời bạn. */
   code: string;

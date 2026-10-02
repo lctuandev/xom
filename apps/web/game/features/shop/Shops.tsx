@@ -52,7 +52,7 @@ export function ShopsSheet() {
                     type="button"
                     onClick={async () => {
                       const r = await send("biz:select", { businessId: s.id });
-                      if (r.ok) openFeature("stall");
+                      if (r.ok) openFeature("stall", { from: "sheet" });
                     }}
                     className="mt-2 h-10 w-full rounded-xl bg-ink/5 text-sm font-semibold"
                   >

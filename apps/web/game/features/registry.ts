@@ -149,8 +149,11 @@ export type FeatureId = keyof typeof FEATURES;
 
 export const featureMeta = (id: FeatureId): FeatureMeta => FEATURES[id];
 
-/** Icon neo trái mặc định (người chơi tự ghim lại trong Menu, tối đa 4). */
-export const DEFAULT_PINS: FeatureId[] = ["food", "market", "stall", "jobs"];
+/** Icon neo mặc định hai bên màn hình (người chơi tự ghim lại trong Menu, mỗi bên tối đa 4). */
+export const DEFAULT_PINS: { left: FeatureId[]; right: FeatureId[] } = {
+  left: ["food", "market", "stall", "jobs"],
+  right: ["quests", "neighbors"],
+};
 export const MAX_PINS = 4;
 
 /** Id cũ (sheet:tab trước khi tách, vd. thông báo "jobs:gigs") → id chức năng mới. */

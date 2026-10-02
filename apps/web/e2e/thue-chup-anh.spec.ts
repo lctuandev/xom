@@ -52,11 +52,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   const b = await ctx.newPage();
   await register(b, "Bình", `/play?xom=${code}`);
   await (await readDialogue(b)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await b
-    .getByRole("dialog", { name: "👥 Hàng xóm" })
-    .getByRole("button", { name: "Vào xóm" })
-    .tap();
-  await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
+  await expect(b.locator("[data-online]")).toHaveAttribute("data-online", "2");
   await setClock(page, 7 * 60);
 
   // Bình nhận việc → An được báo.

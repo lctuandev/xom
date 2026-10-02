@@ -13,9 +13,9 @@ import {
   IconCash,
   IconDrop,
   IconFood,
-  IconGear,
   IconJob,
   IconMarket,
+  IconMenu,
   IconNeighbors,
   IconQuest,
   IconRice,
@@ -59,21 +59,10 @@ export function Hud() {
       <div className="flex flex-1 flex-col">
         <Objective />
         <DeliveryHud />
-        {/* Icon neo hai bên bản đồ: trái = ăn uống, chợ, bảng xóm · phải = cài đặt (góp ý UI: gỡ khỏi thanh trên). */}
+        {/* Icon neo hai bên bản đồ: người chơi tự ghim trong ☰ Menu (cài đặt nằm trong Menu, không neo riêng). */}
         <div className="flex items-start justify-between">
-          <SideRail />
-          <div className="mt-2 flex flex-col gap-1.5 px-2">
-            <button
-              type="button"
-              onClick={() => openSheet(sheet === "settings" ? null : "settings")}
-              aria-label="Cài đặt"
-              title="Cài đặt"
-              className="pointer-events-auto relative flex size-12 items-center justify-center active:scale-90"
-            >
-              <IconGear className="icon-halo size-10" />
-              <ConnectionDot />
-            </button>
-          </div>
+          <SideRail side="left" />
+          <SideRail side="right" />
         </div>
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
           {showPerf && <PerfPanel />}
@@ -83,21 +72,24 @@ export function Hud() {
 
       {/* Thanh dưới chỉ còn ☰ Menu (docs/IA.md §3): mọi chức năng nằm trong Menu, hay dùng thì ghim lên cột trái. */}
       <nav className="pb-safe pointer-events-none relative z-40 flex h-(--nav-h) items-end px-3">
+        {/* Icon không nền, chữ "Menu" đè nhẹ dưới icon (góp ý UI); chấm xanh/đỏ = kết nối. */}
         <button
           type="button"
           aria-label="Menu"
           aria-current={sheet === "menu" ? "page" : undefined}
           onClick={() => openSheet(sheet === "menu" ? null : "menu")}
-          className="pointer-events-auto mb-1 flex h-12 items-center gap-2 rounded-full bg-ink/85 pr-4 pl-3 text-cream shadow-lg active:scale-95 aria-[current=page]:bg-red"
+          className="group pointer-events-auto relative mb-1 flex size-14 flex-col items-center justify-center active:scale-90"
+          data-menu-button
         >
-          <span aria-hidden className="text-2xl leading-none">
-            ☰
+          <IconMenu className="icon-halo size-10 group-aria-[current=page]:text-red" />
+          <span className="-mt-2 text-[11px] font-extrabold tracking-wide text-ink [text-shadow:0_0_3px_#fff8ec,0_0_3px_#fff8ec,0_0_3px_#fff8ec]">
+            Menu
           </span>
-          <span className="text-sm font-extrabold">Menu</span>
+          <ConnectionDot />
           {online > 1 && (
             <span
               data-online={online}
-              className="rounded-full bg-leaf px-1.5 text-[10px] font-bold"
+              className="absolute -top-1 -right-3 rounded-full bg-leaf px-1.5 text-[10px] font-bold text-cream"
             >
               👥 {online}
             </span>
@@ -229,10 +221,10 @@ function NewsTicker() {
  * Icon neo bên trái bản đồ (docs/IA.md §3): tối đa 4 chức năng người chơi tự ghim trong ☰ Menu (mặc định ăn uống, chợ,
  * quầy của tôi, làm thuê) — icon không nền, không chữ (tên ở aria-label / title).
  */
-function SideRail() {
-  const pins = usePins((s) => s.pins);
+function SideRail({ side }: { side: "left" | "right" }) {
+  const pins = usePins((s) => s.pins[side]);
   return (
-    <div className="mt-2 flex flex-col gap-1.5 self-start px-2" data-anchor-rail>
+    <div className="mt-2 flex flex-col gap-1.5 self-start px-2" data-anchor-rail={side}>
       {pins.map((id) => {
         const f = FEATURES[id];
         const icon = ANCHOR_ICON[id];
@@ -294,7 +286,7 @@ function NeedsChip() {
   );
 }
 
-/** Chấm trạng thái kết nối trên nút cài đặt. */
+/** Chấm trạng thái kết nối trên nút Menu. */
 function ConnectionDot() {
   const status = useGame((s) => s.status);
   return (

@@ -9,6 +9,9 @@ export async function register(page: Page, name = "Tuấn", start = "/play") {
     .fill(`e${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`);
   await page.getByLabel("Tên hiển thị trong xóm").fill(name);
   await page.getByLabel("Mật khẩu").fill("matkhau123");
+  // Kịch bản cần xóm riêng cho ổn định (chỗ bán, đồng hồ); link mời thì vào thẳng xóm được mời.
+  const solo = page.getByRole("checkbox", { name: /Lập xóm riêng/ });
+  if (await solo.isVisible()) await solo.check();
   await page.getByRole("button", { name: /Tạo tài khoản & vào xóm/ }).tap();
   await page.waitForURL(`**${start}`);
   // Trời ngẫu nhiên (UC-B4) làm khách lúc đông lúc vắng — kịch bản mặc định chạy với trời nắng cho ổn định.

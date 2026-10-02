@@ -1,8 +1,9 @@
 "use client";
 
 import { content } from "@xom/content";
+import type { XomListItem } from "@xom/shared";
 import { formatClock } from "@xom/sim";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FeatureSheet, GoToRow } from "../features/FeatureSheet";
 import { send } from "../net/socket";
 import { useGame } from "../store";
@@ -24,29 +25,28 @@ export function NeighborsSheet() {
   const setGoal = useGame((s) => s.setGoal);
   const [code, setCode] = useState(invite ?? "");
   const [busy, setBusy] = useState(false);
+  const [showLink, setShowLink] = useState(false);
   if (!roster || !me) return null;
 
+  const url = inviteUrl(roster.code);
   const share = async () => {
-    const url = inviteUrl(roster.code);
     try {
       if (navigator.share) {
         await navigator.share({ title: "XÓM", text: "Vào xóm mình chơi nè!", url });
         return;
       }
-    } catch {
-      return; // người chơi bấm hủy
+    } catch (err) {
+      if ((err as Error).name === "AbortError") return; // người chơi bấm hủy
     }
-    try {
-      await navigator.clipboard.writeText(url);
+    // Không có Web Share / clipboard (mở game qua http IP mạng nhà): chép bằng ô chữ, không được thì hiện link để tự chép.
+    if (await copyText(url))
       toast({ kind: "good", text: "Đã chép link mời — dán vào Zalo/Messenger gửi bạn" });
-    } catch {
-      toast({ kind: "info", text: url });
-    }
+    else setShowLink(true);
   };
 
-  const join = async () => {
+  const join = async (target = code) => {
     setBusy(true);
-    const res = await send("xom:join", { code });
+    const res = await send("xom:join", { code: target });
     setBusy(false);
     if (!res.ok) return;
     setInvite(null);
@@ -55,7 +55,7 @@ export function NeighborsSheet() {
     toast({ kind: "good", text: "Đã vào xóm mới — chào hàng xóm đi!" });
   };
 
-  const busyHere = me.business?.open || useGame.getState().shift;
+  const busyHere = me.shops.some((b) => b.open) || useGame.getState().shift;
 
   return (
     <FeatureSheet id="neighbors">
@@ -80,6 +80,18 @@ export function NeighborsSheet() {
           📨 Mời bạn
         </button>
       </div>
+      {showLink && (
+        <label className="mt-2 block text-xs text-ink/60">
+          Chép link này gửi bạn:
+          <input
+            readOnly
+            value={url}
+            onFocus={(e) => e.currentTarget.select()}
+            className="mt-1 h-10 w-full rounded-xl bg-white px-3 font-mono text-sm text-ink shadow-sm"
+            data-invite-link
+          />
+        </label>
+      )}
 
       <p className="mt-4 mb-1.5 text-sm font-extrabold">
         Đang online ({roster.peers.length}/{roster.max})
@@ -138,7 +150,7 @@ export function NeighborsSheet() {
         <button
           type="button"
           disabled={busy || code.length !== 8 || !!busyHere}
-          onClick={join}
+          onClick={() => join()}
           className="h-11 shrink-0 rounded-xl bg-leaf px-4 font-semibold text-cream disabled:opacity-40"
         >
           Vào xóm
@@ -149,8 +161,75 @@ export function NeighborsSheet() {
           ? "Đang mở quầy hoặc đang trong ca — dọn quầy, ra ca rồi mới chuyển xóm được."
           : "Chuyển xóm thì mang theo tiền, hàng tồn và xe hàng; chỗ bán cũ có người dùng thì chọn chỗ khác."}
       </p>
+      <XomList busy={busy || !!busyHere} onJoin={join} />
       <GoToRow to={["today", "fund", "board"]} />
     </FeatureSheet>
+  );
+}
+
+/** Chép chữ: clipboard API (cần HTTPS / localhost), không có thì dùng ô chữ ẩn + execCommand. */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // rơi xuống cách cũ
+  }
+  try {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Các xóm đang có người ở (HANDOFF 3.8): đông vui trước — chọn xóm mà dọn về. */
+function XomList({ busy, onJoin }: { busy: boolean; onJoin: (code: string) => void }) {
+  const [list, setList] = useState<XomListItem[] | null>(null);
+  useEffect(() => {
+    void send("xom:list", {}).then((r) => r.ok && setList(r.data));
+  }, []);
+  if (!list || list.length < 2) return null;
+  return (
+    <section aria-label="Các xóm" className="mt-4">
+      <p className="mb-1.5 text-sm font-extrabold">🏘️ Các xóm khác</p>
+      <ul className="flex flex-col gap-1">
+        {list
+          .filter((x) => !x.mine)
+          .slice(0, 8)
+          .map((x) => (
+            <li
+              key={x.code}
+              className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm"
+              data-xom-item={x.code}
+            >
+              <span className="flex-1">
+                <span className="font-mono font-bold">{x.code}</span>
+                <span className="block text-xs text-ink/60">
+                  🏠 {x.residents} cư dân · 🟢 {x.online} online · 🏪 {x.shops} quầy · ngày {x.day}
+                </span>
+              </span>
+              <button
+                type="button"
+                disabled={busy || x.full}
+                onClick={() => onJoin(x.code)}
+                className="h-8 shrink-0 rounded-lg bg-leaf px-2.5 text-xs font-semibold text-cream disabled:opacity-40"
+              >
+                {x.full ? "Kín nhà" : "Dọn về"}
+              </button>
+            </li>
+          ))}
+      </ul>
+    </section>
   );
 }
 

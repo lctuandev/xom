@@ -34,7 +34,7 @@ export function GoTo({ to, label }: { to: FeatureId; label?: string }) {
   return (
     <button
       type="button"
-      onClick={() => openFeature(to)}
+      onClick={() => openFeature(to, { from: "sheet" })}
       className="h-10 rounded-xl bg-white px-3 text-sm font-semibold shadow-sm active:bg-ink/5"
     >
       {meta.icon} {label ?? meta.title} ›

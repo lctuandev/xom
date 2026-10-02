@@ -112,7 +112,10 @@ Hiện: trong tiệm có khách theo đơn của chủ; nhân viên bán (sim) t
 cả khi nhân viên bán) → ngoài phố: NPC đi vào cửa / ra cầm túi; trong tiệm: xếp hàng ở quầy, ngồi bàn (nếu layout có), nhân viên
 "làm món" (animation) rồi khách ra. Chỉ là hình ảnh, tiền vẫn do sim/server.
 
-### 3.8 🏘️ Xóm chung — hết cảnh mỗi người một xóm
+### 3.8 🏘️ Xóm chung — hết cảnh mỗi người một xóm ✅ bản đầu (2026-10-02, UC-J7)
+Đã làm: (1) tự xếp người mới vào xóm còn chỗ đông nhất (40 cư dân / 30 online — `economy.xomResidents/xomOnline`), tick "Lập xóm
+riêng" thì lập mới; (2) link mời đăng ký là vào thẳng xóm bạn; ô link khi máy không chép được (lỗi "mời bạn không hoạt động" khi mở
+qua http IP LAN); (3) danh sách xóm trong bảng Hàng xóm + Dọn về. **Còn:** (4) bảng tin xóm, tên xóm.
 Hiện: đăng ký là tạo xóm mới (`auth.service.ts` tạo `Room`), chỉ gặp nhau qua mã mời; `MAX_MEMBERS = 8` người online/xóm.
 Đề xuất (đã gửi, chủ dự án đồng ý làm): (1) **tự xếp người mới vào xóm sống động còn chỗ** (giới hạn cư dân ~12), hết chỗ mới lập
 xóm mới; (2) giữ link mời + "Lập xóm riêng"; (3) **danh sách xóm** trong bảng Xóm (tên, cư dân, online, Vào xóm); (4) **bảng tin
@@ -134,6 +137,23 @@ xe rùa; chạy lượt Playwright toàn bộ.
   trong **một menu mở ra danh sách** rồi bấm vào chức năng. Viết `docs/IA.md` theo hướng này trước khi tách UI.
 - **Kho hàng khi nhiều cửa hàng (3.3): kho riêng từng tiệm** — thêm `businessId` vào `InventoryItem`, nhập chợ phải chọn tiệm,
   chuyển hàng giữa các tiệm.
+
+### 3.12 Góp ý đợt 2 của chủ dự án (2026-10-02) — làm theo thứ tự, mỗi mục một nhánh, merge --no-ff vào main
+Tham khảo luồng game: Township (mở rộng đất theo ô, ô sau đắt hơn, mở khoá theo cấp/dân số), Bit City (mua ô đất rồi chọn loại
+công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *chức năng* — mở khoá — giữ chân tốt hơn thưởng danh hiệu suông).
+- [x] Mời bạn vào xóm không hoạt động → link mời vào thẳng xóm khi đăng ký + ô link khi không chép được (UC-J1).
+- [x] Tăng giới hạn xóm + xóm chung (3.8 bản đầu, UC-J7).
+- [x] Nút Menu: icon không nền, chữ "Menu" đè dưới; bỏ neo ⚙️; ghim cả trái lẫn phải (UC-A6).
+- [x] Chú Bảy bắt chuyện mỗi lần vào game → nhớ lời đã nghe + lựa chọn bỏ qua hướng dẫn.
+- [x] Nút **‹ Quay lại** trong sheet mở từ sheet khác / từ Menu (store `sheetBack`, `openFeature(id, { from: "sheet" })`).
+- [ ] **Đánh giá riêng từng cửa hàng** (Review.businessId) — hiện chấm chung theo chủ.
+- [ ] **Thưởng** cho thành tựu / nhiệm vụ (tiền nhỏ có trần + mở khoá; không thành thu nhập thụ động).
+- [ ] **Quầy theo mặt hàng**: chọn thể loại khi mở cửa hàng; sheet quầy chỉ còn: nhập đúng hàng của quầy, thuê nhân viên, giá —
+  gom bớt nút cuối sheet.
+- [ ] Kiểm tra **nhiều cửa hàng chạy cùng lúc** (chủ đứng một quầy, quầy khác có nhân viên bán) — người chơi báo không chạy được.
+- [ ] **Bản đồ mở**: ban đầu chỉ nhà NPC + ô đất trống / nhà cho thuê; người chơi chọn ô để thuê hoặc xây; xóm lớn dần theo số
+  người mở tiệm; nâng cấp tiệm thành nhà cao tầng (gắn với nhánh art `feat/phong-cach-toon`).
+- [ ] Tách nhỏ chức năng tiếp (tránh conflict) — áp dụng dần khi làm từng mục trên.
 
 ## 4. Issues / lưu ý đang biết
 

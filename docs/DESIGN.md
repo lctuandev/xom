@@ -130,12 +130,13 @@ và `game/features/sheets.tsx`. Chức năng liên quan nhau thì có nút chuy�
 của nhau. Tab chỉ dùng khi **cùng một việc** có list dài (chợ theo nghề, Bảng xóm các kiểu xếp hạng) — component `Tabs`.
 Chức năng phải dùng tại chỗ (chợ, vựa xe, ATM, công trường, trạm xe ôm) mở qua `openFeature`: đứng đó thì mở, chưa thì tự đi tới.
 **Luật 12.4** — Nút neo trên bản đồ là **icon vẽ tay (SVG) không nền, không chữ** (không có SVG thì emoji của chức năng);
-tên đầy đủ ở `aria-label`/`title`; class `icon-halo` để nổi trên mọi nền 3D. **Cột neo trái = tối đa 4 chức năng người
-chơi tự ghim** trong ☰ Menu (📌 Ghim; mặc định Ăn uống · Chợ · Quầy của tôi · Làm thuê); phải = ⚙️ Cài đặt.
+tên đầy đủ ở `aria-label`/`title`; class `icon-halo` để nổi trên mọi nền 3D. **Hai cột neo trái + phải, mỗi bên tối đa
+4 chức năng người chơi tự ghim** trong ☰ Menu (📌 Ghim xoay vòng trái → phải → bỏ; mặc định trái Ăn uống · Chợ · Quầy của tôi
+· Làm thuê, phải Nhiệm vụ · Hàng xóm). Không neo riêng ⚙️ — Cài đặt nằm trong Menu.
 **Luật 12.6 — Thanh trên & thanh dưới:** thanh trạng thái chỉ chứa *số liệu* (tiền, uy tín, no/khát khi thấp, ngày · trời · giờ),
 trải tới mép phải, icon SVG cùng bộ (`IconCash`, `IconStar`, `IconRice`, `IconDrop`, `IconWeather`); tiền dưới 100 nghìn ghi đủ, từ 100 nghìn ghi "138k", từ 1 triệu
-thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** (cài đặt…) không nằm trên thanh số liệu mà vào cột neo (Luật 12.4).
-Thanh dưới **chỉ còn nút ☰ Menu** (lưới icon mọi chức năng chia 5 nhóm Cửa hàng · Mua bán · Việc làm · Xóm · Tôi, chấm đỏ
+thu gọn (`1,48tr`, `2,3 tỷ` — số đủ ở `title`). **Nút** không nằm trên thanh số liệu mà vào cột neo (Luật 12.4).
+Thanh dưới **chỉ còn nút ☰ Menu** — icon SVG không nền (`IconMenu`), chữ "Menu" nhỏ đè nhẹ dưới icon, chấm xanh/đỏ báo kết nối (lưới icon mọi chức năng chia 5 nhóm Cửa hàng · Mua bán · Việc làm · Xóm · Tôi, chấm đỏ
 khi có việc cần làm) — bỏ thanh 5 mục cũ. Đổi chiều cao thanh dưới thì đổi `--nav-h` (sheet, hội thoại neo theo nó).
 **Luật 12.5 — Sheet hay Modal:** *bottom sheet* cho thao tác trong lúc chơi, cần vẫn thấy bản đồ (chợ, làm ăn, quầy hàng xóm…);
 *modal* giữa màn hình (`Modal`) cho nội dung xem trọn vẹn, cần tập trung (bảng xếp hạng, hướng dẫn cài đặt). Bảng xếp hạng

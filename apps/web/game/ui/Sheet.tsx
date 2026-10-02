@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useGame } from "../store";
 
 /**
  * Bottom sheet cho mobile: nằm trong vùng ngón cái, ngay trên thanh điều hướng (vẫn bấm chuyển tab được),
@@ -34,8 +35,9 @@ export function Sheet({
         {face}
         <section className="relative flex max-h-[68dvh] flex-col rounded-t-3xl bg-cream shadow-[0_-8px_30px_rgba(0,0,0,0.15)]">
           <div className="mx-auto mt-2 h-1.5 w-12 rounded-full bg-ink/20" />
-          <header className="flex items-center justify-between px-4 pt-1 pb-2">
-            <h2 className="text-lg font-extrabold">{title}</h2>
+          <header className="flex items-center justify-between gap-2 px-4 pt-1 pb-2">
+            <BackButton />
+            <h2 className="min-w-0 flex-1 truncate text-lg font-extrabold">{title}</h2>
             <button
               type="button"
               onClick={onClose}
@@ -49,6 +51,25 @@ export function Sheet({
         </section>
       </div>
     </div>
+  );
+}
+
+/** ‹ Quay lại sheet trước (mở từ nút "›" hoặc từ Menu); mở thẳng từ bản đồ thì không có. */
+function BackButton() {
+  const back = useGame((s) => s.sheetBack.at(-1));
+  const backSheet = useGame((s) => s.backSheet);
+  if (!back) return null;
+  return (
+    <button
+      type="button"
+      onClick={backSheet}
+      aria-label="Quay lại"
+      title="Quay lại"
+      data-back={back}
+      className="-ml-1 flex size-9 shrink-0 items-center justify-center rounded-full bg-ink/5 text-xl leading-none font-bold"
+    >
+      ‹
+    </button>
   );
 }
 
