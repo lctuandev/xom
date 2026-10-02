@@ -61,31 +61,74 @@
 | **Xóm** | 🗺️ Bản đồ & khu phố · 👥 Hàng xóm · 🏆 Bảng xóm · 💰 Quỹ & công trình · 📰 Bảng tin |
 | **Tôi** | 🙂 Hồ sơ & kỹ năng · 👛 Ví 💵/🏦 · 📖 Chuyện của tôi · 🎯 Nhiệm vụ & thành tựu · ⚙️ Cài đặt |
 
-## 4. "Cửa hàng của tôi" — luồng Làm ăn mới (gồm 3.2, 3.3, 3.4)
+## 4. Mỗi chức năng một sheet riêng (góp ý 2026-10-02: "không gộp chung nữa, khó maintain")
 
-**Mô hình:** người chơi có **nhiều cửa hàng** (`Business` nhiều dòng). Mỗi cửa hàng: nghề + đồ nghề, chỗ bán (vỉa hè hoặc nhà thuê),
-**kho riêng**, thực đơn, nhân viên (nhiều người, trần theo quy mô), hồ sơ giấy tờ, số liệu, khách quen, đánh giá.
+Bỏ kiểu **một sheet nhiều tab ôm nhiều chức năng**. Mỗi chức năng = **một bottom-sheet (hoặc modal) riêng, một file riêng, một
+icon riêng**, đăng ký trong **một bảng tập trung** (`game/features/registry.ts`). Menu ☰, icon neo, nút ngữ cảnh, thông báo
+"Xem ›" đều mở chức năng qua id trong bảng này — thêm chức năng mới = thêm một dòng + một file, không sửa sheet khác.
+Chức năng cần liên kết nhau (vd. Kho → "🧺 Ra chợ") thì có **nút chuyển sang sheet kia**, không nhúng nội dung của nhau.
 
+### Danh mục (hiện ở đâu → sheet riêng mới)
+
+| Nhóm | Sheet mới (id) | Nội dung | Hiện đang nằm ở |
+|---|---|---|---|
+| **🏪 Cửa hàng** | 🏪 Quầy của tôi (`stall`) | mở/đóng, đẩy xe tới chỗ, hôm nay bán bao nhiêu, độ bền xe | Làm ăn (đầu sheet + tab Bán) |
+| | 🍽️ Thực đơn & giá (`menu`) | bật/tắt món, chỉnh giá, gợi ý giá hợp lý | Làm ăn › Thực đơn |
+| | 📦 Kho hàng (`stock`) | tồn kho, còn làm được bao nhiêu phần, sắp hỏng | Làm ăn › Kho |
+| | 📍 Chỗ bán (`lot`) | chọn/đổi chỗ vỉa hè, khu nào hợp hàng gì | Làm ăn › Chỗ bán |
+| | 🏠 Thuê nhà & giấy tờ (`lease`) | hợp đồng thuê, hộ kinh doanh, ATTP, biển hiệu, **tiền nhà** | Làm ăn › Mở tiệm |
+| | 👩‍🍳 Nhân viên (`staff`) | tuyển, ca, phiếu ca | Làm ăn › Nhân viên |
+| | 📊 Sổ sách (`books`) | doanh thu/lãi 7 ngày, chi phí theo khoản | Làm ăn › Số liệu |
+| | ❤️ Khách quen (`regulars`) | sổ khách quen | Làm ăn › Khách quen |
+| | 📒 Đánh giá (`reviews`) | sổ đánh giá, trả lời | Làm ăn › Đánh giá |
+| | 🎉 Khai trương (`promo`) | tổ chức khai trương | Làm ăn › Bán |
+| | 📖 Công thức (`recipes`) | sổ tay món | đã riêng ✅ |
+| | 🛒 Vựa xe Ông Sáu (`equipment`) | mua/đổi nghề, sửa xe | đã riêng ✅ (+ "Đổi nghề…" trong Làm ăn) |
+| **🧺 Mua bán** | 🧺 Chợ đầu mối (`market`) | nhập hàng theo nghề | đã riêng, nhưng gộp Thanh lý |
+| | ♻️ Thanh lý (`liquidate`) | bán lại hàng tồn | Chợ › Thanh lý |
+| | 🍜 Ăn uống (`food`) · sạp (`vendor`) | quán quanh xóm, mua ăn | đã riêng ✅ |
+| | 🏧 ATM (`atm`) | rút/gửi, PIN | đã riêng ✅ |
+| | 🛒 Quầy hàng xóm (`shop`) | gọi món ở quầy người khác | đã riêng ✅ |
+| **💼 Việc làm** | 💼 Làm thuê (`jobs`) | quán cơm, bưu cục… | Việc làm › Làm thuê |
+| | 📋 Việc xóm (`contracts`) | bảng việc NPC đặt | Việc làm › Việc xóm |
+| | 📸 Thuê nhau (`gigs`) | người chơi thuê nhau | Việc làm › Thuê nhau |
+| | 🛵 Xe ôm (`ride`) | thuê xe, chở khách | thẻ trong Việc làm + sheet riêng |
+| | 🏗️ Phụ hồ (`site`) | trộn vữa công trình | thẻ trong Việc làm + sheet riêng |
+| **🏘️ Xóm** | 👥 Hàng xóm (`neighbors`) | ai online, tới quầy họ, mời bạn, vào xóm khác | Hàng xóm (gộp lịch + quỹ) |
+| | 📅 Hôm nay (`today`) | thứ, sự kiện trong ngày | Hàng xóm (đầu sheet) |
+| | 🏆 Bảng xóm (`board`) | giải tuần, thị phần, đang hot, khu phố | đã riêng (4 tab cùng một việc: xếp hạng — giữ) |
+| | 💰 Quỹ & công trình (`fund`) | góp quỹ, đề xuất, bỏ phiếu | đã riêng (+ nút trong Hàng xóm) |
+| | 💬 Chat (`chat`) | nhắn nhanh | nút nổi riêng ✅ |
+| **🙂 Tôi** | 🙂 Hồ sơ (`profile`) | cấp, danh tiếng, tin cậy, no/khát | Hồ sơ › Tôi |
+| | 👛 Ví (`wallet`) | 💵/🏦, hôm nay thu gì, tới ATM gần nhất | Hồ sơ › Tôi (nửa dưới) |
+| | 📖 Chuyện của tôi (`story`) | các mốc đời | Hồ sơ › Chuyện |
+| | 📈 Kỹ năng (`skills`) | kỹ năng + mở khoá theo cấp | Hồ sơ › Kỹ năng |
+| | 🏅 Thành tựu (`badges`) | thành tựu | Hồ sơ › Thành tựu |
+| | 🫶 Người quen (`friends`) | độ thân với NPC | Hồ sơ › Người quen |
+| | 🎯 Nhiệm vụ (`quests`) | việc tiếp theo, mục tiêu hôm nay | thanh dưới |
+| | ⚙️ Cài đặt (`settings`) | âm thanh, thoại mặn, hiệu năng, đăng xuất | icon phải |
+
+→ **35 chức năng, mỗi cái một sheet**; không sheet nào còn tab trộn chức năng (Bảng xóm giữ tab vì 4 tab đều là "xếp hạng").
+
+### Đường vào
+- **Icon neo trái** (ghim tối đa 4, mặc định 🍜 Ăn uống · 🧺 Chợ · 🏪 Quầy của tôi · 💼 Làm thuê).
+- **☰ Menu**: lưới icon 5 nhóm như bảng trên; chấm đỏ khi chức năng có việc cần làm (hết hàng, tiền nhà tới hạn, đơn mới…).
+- **Nút ngữ cảnh** (thay `ActionBar` 15 nút): ở đâu hiện đúng một nút của chức năng ở đó (đứng ở quầy → Mở quầy / Làm món;
+  trước ATM → ATM…).
+- Avatar → 🙂 Hồ sơ; ⚙️ giữ ở cột phải.
+
+### Tổ chức code web
 ```
-🏪 Cửa hàng của tôi
- ├─ Danh sách thẻ cửa hàng: tên · đang mở/đóng · lãi hôm nay · ⚠ hết hàng / tiền nhà tới hạn · nhân viên trong ca
- │    [+ Mở cửa hàng mới]  → chọn nghề (mua đồ nghề) → chọn chỗ → đặt tên
- └─ Bấm một thẻ → trang cửa hàng (4 tab thay cho 9):
-      🏪 Vận hành : mở/đóng · thực đơn & giá · nhân viên ca hôm nay · khách quen
-      📦 Kho      : tồn kho cửa hàng này · nhập (đi chợ cho tiệm này) · chuyển hàng giữa các tiệm
-      📊 Sổ sách  : doanh thu/lãi hôm nay & 7 ngày, chi phí theo khoản (hàng, lương, nhà, điện nước, thuế), đánh giá
-      📁 Hồ sơ    : chỗ bán / thuê nhà, tiền nhà, giấy tờ (hộ kinh doanh, ATTP, biển hiệu), tuyển nhân viên, đổi tên
+game/features/registry.ts      id → { title, icon, group, Sheet (lazy), badge?() }
+game/features/shop/Stall.tsx  Menu.tsx  Stock.tsx  Lot.tsx  Lease.tsx  Staff.tsx  Books.tsx  Regulars.tsx  Reviews.tsx  Promo.tsx
+game/features/trade/Market.tsx  Liquidate.tsx  Food.tsx  Vendor.tsx  Atm.tsx  NeighborShop.tsx  Equipment.tsx  Recipes.tsx
+game/features/work/Jobs.tsx  Contracts.tsx  Gigs.tsx  Ride.tsx  Site.tsx
+game/features/xom/Neighbors.tsx  Today.tsx  Board.tsx  Fund.tsx
+game/features/me/Profile.tsx  Wallet.tsx  Story.tsx  Skills.tsx  Badges.tsx  Friends.tsx  Quests.tsx  Settings.tsx
+game/ui/menu/MainMenu.tsx  AnchorRail.tsx  ContextAction.tsx
 ```
-
-**Luật mới:**
-- Chủ **tự đứng bán một cửa hàng một lúc**; cửa hàng khác bán được khi **có nhân viên trong ca**.
-- **Chủ được đi làm thuê / xe ôm / phụ hồ / mở tiệm khác** khi mọi cửa hàng đang mở đều có nhân viên (helper chung `ownerTied`).
-- **Không giới hạn số cửa hàng** mỗi người (vốn, tiền nhà, nhân viên tự là giới hạn).
-- **Cấp tiệm**: tiệm nâng cấp (mở rộng, sửa sang — tốn tiền) thì **to hơn, đông khách hơn**, và **thuê được nhiều nhân viên hơn**
-  (content `shopLevels[]`: lưu lượng ×, sức chứa khách, số nhân viên tối đa, chi phí nâng cấp; xe đẩy là cấp thấp nhất, 1 người).
-- **Kho riêng từng tiệm**: nhập chợ phải chọn tiệm nhận hàng; nhân viên chỉ bán hàng trong kho tiệm đó; **chuyển kho = bấm
-  chuyển, hàng tới sau vài phút game** (đang trên đường thì chưa bán được).
-- **📊 Tổng quan cửa hàng**: một bảng so sánh mọi cửa hàng (lãi/lỗ, chi phí lớn nhất, gợi ý "tiệm X lỗ vì lương > lãi gộp").
+`GameShell` chỉ còn `const F = FEATURES[sheet]; <F.Sheet />` thay cho 18 dòng `sheet === …`.
+Khi làm nhiều cửa hàng (bước D), các sheet nhóm 🏪 nhận `shopId` (mở từ danh sách cửa hàng) — không phải tách lại.
 
 ## 5. Tổ chức lại code (tách nhỏ để dễ sửa, ít conflict)
 
@@ -116,8 +159,8 @@
 | Bước | Nội dung | Không đổi hành vi? | Kiểm chứng |
 |---|---|---|---|
 | **A** | Tách server: service + gateway theo miền; gom `BusinessService.get/list` | ✅ thuần tái cấu trúc | e2e server 78/78, Playwright toàn bộ |
-| **B** | Điều hướng mới: Menu ☰ + icon neo + nút ngữ cảnh; bỏ thanh dưới 5 mục; mỗi tính năng một lối vào | đổi UI | Playwright cập nhật locator + kịch bản `menu-chinh` |
-| **C** | "Cửa hàng của tôi": trang cửa hàng 4 tab (từ 9 tab), Sổ sách lãi/lỗ, Tổng quan | đổi UI | kịch bản `so-sach` |
+| **B** | **Tách mỗi chức năng một sheet** (registry, 35 sheet) + Menu ☰ + icon neo + nút ngữ cảnh; bỏ thanh dưới 5 mục | đổi UI | Playwright cập nhật locator + kịch bản `menu-chinh` |
+| **C** | Sổ sách lãi/lỗ theo khoản chi + Tổng quan cửa hàng | đổi UI | kịch bản `so-sach` |
 | **D** | Nhiều cửa hàng + kho riêng từng tiệm (migration `InventoryItem.businessId`, intent nhận `businessId`) | đổi luật | e2e mới, `pnpm balance` |
 | **E** | Chủ tự do khi có nhân viên (`ownerTied`) + nhiều nhân viên theo quy mô | đổi luật | e2e mới, `pnpm balance` |
 | **F** | Tiếp backlog: nội thất theo nghề (3.6), khách ra vào tiệm (3.7), xóm chung (3.8), admin (3.9), nét vẽ toon + đô thị hoá (đã có bản nháp) | | |
@@ -128,7 +171,7 @@
 
 1. **Điều hướng**: icon neo trái (🍜 Ăn uống · 🧺 Chợ · 🏪 Cửa hàng · 💼 Việc làm, người chơi tự ghim tối đa 4) + **☰ Menu** lưới
    icon; **bỏ thanh dưới 5 mục**.
-2. **Thứ tự**: **A trước** (tách code server, người chơi không thấy khác), rồi B, C, D, E.
+2. **Thứ tự**: B (tách chức năng thành sheet riêng — chủ dự án ưu tiên 2026-10-02) → A (tách server) → C → D → E.
 3. **Không giới hạn số cửa hàng**; **số nhân viên theo cấp tiệm** — nâng cấp tiệm → to hơn, đông khách hơn, thuê thêm người.
 4. **Chuyển kho**: bấm chuyển, chờ vài phút game hàng mới tới.
 5. **Kho riêng từng tiệm** (chốt trước đó).
