@@ -40,6 +40,7 @@ import type {
   WorkResult,
   WorldView,
   XomBoardView,
+  XomListItem,
 } from "./game.js";
 
 // Hợp đồng socket dùng chung cho web và server.
@@ -168,6 +169,8 @@ export interface ClientToServerEvents {
   /** Vị trí của mình (không cần Ack, 10 lần/giây khi có thay đổi). */
   move: (payload: MovePayload) => void;
   "xom:join": Intent<{ code: string }>;
+  /** Danh sách xóm đang có người ở (đông vui trước) để chọn xóm mà vào. */
+  "xom:list": Intent<Record<string, never>, XomListItem[]>;
   /** Mua đồ ăn ở sạp NPC (UC-B9, B10). */
   "vendor:buy": Intent<{ vendorId: string; itemId: string; pay?: PayMethod }>;
   /** Rút / gửi tiền ở cây ATM (UC-I6). */

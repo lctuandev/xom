@@ -550,3 +550,24 @@ export function IconNeighbors({ className }: P) {
     </svg>
   );
 }
+
+/** ☰ Menu: ba thanh tròn đầu màu nắng, viền nâu — nút duy nhất ở thanh dưới, chữ "Menu" đè nhẹ bên dưới. */
+export function IconMenu({ className }: P) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} aria-hidden="true">
+      {[11, 21, 31].map((y) => (
+        <rect
+          key={y}
+          x="7"
+          y={y}
+          width="34"
+          height="7"
+          rx="3.5"
+          fill="#f2c14e"
+          stroke={INK}
+          strokeWidth="2.6"
+        />
+      ))}
+    </svg>
+  );
+}

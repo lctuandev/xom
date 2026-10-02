@@ -963,6 +963,9 @@ export const economySchema = z.object({
   bulkPacks: z.number().int().positive(),
   /** Chuyển hàng giữa hai cửa hàng của mình: hàng tới sau bấy nhiêu phút game (docs/IA.md bước D). */
   transferMinutes: z.number().int().positive(),
+  /** Xóm chung (HANDOFF 3.8): tối đa cư dân / người online một xóm; người mới tự vào xóm còn chỗ đông nhất. */
+  xomResidents: z.number().int().positive(),
+  xomOnline: z.number().int().positive(),
   bulkDiscount: z.number().min(0).max(0.5),
   /** Thanh lý hàng tồn cho chợ (đổi nghề, dư hàng): Bà Năm mua lại bằng tỉ lệ này của giá gốc. */
   resaleRate: z.number().min(0).max(1),

@@ -35,11 +35,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   const b = await ctx.newPage();
   await register(b, "Bình", `/play?xom=${code}`);
   await (await readDialogue(b)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
-  await b
-    .getByRole("dialog", { name: "👥 Hàng xóm" })
-    .getByRole("button", { name: "Vào xóm" })
-    .tap();
-  await expect(b.getByText(/Đã vào xóm mới/)).toBeVisible();
+  await expect(b.locator("[data-online]")).toHaveAttribute("data-online", "2");
 
   // Hai người cùng chơi trên máy chậm thì kịch bản dài hơn một ngày game — tua xóm về sáng sớm.
   await setClock(page, 7 * 60);

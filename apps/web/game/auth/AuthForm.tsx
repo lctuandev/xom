@@ -15,6 +15,8 @@ export function AuthForm({ next }: { next: string }) {
   const [mode, setMode] = useState<Mode>("register");
   const [errors, setErrors] = useState<Fields>({});
   const [busy, setBusy] = useState(false);
+  // Link mời /play?xom=… → đăng ký là vào thẳng xóm đó (HANDOFF 3.8).
+  const invite = new URLSearchParams(next.split("?")[1] ?? "").get("xom");
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,7 +38,7 @@ export function AuthForm({ next }: { next: string }) {
       const auth =
         mode === "login"
           ? await authApi.login(loginSchema.parse(form))
-          : await authApi.register(registerSchema.parse(form));
+          : await authApi.register(registerSchema.parse({ ...form, xom: invite ?? undefined }));
       setAuth(auth);
       router.replace(next);
     } catch (err) {
@@ -84,6 +86,12 @@ export function AuthForm({ next }: { next: string }) {
             hint="Hiện trên biển hiệu, ví dụ: Tuấn"
           />
         )}
+        {mode === "register" && invite && (
+          <p className="rounded-xl bg-sun/30 px-4 py-3 text-sm font-semibold">
+            📨 Bạn được mời vào xóm <span className="font-mono">{invite}</span> — tạo tài khoản là
+            dọn về ở cạnh bạn mình luôn.
+          </p>
+        )}
         <Field
           label="Mật khẩu"
           name="password"
@@ -91,6 +99,17 @@ export function AuthForm({ next }: { next: string }) {
           autoComplete={mode === "login" ? "current-password" : "new-password"}
           error={errors.password}
         />
+        {mode === "register" && !invite && (
+          <label className="flex items-start gap-2.5 rounded-xl bg-ink/5 px-4 py-3 text-sm">
+            <input type="checkbox" name="solo" className="mt-0.5 size-5 accent-red" />
+            <span>
+              <b>Lập xóm riêng</b>
+              <span className="block text-ink/60">
+                Không tick: dọn về xóm đông vui còn chỗ để gặp nhiều người.
+              </span>
+            </span>
+          </label>
+        )}
         {errors._ && (
           <p role="alert" className="rounded-xl bg-red/10 px-4 py-3 text-sm font-semibold text-red">
             {errors._}

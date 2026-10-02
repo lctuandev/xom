@@ -52,6 +52,11 @@ export class XomGateway {
     );
   }
 
+  @SubscribeMessage("xom:list")
+  xomList(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, emptySchema, body, (ctx) => this.game.xomList(ctx));
+  }
+
   @SubscribeMessage("stats:xom")
   statsXom(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, emptySchema, body, (ctx) => this.game.statsXom(ctx));

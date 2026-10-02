@@ -96,6 +96,8 @@ interface GameState {
   setEvents: (e: EventView[]) => void;
   report: DayReportView | null;
   sheet: SheetId | null;
+  /** Sheet đã đi qua khi bấm "›" / chọn trong Menu — nút ‹ Quay lại ở đầu sheet (góp ý đợt 2). */
+  sheetBack: SheetId[];
   toasts: Toast[];
   /** Địa điểm nhân vật đang đứng gần (trong bán kính tương tác). */
   nearPlace: string | null;
@@ -173,6 +175,9 @@ interface GameState {
   setReport: (r: DayReportView | null) => void;
   setStatus: (s: GameState["status"]) => void;
   openSheet: (s: SheetId | null) => void;
+  /** Mở sheet từ trong một sheet khác: nhớ sheet đang mở để quay lại. */
+  pushSheet: (s: SheetId) => void;
+  backSheet: () => void;
   toast: (n: NotifyEvent) => void;
   dismissToast: (id: number) => void;
   setProximity: (nearPlace: string | null, atStall: boolean) => void;
@@ -235,6 +240,7 @@ export const useGame = create<GameState>((set, get) => ({
   setEvents: (events) => set({ events }),
   report: null,
   sheet: null,
+  sheetBack: [],
   toasts: [],
   nearPlace: null,
   atStall: false,
@@ -322,7 +328,17 @@ export const useGame = create<GameState>((set, get) => ({
   setWorld: (world) => set({ world }),
   setReport: (report) => set({ report }),
   setStatus: (status) => set({ status }),
-  openSheet: (sheet) => set({ sheet }),
+  openSheet: (sheet) => set({ sheet, sheetBack: [] }),
+  pushSheet: (sheet) =>
+    set((s) => ({
+      sheet,
+      sheetBack:
+        s.sheet && s.sheet !== sheet
+          ? [...s.sheetBack.filter((x) => x !== sheet), s.sheet].slice(-8)
+          : [],
+    })),
+  backSheet: () =>
+    set((s) => ({ sheet: s.sheetBack.at(-1) ?? null, sheetBack: s.sheetBack.slice(0, -1) })),
   toast: (n) => {
     const id = ++toastId;
     // Trùng câu đang hiện thì làm mới chứ không thêm dòng (khỏi dồn thông báo giống nhau).
@@ -361,7 +377,7 @@ export const useGame = create<GameState>((set, get) => ({
         o.orderId === orderId ? { ...o, made: "none", mistakes: [] } : o,
       ),
     })),
-  openKitchen: (kitchen) => set({ kitchen, sheet: null }),
+  openKitchen: (kitchen) => set({ kitchen, sheet: null, sheetBack: [] }),
   say: (e, ms = 4000) => {
     voice(e.who, e.text, moodOf(e.text));
     // Người chơi nói (không phải NPC) thì ghi vào khung chat.
@@ -384,7 +400,7 @@ export const useGame = create<GameState>((set, get) => ({
       else delete bubbles[key];
       return { bubbles };
     }),
-  setInside: (inside) => set({ inside, sheet: null }),
+  setInside: (inside) => set({ inside, sheet: null, sheetBack: [] }),
   setShift: (shift) => set({ shift }),
   setRide: (ride) => set({ ride }),
   setLandlord: (landlord) => set({ landlord }),

@@ -44,6 +44,9 @@
 **Luồng:** mở link → "Vào xóm" → tab *Tạo tài khoản* → nhập tên đăng nhập, tên hiển thị (tiếng Việt có dấu), mật khẩu → vào xóm với 1.500.000đ.
 **Đời thật & rẽ nhánh:** tên đã có người dùng · mật khẩu quá ngắn · mạng rớt khi đang gửi · bấm nút hai lần.
 **Luật:** username 3–20 ký tự không dấu, không phân biệt hoa thường; tên hiển thị 2–24 ký tự; vốn khởi nghiệp đi qua sổ cái.
+**Xóm:** không có link mời → vào xóm còn chỗ đông nhất; tick *Lập xóm riêng* → xóm mới; có link mời → vào thẳng xóm đó (UC-J7).
+**Hướng dẫn người mới:** Chú Bảy bắt chuyện **một lần** mỗi bước (nhớ trên máy, `xom:seen-dialogues`) — vào lại game không bị bắt
+chuyện lại, chỉ còn dòng mục tiêu; câu hỏi đầu có thêm "Con tự lo được, cảm ơn chú" để bỏ qua hướng dẫn.
 **Kiểm chứng:** `apps/server/test/auth.e2e-spec.ts` (409 trùng tên, 400 kèm lỗi từng ô); `apps/web/e2e/*` (luồng đăng ký).
 
 ### UC-A2 · Đăng nhập / tự đăng nhập lại ✅
@@ -83,17 +86,20 @@ tự chọn tab theo máy:
 > Góp ý: "làm ăn đang gộp chung đi làm thuê, thuê nhân viên, kho, mở tiệm/thuê… khó dùng — mỗi tính năng nên tách ra một
 > modal/bottom-sheet riêng". Kế hoạch: docs/IA.md.
 
-**Luồng:** màn hình chính chỉ còn thanh số liệu, cột icon neo trái, ⚙️, nút ngữ cảnh, 💬 và **☰ Menu**. Bấm ☰ Menu → lưới icon
+**Luồng:** màn hình chính chỉ còn thanh số liệu, **hai cột icon neo (trái + phải)**, nút ngữ cảnh, 💬 và **☰ Menu** (icon
+không nền, chữ "Menu" nhỏ đè dưới icon, chấm xanh/đỏ = kết nối; ⚙️ Cài đặt chỉ còn trong Menu). Bấm ☰ Menu → lưới icon
 chia 5 nhóm (🏪 Cửa hàng · 🧺 Mua bán · 💼 Việc làm · 🏘️ Xóm · 🙂 Tôi), mỗi icon mở **đúng một sheet** của chức năng đó (35
 chức năng: Quầy của tôi, Thực đơn & giá, Kho hàng, Chỗ bán, Thuê nhà & giấy tờ, Nhân viên, Sổ sách, Khách quen, Đánh giá, Khai
-trương, …). Icon có **chấm đỏ** khi có việc cần làm (hết hàng, chưa chọn chỗ, chưa có xe, đói/khát). **📌 Ghim**: chọn tối đa 4
-chức năng hay dùng → hiện ở cột neo trái (mặc định Ăn uống · Chợ · Quầy của tôi · Làm thuê); ghim thứ 5 bị từ chối.
+trương, …). Icon có **chấm đỏ** khi có việc cần làm (hết hàng, chưa chọn chỗ, chưa có xe, đói/khát). **📌 Ghim**: chạm xoay vòng
+ghim trái ◀ → ghim phải ▶ → bỏ ghim, mỗi bên tối đa 4 (mặc định trái: Ăn uống · Chợ · Quầy của tôi · Làm thuê; phải: Nhiệm vụ ·
+Hàng xóm); trái đầy thì tự sang phải; hai bên đầy thì bị từ chối.
 Chức năng phải dùng tại chỗ (Chợ, Vựa xe, ATM, Phụ hồ, Xe ôm khi chưa thuê xe) → nhân vật tự đi tới rồi mở.
-Trong mỗi sheet có nút **"›"** chuyển sang chức năng liên quan (Quầy của tôi → Thực đơn, Kho, Chỗ bán, Nhân viên…).
+Trong mỗi sheet có nút **"›"** chuyển sang chức năng liên quan (Quầy của tôi → Thực đơn, Kho, Chỗ bán, Nhân viên…); sheet mở
+bằng "›" hoặc từ Menu có nút **‹ Quay lại** ở góc trái tiêu đề (về sheet trước / về Menu); mở thẳng từ bản đồ thì chỉ có ✕.
 
 **Luật giao diện:** DESIGN Luật 12.3–12.6. Thêm chức năng = một dòng trong `game/features/registry.ts` + một file sheet.
 
-**Kiểm chứng:** Playwright `menu-chinh` (mở Menu, đủ nhóm; ghim Bảng xóm lên cột neo, ghim quá 4 bị từ chối; mở chức năng
+**Kiểm chứng:** Playwright `menu-chinh` (mở Menu, đủ nhóm; không còn neo ⚙️; ghim trái/phải/bỏ, hai bên đầy bị từ chối; mở chức năng
 từ icon neo và từ nút "›") + mọi kịch bản cũ chuyển sang `openFeature(page, id)`.
 
 ### UC-B1 · Đi lại trong xóm ✅
@@ -893,14 +899,24 @@ Playwright `thanh-ly.spec.ts`. **Chưa:** quỹ xóm nhận phí để làm côn
 
 ### UC-J1 · Mời bạn vào xóm ✅
 **Luồng:** chạm 👥 trên thanh trên → bảng *Xóm*: mã xóm 8 ký tự + nút *📨 Mời bạn* (Web Share → Zalo/Messenger; máy không có thì chép link).
-Bạn mở link `/play?xom=<mã>` → chưa có tài khoản thì đăng ký (giữ nguyên link) → vào game xong (hết lời Chú Bảy) bảng Xóm **tự mở** với lời mời → bấm *Vào xóm*.
-Hoặc nhập mã tay trong bảng Xóm.
+Bạn mở link `/play?xom=<mã>` → chưa có tài khoản thì đăng ký (form báo "📨 Bạn được mời vào xóm…") → **vào thẳng xóm được
+mời** (còn chỗ). Đã có tài khoản thì vào game xong bảng Xóm **tự mở** với lời mời → bấm *Vào xóm*. Hoặc nhập mã tay trong bảng Xóm.
+Mở game qua `http://IP-mạng-nhà` (không HTTPS, không Web Share / clipboard): chép bằng cách cũ, không được thì **hiện ô link** để tự
+chép (lỗi cũ: bấm "Mời bạn" chỉ hiện toast thoáng qua → tưởng không hoạt động).
 **Đời thật & rẽ nhánh:**
-- Đang mở quầy / đang trong ca → phải dọn quầy, ra ca trước (không bỏ khách giữa chừng).
+- Đang mở quầy (bất kỳ cửa hàng nào, kể cả nhân viên đang bán) / đang trong ca → phải đóng quầy, ra ca trước.
 - Mang theo tiền, hàng tồn, xe hàng. Chỗ bán cũ đã có hàng xóm dùng → phải chọn chỗ khác.
 - Mỗi xóm có đồng hồ riêng: vào xóm lệch ngày thì hàng tồn, sổ sách, tiền thuê dời theo ngày xóm mới (hàng không tự hỏng hay tươi lại).
-- Mã sai → "Không có xóm nào mã này"; xóm đủ 8 người online → đợi.
-**Kiểm chứng:** e2e server `xom.e2e-spec.ts`; Playwright `xom-chung.spec.ts` (2 người, iPhone 16 Pro + Pixel 7).
+- Mã sai → "Không có xóm nào mã này"; xóm đủ 30 người online → đợi; đủ 40 cư dân → "kín nhà" (`economy.xomOnline/xomResidents`).
+**Kiểm chứng:** e2e server `xom.e2e-spec.ts`, `xom-chung.e2e-spec.ts`; Playwright `xom-chung.spec.ts` (2 người, iPhone 16 Pro + Pixel 7).
+
+### UC-J7 · 🏘️ Xóm chung — hết cảnh mỗi người một xóm ✅ (bản đầu, HANDOFF 3.8)
+**Luồng:** đăng ký không có link mời → **tự dọn về xóm còn chỗ đông cư dân nhất** (để xóm nhộn nhịp); tick *Lập xóm riêng* thì có
+xóm mới. Bảng 👥 Hàng xóm → **🏘️ Các xóm khác**: mã, cư dân, online, số quầy, ngày → *Dọn về* (xóm kín nhà thì khoá).
+**Luật game:** tối đa 40 cư dân / 30 online một xóm (content `economy`); chuyển xóm giữ tiền, hàng, xe như UC-J1.
+**Chưa:** tên xóm, bảng tin xóm lưu tin nhắn + tin tự động.
+**Kiểm chứng:** e2e server `xom-chung.e2e-spec.ts` (link mời vào thẳng, mã sai bỏ qua, tự xếp xóm, danh sách, dọn về);
+Playwright `xom-chung.spec.ts`, `mua-cua-nhau`, `thue-chup-anh` (người thứ hai vào thẳng xóm qua link).
 
 ### UC-J2 · Thấy nhau ✅ (cơ bản)
 Hàng xóm đi lại trên phố (vị trí gửi 10 lần/giây khi có thay đổi, nội suy mượt), **bảng tên trên đầu**, câu nói nhanh hiện trong khung thoại kèm tên người nói.

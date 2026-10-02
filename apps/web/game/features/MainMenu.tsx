@@ -25,14 +25,14 @@ function useAlerts(): Partial<Record<FeatureId, string>> {
 }
 
 /**
- * ☰ Menu (docs/IA.md §3): lưới icon mọi chức năng, chia nhóm; mỗi icon mở đúng một sheet. Chế độ 📌 Ghim: chọn tối đa
- * 4 chức năng hiện ở cột icon neo bên trái màn hình.
+ * ☰ Menu (docs/IA.md §3): lưới icon mọi chức năng, chia nhóm; mỗi icon mở đúng một sheet. Chế độ 📌 Ghim: chạm để
+ * ghim icon lên cột trái → cột phải → bỏ ghim (mỗi bên tối đa 4).
  */
 export function MainMenu() {
   const close = useGame((s) => s.openSheet);
   const toast = useGame((s) => s.toast);
   const pins = usePins((s) => s.pins);
-  const toggle = usePins((s) => s.toggle);
+  const cycle = usePins((s) => s.cycle);
   const [editing, setEditing] = useState(false);
   const alerts = useAlerts();
   const ids = Object.keys(FEATURES) as FeatureId[];
@@ -41,7 +41,7 @@ export function MainMenu() {
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="text-xs text-ink/60">
           {editing
-            ? `Chạm để ghim / bỏ ghim (tối đa ${MAX_PINS}) — hiện ở cột trái màn hình.`
+            ? `Chạm: ghim trái ◀ → ghim phải ▶ → bỏ ghim (mỗi bên tối đa ${MAX_PINS}).`
             : "Mỗi icon là một chức năng riêng."}
         </p>
         <button
@@ -63,21 +63,27 @@ export function MainMenu() {
               .filter((id) => FEATURES[id].group === g.id && !("hidden" in FEATURES[id]))
               .map((id) => {
                 const f = FEATURES[id];
-                const pinned = pins.includes(id);
+                const side = pins.left.includes(id)
+                  ? "left"
+                  : pins.right.includes(id)
+                    ? "right"
+                    : null;
+                const pinned = side !== null;
                 const alert = alerts[id];
                 return (
                   <li key={id}>
                     <button
                       type="button"
                       data-feature={id}
+                      data-pin={side ?? undefined}
                       aria-label={f.title}
                       title={alert ? `${f.title} — ${alert}` : f.hint}
                       onClick={() => {
-                        if (!editing) return openFeature(id);
-                        if (!toggle(id))
+                        if (!editing) return openFeature(id, { from: "sheet" });
+                        if (cycle(id) === false)
                           toast({
                             kind: "warn",
-                            text: `Chỉ ghim được ${MAX_PINS} icon — bỏ ghim bớt`,
+                            text: `Mỗi bên chỉ ghim được ${MAX_PINS} icon — bỏ ghim bớt`,
                           });
                       }}
                       className={`relative flex h-[4.6rem] w-full flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-center shadow-sm active:scale-95 ${
@@ -94,8 +100,11 @@ export function MainMenu() {
                         <span className="absolute top-1 right-1 size-2.5 rounded-full bg-red ring-2 ring-white" />
                       )}
                       {editing && pinned && (
-                        <span aria-hidden className="absolute top-0.5 right-1 text-xs">
-                          📌
+                        <span
+                          aria-hidden
+                          className="absolute top-0.5 right-1 text-[10px] font-bold"
+                        >
+                          📌{side === "left" ? "◀" : "▶"}
                         </span>
                       )}
                     </button>
