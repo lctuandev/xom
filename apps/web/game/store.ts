@@ -4,6 +4,7 @@ import type {
   ClockView,
   DayReportView,
   EventView,
+  LandlordEvent,
   MeView,
   NotifyEvent,
   OrderEvent,
@@ -131,6 +132,8 @@ interface GameState {
   shift: ShiftView | null;
   /** 🛵 Cuốc xe ôm hiện tại (KIENTRUC §4). */
   ride: RideView | null;
+  /** 🏠 Chủ nhà đang đứng nói chuyện (UC-F13) — modal chân dung. */
+  landlord: LandlordEvent | null;
   payslip: PayslipView | null;
   /** Địa chỉ giao hàng đang đứng trước cửa. */
   nearAddress: string | null;
@@ -202,6 +205,7 @@ interface GameState {
   setInside: (placeId: string | null) => void;
   setShift: (s: ShiftView | null) => void;
   setRide: (r: RideView | null) => void;
+  setLandlord: (e: LandlordEvent | null) => void;
   setPayslip: (p: PayslipView | null) => void;
   setNearAddress: (id: string | null) => void;
   countServed: () => void;
@@ -259,6 +263,7 @@ export const useGame = create<GameState>((set, get) => ({
   inside: null,
   shift: null,
   ride: null,
+  landlord: null,
   payslip: null,
   nearAddress: null,
   servedCount: 0,
@@ -398,6 +403,7 @@ export const useGame = create<GameState>((set, get) => ({
   setInside: (inside) => set({ inside, sheet: null }),
   setShift: (shift) => set({ shift }),
   setRide: (ride) => set({ ride }),
+  setLandlord: (landlord) => set({ landlord }),
   setShoot: (shoot) => set({ shoot }),
   setPayslip: (payslip) => set({ payslip }),
   setNearAddress: (nearAddress) => set({ nearAddress }),

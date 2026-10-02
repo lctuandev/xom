@@ -9,6 +9,7 @@ import type {
   FundView,
   GigBoardView,
   InspectResult,
+  LandlordEvent,
   MakeResult,
   MeView,
   MixResultView,
@@ -24,6 +25,7 @@ import type {
   PhotoSessionView,
   PhotoShotView,
   RegularView,
+  RentView,
   ReviewsView,
   RideView,
   RosterView,
@@ -110,6 +112,10 @@ export interface ClientToServerEvents {
   "shop:book": Intent<Record<string, never>, ShopSetupView>;
   "shop:meet": Intent<Record<string, never>, ShopSetupView>;
   "shop:sign": Intent<Record<string, never>, ShopSetupView>;
+  /** 🏠 Trả hết tiền nhà đang nợ (+ phí trễ nếu đã hẹn). */
+  "rent:pay": Intent<{ pay?: PayMethod }, RentView>;
+  /** 🗓️ Xin hẹn trả tới ngày `day`. */
+  "rent:promise": Intent<{ day: number }, RentView>;
   /** Dev/test: thuê nhà + đủ giấy tờ ngay. */
   "debug:shop": Intent<{ lotId: string }>;
   /** 🛵 Xe ôm (KIENTRUC §4): xem / thuê xe / chờ khách / trả giá / chọn đường / tới nơi / thu tiền / nghỉ. */
@@ -216,4 +222,6 @@ export interface ServerToClientEvents {
   events: (e: EventView[]) => void;
   /** Xe ôm: khách tới / trạng thái cuốc đổi ngoài intent. */
   ride: (r: RideView) => void;
+  /** 🏠 Chủ nhà tới nhắc / nhận tiền / trừ cọc / dẹp tiệm (UC-F13). */
+  landlord: (e: LandlordEvent) => void;
 }

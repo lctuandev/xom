@@ -7,6 +7,7 @@ import type {
   ClockView,
   DayReportView,
   EventView,
+  LandlordEvent,
   MeView,
   MovePayload,
   NotifyEvent,
@@ -123,6 +124,7 @@ export interface GameEmitter {
   toPlayer(playerId: string, event: "snapshot", data: Snapshot): void;
   toPlayer(playerId: string, event: "notify", data: NotifyEvent): void;
   toPlayer(playerId: string, event: "ride", data: RideView): void;
+  toPlayer(playerId: string, event: "landlord", data: LandlordEvent): void;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -212,10 +214,13 @@ export class GameService implements OnModuleDestroy {
     this.staff.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.contracts.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
     this.gigs.setNotifier((playerId, n) => emitter.toPlayer(playerId, "notify", n));
-    this.shops.setNotifier(
-      (playerId, n) => emitter.toPlayer(playerId, "notify", n),
-      (room) => this.emitWorld(room),
-    );
+    this.shops.setNotifier({
+      notify: (playerId, n) => emitter.toPlayer(playerId, "notify", n),
+      onWorld: (room) => this.emitWorld(room),
+      notifyRoom: (roomId, n) => emitter.toRoom(roomId, "notify", n),
+      landlord: (playerId, e) => emitter.toPlayer(playerId, "landlord", e),
+      pushMe: (room, playerId) => this.pushMe(room, playerId),
+    });
     this.rides.setNotifier(
       (playerId, n) => emitter.toPlayer(playerId, "notify", n),
       (playerId, r) => emitter.toPlayer(playerId, "ride", r),
@@ -1611,8 +1616,6 @@ export class GameService implements OnModuleDestroy {
   /** Cuối ngày: đóng quầy, bỏ nguyên liệu hết hạn, chốt báo cáo, sang ngày mới lúc 6:00. */
   private async endDay(room: RoomRuntime) {
     const day = room.day;
-    // Nhà thuê tính tiền mỗi ngày dù mở hay đóng (UC-F12).
-    await this.shops.endDay(room).catch((err) => this.logger.warn(`tính tiền nhà lỗi: ${err}`));
     for (const playerId of [...room.shifts.keys()]) await this.work.end(room, playerId, "day_end");
     room.boostUntil.clear();
     room.shoutReadyAt.clear();

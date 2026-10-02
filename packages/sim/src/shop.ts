@@ -75,3 +75,84 @@ export function openDue(
   const fee = content.economy.fees.daily[lot.kind];
   return { rent, fee, total: rent + fee };
 }
+
+// ───────────── Đòi tiền nhà (UC-F13) ─────────────
+
+export interface RentState {
+  day: number;
+  minute: number;
+  rentPerDay: number;
+  /** Đã trả tiền nhà tới hết ngày này (ký hợp đồng ngày nào thì ngày đó không tính). */
+  paidDay: number;
+  /** Ngày đã hẹn trả (trả lúc nào trong ngày đó cũng được); null = chưa hẹn. */
+  promiseDay: number | null;
+  strikes: number;
+  /** Cọc còn lại trong ví giữ hộ. */
+  depositLeft: number;
+  /** Chủ tiệm đang online (chủ nhà gặp / gọi được). */
+  online: boolean;
+}
+
+/** Tiền nhà đang nợ: mỗi ngày từ sau ngày đã trả tới hôm nay (hôm nay cũng tính — trả trước trong ngày được). */
+export function rentOwed(s: Pick<RentState, "day" | "paidDay" | "rentPerDay">) {
+  const days = Math.max(0, s.day - s.paidDay);
+  return { days, amount: days * s.rentPerDay };
+}
+
+/** Phí trễ: % số nợ, làm tròn lên nghìn. */
+export function rentLateFee(content: Content, owed: number): number {
+  const pct = content.data.shopSetup.rent.lateFeePct;
+  return Math.ceil((owed * pct) / 100 / 1000) * 1000;
+}
+
+/** Các ngày được xin hẹn (từ mai tới tối đa maxPromiseDays ngày); phí trễ tính theo số ngày hẹn thêm. */
+export function rentPromiseOptions(
+  content: Content,
+  day: number,
+  owed: number,
+): { day: number; fee: number }[] {
+  if (owed <= 0) return [];
+  const n = content.data.shopSetup.rent.maxPromiseDays;
+  return Array.from({ length: n }, (_, i) => ({
+    day: day + i + 1,
+    fee: rentLateFee(content, owed) * (i + 1),
+  }));
+}
+
+/** Chủ nhà có nên tới nhắc lúc này không: còn nợ, tới giờ nhắc, chủ tiệm online; đang hẹn thì chỉ nhắc đúng ngày hẹn. */
+export function rentShouldRemind(content: Content, s: RentState): boolean {
+  return (
+    s.online &&
+    s.minute >= content.data.shopSetup.rent.remindMinute &&
+    rentOwed(s).amount > 0 &&
+    (s.promiseDay === null || s.day >= s.promiseDay)
+  );
+}
+
+export type RentVerdict =
+  /** Không có gì phải làm. */
+  | { kind: "none" }
+  /** Chủ tiệm vắng, chưa hẹn, cọc còn đủ: chủ nhà về, mai quay lại (nợ cộng dồn, không tính lần trễ). */
+  | { kind: "wait" }
+  /** Quá hạn: trừ (nợ + phí trễ) vào cọc, tính một lần trễ. */
+  | { kind: "collect"; owed: number; fee: number }
+  /** Dẹp tiệm: trễ quá số lần cho phép hoặc cọc không đủ trừ. */
+  | { kind: "evict"; reason: "strikes" | "deposit" };
+
+/**
+ * Còn nợ thì chủ nhà làm gì. Chưa hẹn: tới hạn trong ngày (dueMinute) mới đòi. Đã hẹn: hẹn theo NGÀY — trả lúc nào trong
+ * ngày hẹn cũng được; qua ngày hẹn vẫn chưa trả là thất hẹn, tính trễ ngay dù chủ tiệm vắng.
+ */
+export function rentVerdict(content: Content, s: RentState): RentVerdict {
+  const r = content.data.shopSetup.rent;
+  const owed = rentOwed(s).amount;
+  if (owed === 0) return { kind: "none" };
+  if (s.promiseDay !== null ? s.day <= s.promiseDay : s.minute < r.dueMinute)
+    return { kind: "none" };
+  if (!s.online && s.promiseDay === null)
+    return owed > s.depositLeft ? { kind: "evict", reason: "deposit" } : { kind: "wait" };
+  const fee = rentLateFee(content, owed);
+  if (s.strikes + 1 >= r.evictAfterStrikes) return { kind: "evict", reason: "strikes" };
+  if (s.depositLeft < owed + fee) return { kind: "evict", reason: "deposit" };
+  return { kind: "collect", owed, fee };
+}

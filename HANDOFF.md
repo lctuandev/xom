@@ -98,15 +98,11 @@ Hiện chặn ở 3 chỗ: `work.ts:261` (làm thuê), `rides.ts:192` (xe ôm), 
 mới…". Sửa: chỉ chặn khi có cửa hàng **đang mở mà không có nhân viên trong ca** (helper chung `ownerTied(playerId)`), và
 `openBusiness` không chặn khi chủ đang làm thuê nếu cửa hàng có nhân viên. Đi kèm 3.3.
 
-### 3.5 🏠 Đòi tiền nhà — nhắc trước hạn, hẹn ngày, chủ nhà dẹp tiệm
-Yêu cầu: sắp tới hạn trả tiền thuê → **thông báo đòi tiền** (trả ngay hoặc **hẹn ngày**); không trả thì **chủ nhà tới dẹp tiệm**;
-lúc thu tiền hiện **modal có chân dung NPC chủ nhà + bong bóng thoại** (như khung "đứng trước quầy").
-Hiện tại: tiền nhà tự trừ mỗi tối (`ShopService.endDay`), thiếu thì trừ cọc, hết cọc thì lấy nhà — không có nhắc/hẹn.
-Hướng làm: thêm NPC chủ nhà (content `landlords`: tên, model, câu thoại nhắc / hẹn / gắt / dẹp); `Lease.dueDay`, `Lease.promiseDay`,
-`Lease.strikes`; chu kỳ trả (ngày hoặc 3 ngày) có **hạn** — trước hạn (vd. 18:00) chủ nhà tới quầy/tiệm (hiện ở cửa), gửi
-`landlord` event → client mở **RentModal** (chân dung + bong bóng + nút "💵 Trả ngay" / "🗓️ Hẹn tới ngày …" (tối đa 1–2 ngày, phí
-trễ) / "Để sau"); quá hẹn → trừ cọc + tin cậy; hết cọc hoặc quá 2 lần → **dẹp tiệm** (đóng, dọn đồ nghề ra, mất nhà, lên bảng
-tin). Mọi khoản qua sổ cái (`rent`, `rent_late_fee`, `rent_from_deposit`). Use case mới UC-F13 + Playwright `doi-tien-nha`.
+### 3.5 🏠 Đòi tiền nhà — ✅ XONG (UC-F13, nhánh `feat/doi-tien-nha`)
+Chủ nhà NPC (Cô Tư Hường nhà số 10, Chú Năm Lộc nhà số 24) tới nhắc 17:00 → modal chân dung + bong bóng; trả ngay / hẹn **ngày**
+(chủ dự án chốt: hẹn ngày, không hẹn giờ — cả ngày hẹn trả được, qua ngày là thất hẹn) / để sau; chưa hẹn quá 20:00 → trừ cọc +
+phí trễ + 🤝; trễ lần 3 hoặc cọc không đủ → dẹp tiệm. Offline chưa hẹn không tính trễ (gỡ issue "tiền nhà tính khi chủ offline").
+Chi tiết: `docs/USECASES.md` UC-F13. Còn để sau: chủ nhà hiện 3D ở cửa tiệm lúc tới đòi.
 
 ### 3.6 🛋️ Nội thất riêng theo từng nghề / cửa hàng
 Yêu cầu: mỗi ngành nghề có **thiết kế khác nhau** (không phải tiệm nào cũng có bàn ăn) — **nghiên cứu kỹ cách bố trí**.
@@ -141,6 +137,12 @@ Tạp hoá + **sổ nợ** (bán chịu, đòi nợ); **cắt tóc + cá nhân h
 `pnpm balance`, xe hao mòn → tiệm sửa xe, mua xe riêng, khách quen gọi riêng; thợ ảnh: review món / ảnh cưới; phụ hồ: khiêng gạch,
 xe rùa; chạy lượt Playwright toàn bộ.
 
+### 3.11 Quyết định của chủ dự án (2026-10-02)
+- **Điều hướng (thay cho đề xuất thanh dưới 5 mục ở 3.1):** mỗi tính năng có **icon riêng** — hoặc neo trên màn hình, hoặc nằm
+  trong **một menu mở ra danh sách** rồi bấm vào chức năng. Viết `docs/IA.md` theo hướng này trước khi tách UI.
+- **Kho hàng khi nhiều cửa hàng (3.3): kho riêng từng tiệm** — thêm `businessId` vào `InventoryItem`, nhập chợ phải chọn tiệm,
+  chuyển hàng giữa các tiệm.
+
 ## 4. Issues / lưu ý đang biết
 
 - **Chưa deploy**: bản người chơi thử là production cũ (máy cloud không có Docker). Deploy xong mới thấy các sửa trong PR #2.
@@ -149,7 +151,8 @@ xe rùa; chạy lượt Playwright toàn bộ.
   server bù trễ ≤ 400 ms).
 - Phụ hồ: tiền công lấy từ khoản nhân công 25% chi phí công trình — xóm nhiều người trộn thì hết sớm.
 - Xe ôm: thuê xe là cả ngày ngồi trên xe nhưng tốc độ đi bộ khi không chở khách; chưa có trong `pnpm balance`.
-- Tiền nhà tính cả khi chủ offline nếu xóm vẫn có người chơi (xóm chạy) — cần xem lại khi làm 3.5 / 3.8.
+- Tiền nhà vẫn cộng dồn khi chủ offline (hợp đồng tính theo ngày) nhưng không tính trễ khi chưa hẹn; nợ vượt cọc thì vẫn bị dẹp
+  tiệm — xem lại khi làm 3.8 (xóm chung chạy cả khi mình offline).
 - Nhân viên chỉ bán khi quầy mở; tự mở cửa khi tới ca chỉ khi chủ **online** (chủ offline thì `finishShift` lúc thoát).
 - e2e server khi tắt app đôi khi log "Transaction not found" / "Cannot use a pool after calling end" từ tick đang chạy — test
   vẫn qua (nên dừng tick trước khi đóng Prisma trong `onModuleDestroy`).

@@ -465,8 +465,9 @@ Playwright `mua-cua-nhau.spec.ts` (Bình chấm 4★, An trả lời).
 
 **Luồng (Làm ăn → 🏪 Mở tiệm, có checklist ✅ từng bước, dự toán trước):**
 1. **📝 Ký hợp đồng thuê nhà mặt tiền** — cọc **3 ngày tiền thuê** (ví giữ hộ, trả nhà thì hoàn), chủ nhà chỉ cho thuê khi còn
-   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** (cuối ngày) **từ ngày sau
-   ngày ký** (ngày ký có thể đã trả tiền chỗ xe đẩy); hết tiền thì trừ cọc, **hết cọc thì chủ nhà lấy lại nhà**. Đang thuê nhà
+   **vốn dự phòng ≥ 2 ngày tiền thuê**; đồ nghề dọn vào nhà. Tiền nhà **tính mỗi ngày dù mở hay đóng** **từ ngày sau
+   ngày ký** (ngày ký có thể đã trả tiền chỗ xe đẩy); **chủ nhà tới đòi** — trả ngay / hẹn ngày / trễ thì trừ cọc, trễ nhiều thì dẹp
+   tiệm (UC-F13). Đang thuê nhà
    thì **không dọn quầy ra vỉa hè** (tránh vừa tiền nhà vừa tiền chỗ) — muốn ra thì trả nhà (hoàn cọc).
 2. **🏛️ Đăng ký hộ kinh doanh ở UBND phường** — **đặt tên quán** (3–24 ký tự, chữ/số, không trùng trong xóm), lệ phí 100k,
    **chờ xét 3 giờ game** (báo 🏛️ khi duyệt); ghi 📖 *Đăng ký hộ kinh doanh: quán "…" ra đời*.
@@ -492,6 +493,45 @@ inspectAt / certified / signed`; sim `shopEstimate`, `needsFoodCert`, `shopNameE
 đổi tên quán (làm lại biển), tiệm thứ hai (chuỗi).
 
 ## G. Dịch vụ sửa xe (nghề mới, template SERVICE — docs/NGHE.md §3.1)
+
+
+### UC-F13 · Đòi tiền nhà — chủ nhà tới nhắc, hẹn ngày, dẹp tiệm ✅ (bản đầu)
+> Góp ý: "sắp tới hạn trả tiền thuê → thông báo đòi tiền (trả ngay hoặc hẹn ngày); không trả thì chủ nhà tới dẹp tiệm; lúc thu
+> tiền hiện modal có chân dung chủ nhà + bong bóng thoại" · "nên hẹn **ngày** trả chứ không hẹn giờ".
+
+**Nhân vật:** mỗi nhà mặt tiền một chủ nhà (`content.shopSetup.rent.landlords`): **Cô Tư Hường** (nhà số 10 — hiền, hay than tiền
+điện) · **Chú Năm Lộc** (nhà số 24 — mặt tiền ngã tư, nói thẳng). Câu thoại theo tình huống: nhắc / tới hẹn / cho hẹn / cảm ơn /
+trừ cọc / dẹp tiệm.
+
+**Luồng:**
+1. Tiền nhà tính **mỗi ngày** từ sau ngày ký (ngày ký không tính), **dù mở hay đóng**; không còn tự trừ mỗi tối.
+2. **17:00** còn nợ → **chủ nhà tới**: modal 🏠 *Chủ nhà tới đòi tiền nhà* — chân dung + bong bóng thoại ("Con ơi, tiền nhà
+   105.000đ nghen…"), bảng tiền nhà (tiền/ngày, đã trả tới, đang nợ, cọc còn, trễ x/3 lần), chọn **💵 Trả ngay** (chọn 💵/🏦 như
+   mọi khoản), **🗓️ Hẹn tới Thứ Tư, ngày 7 · phí trễ 11k** (tối đa 2 ngày, phí 10% số nợ × số ngày hẹn), hoặc **Để sau**.
+3. **Hẹn theo NGÀY, không theo giờ:** trong ngày hẹn trả lúc nào cũng được (17:00 ngày hẹn chủ nhà ghé nhắc *"hôm nay tới hẹn rồi
+   nghen"*); **qua ngày hẹn** chưa trả là **thất hẹn**.
+4. **Chưa hẹn mà quá 20:00** (hoặc **thất hẹn**) → chủ nhà **trừ (nợ + phí trễ) vào cọc**, tính **1 lần trễ**, **🤝 −5 tin cậy**;
+   modal ⚠️ *Trễ tiền nhà* + toast.
+5. **Trễ lần thứ 3** hoặc **cọc không đủ trừ** → **dẹp tiệm**: mất cọc, đóng tiệm, đồ nghề dọn ra (bán tiếp ở vỉa hè được), mất
+   nhà; modal 📦 + **cả xóm nhận tin** *"📦 Cô Tư Hường dẹp "Bánh Mì Cô Tấm" của Tấm ở Nhà số 10 vì nợ tiền nhà"*; ghi 📖 *Bị … dẹp
+   tiệm*.
+6. Trả bất cứ lúc nào ở **Làm ăn → 🏪 Mở tiệm** (bảng tiền nhà + nút Trả ngay / Hẹn). **Trả nhà** khi còn nợ: chủ nhà trừ nợ vào
+   cọc rồi hoàn phần còn lại (cọc không đủ thì phải trả tiền nhà trước).
+
+**Tình huống đời thật:** kẹt vốn (vừa nhập hàng) → xin khất vài bữa, chịu phí; ham bán quên giờ → chủ nhà trừ cọc, lần sau nói
+nặng; người thuê "lặn" → chủ nhà giữ cọc, cho người khác thuê.
+
+**Luật game:**
+- Chủ tiệm **offline** (chủ nhà không gặp được) và **chưa hẹn** → **không tính trễ**, nợ cộng dồn; chỉ dẹp tiệm khi **nợ vượt
+  cọc**. Đã hẹn thì thất hẹn vẫn tính dù offline (hẹn là lời hứa).
+- Mọi khoản qua sổ cái: `rent`, `rent_late_fee`, `rent_from_deposit` (cọc → chủ nhà); `GameEvent` `rent_pay`, `rent_promise`,
+  `rent_late`, `shop_unlease{status: EVICTED}`. Cọc mất khi bị dẹp tiệm (money sink).
+- Số liệu ở `content.shopSetup.rent` (giờ nhắc, hạn, số ngày hẹn, % phí trễ, số lần trễ, tin cậy, chủ nhà + câu thoại); công thức
+  thuần ở `packages/sim` (`rentOwed`, `rentLateFee`, `rentPromiseOptions`, `rentShouldRemind`, `rentVerdict`).
+
+**Kiểm chứng:** sim `shop.test.ts` (nợ, phí, hẹn theo ngày, offline, trễ/dẹp) · e2e `rent.e2e-spec.ts` (nhắc → trả; trả nhà khi
+nợ trừ cọc; hẹn → cả ngày hẹn không bị đòi → thất hẹn trừ cọc + tin cậy; để sau mãi → trễ 3 lần dẹp tiệm, cả xóm biết, 📖) ·
+Playwright `doi-tien-nha` (modal chân dung → hẹn ngày → trả ở 🏪 Mở tiệm).
 
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.

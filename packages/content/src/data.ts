@@ -2163,6 +2163,86 @@ export const data: ContentInput = {
     foodCert: { templates: ["FOOD"], trainingFee: 150_000, inspectAfter: 90, inspectWindow: 60 },
     signFee: 200_000,
     name: { min: 3, max: 24 },
+    // Đòi tiền nhà (UC-F13): 17h chủ nhà tới nhắc, chưa hẹn thì hạn 20h cùng ngày; hẹn theo NGÀY (cả ngày hẹn trả được,
+    // qua ngày hẹn là thất hẹn). Quá hạn / thất hẹn → trừ cọc + phí trễ; trễ lần 3 → dẹp tiệm.
+    rent: {
+      remindMinute: 17 * 60,
+      dueMinute: 20 * 60,
+      maxPromiseDays: 2,
+      lateFeePct: 10,
+      evictAfterStrikes: 3,
+      trustLate: 5,
+      landlords: [
+        {
+          id: "co_tu_huong",
+          name: "Cô Tư Hường",
+          tag: "Chủ nhà số 10",
+          model: "character-female-d",
+          lotIds: ["nha_so_10"],
+          lines: {
+            remind: [
+              "Con ơi, tiền nhà {owed} nghen. Cô ghé lấy luôn cho tiện, khỏi con chạy qua.",
+              "Bữa nay tới kỳ tiền nhà rồi đó con, {owed}. Cô không hối, mà cô cũng phải đóng tiền điện.",
+              "Buôn bán được hông con? Tiền nhà {owed} nha. Kẹt thì nói cô, cô cho hẹn ngày.",
+            ],
+            promised: [
+              "Hôm nay tới hẹn rồi nghen con: {owed}, cộng phí trễ {fee}. Cô tin con mới cho hẹn đó.",
+              "Hẹn hôm nay mà con. {owed} với phí trễ {fee}, trong bữa nay đưa cô là được.",
+            ],
+            promise: [
+              "Thôi được, cô cho con tới {day}. Nhớ nha, phí trễ {fee} đó.",
+              "Ừ, {day} nghen. Cô ghi sổ rồi, đừng để cô phải tới lần nữa.",
+            ],
+            paid: [
+              "Đủ rồi, cô cảm ơn nghen. Buôn may bán đắt nha con!",
+              "Rồi, cô ghi sổ. Có gì hư hỏng trong nhà cứ nói cô.",
+            ],
+            late: [
+              "Cô chờ hoài không thấy con… Cô trừ {owed} vô tiền cọc nghen. Lần sau vậy nữa là cô lấy nhà đó.",
+              "Quá hạn rồi con. Cô trừ cọc {owed}, kể cả phí trễ. Cô cũng khó lắm chớ bộ.",
+            ],
+            evict: [
+              "Thôi con ơi, trễ hoài vầy cô chịu hết nổi. Cô lấy lại nhà, đồ nghề cô dọn ra vỉa hè rồi đó.",
+              "Cọc hết, hẹn cũng không giữ… Cô cho người khác thuê. Con dọn đồ giùm cô.",
+            ],
+          },
+        },
+        {
+          id: "chu_nam_loc",
+          name: "Chú Năm Lộc",
+          tag: "Chủ nhà số 24",
+          model: "character-male-c",
+          lotIds: ["nha_so_24"],
+          lines: {
+            remind: [
+              "Ê chủ tiệm! Tiền nhà {owed}, chú qua lấy nè. Mặt tiền ngã tư đâu có rẻ.",
+              "Tới kỳ rồi nghe, {owed}. Trả gọn trong bữa nay là chú vui.",
+              "Tiệm đông dữ ha. Vậy tiền nhà {owed} chắc dễ rồi há?",
+            ],
+            promised: [
+              "Bữa nay hẹn rồi nghe: {owed}, phí trễ {fee}. Chú giữ lời, con cũng giữ lời.",
+              "Tới hẹn rồi đó. {owed} cộng {fee} phí trễ, đừng để chú nói nặng.",
+            ],
+            promise: [
+              "Hẹn {day} nghe chưa. Phí trễ {fee}, chú nói trước cho rõ.",
+              "Được, {day}. Làm ăn ai cũng có lúc kẹt, nhưng đừng thành thói nghe.",
+            ],
+            paid: [
+              "Sòng phẳng vậy mới làm ăn lâu dài được. Cảm ơn nghe!",
+              "Đủ rồi. Mặt tiền chú cho thuê là để người làm ăn đàng hoàng như con.",
+            ],
+            late: [
+              "Quá giờ rồi. Chú trừ {owed} vô cọc. Thêm vài lần nữa là chú lấy nhà, đừng trách.",
+              "Không thấy tiền, không thấy người. Trừ cọc {owed} — lần sau chú không nói nhiều vậy đâu.",
+            ],
+            evict: [
+              "Hết nói nổi. Chú lấy lại mặt tiền, đồ nghề để ngoài vỉa hè đó. Hợp đồng chấm dứt.",
+              "Cọc hết, hẹn lỡ hoài. Chú dẹp tiệm, cho người khác thuê. Đi đi con.",
+            ],
+          },
+        },
+      ],
+    },
   },
 
   rides: {
@@ -2368,6 +2448,7 @@ export const data: ContentInput = {
     { id: "switch_trade", emoji: "🔄", text: "Đổi nghề: bán xe cũ, mua {equipment}" },
     { id: "first_open", emoji: "🎪", text: "Mở quầy {product} đầu tiên ở {lot}" },
     { id: "first_shop", emoji: "🏠", text: "Thuê nhà mặt tiền {lot}, mở tiệm đàng hoàng" },
+    { id: "evicted", emoji: "📦", text: "Bị {landlord} dẹp tiệm ở {lot} vì nợ tiền nhà" },
     { id: "first_job", emoji: "💼", text: "Đi làm thuê lần đầu: {job}" },
     {
       id: "first_donate",

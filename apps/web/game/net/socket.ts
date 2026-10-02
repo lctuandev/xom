@@ -61,6 +61,7 @@ export function connectGame(onSignedOut: () => void): () => void {
   s.on("world", (world) => game.setWorld(world));
   s.on("events", (events) => game.setEvents(events));
   s.on("ride", (ride) => game.setRide(ride));
+  s.on("landlord", (e) => game.setLandlord(e));
   // Đơn của khách là người chơi (UC-J3): lời gọi món và kết quả hiện trên đầu chính người đó.
   const buyers = new Map<string, string>();
   // Câu NPC đi qua bộ lọc "thoại mặn" (Cài đặt) trước khi tới UI.
