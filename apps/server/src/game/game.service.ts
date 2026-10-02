@@ -363,10 +363,18 @@ export class GameService implements OnModuleDestroy {
     }, leaveGraceMs());
   }
 
+  /**
+   * Tắt server: dừng nhịp + hẹn giờ rời xóm, CHỜ nhịp / intent đang chạy dở xong rồi mới lưu đồng hồ — trước đây nhịp đang
+   * chạy chạm DB sau khi Prisma đóng ("Cannot use a pool after calling end", HANDOFF §4).
+   */
   async onModuleDestroy() {
     for (const room of this.rooms.values()) {
       clearInterval(room.timer);
       clearInterval(room.peerTimer);
+      for (const m of room.members.values()) clearTimeout(m.leaveTimer);
+    }
+    for (const room of this.rooms.values()) {
+      await room.drain();
       await this.persistClock(room);
     }
   }

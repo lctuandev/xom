@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import type { MeView, MyStatsView, NotifyEvent, StaffView, StoryEntryView } from "@xom/shared";
+import { PrismaService } from "../src/prisma/prisma.service.js";
 import { connect, emit, next, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
 
@@ -64,13 +65,17 @@ describe("Thuê nhân viên (e2e)", () => {
   });
 
   it("thoát game giữa ca → nhân viên bán nốt tới hết ca; vào lại thấy doanh thu + lương trong 'Trong lúc bạn vắng'", async () => {
-    const { socket, token } = await openBanhMiStall(url);
+    const { socket, token, me } = await openBanhMiStall(url);
     await emit(socket, "debug:clock", { minute: 18 * 60 });
     await emit(socket, "staff:hire", { staffId: "thu", shiftId: "toi" });
     await emit(socket, "debug:away", { minutes: 60, days: 0 });
     socket.disconnect();
-    // Hết ân hạn: nhân viên bán nốt ca rồi dọn quầy.
-    await wait(900);
+    // Hết ân hạn: nhân viên bán nốt ca rồi dọn quầy — chờ tới khi phiếu ca ghi xong (không chờ cứng: máy chậm thì lâu hơn).
+    const prisma = app.get(PrismaService);
+    for (let i = 0; i < 100; i++) {
+      if (await prisma.staffShift.count({ where: { ownerId: me.playerId } })) break;
+      await wait(100);
+    }
     const back = await connect(url, token);
     const staff = back.snap.away?.staff;
     expect(staff).toMatchObject({ name: "Thu" });

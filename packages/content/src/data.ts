@@ -2270,7 +2270,8 @@ export const data: ContentInput = {
       alley: { name: "Đi hẻm", speed: 5.5, rainSlow: 0.35 },
     },
     expectSpeed: 5.5,
-    waitMinutes: 6,
+    // Cân lại (pnpm balance): 6 phút → ~46 cuốc, lãi ~630k/ngày (gấp 4 làm thuê); 15 → ~23 cuốc, ~300k (gấp 2).
+    waitMinutes: 15,
     tip: { five: [2_000, 5_000], four: [0, 2_000] },
     lines: {
       ask: [

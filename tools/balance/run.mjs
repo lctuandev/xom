@@ -7,10 +7,16 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { content } from "@xom/content";
 import {
   baseSpec,
+  congestion,
   customerArrivals,
   dishCost,
   LOST_WEIGHT,
   nextReputation,
+  passengerWait,
+  rideDestinations,
+  rideFare,
+  rideFuel,
+  routeSpeed,
   staffShift,
   weatherAt,
   weatherDemand,
@@ -267,6 +273,46 @@ for (const e of content.data.equipment) {
       );
   }
 }
+
+// 🛵 Xe ôm (UC-N1): thuê xe cả ngày, chờ khách (ngã tư đông thì nhanh), chở theo giá chuẩn, trả xăng đi + về.
+// Đậu đâu cũng đón được → cuốc sau đón ngay chỗ vừa thả khách. 1 giây thật = 1 phút game.
+function runRides() {
+  const r = content.data.rides;
+  const station = content.place(r.stationPlaceId).position;
+  let money = 0;
+  let trips = 0;
+  for (let day = 1; day <= DAYS; day++) {
+    money -= r.bikeRentPerDay;
+    let at = station;
+    let m = eco.dayStartMinute;
+    let k = 0;
+    while (true) {
+      m += passengerWait(content, m) + 3; // chờ khách + trả giá, chọn đường, thu tiền (thao tác thật)
+      const dests = rideDestinations(content, at);
+      const d = dests[(day * 7 + k++ * 13) % dests.length];
+      if (!d) break;
+      const meters = Math.hypot(d.x - at.x, d.z - at.z) * 1.3; // đường vòng theo phố
+      const minutes = meters / routeSpeed(content, "road", congestion(content, m), false);
+      if (m + minutes > eco.dayEndMinute) break;
+      m += minutes;
+      const tip = (r.tip.four[0] + r.tip.four[1]) / 4; // ~nửa số khách boa mức 4 sao
+      money += rideFare(content, meters) + tip - rideFuel(content, meters);
+      trips++;
+      at = d;
+    }
+  }
+  return { profitPerDay: Math.round(money / DAYS), tripsPerDay: Math.round(trips / DAYS) };
+}
+const ride = runRides();
+console.log(
+  `\n🛵 Xe ôm: ~${ride.tripsPerDay} cuốc/ngày · lãi ${k(ride.profitPerDay)}/ngày (đã trừ thuê xe ${k(content.data.rides.bikeRentPerDay)} + xăng)`,
+);
+if (ride.profitPerDay < Math.min(...wages) * 0.8)
+  warnings.push(
+    `xe ôm (${k(ride.profitPerDay)}) thua xa làm thuê (${k(Math.min(...wages))}) — không ai chạy`,
+  );
+if (ride.profitPerDay > wage * 3)
+  warnings.push(`xe ôm lãi quá cao (${k(ride.profitPerDay)}/ngày, > 3 lần làm thuê)`);
 
 const vua = content.data.equipment.map((e) =>
   Math.max(

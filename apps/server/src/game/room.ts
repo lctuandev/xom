@@ -153,8 +153,17 @@ export class RoomRuntime {
   }
 
   /** Tick bỏ qua nếu tick trước còn đang chạy — không để hàng đợi phình ra. */
+  /** Đang tắt: không nhận nhịp / intent mới (tránh chạm DB sau khi Prisma đã đóng). */
+  closing = false;
+
+  /** Chờ mọi việc đang xếp hàng (tick, intent) chạy xong — gọi khi tắt server. */
+  async drain() {
+    this.closing = true;
+    await this.queue;
+  }
+
   runTick(fn: () => Promise<void>) {
-    if (this.tickPending) return;
+    if (this.tickPending || this.closing) return;
     this.tickPending = true;
     // Lỗi trong một nhịp (vd. tắt server giữa chừng) không được thành unhandled rejection; nhịp sau chạy tiếp.
     void this.run(fn)

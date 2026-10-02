@@ -142,12 +142,14 @@ xe rùa; chạy lượt Playwright toàn bộ.
 - Thợ ảnh: khung ngắm canh giờ theo khung hình; **chưa thử độ khó trên điện thoại thật** (trọn điểm ±180 ms, có điểm ±900 ms,
   server bù trễ ≤ 400 ms).
 - Phụ hồ: tiền công lấy từ khoản nhân công 25% chi phí công trình — xóm nhiều người trộn thì hết sớm.
-- Xe ôm: thuê xe là cả ngày ngồi trên xe nhưng tốc độ đi bộ khi không chở khách; chưa có trong `pnpm balance`.
+- Xe ôm: thuê xe là cả ngày ngồi trên xe nhưng tốc độ đi bộ khi không chở khách. ✅ Đã vào `pnpm balance` (2026-10-02):
+  khách tới quá dày làm xe ôm lãi ~630k/ngày (gấp 4 làm thuê) → `rides.waitMinutes` 6 → 15 (~23 cuốc, ~300k).
 - Tiền nhà vẫn cộng dồn khi chủ offline (hợp đồng tính theo ngày) nhưng không tính trễ khi chưa hẹn; nợ vượt cọc thì vẫn bị dẹp
   tiệm — xem lại khi làm 3.8 (xóm chung chạy cả khi mình offline).
 - Nhân viên chỉ bán khi quầy mở; tự mở cửa khi tới ca chỉ khi chủ **online** (chủ offline thì `finishShift` lúc thoát).
-- e2e server khi tắt app đôi khi log "Transaction not found" / "Cannot use a pool after calling end" từ tick đang chạy — test
-  vẫn qua (nên dừng tick trước khi đóng Prisma trong `onModuleDestroy`).
+- ✅ (2026-10-02) Tắt server: GameService chờ nhịp/intent dở chạy xong (`RoomRuntime.drain`), Prisma đóng ở
+  `onApplicationShutdown` — e2e không còn log "Cannot use a pool after calling end". Test nhân viên thoát game giữa ca chờ
+  phiếu ca ghi xong thay vì chờ cứng 900ms.
 - Hook dev cho Playwright (chỉ bản dev): `window.xomDebug.{send, walk, clock}`, `xomRider()`, `xomShoot()`, `xomTraffic()`.
 - Locator Playwright: toast trùng tên nút → `exact: true`; nút "Đóng" của sheet: `getByRole("dialog").getByRole("button",
   { name: "Đóng" }).first()`; khung đơn: `[data-counterpart=<tên>]`.
