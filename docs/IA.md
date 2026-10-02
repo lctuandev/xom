@@ -158,8 +158,8 @@ Khi làm nhiều cửa hàng (bước D), các sheet nhóm 🏪 nhận `shopId` 
 
 | Bước | Nội dung | Không đổi hành vi? | Kiểm chứng |
 |---|---|---|---|
-| **A** | Tách server: service + gateway theo miền; gom `BusinessService.get/list` | ✅ thuần tái cấu trúc | e2e server 78/78, Playwright toàn bộ |
-| **B** | **Tách mỗi chức năng một sheet** (registry, 35 sheet) + Menu ☰ + icon neo + nút ngữ cảnh; bỏ thanh dưới 5 mục | đổi UI | Playwright cập nhật locator + kịch bản `menu-chinh` |
+| **A** ✅ | Tách server: `BusinessRepo` (một chỗ tìm cửa hàng), `PaymentService`, `Broadcast`, `BankService`, `NeedsService`, `MarketService`, `BusinessService`; gateway theo nhóm (business/trade/work/xom/debug) + `IntentRunner`. `game.service.ts` 1.900 → 1.150 dòng, `game.gateway.ts` 900 → 184 | ✅ thuần tái cấu trúc | e2e server 78/78 |
+| **B** ✅ | **Tách mỗi chức năng một sheet** (registry, 35 sheet) + Menu ☰ + icon neo + nút ngữ cảnh; bỏ thanh dưới 5 mục | đổi UI | Playwright cập nhật locator + kịch bản `menu-chinh` |
 | **C** | Sổ sách lãi/lỗ theo khoản chi + Tổng quan cửa hàng | đổi UI | kịch bản `so-sach` |
 | **D** | Nhiều cửa hàng + kho riêng từng tiệm (migration `InventoryItem.businessId`, intent nhận `businessId`) | đổi luật | e2e mới, `pnpm balance` |
 | **E** | Chủ tự do khi có nhân viên (`ownerTied`) + nhiều nhân viên theo quy mô | đổi luật | e2e mới, `pnpm balance` |

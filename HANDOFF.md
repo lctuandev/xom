@@ -56,23 +56,15 @@ iPhone 16 Pro + Pixel 7; `pnpm balance` không cảnh báo. **Chưa chạy lư�
 
 Không có code đang viết dở — cây làm việc sạch. Dưới đây là backlog, mỗi mục ghi **yêu cầu của chủ dự án** + **hướng làm**.
 
-### 3.1 🔧 Tái cấu trúc (làm TRƯỚC khi mở rộng) — góp ý "chồng chéo, gộp nhiều chỗ, dễ conflict"
-Yêu cầu: review toàn bộ chức năng, **phân chia lại vị trí chức năng / nút / menu**, tham khảo cấu trúc các game (Stardew Valley,
-Hay Day, Animal Crossing, The Sims Mobile, Townsmen…), **tách nhỏ tính năng để dễ xử lý**.
-Hướng làm:
-- **Server**: `apps/server/src/game/game.service.ts` ~1.800 dòng ôm quá nhiều → tách `BusinessService` (mở/đóng/chỗ/thực đơn/
-  doanh thu), `MarketService` (chợ, thanh lý), `NeedsService` (đói/khát, ăn uống, sạp NPC), `AtmService`, `EventService`
-  (khai trương, sự kiện), `TutorialService`; `GameService` chỉ còn vòng đời xóm + tick + điều phối. Gateway (~800 dòng) tách
-  theo nhóm intent (một file / nhóm). Có 16 chỗ `business.findFirst({ where: { ownerId } })` giả định một quầy/người — gom về
-  một chỗ trước khi làm nhiều cửa hàng (3.3).
-- **Web**: `ui/BusinessSheet.tsx` quá lớn (bán, kho, thực đơn, chỗ, nhân viên, mở tiệm, thống kê…) → tách thư mục
-  `ui/business/*`; `ActionBar.tsx` gom ~15 nút ngữ cảnh → quy tắc ưu tiên một nút chính + một chip phụ.
-- **Kiến trúc thông tin (đề xuất, chốt với chủ dự án trước khi code)** — thanh dưới 5 mục:
-  `Xóm` (bản đồ, khu phố, hàng xóm, quỹ xóm, bảng tin) · `Làm ăn` (**chọn cửa hàng** → Bán / Kho / Thực đơn / Nhân viên /
-  Tiệm & giấy tờ / Thống kê; thêm "Tổng quan các cửa hàng") · `Việc làm` (làm thuê, xe ôm, phụ hồ, việc xóm, thuê nhau) ·
-  `Nhiệm vụ` (kịch bản, thành tựu, Chuyện của tôi) · `Tôi` (hồ sơ, ví 💵/🏦, kỹ năng, cài đặt). Icon neo trái giữ Ăn uống /
-  Chợ / Bảng xóm. Viết thành `docs/IA.md` + cập nhật DESIGN Luật 12.
-- Sau khi tách: chạy lại **toàn bộ** Playwright.
+### 3.1 🔧 Tái cấu trúc — ✅ bước A + B XONG (2026-10-02, kế hoạch chi tiết: `docs/IA.md`)
+- **B (giao diện):** mỗi chức năng một sheet riêng (35 chức năng — `apps/web/game/features/registry.ts` + `sheets.tsx`),
+  ☰ Menu lưới icon 5 nhóm (chấm đỏ khi có việc), cột neo trái tự ghim tối đa 4, bỏ thanh dưới 5 mục. Test: `openFeature(page, id)`
+  trong `e2e/helpers.ts`; kịch bản mới `menu-chinh`. DESIGN Luật 12.3–12.6, UC-A6.
+- **A (server):** `BusinessRepo` (chỗ duy nhất tìm cửa hàng — bước D sửa ở đây), `PaymentService`, `Broadcast` (thay các
+  `setNotifier`), `BankService`, `NeedsService`, `MarketService`, `BusinessService`; gateway chia business/trade/work/xom/debug +
+  `IntentRunner`.
+- **Còn lại theo docs/IA.md:** C (sổ sách lãi/lỗ theo khoản + tổng quan), D (nhiều cửa hàng + kho riêng + chuyển kho có thời gian),
+  E (chủ tự do khi có nhân viên + cấp tiệm → số nhân viên). `ActionBar` (nút ngữ cảnh) chưa gom về một nút chính.
 
 ### 3.2 👩‍🍳 Nhiều nhân viên theo quy mô cửa hàng
 Yêu cầu: thuê **cùng lúc nhiều nhân viên** để bán nhanh hơn, **giới hạn theo quy mô** (xe đẩy nhỏ ít người, tiệm lớn nhiều).

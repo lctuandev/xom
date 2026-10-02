@@ -22,7 +22,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await waitForMorning(page, 9);
   await openBanhMiStall(page);
   await setClock(page, 7 * 60);
-  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
+  await openFeature(page, "neighbors");
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
     .getByRole("dialog", { name: "👥 Hàng xóm" })
@@ -45,7 +45,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await setClock(page, 7 * 60);
 
   // Bình mở bảng Xóm → "Tới quầy" của An → tới nơi bảng gọi món tự mở.
-  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
+  await openFeature(b, "neighbors");
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   const shop = b.getByRole("dialog", { name: "Quầy An" });
   await expect(shop).toBeVisible({ timeout: 30_000 });
@@ -99,7 +99,7 @@ test("gọi món ở quầy hàng xóm, chủ quầy làm tay, khách trả ti�
   await shot(b, "24-nhan-mon");
 
   // Sổ đánh giá (UC-F11): Bình vừa mua nên chấm sao + viết vài chữ; An trả lời trong bảng Làm ăn.
-  await b.getByRole("button", { name: /^Hàng xóm: 2 người online/ }).tap();
+  await openFeature(b, "neighbors");
   await b.getByRole("button", { name: "🛒 Tới quầy" }).tap();
   await expect(shop).toBeVisible({ timeout: 30_000 });
   const write = shop.locator("[data-write-review]");

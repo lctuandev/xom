@@ -392,9 +392,18 @@ export async function skipGuide(page: Page) {
  * Chức năng phải dùng tại chỗ (chợ, vựa xe…) thì nhân vật tự đi tới rồi mới mở sheet.
  */
 export async function openFeature(page: Page, id: string) {
-  await closeSheet(page);
-  await page.getByRole("button", { name: "Menu", exact: true }).tap();
-  await page.locator(`[data-feature="${id}"]`).tap();
+  // Đang đi tới nơi mà tới đúng lúc thì sheet của nơi đó tự mở chen vào Menu — đóng rồi thử lại.
+  for (let i = 0; i < 4; i++) {
+    await closeSheet(page);
+    await page.getByRole("button", { name: "Menu", exact: true }).tap();
+    const tile = page.locator(`[data-feature="${id}"]`);
+    try {
+      await tile.tap({ timeout: 5_000 });
+      return;
+    } catch {
+      if (i === 3) throw new Error(`Không mở được chức năng ${id} từ ☰ Menu`);
+    }
+  }
 }
 
 /** Đóng sheet đang mở (nếu có) — về bản đồ. */

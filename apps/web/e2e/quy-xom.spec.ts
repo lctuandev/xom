@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { grantMoney, readDialogue, register, shot } from "./helpers";
+import { grantMoney, openFeature, readDialogue, register, shot } from "./helpers";
 
 // Quỹ xóm + công trình chung (docs/USECASES.md UC-J5): đề xuất lát hẻm → (một mình) qua luôn →
 // góp đủ quỹ → khởi công.
@@ -8,8 +8,7 @@ test("quỹ xóm: đề xuất công trình, góp quỹ, khởi công", async ({
   await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
   await grantMoney(page, 600_000);
 
-  await page.getByRole("button", { name: /^Hàng xóm:/ }).tap();
-  await page.getByRole("button", { name: "🏗️ Quỹ xóm" }).tap();
+  await openFeature(page, "fund");
   const sheet = page.getByRole("dialog", { name: "Quỹ xóm" });
   await expect(sheet.locator("[data-fund]")).toHaveAttribute("data-fund", "0");
 

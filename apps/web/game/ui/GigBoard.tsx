@@ -82,7 +82,7 @@ export function GigBoard() {
           onShoot={() => void shoot(mine.id)}
           onWalk={() => {
             close(null);
-            setGoal({ kind: "drop", lotId: mine.lotId, open: "jobs" });
+            setGoal({ kind: "drop", lotId: mine.lotId, open: "gigs" });
           }}
         />
       )}

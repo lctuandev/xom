@@ -39,7 +39,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   await expect(sheet.locator("[data-gig-posted=OPEN]")).toBeVisible();
   await sheet.getByRole("button", { name: "Đóng" }).first().tap();
 
-  await page.getByRole("button", { name: /^Hàng xóm: 1 người online/ }).tap();
+  await openFeature(page, "neighbors");
   const code = (await page.locator("[data-xom-code]").textContent()) ?? "";
   await page
     .getByRole("dialog", { name: "👥 Hàng xóm" })
@@ -64,7 +64,7 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   const offer = bs.locator("[data-gig=OPEN]").first();
   await expect(offer).toContainText("Chụp ảnh");
   await offer.getByRole("button", { name: /^Nhận việc · đặt cọc/ }).tap();
-  await expect(page.locator("[data-toast-open='jobs:gigs']").first()).toBeVisible();
+  await expect(page.locator("[data-toast-open='gigs']").first()).toBeVisible();
   await expect(bs.locator("[data-gig-taken=TAKEN]")).toBeVisible();
 
   // Tới quầy An (tới nơi bảng tự mở lại), cầm máy.
@@ -106,8 +106,8 @@ test("chủ quầy thuê hàng xóm chụp ảnh quầy: đăng việc, nhận, 
   await bs.getByRole("button", { name: "🖼️ Nộp ảnh" }).tap();
   await expect(bs.locator("[data-gig-taken=SUBMITTED]")).toBeVisible();
 
-  // An bấm thông báo → mở thẳng tab Thuê nhau → nghiệm thu 5⭐.
-  const toast = page.locator("[data-toast-open='jobs:gigs']", { hasText: "nộp ảnh" });
+  // An bấm thông báo → mở thẳng sheet 📸 Thuê nhau → nghiệm thu 5⭐.
+  const toast = page.locator("[data-toast-open='gigs']", { hasText: "nộp ảnh" });
   await expect(toast).toBeVisible({ timeout: 15_000 });
   await toast.tap();
   sheet = page.getByRole("dialog", { name: "📸 Thuê nhau" });

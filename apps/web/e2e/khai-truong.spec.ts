@@ -40,7 +40,7 @@ test("khai trương quầy bánh mì: trả tiền, bong bóng, khách đông, g
   let promo = false;
   for (let i = 0; i < 4 && !promo; i++) {
     await serveCustomer(page, async (kitchen) => {
-      promo = await kitchen.getByText("🎉 giá khai trương").isVisible();
+      promo = await kitchen.getByText("🎉 giá khai trương").first().isVisible();
     });
   }
   expect(promo).toBe(true);

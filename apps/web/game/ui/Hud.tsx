@@ -95,7 +95,12 @@ export function Hud() {
           </span>
           <span className="text-sm font-extrabold">Menu</span>
           {online > 1 && (
-            <span className="rounded-full bg-leaf px-1.5 text-[10px] font-bold">👥 {online}</span>
+            <span
+              data-online={online}
+              className="rounded-full bg-leaf px-1.5 text-[10px] font-bold"
+            >
+              👥 {online}
+            </span>
           )}
         </button>
       </nav>

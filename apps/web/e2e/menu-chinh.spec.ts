@@ -39,8 +39,10 @@ test("☰ Menu: đủ nhóm chức năng, ghim lên cột neo, mỗi chức năn
 
   // Mở từ icon neo: Bảng xóm là sheet riêng.
   await page.locator('[data-anchor="board"]').tap();
-  await expect(page.getByRole("dialog", { name: "Bảng xóm" })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
+  const board = page.getByRole("dialog", { name: "Bảng xóm" });
+  await expect(board).toBeVisible();
+  await board.getByRole("button", { name: "Đóng" }).last().tap();
+  await expect(board).toHaveCount(0);
 
   // Hồ sơ → nút "›" sang Kỹ năng: mỗi phần là một sheet riêng, không còn tab trộn.
   await page.getByRole("button", { name: "Hồ sơ" }).tap();

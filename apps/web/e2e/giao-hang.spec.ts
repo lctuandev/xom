@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
-import { giveChange, readDialogue, register, shot, skipGuide, waitForMorning } from "./helpers";
+import {
+  giveChange,
+  openFeature,
+  readDialogue,
+  register,
+  shot,
+  skipGuide,
+  waitForMorning,
+} from "./helpers";
 
 // Giao hàng bưu cục Anh Tám (docs/USECASES.md UC-W5): nhận đơn → soạn đúng gói trên kệ → ra xe
 // → tới đúng nhà → gọi khách → đưa điện thoại ký nhận, kiểm người ký → thu hộ, thối tiền → về nộp tiền.
@@ -59,7 +67,7 @@ test("giao hàng: soạn gói, chạy tới nhà, ký nhận, thu hộ rồi v�
   await box.getByRole("button", { name: "Con đi làm thuê trước" }).tap();
   await waitForMorning(page, 9);
 
-  await page.getByRole("button", { name: /Việc làm/ }).tap();
+  await openFeature(page, "jobs");
   await page.getByRole("button", { name: /Đi tới Bưu cục/ }).tap();
   await expect(page.getByRole("button", { name: "📦 Vào bưu cục · Anh Tám" })).toBeVisible({
     timeout: 30_000,
