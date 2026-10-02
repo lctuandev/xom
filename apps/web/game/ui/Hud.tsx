@@ -50,7 +50,8 @@ export function Hud() {
     <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
       <header className="pt-safe pointer-events-auto flex items-start gap-2 pr-2 pl-3">
         <ProfileBadge />
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        {/* Container query: màn hẹp thì thanh trạng thái tự ẩn bớt phần phụ, không tràn ra ngoài. */}
+        <div className="@container flex min-w-0 flex-1 flex-col gap-1.5">
           <ResourceBar />
           <NewsTicker />
         </div>
@@ -165,9 +166,12 @@ function ResourceBar() {
   const skyLabel = `${content.weekday(clock?.day ?? 1).name}, ngày ${clock?.day ?? 1} · ${content.weatherKind(sky).name}${next ? ` — khoảng ${formatClock(next.at)} ${content.weatherKind(next.kind).name.toLowerCase()}` : ""}`;
   const rep = me?.business ? Math.round(me.business.reputation * 50) / 10 : null;
   return (
-    <div className="flex h-9 items-center gap-1.5 rounded-full bg-ink/85 py-1 pr-2.5 pl-1 text-cream shadow-md">
+    <div
+      className="flex h-9 min-w-0 items-center gap-1 overflow-hidden rounded-full bg-ink/85 py-1 pr-2 pl-1 text-cream shadow-md @min-[320px]:gap-1.5 @min-[320px]:pr-2.5"
+      data-status-bar
+    >
       <span
-        className="flex items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold tabular-nums"
+        className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold whitespace-nowrap tabular-nums"
         data-money={me?.money}
         title={me ? `Tiền mặt ${vnd(me.money)}` : undefined}
       >
@@ -176,7 +180,7 @@ function ResourceBar() {
       </span>
       {rep !== null && (
         <span
-          className="flex items-center gap-0.5 text-xs font-bold tabular-nums"
+          className="flex shrink-0 items-center gap-0.5 text-xs font-bold tabular-nums"
           title="Uy tín quầy"
         >
           <IconStar className="size-4" />
@@ -185,7 +189,7 @@ function ResourceBar() {
       )}
       <NeedsChip />
       <span
-        className="ml-auto flex items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums"
+        className="ml-auto flex shrink-0 items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums"
         data-clock={clock ? minute : undefined}
         data-weather={clock ? sky : undefined}
         title={skyLabel}
@@ -195,12 +199,18 @@ function ResourceBar() {
           className={`opacity-90 ${content.weekday(clock?.day ?? 1).weekend ? "text-sun" : ""}`}
           data-weekday={content.weekday(clock?.day ?? 1).short}
         >
-          {content.weekday(clock?.day ?? 1).short}·N{clock?.day ?? 1}
+          {content.weekday(clock?.day ?? 1).short}
+          {/* Màn hẹp chỉ ghi thứ; số ngày xem trong 📅 Hôm nay / title. */}
+          <span className="hidden @min-[330px]:inline">·N{clock?.day ?? 1}</span>
         </span>
         <IconWeather kind={sky} night={night} className="size-5" />
         <span className="sr-only">{skyLabel}</span>
         {next && (
-          <span aria-hidden className="flex items-center opacity-80" data-next={next.kind}>
+          <span
+            aria-hidden
+            className="hidden items-center opacity-80 @min-[380px]:flex"
+            data-next={next.kind}
+          >
             ›<IconWeather kind={next.kind} className="size-4" />
           </span>
         )}
@@ -301,7 +311,8 @@ function NeedsChip() {
         title={`${label} ${v}%`}
       >
         {icon}
-        {v}%
+        {/* Màn hẹp chỉ còn icon (đỏ, nhấp nháy khi đói/khát); số % ở title. */}
+        <span className="hidden @min-[320px]:inline">{v}%</span>
       </span>
     ) : null;
   return (
@@ -310,7 +321,7 @@ function NeedsChip() {
       onClick={() => openSheet("food")}
       aria-label={`No ${needs.food}%, khát ${needs.drink}% — mở quán ăn`}
       data-needs={`${needs.food}:${needs.drink}`}
-      className="flex items-center gap-1 rounded-full bg-cream/15 px-1.5 py-0.5 text-xs font-semibold"
+      className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 px-1.5 py-0.5 text-xs font-semibold"
     >
       {item(<IconRice className="size-4" />, needs.food, "No")}
       {item(<IconDrop className="size-4" />, needs.drink, "Đỡ khát")}

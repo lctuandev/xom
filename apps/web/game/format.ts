@@ -18,6 +18,9 @@ export function vndHud(n: number): string {
   const fmt = (v: number) => v.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
   if (abs >= 1_000_000_000) return `${sign}${fmt(abs / 1_000_000_000)} tỷ`;
   if (abs >= 1_000_000) return `${sign}${fmt(abs / 1_000_000)}tr`;
+  // Màn hẹp: từ 100 nghìn thu gọn "140k", "138k" (số đầy đủ ở title / ví).
+  if (abs >= 100_000)
+    return `${sign}${(abs / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 0 })}k`;
   return vnd(n);
 }
 
