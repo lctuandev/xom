@@ -58,6 +58,20 @@ export function staffWage(staff: StaffDef, minutes: number): number {
   return round500((staff.wagePerHour * Math.max(0, minutes)) / 60);
 }
 
+/**
+ * Lương trả theo từng nhịp ngắn: cộng dồn phần lẻ (`carry`) thay vì làm tròn mỗi nhịp — làm tròn 500đ mỗi 5 phút khiến
+ * người 10k/giờ thành 12k/giờ. Trả bội số 500đ, phần dư mang sang nhịp sau.
+ */
+export function staffWageCarry(
+  staff: StaffDef,
+  minutes: number,
+  carry: number,
+): { wages: number; carry: number } {
+  const exact = (staff.wagePerHour * Math.max(0, minutes)) / 60 + carry;
+  const wages = Math.floor(exact / 500) * 500;
+  return { wages, carry: exact - wages };
+}
+
 /** Nhân viên bán từ `fromMinute` tới `toMinute`: chạy từng nhịp kinh tế như quầy thường, phục vụ tối đa theo tốc độ tay. */
 export function staffShift(p: StaffShiftInput): StaffShiftResult {
   const { content, staff } = p;

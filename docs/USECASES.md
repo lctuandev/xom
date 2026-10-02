@@ -495,6 +495,15 @@ inspectAt / certified / signed`; sim `shopEstimate`, `needsFoodCert`, `shopNameE
 ## G. Dịch vụ sửa xe (nghề mới, template SERVICE — docs/NGHE.md §3.1)
 
 
+> **Cân lại kinh tế tiệm (2026-10-02, góp ý "luôn lỗ, tiền nhà 100k/ngày không có lãi"):** sổ cái thật 10 ngày ở Nhà số 10 (sạp
+> phụ kiện, Dì Sáu cả ngày) lỗ ~92k/ngày — tiệm có **cùng lưu lượng khách như xe đẩy đầu hẻm** mà chi phí cố định gấp ~4 (tiền nhà +
+> thuế khoán + điện nước). Ngoài đời mặt tiền bù bằng **đông khách hơn** (dễ thấy, có chỗ ngồi, biển hiệu) và **khách chịu giá cao
+> hơn** (ngồi quán). Nay: nhà số 10 lưu lượng ×1,5, nhà số 24 ×1,25; `lot.priceTolerance = 1,2` — ở tiệm, giá "hợp lý" = giá tham
+> khảo × 1,2 (cầu, chấm điểm khách, nhận xét "đắt", gợi ý giá trong thực đơn đều tính theo giá này). Tiền nhà giữ nguyên, giờ chỉ
+> ~6–12% doanh thu. `pnpm balance` có bảng **Tiệm**: tiệm tự bán phải lãi hơn xe đẩy tốt nhất, thuê nhân viên cả ngày phải có tiệm
+> lãi, nhân viên không hơn chủ; trần lãi theo bậc (xe đẩy ≤ 5 lần làm thuê, tiệm ≤ 6,5 lần).
+
+
 ### UC-F13 · Đòi tiền nhà — chủ nhà tới nhắc, hẹn ngày, dẹp tiệm ✅ (bản đầu)
 > Góp ý: "sắp tới hạn trả tiền thuê → thông báo đòi tiền (trả ngay hoặc hẹn ngày); không trả thì chủ nhà tới dẹp tiệm; lúc thu
 > tiền hiện modal có chân dung chủ nhà + bong bóng thoại" · "nên hẹn **ngày** trả chứ không hẹn giờ".
@@ -994,8 +1003,11 @@ Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 gi
 **Sau này:** khách quen giận khi quầy đóng nhiều ngày liền, khách quen giới thiệu bạn bè cụ thể, khách quen dặn món riêng.
 
 ### UC-M6 · Thuê nhân viên — bán thay khi vắng ✅ (bản đầu)
-**Nhân vật:** bảng tuyển người của Anh Tám (`content.staff.people`): **Thu** (sinh viên năm hai, đúng 95%, 6 phút/món, 15k/giờ),
-**Khoa** (lanh tay mà hay quên lời dặn, đúng 80%, 4 phút/món, 13k/giờ), **Dì Sáu** (chậm mà kỹ, đúng 98%, 8 phút/món, 10k/giờ).
+**Nhân vật:** bảng tuyển người của Anh Tám (`content.staff.people`): **Thu** (sinh viên năm hai, đúng 95%, 18 phút/món, 15k/giờ),
+**Khoa** (lanh tay mà hay quên lời dặn, đúng 80%, 12 phút/món, 13k/giờ), **Dì Sáu** (chậm mà kỹ, đúng 98%, 25 phút/món, 10k/giờ).
+> Cân lại (2026-10-02, góp ý "luôn lỗ"): tay nhân viên ngang người chơi (Khoa ≈ tay nhanh, Dì Sáu ≈ tay vừa) — trước đây nhanh gấp 3
+lần người chơi nên bán thay lãi hơn chủ tự bán; lương trả theo nhịp 5 phút **cộng dồn phần lẻ** (trước làm tròn mỗi nhịp → 10k/giờ
+thành 12k/giờ). `pnpm balance` cảnh báo nếu nhân viên lãi hơn chủ tay nhanh tự bán, hoặc thuê nhân viên ở tiệm nào cũng lỗ.
 **Luồng:** Làm ăn → **👩‍🍳 Nhân viên** → chọn ca (sáng 6–11h, trưa 11–14h, chiều 14–18h, tối 18–22h) → **Thuê** (ghi 📖 "Thuê người
 đầu tiên…"). Trong ca, quầy đang mở mà chủ **rời quầy** (đi chợ, đi làm thuê) → nhân viên bán thay từng nhịp (báo *"👩‍🍳 Thu vừa bán
 2 món thay bạn"*, khách không réo chủ). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy

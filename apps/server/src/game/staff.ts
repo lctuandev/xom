@@ -7,6 +7,7 @@ import {
   type StaffShiftResult,
   shiftAt,
   staffShift,
+  staffWageCarry,
 } from "@xom/sim";
 import {
   bankWallet,
@@ -34,6 +35,8 @@ export class StaffService {
   private readonly soldOutTold = new Set<string>();
   /** Sức làm dư giữa các nhịp bán trực tiếp (theo quầy). */
   private readonly capacity = new Map<string, number>();
+  /** Phần lương lẻ chưa trả (đồng) của phiên đang chạy — trả theo nhịp không làm tròn lên mỗi nhịp. */
+  private readonly wageCarry = new Map<string, number>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -183,6 +186,9 @@ export class StaffService {
       seed: biz.id,
     });
     if (mode === "live") this.capacity.set(biz.id, r.capacity);
+    const pay = staffWageCarry(person, r.minutes, this.wageCarry.get(biz.id) ?? 0);
+    this.wageCarry.set(biz.id, pay.carry);
+    const wages = pay.wages;
     // Hết hàng từ đầu: nhân viên không đứng quầy, không tốn lương; báo chủ một lần trong ngày.
     if (r.minutes === 0) {
       const key = `${biz.id}:${room.day}`;
@@ -207,13 +213,13 @@ export class StaffService {
           "staff_sale",
           biz.id,
         );
-      if (r.wages > 0) {
+      if (wages > 0) {
         try {
           await this.ledger.transfer(
             tx,
             playerWallet(biz.ownerId),
             SYSTEM.employer,
-            r.wages,
+            wages,
             "staff_wage",
             biz.id,
           );
@@ -224,7 +230,7 @@ export class StaffService {
               tx,
               bankWallet(biz.ownerId),
               SYSTEM.employer,
-              r.wages,
+              wages,
               "staff_wage",
               biz.id,
             );
@@ -241,7 +247,7 @@ export class StaffService {
         served: r.served,
         wrong: r.wrong,
         lost: r.lost,
-        fees: quit ? 0 : r.wages,
+        fees: quit ? 0 : wages,
         ...(total ? { satisfaction: { value: satisfaction, weight: total } } : {}),
       });
       await tx.business.update({
@@ -273,7 +279,7 @@ export class StaffService {
             wrong: { increment: r.wrong },
             lost: { increment: r.lost },
             revenue: { increment: r.revenue },
-            wages: { increment: quit ? 0 : r.wages },
+            wages: { increment: quit ? 0 : wages },
           },
         });
       else
@@ -289,7 +295,7 @@ export class StaffService {
             wrong: r.wrong,
             lost: r.lost,
             revenue: r.revenue,
-            wages: quit ? 0 : r.wages,
+            wages: quit ? 0 : wages,
           },
         });
       if (quit) await tx.employee.deleteMany({ where: { businessId: biz.id } });

@@ -143,6 +143,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Thanh trạng thái màn hẹp: không tràn (tiền gọn "138k", ẩn bớt số ngày / % đói khát / dự báo theo bề rộng) | ✅ | 1.22 | DESIGN Luật 12.6a |
 | 🏪 Mở tiệm như ngoài đời: hợp đồng thuê (cọc 3 ngày + vốn dự phòng, tiền nhà tính cả ngày đóng, hết cọc mất nhà), hộ kinh doanh + đặt tên quán, ATTP (tập huấn + đón đoàn kiểm tra), biển hiệu tên quán; bỏ khoá cấp 3 | ✅ | 1.22 | UC-F12 |
 | 🏠 Đòi tiền nhà: chủ nhà NPC (chân dung + thoại) tới nhắc 17h, trả ngay / hẹn **ngày** (phí trễ theo số ngày) / để sau; quá hạn trừ cọc + 🤝, trễ lần 3 hoặc hết cọc thì dẹp tiệm (cả xóm biết); offline chưa hẹn không tính trễ | ✅ | 1.23 | UC-F13 |
+| ⚖️ Cân lại kinh tế tiệm: mặt tiền đông khách hơn + khách chịu giá cao hơn ~20% (`priceTolerance`), nhân viên tay ngang người chơi, sửa lương làm tròn mỗi nhịp (10k→12k/giờ); `pnpm balance` có bảng Tiệm + cảnh báo tiệm thua xe đẩy / nhân viên lỗ / nhân viên hơn chủ | ✅ | 1.23 | UC-F12, UC-M6 |
 | Kiến trúc đợt 2 (khách quen, nhân viên, hợp đồng + tin cậy, xe ôm, giao thông) | ✅ | 1.19 | docs/KIENTRUC.md |
 | 🧑‍🤝‍🧑 Khách quen: 18 cư dân có tên, đếm lần ghé, ❤️ khách quen (kiên nhẫn, rủ bạn, giận khi làm sai), sổ khách quen | ✅ | 1.19a | UC-M5, KIENTRUC §1 |
 | 👩‍🍳 Thuê nhân viên NPC bán thay (Thu/Khoa/Dì Sáu, 4 ca), phiếu ca, doanh thu khi vắng có trần, hết hàng về sớm | ✅ | 1.19b | UC-M6, KIENTRUC §2 |
