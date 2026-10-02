@@ -80,6 +80,7 @@ import type { Server, Socket } from "socket.io";
 import type { ZodType } from "zod";
 import { AuthService } from "../auth/auth.service.js";
 import { GameService, type IntentContext } from "./game.service.js";
+import { requireAt } from "./place.js";
 import { GameError } from "./room.js";
 
 interface SocketData {
@@ -163,20 +164,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("equipment:buy")
   buyEquipment(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, buyEquipmentSchema, body, (ctx, p) =>
-      this.game.buyEquipment(ctx, p.equipmentId, p.pay),
+      this.game.market.buyEquipment(ctx, p.equipmentId, p.pay),
     );
   }
 
   @SubscribeMessage("market:buy")
   marketBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, marketBuySchema, body, (ctx, p) =>
-      this.game.marketBuy(ctx, p.itemId, p.packs, p.pay),
+      this.game.market.marketBuy(ctx, p.itemId, p.packs, p.pay),
     );
   }
 
   @SubscribeMessage("market:sell")
   marketSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, marketSellSchema, body, (ctx, p) => this.game.marketSell(ctx, p.itemId));
+    return this.handle(c, marketSellSchema, body, (ctx, p) =>
+      this.game.market.marketSell(ctx, p.itemId),
+    );
   }
 
   @SubscribeMessage("biz:update")
@@ -209,12 +212,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     return this.handleWith(c, workStartSchema, body, async (ctx, p) => {
       const place = content.placeForJob(p.jobId);
       if (place)
-        this.game.requireAt(
-          ctx.room,
-          ctx.playerId,
-          place.id,
-          `Tới ${place.name} mới nhận việc được`,
-        );
+        requireAt(ctx.room, ctx.playerId, place.id, `Tới ${place.name} mới nhận việc được`);
       await this.game.work.start(ctx.room, ctx.playerId, p.jobId, p.role);
       const job = content.jobById.get(p.jobId);
       const role = job?.roles.find((r) => r.id === p.role);
@@ -279,7 +277,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   make(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown): Promise<Ack<MakeResult>> {
     return this.handleWith(c, makeOrderSchema, body, async (ctx, p) => {
       const r = await this.game.orders.make(ctx.room, ctx.playerId, p.orderId, p.build);
-      this.game.stockChanged(ctx.room);
+      this.game.broadcast.stockChanged(ctx.room);
       return { ...r, me: await this.game.me(ctx.room, ctx.playerId) };
     });
   }
@@ -297,7 +295,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("vendor:buy")
   vendorBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, vendorBuySchema, body, (ctx, p) =>
-      this.game.vendorBuy(ctx, p.vendorId, p.itemId, p.pay),
+      this.game.needs.vendorBuy(ctx, p.vendorId, p.itemId, p.pay),
     );
   }
 
@@ -801,20 +799,22 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @SubscribeMessage("atm:use")
   atm(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handleWith(c, atmSchema, body, async (ctx, p) => {
-      const receipt = await this.game.useAtm(ctx, p);
+      const receipt = await this.game.bank.useAtm(ctx, p);
       return { me: await this.game.me(ctx.room, ctx.playerId), receipt };
     });
   }
 
   @SubscribeMessage("atm:auth")
   atmAuth(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
-    return this.handle(c, atmAuthSchema, body, (ctx, p) => this.game.atmAuth(ctx, p.atmId, p.pin));
+    return this.handle(c, atmAuthSchema, body, (ctx, p) =>
+      this.game.bank.atmAuth(ctx, p.atmId, p.pin),
+    );
   }
 
   @SubscribeMessage("atm:pin")
   atmPin(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, atmPinSchema, body, (ctx, p) =>
-      this.game.atmSetPin(ctx, p.atmId, p.pin, p.old),
+      this.game.bank.atmSetPin(ctx, p.atmId, p.pin, p.old),
     );
   }
 

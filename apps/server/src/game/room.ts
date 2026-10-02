@@ -164,3 +164,9 @@ export class RoomRuntime {
       });
   }
 }
+
+/** Ngữ cảnh một intent: xóm đang chạy + người gửi. */
+export interface IntentContext {
+  room: RoomRuntime;
+  playerId: string;
+}

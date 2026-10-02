@@ -22,16 +22,10 @@ import {
   settleCash,
   starLine,
 } from "@xom/sim";
-import type { Tx } from "../economy/ledger.service.js";
-import {
-  bankWallet,
-  InsufficientFundsError,
-  LedgerService,
-  playerWallet,
-  SYSTEM,
-} from "../economy/ledger.service.js";
+import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { ContractService } from "./contracts.js";
+import { PaymentService } from "./payment.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
@@ -83,6 +77,7 @@ export class RideService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ledger: LedgerService,
+    private readonly payment: PaymentService,
     private readonly story: StoryService,
     private readonly contracts: ContractService,
   ) {}
@@ -172,7 +167,14 @@ export class RideService {
       throw new GameError("invalid_state", "Hôm nay thuê xe rồi");
     const cost = content.data.rides.bikeRentPerDay;
     await this.prisma.$transaction(async (tx) => {
-      await this.payOut(tx, playerId, cost, SYSTEM.landlord, "bike_rent", "Không đủ tiền thuê xe");
+      await this.payment.cashThenBank(
+        tx,
+        playerId,
+        cost,
+        SYSTEM.landlord,
+        "bike_rent",
+        "Không đủ tiền thuê xe",
+      );
       await tx.player.update({ where: { id: playerId }, data: { bikeRentDay: room.day } });
       await addToReport(tx, playerId, room.day, { fees: cost });
       await tx.gameEvent.create({ data: { playerId, type: "ride_rent", payload: { cost } } });
@@ -347,7 +349,14 @@ export class RideService {
       await this.ledger.transfer(tx, SYSTEM.customers, to, received, "ride_fare");
       if (tip > 0)
         await this.ledger.transfer(tx, SYSTEM.customers, playerWallet(playerId), tip, "ride_tip");
-      await this.payOut(tx, playerId, fuel, SYSTEM.market, "fuel", "Không đủ tiền đổ xăng");
+      await this.payment.cashThenBank(
+        tx,
+        playerId,
+        fuel,
+        SYSTEM.market,
+        "fuel",
+        "Không đủ tiền đổ xăng",
+      );
       await tx.player.update({
         where: { id: playerId },
         data: { rides: { increment: 1 }, rideStars: { increment: stars } },
@@ -394,28 +403,6 @@ export class RideService {
   /** Rời xóm hẳn: bỏ cuốc đang dở. */
   clear(playerId: string) {
     this.states.delete(playerId);
-  }
-
-  private async payOut(
-    tx: Tx,
-    playerId: string,
-    amount: number,
-    to: string,
-    reason: string,
-    broke: string,
-  ) {
-    try {
-      await this.ledger.transfer(tx, playerWallet(playerId), to, amount, reason);
-    } catch (err) {
-      if (!(err instanceof InsufficientFundsError)) throw err;
-      try {
-        await this.ledger.transfer(tx, bankWallet(playerId), to, amount, reason);
-      } catch (err2) {
-        if (err2 instanceof InsufficientFundsError)
-          throw new GameError("insufficient_funds", broke);
-        throw err2;
-      }
-    }
   }
 
   private log(playerId: string, type: string, payload: Record<string, unknown>) {

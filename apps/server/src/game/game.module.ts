@@ -1,10 +1,16 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module.js";
+import { BankService } from "./bank.js";
+import { Broadcast } from "./broadcast.js";
+import { BusinessRepo } from "./business-repo.js";
 import { ContractService } from "./contracts.js";
 import { GameGateway } from "./game.gateway.js";
 import { GameService } from "./game.service.js";
 import { GigService } from "./gigs.js";
+import { MarketService } from "./market.js";
+import { NeedsService } from "./needs.js";
 import { OrderService } from "./orders.js";
+import { PaymentService } from "./payment.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { ReviewService } from "./reviews.js";
@@ -19,6 +25,12 @@ import { WorkService } from "./work.js";
 @Module({
   imports: [AuthModule],
   providers: [
+    BankService,
+    Broadcast,
+    BusinessRepo,
+    MarketService,
+    NeedsService,
+    PaymentService,
     GameGateway,
     GameService,
     OrderService,
