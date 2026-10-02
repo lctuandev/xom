@@ -793,6 +793,33 @@ export const awardSchema = z.object({
 });
 export type Award = z.infer<typeof awardSchema>;
 
+/**
+ * Phần thưởng (góp ý đợt 2: "thành tựu, nhiệm vụ không có thưởng thì trông vô dụng"): kinh nghiệm + ít tiền mặt, nhận
+ * một lần khi bấm "🎁 Nhận". Tiền thưởng là tiền chẵn nghìn và nhỏ — không thành thu nhập thụ động.
+ */
+export const rewardSchema = z.object({
+  xp: z.number().int().min(0),
+  money: z
+    .number()
+    .int()
+    .min(0)
+    .refine((n) => n % 1000 === 0, "Thưởng tiền phải chẵn nghìn"),
+});
+export type Reward = z.infer<typeof rewardSchema>;
+
+/** Nhiệm vụ hằng ngày: server đếm từ sổ hôm nay, đủ thì bấm nhận thưởng (mỗi ngày một lần). */
+export const dailyQuestSchema = z.object({
+  id,
+  emoji: z.string(),
+  text: z.string(),
+  hint: z.string().optional(),
+  /** sold: món bán (sổ hôm nay) · wages: tiền công làm thuê · neighbors: số người online cùng xóm. */
+  metric: z.enum(["sold", "wages", "neighbors"]),
+  goal: z.number().int().positive(),
+  reward: rewardSchema,
+});
+export type DailyQuest = z.infer<typeof dailyQuestSchema>;
+
 /** Thành tựu: mở bằng làm thật, có tiến độ thấy được (DESIGN §4). */
 export const achievementMetric = z.enum([
   "served",
@@ -814,6 +841,7 @@ export const achievementSchema = z.object({
   goal: z.number().int().positive(),
   /** Câu ghi vào "Chuyện của tôi" khi đạt (docs/THEGIOI.md §1); bỏ trống = không ghi. */
   story: z.string().optional(),
+  reward: rewardSchema,
 });
 export type Achievement = z.infer<typeof achievementSchema>;
 
@@ -1192,6 +1220,7 @@ export const contentSchema = z.object({
   fund: fundSchema,
   crew: crewSchema,
   achievements: z.array(achievementSchema).min(1),
+  dailyQuests: z.array(dailyQuestSchema).min(1),
   story: z.array(storyBeatSchema).min(1),
   residents: z.array(residentSchema).min(1),
   regulars: regularsSchema,

@@ -1,0 +1,1 @@
+ALTER TABLE "Player" ADD COLUMN "rewardsClaimed" JSONB NOT NULL DEFAULT '{}';

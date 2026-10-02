@@ -18,6 +18,7 @@ import { PaymentService } from "./payment.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { ReviewService } from "./reviews.js";
+import { RewardService } from "./rewards.js";
 import { RideService } from "./rides.js";
 import { ShopService } from "./shop.js";
 import { StaffService } from "./staff.js";
@@ -39,6 +40,7 @@ import { XomGateway } from "./xom.gateway.js";
     MarketService,
     NeedsService,
     PaymentService,
+    RewardService,
     GameGateway,
     BusinessGateway,
     TradeGateway,

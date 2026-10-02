@@ -1,17 +1,20 @@
 "use client";
 
 import { content } from "@xom/content";
+import type { QuestView } from "@xom/shared";
 import { baseSpec, FAME_LABEL, skillLevel } from "@xom/sim";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { audioLevels, setAudioLevels } from "../audio";
 import { logout } from "../auth/store";
 import { FeatureSheet, GoToRow } from "../features/FeatureSheet";
 import { openFeature } from "../features/open";
 import { vnd } from "../format";
+import { send } from "../net/socket";
 import { useGame } from "../store";
 import { isSpicy, setSpicy } from "../voice";
 import { Achievements, useMyStats } from "./BoardSheet";
+import { ClaimButton, RewardTag } from "./Rewards";
 import { StoryTimeline } from "./Story";
 
 // Các bảng của thanh điều hướng mới (docs/PLAN.md — HUD): Nhiệm vụ, Hồ sơ, Cài đặt, Công thức.
@@ -34,11 +37,10 @@ function Check({ done, text, hint }: { done: boolean; text: string; hint?: strin
 
 /**
  * Nhiệm vụ: việc cần làm tiếp theo trong kịch bản + các bước buôn bán (tự tích theo tiến độ thật)
- * + mục tiêu hôm nay. Không thưởng tiền (tiền chỉ đến từ làm việc thật).
+ * + nhiệm vụ hôm nay có thưởng nhỏ (làm thật mới đạt, mỗi ngày nhận một lần).
  */
 export function QuestsSheet() {
   const me = useGame((s) => s.me);
-  const roster = useGame((s) => s.roster);
   const atStall = useGame((s) => s.atStall);
   const _close = useGame((s) => s.openSheet);
   if (!me) return null;
@@ -77,20 +79,62 @@ export function QuestsSheet() {
           hint="☰ Menu → 📖 Công thức để xem mỗi món cần những gì"
         />
       </ul>
-      <p className="mb-1.5 text-sm font-extrabold">Hôm nay</p>
-      <ul className="flex flex-col gap-1.5">
-        <Check done={me.today.sold >= 5} text={`Bán 5 món (${Math.min(5, me.today.sold)}/5)`} />
-        <Check
-          done={me.today.wages >= 50_000}
-          text={`Làm thuê kiếm 50.000đ (${vnd(Math.min(50_000, me.today.wages))})`}
-        />
-        <Check
-          done={(roster?.peers.length ?? 0) > 1}
-          text="Có hàng xóm cùng chơi"
-          hint="☰ Menu → 👥 Hàng xóm → 📨 Mời bạn"
-        />
-      </ul>
+      <DailyQuests />
     </FeatureSheet>
+  );
+}
+
+/** Nhiệm vụ hôm nay (server đếm, góp ý đợt 2): xong thì bấm 🎁 Nhận — mỗi ngày một lần. */
+function DailyQuests() {
+  const day = useGame((s) => s.clock?.day);
+  const sold = useGame((s) => s.me?.today.sold ?? 0);
+  const wages = useGame((s) => s.me?.today.wages ?? 0);
+  const online = useGame((s) => s.roster?.peers.length ?? 0);
+  const [list, setList] = useState<QuestView[] | null>(null);
+  // Tải lại khi tiến độ hôm nay đổi (bán thêm món, nhận lương, có người vào xóm, sang ngày).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: các số trên chỉ để kích tải lại
+  useEffect(() => {
+    void send("quest:list", {}).then((r) => r.ok && setList(r.data));
+  }, [day, sold, wages, online]);
+  if (!list) return null;
+  return (
+    <>
+      <p className="mb-1.5 text-sm font-extrabold">Hôm nay</p>
+      <ul className="flex flex-col gap-1.5" data-quests>
+        {list.map((q) => (
+          <li
+            key={q.id}
+            data-quest={q.id}
+            data-done={q.done}
+            className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${q.done ? "bg-leaf/15" : "bg-white"}`}
+          >
+            <span aria-hidden>{q.done ? "✅" : q.emoji}</span>
+            <span className="min-w-0 flex-1">
+              <span className="font-semibold">{q.text}</span>
+              {q.goal > 1 && !q.done && (
+                <span className="text-ink/60 tabular-nums">
+                  {" "}
+                  ({q.goal >= 1000 ? `${vnd(q.value)}/${vnd(q.goal)}` : `${q.value}/${q.goal}`})
+                </span>
+              )}
+              <span className="block">
+                <RewardTag reward={q.reward} />
+                {q.hint && !q.done && <span className="text-xs text-ink/50"> · {q.hint}</span>}
+              </span>
+            </span>
+            <ClaimButton
+              kind="quest"
+              id={q.id}
+              done={q.done}
+              claimed={q.claimed}
+              onClaimed={() =>
+                setList((l) => l?.map((x) => (x.id === q.id ? { ...x, claimed: true } : x)) ?? l)
+              }
+            />
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

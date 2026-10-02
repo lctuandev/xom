@@ -24,6 +24,7 @@ import type {
   PeerPos,
   PhotoSessionView,
   PhotoShotView,
+  QuestView,
   RegularView,
   RentView,
   ReviewsView,
@@ -192,6 +193,10 @@ export interface ClientToServerEvents {
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
   /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */
   /** Sổ đánh giá của MỘT cửa hàng (mỗi tiệm / quầy một sổ riêng). */
+  /** Nhiệm vụ hôm nay + tiến độ + đã nhận thưởng chưa. */
+  "quest:list": Intent<Record<string, never>, QuestView[]>;
+  /** Nhận thưởng thành tựu / nhiệm vụ đã đạt (server kiểm đạt thật, chưa nhận). */
+  "reward:claim": Intent<{ kind: "ach" | "quest"; id: string }>;
   "review:list": Intent<{ businessId: string }, ReviewsView>;
   "review:write": Intent<{ businessId: string; stars: number; text: string }, ReviewsView>;
   "review:reply": Intent<{ reviewId: string; text: string }, ReviewsView>;

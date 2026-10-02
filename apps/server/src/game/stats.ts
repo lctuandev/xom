@@ -198,7 +198,13 @@ export class StatsService {
           await this.story.write(playerId, `ach:${a.id}`, day, a.emoji, story, { quiet: true });
       }
     }
-    // Đã mở thì giữ "xong" kể cả khi số liệu sau này đổi (vd. đánh giá bị xoá).
-    return list.map((a) => ({ ...a, done: a.done || got[a.id] !== undefined }));
+    // Đã mở thì giữ "xong" kể cả khi số liệu sau này đổi (vd. đánh giá bị xoá); kèm thưởng + đã nhận chưa.
+    const claimed = (player.rewardsClaimed ?? {}) as Record<string, number>;
+    return list.map((a) => ({
+      ...a,
+      done: a.done || got[a.id] !== undefined,
+      reward: content.data.achievements.find((x) => x.id === a.id)?.reward ?? { xp: 0, money: 0 },
+      claimed: claimed[`ach:${a.id}`] !== undefined,
+    }));
   }
 }

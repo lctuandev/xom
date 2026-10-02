@@ -2528,6 +2528,7 @@ export const data: ContentInput = {
       metric: "served",
       goal: 1,
       story: "Bán được món đầu tiên — tiền lẻ đầu tiên của nghề buôn",
+      reward: { xp: 20, money: 10_000 },
     },
     {
       id: "khoi_nghiep",
@@ -2537,6 +2538,7 @@ export const data: ContentInput = {
       metric: "served",
       goal: 100,
       story: "Quầy phục vụ đủ 100 khách",
+      reward: { xp: 80, money: 30_000 },
     },
     {
       id: "tay_to",
@@ -2546,6 +2548,7 @@ export const data: ContentInput = {
       metric: "served",
       goal: 1000,
       story: "Quầy đạt 1.000 khách — cả xóm biết mặt",
+      reward: { xp: 300, money: 100_000 },
     },
     {
       id: "trieu_dau",
@@ -2555,6 +2558,7 @@ export const data: ContentInput = {
       metric: "revenue",
       goal: 1_000_000,
       story: "Doanh thu cộng dồn chạm 1 triệu",
+      reward: { xp: 60, money: 20_000 },
     },
     {
       id: "chuc_trieu",
@@ -2564,6 +2568,7 @@ export const data: ContentInput = {
       metric: "revenue",
       goal: 10_000_000,
       story: "Doanh thu cộng dồn chạm 10 triệu",
+      reward: { xp: 250, money: 80_000 },
     },
     {
       id: "cham_chi",
@@ -2573,6 +2578,7 @@ export const data: ContentInput = {
       metric: "wages",
       goal: 300_000,
       story: "Kiếm đủ 300.000đ tiền công làm thuê",
+      reward: { xp: 60, money: 20_000 },
     },
     {
       id: "nam_sao",
@@ -2582,6 +2588,7 @@ export const data: ContentInput = {
       metric: "five_stars",
       goal: 10,
       story: "Nhận đánh giá 5★ thứ 10",
+      reward: { xp: 100, money: 30_000 },
     },
     {
       id: "co_tam",
@@ -2590,6 +2597,7 @@ export const data: ContentInput = {
       description: "Trả lời 10 đánh giá",
       metric: "replies",
       goal: 10,
+      reward: { xp: 80, money: 20_000 },
     },
     {
       id: "rinh_rang",
@@ -2598,6 +2606,7 @@ export const data: ContentInput = {
       description: "Tổ chức khai trương lần đầu",
       metric: "events",
       goal: 1,
+      reward: { xp: 40, money: 10_000 },
     },
     {
       id: "cap_5",
@@ -2606,6 +2615,7 @@ export const data: ContentInput = {
       description: "Đạt cấp 5",
       metric: "level",
       goal: 5,
+      reward: { xp: 0, money: 50_000 },
     },
     {
       id: "nguoi_quen",
@@ -2614,6 +2624,46 @@ export const data: ContentInput = {
       description: "Thân với 3 người bán (thân thiết từ 30)",
       metric: "friends",
       goal: 3,
+      reward: { xp: 50, money: 10_000 },
+    },
+  ],
+
+  // Nhiệm vụ hằng ngày (góp ý đợt 2): làm thật mới đủ, thưởng nhỏ, mỗi ngày nhận một lần.
+  dailyQuests: [
+    {
+      id: "ban_5",
+      emoji: "🥖",
+      text: "Bán 5 món",
+      hint: "Mở quầy, làm đúng món, tính tiền",
+      metric: "sold",
+      goal: 5,
+      reward: { xp: 15, money: 5_000 },
+    },
+    {
+      id: "ban_20",
+      emoji: "🔥",
+      text: "Bán 20 món",
+      metric: "sold",
+      goal: 20,
+      reward: { xp: 40, money: 10_000 },
+    },
+    {
+      id: "lam_thue_50k",
+      emoji: "💼",
+      text: "Làm thuê kiếm 50.000đ",
+      hint: "☰ Menu → 💼 Làm thuê",
+      metric: "wages",
+      goal: 50_000,
+      reward: { xp: 15, money: 5_000 },
+    },
+    {
+      id: "co_ban_choi",
+      emoji: "👥",
+      text: "Có hàng xóm cùng chơi",
+      hint: "☰ Menu → 👥 Hàng xóm → 📨 Mời bạn",
+      metric: "neighbors",
+      goal: 2,
+      reward: { xp: 20, money: 0 },
     },
   ],
 
