@@ -36,8 +36,6 @@ const REACH = 6;
 /** Chạy nhanh hơn tốc độ cho phép bấy nhiêu lần là gian lận (chừa sai số đi tắt, giật lag). */
 const SPEED_SLACK = 1.4;
 
-const grid = new Grid(content.data.map);
-
 interface RideState {
   stage: RideView["stage"];
   readyAt?: number;
@@ -153,7 +151,7 @@ export class RideService {
       const wet = this.wet(room);
       const secs = (route: RideRoute) =>
         Math.round(
-          Grid.length(st, grid.path(st, s.dest as RideDest, ROUTE_WEIGHTS[route])) /
+          Grid.length(st, room.grid.path(st, s.dest as RideDest, ROUTE_WEIGHTS[route])) /
             routeSpeed(content, route, jam, wet),
         );
       view.routes = { road: secs("road"), alley: secs("alley"), jam, wet };
@@ -237,7 +235,7 @@ export class RideService {
     const dests = rideDestinations(content, st);
     const dest = dests[Math.floor(rand() * dests.length)] ?? dests[0];
     if (!who || !dest) return;
-    const meters = Grid.length(st, grid.path(st, dest, ROUTE_WEIGHTS.road));
+    const meters = Grid.length(st, room.grid.path(st, dest, ROUTE_WEIGHTS.road));
     s.stage = "offer";
     s.passenger = {
       residentId: who.id,
@@ -296,7 +294,7 @@ export class RideService {
     s.route = route;
     s.wet = wet;
     s.speed = routeSpeed(content, route, jam, wet);
-    s.pathMeters = Grid.length(st, grid.path(st, s.dest, ROUTE_WEIGHTS[route]));
+    s.pathMeters = Grid.length(st, room.grid.path(st, s.dest, ROUTE_WEIGHTS[route]));
     s.startedAt = Date.now();
     s.stage = "riding";
     s.comment = undefined;

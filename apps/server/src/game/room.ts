@@ -1,7 +1,11 @@
 import { content } from "@xom/content";
 import type { DishView, EventView, MovePayload, OrderEvent, WeatherView } from "@xom/shared";
 import {
+  chunksKey,
+  composeMap,
   dailyEvents,
+  Grid,
+  type OpenedChunk,
   overrideWeather,
   upcomingWeather,
   type WeatherSpan,
@@ -87,6 +91,10 @@ export class RoomRuntime {
   private queue: Promise<unknown> = Promise.resolve();
   private tickPending = false;
 
+  /** Khu đã mở (docs/BANDO.md bước A) — lưới đi lại của xóm = bản đồ gốc + các khu này. */
+  chunks: OpenedChunk[] = [];
+  private gridCache?: { key: string; grid: Grid };
+
   constructor(
     readonly id: string,
     readonly code: string,
@@ -94,6 +102,17 @@ export class RoomRuntime {
     public minute: number,
   ) {
     this.planWeather();
+  }
+
+  /** Lưới đi lại của xóm (đã ghép khu), dựng lại khi mở thêm khu. */
+  get grid(): Grid {
+    const key = chunksKey(this.chunks);
+    if (this.gridCache?.key !== key)
+      this.gridCache = {
+        key,
+        grid: new Grid(composeMap(content.data.map, content.data.chunks, this.chunks)),
+      };
+    return this.gridCache.grid;
   }
 
   /**

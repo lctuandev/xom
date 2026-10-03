@@ -157,6 +157,8 @@ export interface LotOccupant {
 
 export interface WorldView {
   lots: LotOccupant[];
+  /** Khu đã mở ghép vào bản đồ gốc (docs/BANDO.md bước A). */
+  chunks?: { chunkId: string; gx: number; gz: number }[];
   /** 🏗️ Công trường đang thi công (UC-J6). */
   sites?: SiteView[];
 }
@@ -1146,6 +1148,8 @@ export const debugAwaySchema = z.object({
   days: z.number().int().min(0).max(1000),
 });
 export const hostEventSchema = z.object({ eventId: contentId, pay: payMethodSchema });
+/** Chỉ dùng khi chạy dev/test: mở thêm một khu bản đồ (docs/BANDO.md bước A). */
+export const debugChunkSchema = z.object({ chunkId: contentId });
 /** Chỉ dùng khi chạy dev/test (server tắt ở production): ép thời tiết của xóm mình để kiểm thử. */
 export const debugWeatherSchema = z.object({
   kind: z.enum(["sunny", "cloudy", "rain", "storm"]),

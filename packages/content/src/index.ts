@@ -166,6 +166,26 @@ export function loadContent(raw: unknown): Content {
     onFoot(`sạp ${v.id}`, v.position.x, v.position.z);
     if (v.close <= v.open) errors.push(`sạp ${v.id}: giờ dọn phải sau giờ mở`);
   }
+  // Mẫu khu: đúng kích thước theo phía, đường ở mép nối với đường của bản đồ gốc.
+  const cols = m.rows[0]?.length ?? 0;
+  const road = (ch: string | undefined) => "=|+c".includes(ch ?? ".");
+  for (const k of parsed.chunks) {
+    const w = k.rows[0]?.length ?? 0;
+    if (k.rows.some((r) => r.length !== w)) errors.push(`khu ${k.id}: các hàng phải dài bằng nhau`);
+    const across = k.side === "east" || k.side === "west";
+    if (across ? k.rows.length !== m.rows.length : w !== cols)
+      errors.push(`khu ${k.id}: ${across ? "phải cao bằng" : "phải rộng bằng"} bản đồ gốc`);
+    const pairs: [string | undefined, string | undefined][] =
+      k.side === "east"
+        ? m.rows.map((r, i) => [r.at(-1), k.rows[i]?.[0]])
+        : k.side === "west"
+          ? m.rows.map((r, i) => [r[0], k.rows[i]?.at(-1)])
+          : k.side === "north"
+            ? [...(m.rows[0] ?? "")].map((ch, c) => [ch, k.rows.at(-1)?.[c]])
+            : [...(m.rows.at(-1) ?? "")].map((ch, c) => [ch, k.rows[0]?.[c]]);
+    if (pairs.some(([a, b]) => road(a) !== road(b)))
+      errors.push(`khu ${k.id}: đường ở mép không nối với đường của bản đồ gốc`);
+  }
   if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
     errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
   for (const j of parsed.jobs) {

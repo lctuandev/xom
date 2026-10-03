@@ -1377,6 +1377,79 @@ export const data: ContentInput = {
     ],
   },
 
+  // Mẫu khu ghép thêm khi xóm mở rộng (docs/BANDO.md §3 — lưới kiểu Township): đông/tây cao 15 ô, bắc/nam rộng 27 ô; đường ở
+  // mép nối với đường của bản đồ gốc. "." = ô đất trống (bước C: thuê / mua / xây).
+  chunks: [
+    {
+      id: "khu_dong",
+      name: "Khu phía đông",
+      side: "east",
+      rows: [
+        "HHHHHHH|HHHHHH",
+        "sssssss|ssssss",
+        "=======+======",
+        "sssssss|ssssss",
+        "BB..B..|..BB..",
+        "BB..B..|..BB..",
+        "sssssss|ssssss",
+        "=======+======",
+        "sssssss|ssssss",
+        "..BB..B|B..BBB",
+        "..BB..B|B..BBB",
+        "sssssss|ssssss",
+        "=======+======",
+        "sssssss|ssssss",
+        "HHHHHHH|HHHHHH",
+      ],
+    },
+    {
+      id: "khu_tay",
+      name: "Khu phía tây",
+      side: "west",
+      rows: [
+        "HHHHHH|HHHHHHH",
+        "ssssss|sssssss",
+        "======+=======",
+        "ssssss|sssssss",
+        "..BB..|..B..BB",
+        "..BB..|..B..BB",
+        "ssssss|sssssss",
+        "======+=======",
+        "ssssss|sssssss",
+        "BBB..B|B..BB..",
+        "BBB..B|B..BB..",
+        "ssssss|sssssss",
+        "======+=======",
+        "ssssss|sssssss",
+        "HHHHHH|HHHHHHH",
+      ],
+    },
+    {
+      id: "khu_bac",
+      name: "Khu phía bắc",
+      side: "north",
+      rows: [
+        "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+        "ssssss|sssssssssssss|ssssss",
+        "======+=============+======",
+        "ssssss|sssssssssssss|ssssss",
+        "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+      ],
+    },
+    {
+      id: "khu_nam",
+      name: "Khu phía nam",
+      side: "south",
+      rows: [
+        "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+        "ssssss|sssssssssssss|ssssss",
+        "======+=============+======",
+        "ssssss|sssssssssssss|ssssss",
+        "HHHHHH|HHHHHHHHHHHHH|HHHHHH",
+      ],
+    },
+  ],
+
   // Sạp đồ ăn NPC theo giờ (UC-B9): sáng xôi, phở, cà phê; trưa nước mía; chiều bánh tráng, chè; tối ốc, nướng.
   vendors: [
     {

@@ -29,6 +29,8 @@ import {
   menuPriceRatio,
   needsAt,
   needsFrom,
+  nextChunkSlot,
+  type OpenedChunk,
   onDutyTeam,
   overrideWeather,
   type PaySource,
@@ -50,6 +52,7 @@ import {
   SYSTEM,
   type Tx,
 } from "../economy/ledger.service.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { BankService } from "./bank.js";
 import { Broadcast, type GameEmitter } from "./broadcast.js";
@@ -388,6 +391,7 @@ export class GameService implements OnModuleDestroy {
     if (existing) return existing;
     const row = await this.prisma.room.findUniqueOrThrow({ where: { id: roomId } });
     const room = new RoomRuntime(row.id, row.code, row.day, row.minute);
+    room.chunks = (row.chunks ?? []) as unknown as OpenedChunk[];
     this.rooms.set(room.id, room);
     room.timer = setInterval(() => room.runTick(() => this.tick(room)), TICK_MS);
     room.peerTimer = setInterval(() => this.flushPeers(room), PEER_FLUSH_MS);
@@ -748,6 +752,20 @@ export class GameService implements OnModuleDestroy {
     this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
   }
 
+  /** Mở thêm một khu (lệnh thử nghiệm bước A — bước F mới tự mở khi ≥ 70% ô có chủ). */
+  async debugChunk({ room }: IntentContext, chunkId: string) {
+    if (process.env.NODE_ENV === "production")
+      throw new GameError("invalid_state", "Không có lệnh này");
+    const tpl = content.data.chunks.find((c) => c.id === chunkId);
+    if (!tpl) throw new GameError("invalid_payload", "Không có khu này");
+    room.chunks = [...room.chunks, nextChunkSlot(tpl, room.chunks)];
+    await this.prisma.room.update({
+      where: { id: room.id },
+      data: { chunks: room.chunks as unknown as Prisma.InputJsonValue },
+    });
+    this.emitWorld(room);
+  }
+
   /** Ví người chơi đổi ngoài intent của chính họ (mua của hàng xóm): gửi lại số dư. */
   async emitMe(playerId: string) {
     const room = this.roomFor(playerId);
@@ -1081,6 +1099,7 @@ export class GameService implements OnModuleDestroy {
       world: {
         lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)),
         sites: await this.projects.sites(room.id),
+        chunks: room.chunks,
       },
       shift: this.work.view(room, playerId),
       roster: this.roster(room),
@@ -1214,7 +1233,9 @@ export class GameService implements OnModuleDestroy {
 
   private emitWorld(room: RoomRuntime) {
     void Promise.all([this.refreshOccupants(room), this.projects.sites(room.id)])
-      .then(([lots, sites]) => this.emitter?.toRoom(room.id, "world", { lots, sites }))
+      .then(([lots, sites]) =>
+        this.emitter?.toRoom(room.id, "world", { lots, sites, chunks: room.chunks }),
+      )
       .catch((err) => this.logger.warn(`không cập nhật được quầy: ${err}`));
   }
 

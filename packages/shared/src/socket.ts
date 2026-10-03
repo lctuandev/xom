@@ -191,6 +191,7 @@ export interface ClientToServerEvents {
   "debug:grant": Intent<{ money?: number; xp?: number; food?: number; drink?: number }>;
   /** Dev/test: ép thời tiết xóm mình (production từ chối). */
   "debug:weather": Intent<{ kind: string; after?: number; minutes: number }>;
+  "debug:chunk": Intent<{ chunkId: string }>;
   /** Sổ đánh giá quầy (UC-F11): xem, viết (đã mua hôm nay), chủ quầy trả lời. */
   /** Sổ đánh giá của MỘT cửa hàng (mỗi tiệm / quầy một sổ riêng). */
   /** Nhiệm vụ hôm nay + tiến độ + đã nhận thưởng chưa. */

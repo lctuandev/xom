@@ -94,6 +94,8 @@ model Room {
   day       Int           @default(1)
   /// Phút trong ngày (game).
   minute    Int
+  /// Khu đã mở (docs/BANDO.md — bản đồ mở): [{ chunkId, gx, gz }], ghép vào bản đồ gốc.
+  chunks    Json          @default("[]")
   createdAt DateTime      @default(now())
   players   Player[]
   projects  RoomProject[]

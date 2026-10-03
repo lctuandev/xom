@@ -6,6 +6,7 @@ import {
 } from "@nestjs/websockets";
 import {
   debugAwaySchema,
+  debugChunkSchema,
   debugClockSchema,
   debugContractSchema,
   debugGrantSchema,
@@ -74,6 +75,11 @@ export class DebugGateway {
   @SubscribeMessage("debug:grant")
   debugGrant(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, debugGrantSchema, body, (ctx, p) => this.game.debugGrant(ctx, p));
+  }
+
+  @SubscribeMessage("debug:chunk")
+  debugChunk(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, debugChunkSchema, body, (ctx, p) => this.game.debugChunk(ctx, p.chunkId));
   }
 
   @SubscribeMessage("debug:weather")

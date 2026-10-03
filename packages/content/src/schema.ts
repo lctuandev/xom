@@ -560,6 +560,18 @@ export const mapSchema = z.object({
   rows: z.array(z.string().regex(/^[=|+csaBTKHPMSLN.]+$/)).min(1),
 });
 
+/**
+ * Mẫu khu (docs/BANDO.md §3): lưới ghép thêm vào một phía của xóm khi xóm mở rộng. Khu đông/tây cao bằng bản đồ gốc, khu
+ * bắc/nam rộng bằng bản đồ gốc; đường ở mép phải nối đúng đường của bản đồ gốc (kiểm khi nạp content).
+ */
+export const chunkSchema = z.object({
+  id,
+  name: z.string(),
+  side: z.enum(["east", "west", "north", "south"]),
+  rows: z.array(z.string().regex(/^[=|+csaBTKHPMSLN.]+$/)).min(1),
+});
+export type Chunk = z.infer<typeof chunkSchema>;
+
 /** Sạp đồ ăn NPC bày theo giờ (docs/USECASES.md UC-B9): người chơi mua ăn tại chỗ. */
 export const vendorSchema = z.object({
   id,
@@ -1196,6 +1208,7 @@ export const contentSchema = z.object({
   npcs: z.array(npcArchetypeSchema),
   jobs: z.array(jobSchema),
   map: mapSchema,
+  chunks: z.array(chunkSchema).default([]),
   vendors: z.array(vendorSchema).default([]),
   restaurant: restaurantSchema,
   delivery: deliverySchema,
