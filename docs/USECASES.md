@@ -186,6 +186,8 @@ cửa sổ nhà sáng đèn, bảng hiệu quán sáng, sạp đêm treo bóng �
 bóng đèn đường sáng + vầng sáng dưới đất, cửa sổ nhà sáng đèn, bóng đèn ở quầy đang mở và các địa điểm — không dùng đèn thật (vài draw call).
 **Chưa:** kéo ngày tới 23:00 cho chợ đêm, bảng hiệu hộp đèn.
 
+**Sửa (góp ý đợt 3, 2026-10-03):** vầng sáng đèn đường trước nằm dưới mặt gạch vỉa hè (chỉ thấy vụn trên mặt đường) và sát mặt
+đường (chớp nháy khi xoay góc nhìn) — nay đặt trên mọi mặt nền + polygon offset; Playwright `den-duong` chụp lúc 21:00.
 ### UC-B9 · Sạp đồ ăn theo giờ ✅ (bản đầu)
 **Sáng (06–10h):** xôi, bánh mì, phở, cà phê cóc. **Trưa (10–14h):** cơm tấm, bún, nước mía. **Chiều (14–18h):** bánh tráng trộn, trà sữa, chè.
 **Tối (18–23h):** ốc, lẩu, nướng, hột vịt lộn — bàn ghế nhựa bày ra vỉa hè.

@@ -141,7 +141,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   cần; xe ôm thuê theo ngày chưa làm (cân nhắc nếu người chơi thấy phiền). (tiền nhà mặt tiền, chỗ vỉa hè / ô đất, xe ôm thuê theo ngày…): thêm tuỳ chọn "🔁 Tự gia
   hạn" — tới hạn thì tự trả từ 💵/🏦 theo cách trả đã chọn; thiếu tiền thì báo, không tự vay. Cài trong sheet 🏠 Thuê nhà & giấy tờ
   + 📍 Chỗ bán; server trả tiền ở mốc tính tiền hiện có (cuối ngày / lúc mở quầy).
-- [ ] **Đèn đường**: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /
+- [x] **Đèn đường** (sửa: vầng sáng đặt 0,04 m — dưới mặt gạch vỉa hè 0,08 m và sát mặt đường gây z-fighting; nâng lên 0,12 m +
+  polygon offset trong `Glows`, Playwright `den-duong` chụp đêm). Gốc: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /
   `Glows` (vầng sáng dưới đất, z-fighting / culling / sắp xếp trong suốt).
 
 ### 3.2 Backlog từ trước (vẫn còn)

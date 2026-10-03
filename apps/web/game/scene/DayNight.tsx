@@ -165,6 +165,9 @@ export interface GlowPoint {
   pool?: number;
 }
 
+/** Độ cao vầng sáng dưới đất: trên mặt vỉa hè (0,08 m) một chút. */
+const POOL_Y = 0.12;
+
 /**
  * Bóng đèn + vầng sáng dưới đất cho nhiều điểm (2 draw call cho tất cả): tối thì sáng lên.
  * Dùng cho đèn đường, bóng đèn treo ở sạp, cửa sổ nhà.
@@ -194,7 +197,9 @@ export function Glows({
     if (bulbs.current) bulbs.current.instanceMatrix.needsUpdate = true;
     withPool.forEach((p, i) => {
       const r = p.pool ?? 0;
-      mtx.compose(new Vector3(p.x, 0.04, p.z), flat, new Vector3(r * 2, r * 2, 1));
+      // Trên mọi mặt nền: gạch vỉa hè / đường Kenney dày 0,02 × scale 4 = 0,08 m. Trước đây đặt 0,04 m → nằm dưới mặt
+      // vỉa hè (vỉa hè không sáng) và sát mặt đường (z-fighting → chớp nháy khi xoay góc nhìn) — góp ý đợt 3.
+      mtx.compose(new Vector3(p.x, POOL_Y, p.z), flat, new Vector3(r * 2, r * 2, 1));
       pools.current?.setMatrixAt(i, mtx);
     });
     if (pools.current) pools.current.instanceMatrix.needsUpdate = true;
@@ -230,6 +235,9 @@ export function Glows({
             depthWrite={false}
             blending={AdditiveBlending}
             toneMapped={false}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            polygonOffsetUnits={-2}
           />
         </instancedMesh>
       )}
