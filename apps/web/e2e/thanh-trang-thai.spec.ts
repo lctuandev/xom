@@ -1,5 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
-import { grantMoney, openBanhMiStall, register, setClock, setWeather, shot } from "./helpers";
+import {
+  grantMoney,
+  openBanhMiStall,
+  readDialogue,
+  register,
+  setClock,
+  setWeather,
+  shot,
+} from "./helpers";
 
 // Thanh trạng thái trên đầu (Luật 12.6, góp ý chơi thử): màn nhỏ mà tiền 6 chữ số, ngày 2 chữ số, đói/khát, dự báo thời
 // tiết, uy tín cùng hiện thì không được tràn ra ngoài — giờ luôn nhìn thấy trọn.
@@ -38,4 +46,21 @@ test.describe("màn 360px", () => {
     await crowdedBar(page);
     await expectFits(page, "104-thanh-trang-thai-360");
   });
+});
+
+// Góp ý đợt 4: chạm từng mục trên thanh trạng thái mở sheet tương ứng; Hồ sơ không còn nút Ví.
+test("chạm thanh trạng thái: tiền → Ví, giờ → Hôm nay, tin → Bảng xóm", async ({ page }) => {
+  await register(page, "Thanh");
+  await (await readDialogue(page)).getByRole("button", { name: "Con đi làm thuê trước" }).tap();
+  await page.locator("[data-money]").tap();
+  await expect(page.getByRole("dialog", { name: /Ví tiền/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
+  await page.locator("[data-clock]").tap();
+  await expect(page.getByRole("dialog", { name: /Hôm nay/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
+  await page.locator("[data-news-ticker]").tap();
+  await expect(page.getByRole("dialog", { name: /Bảng xóm/ })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
+  await page.getByRole("button", { name: "Hồ sơ" }).first().tap();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /Ví tiền/ })).toHaveCount(0);
 });

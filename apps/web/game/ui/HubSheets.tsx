@@ -207,7 +207,8 @@ export function ProfileSheet() {
           </div>
         ))}
       </div>
-      <GoToRow to={["wallet", "skills", "badges", "story", "friends"]} />
+      {/* Ví mở bằng cách chạm số tiền trên thanh trạng thái (góp ý đợt 4). */}
+      <GoToRow to={["skills", "badges", "story", "friends"]} />
     </FeatureSheet>
   );
 }

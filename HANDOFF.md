@@ -147,7 +147,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   `Glows` (vầng sáng dưới đất, z-fighting / culling / sắp xếp trong suốt).
 
 ### 3.1c Góp ý đợt 4 của chủ dự án (2026-10-03) — làm ngay sau phần hiệu năng đang dở, trước đồ hoạ bước 2
-- [ ] **Chạm từng mục trên thanh trạng thái** (tiền, ⭐ uy tín, 🍚 no/💧 khát, giờ/ngày/thời tiết…) đều mở bottom sheet tương ứng
+- [x] **Chạm từng mục trên thanh trạng thái** (xong: tiền → 👛 Ví, ⭐ → 📒 Đánh giá, thứ/giờ/thời tiết → 📅 Hôm nay, dải tin → 🏆 Bảng
+  xóm, 🍚/💧 → Ăn uống như cũ; Hồ sơ bỏ nút Ví; Playwright `thanh-trang-thai`). (tiền, ⭐ uy tín, 🍚 no/💧 khát, giờ/ngày/thời tiết…) đều mở bottom sheet tương ứng
   (tiền → 👛 Ví, ⭐ → 📒 Đánh giá cửa hàng, giờ/thời tiết → 📅 Hôm nay…) — hiện chỉ chip no/khát mở được. Khi đó sheet Hồ sơ (chạm ô
   cấp độ) bỏ mục Ví.
 - [ ] **Mỗi cửa hàng có doanh thu & đánh giá riêng**: 📊 Sổ sách theo cửa hàng (chọn cửa hàng / tổng), 📒 Đánh giá theo cửa hàng

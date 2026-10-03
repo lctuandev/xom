@@ -142,28 +142,38 @@ function ResourceBar() {
       className="flex h-9 min-w-0 items-center gap-1 overflow-hidden rounded-full bg-ink/85 py-1 pr-2 pl-1 text-cream shadow-md @min-[320px]:gap-1.5 @min-[320px]:pr-2.5"
       data-status-bar
     >
-      <span
-        className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold whitespace-nowrap tabular-nums"
+      {/* Chạm từng mục mở sheet tương ứng (góp ý đợt 4): tiền → Ví, ⭐ → Đánh giá, giờ/thời tiết → Hôm nay. */}
+      <button
+        type="button"
+        onClick={() => openFeature("wallet")}
+        className="flex shrink-0 items-center gap-1 rounded-full bg-cream/15 py-0.5 pr-2 pl-1 text-sm font-extrabold whitespace-nowrap tabular-nums active:scale-95"
         data-money={me?.money}
+        aria-label={me ? `Ví — tiền mặt ${vnd(me.money)}` : "Ví"}
         title={me ? `Tiền mặt ${vnd(me.money)}` : undefined}
       >
         <IconCash className="size-5 shrink-0" />
         {me ? vndHud(me.money) : "…"}
-      </span>
+      </button>
       {rep !== null && (
-        <span
-          className="flex shrink-0 items-center gap-0.5 text-xs font-bold tabular-nums"
-          title="Uy tín quầy"
+        <button
+          type="button"
+          onClick={() => openFeature("reviews")}
+          className="flex shrink-0 items-center gap-0.5 text-xs font-bold tabular-nums active:scale-95"
+          aria-label={`Đánh giá — uy tín ${rep.toFixed(1)} sao`}
+          title="Uy tín cửa hàng đang quản lý"
         >
           <IconStar className="size-4" />
           {rep.toFixed(1)}
-        </span>
+        </button>
       )}
       <NeedsChip />
-      <span
-        className="ml-auto flex shrink-0 items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums"
+      <button
+        type="button"
+        onClick={() => openFeature("today")}
+        className="ml-auto flex shrink-0 items-center gap-1 text-xs font-bold whitespace-nowrap tabular-nums active:scale-95"
         data-clock={clock ? minute : undefined}
         data-weather={clock ? sky : undefined}
+        aria-label={`Hôm nay — ${skyLabel}`}
         title={skyLabel}
       >
         {/* Thứ + ngày (THEGIOI §2): cuối tuần chữ vàng. */}
@@ -187,7 +197,7 @@ function ResourceBar() {
           </span>
         )}
         {clock ? formatClock(minute) : "…"}
-      </span>
+      </button>
     </div>
   );
 }
@@ -206,15 +216,18 @@ function NewsTicker() {
   }, [newest]);
   const item = news.length ? news[news.length - 1 - (i % news.length)] : null;
   return (
-    <div
-      className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-xs font-semibold shadow-sm"
+    <button
+      type="button"
+      onClick={() => openFeature("board")}
+      aria-label={`Tin xóm: ${item?.text ?? "Một ngày mới trong xóm…"} — mở Bảng xóm`}
+      className="flex h-7 items-center gap-1.5 overflow-hidden rounded-full bg-cream/90 px-2.5 text-left text-xs font-semibold shadow-sm active:scale-[0.98]"
       data-news-ticker
     >
       <span aria-hidden>📺</span>
       <span key={item?.id} className="truncate">
         {item?.text ?? "Một ngày mới trong xóm…"}
       </span>
-    </div>
+    </button>
   );
 }
 
