@@ -126,9 +126,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [x] **Lỗi: không mở nhiều tiệm cùng lúc được** — nguyên nhân: `requireNoLease` chặn theo *người* → đang thuê nhà cho tiệm A
   thì mọi cửa hàng khác không đặt ra vỉa hè được (sheet Chỗ bán cũng khoá hết chỗ vỉa hè). Sửa: chỉ chặn khi *chính cửa hàng
   đang ở nhà thuê* dọn ra. e2e `shop-flow` + Playwright `nhieu-cua-hang` (tiệm trong nhà + xe ngoài vỉa hè).
-- [ ] **Thuê nhiều nhà mặt tiền cùng lúc** (còn lại của lỗi trên): mỗi người vẫn chỉ 1 hợp đồng ("Đang thuê một căn rồi") —
-  `ShopService.activeLease` giả định một hợp đồng ở 11 chỗ (tiền nhà mỗi ngày, chủ nhà đòi tiền UC-F13, trả nhà, sheet 🏠).
-  Đổi sang hợp đồng theo cửa hàng (`Lease.businessId`), sheet 🏠 theo cửa hàng đang quản lý.
+- [x] **Thuê nhiều nhà mặt tiền cùng lúc**: hợp đồng nhận theo căn nhà cửa hàng đang đặt (`ShopService.activeLease` = hợp đồng
+  của cửa hàng đang quản lý, `leaseAt(owner, lot)`); mỗi cửa hàng thuê căn riêng, sheet 🏠 theo cửa hàng đang quản lý, căn của
+  cửa hàng khác ghi "bạn (cửa hàng khác)". e2e `shop-flow` (hai nhà, cửa hàng đã ở nhà thuê không ký thêm).
 - [ ] **Đang thuê tiệm (nhà mặt tiền) mà vài chỗ vẫn gọi "quầy", "đẩy xe"** — rà mọi chữ theo `lot.kind` (cart: quầy/xe đẩy;
   house: tiệm/cửa hàng; stall: sạp).
 - [ ] **Chạm ô cấp độ (góc trái) → bottom sheet Hồ sơ có avatar + tên nhân vật** giống khung NPC (PlaceFace / chân dung).

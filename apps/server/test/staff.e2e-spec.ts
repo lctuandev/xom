@@ -1,8 +1,8 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { MeView, MyStatsView, NotifyEvent, StaffView, StoryEntryView } from "@xom/shared";
+import type { MeView, MyStatsView, StaffView, StoryEntryView } from "@xom/shared";
 import { PrismaService } from "../src/prisma/prisma.service.js";
-import { connect, emit, next, openBanhMiStall } from "./client.js";
+import { connect, emit, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
 
 // Thuê nhân viên (docs/KIENTRUC.md §2, docs/USECASES.md UC-M6): nhân viên đứng quầy thay khi chủ rời quầy hoặc thoát game —
@@ -29,6 +29,16 @@ describe("Thuê nhân viên (e2e)", () => {
     return r.data;
   };
 
+  /** Chờ nhân viên bán được món (phiếu ca có món) — thay toast "vừa bán thay bạn" đã bỏ ở góp ý đợt 3. */
+  const staffSold = async (ownerId: string, staffIds: string[]) => {
+    const prisma = app.get(PrismaService);
+    for (let i = 0; i < 150; i++) {
+      const rows = await prisma.staffShift.findMany({ where: { ownerId, served: { gt: 0 } } });
+      if (staffIds.every((id) => rows.some((r) => r.staffId === id))) return;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    throw new Error(`nhân viên ${staffIds.join(", ")} chưa bán được món nào`);
+  };
   it("thuê người không có thật / ca không có → bị từ chối; thuê Thu → ghi Chuyện của tôi; cho nghỉ", async () => {
     const { socket } = await openBanhMiStall(url);
     const bad = await emit(socket, "staff:hire", { staffId: "ai_do", shiftId: "sang" });
@@ -49,9 +59,8 @@ describe("Thuê nhân viên (e2e)", () => {
     const { socket, me } = await openBanhMiStall(url);
     await emit(socket, "debug:clock", { minute: 18 * 60 });
     await emit(socket, "staff:hire", { staffId: "khoa_phu", shiftId: "toi" });
-    const sold = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("👩‍🍳 Khoa vừa bán"));
     await emit(socket, "biz:attend", { on: false });
-    await sold;
+    await staffSold(me.playerId, ["khoa_phu"]);
     const v = await view(socket);
     expect(v.recent[0]).toMatchObject({ staffId: "khoa_phu" });
     expect(v.recent[0]?.revenue).toBeGreaterThan(0);
@@ -101,7 +110,6 @@ describe("Thuê nhân viên (e2e)", () => {
     expect(tied.ok).toBe(false);
     if (!tied.ok) expect(tied.message).toContain("không có nhân viên trong ca");
     await emit(socket, "staff:hire", { staffId: "khoa_phu", shiftId: "toi" });
-    const sold = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("👩‍🍳 Khoa vừa bán"));
     const free = await emit<MeView>(socket, "work:start", {
       jobId: "phu_quan_com",
       role: "dung_quay",
@@ -109,7 +117,7 @@ describe("Thuê nhân viên (e2e)", () => {
     expect(free.ok).toBe(true);
     // Chủ vào ca làm thuê (rời quầy) — Khoa đứng bán thay.
     await emit(socket, "biz:attend", { on: false });
-    await sold;
+    await staffSold(free.ok ? free.data.playerId : "", ["khoa_phu"]);
     socket.disconnect();
   });
 
@@ -146,17 +154,11 @@ describe("Thuê nhân viên (e2e)", () => {
 
     // Một người không làm hai cửa hàng: mở thêm cửa hàng rồi thuê Thu bên đó → từ chối.
     // (Cả nhóm bán thay khi chủ rời quầy.)
-    const sold = next(
-      socket,
-      "notify",
-      (n: NotifyEvent) =>
-        n.text.includes("Thu") && n.text.includes("Khoa") && n.text.includes("vừa bán"),
-    );
     await emit(socket, "biz:attend", { on: true });
     const opened = await emit(socket, "biz:open", {});
     if (!opened.ok) throw new Error(opened.message);
     await emit(socket, "biz:attend", { on: false });
-    await sold;
+    await staffSold(me.playerId, ["thu", "khoa_phu"]);
     const v = await emit<StaffView>(socket, "staff:view", {});
     const people = v.ok ? new Set(v.data.recent.map((r) => r.staffId)) : new Set();
     expect(people.has("thu") && people.has("khoa_phu")).toBe(true);

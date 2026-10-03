@@ -657,7 +657,9 @@ chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không m�
 
 **Sửa lỗi (góp ý đợt 3, 2026-10-03) "đang thuê tiệm thì không mở thêm cửa hàng được":** luật "đang thuê nhà thì trả nhà rồi mới
 ra vỉa hè" trước áp cho *người chơi* → mọi cửa hàng khác bị khoá vỉa hè. Giờ chỉ áp cho *cửa hàng đang ở nhà thuê*; cửa hàng
-khác đặt ra vỉa hè bình thường. Còn: mỗi người vẫn chỉ thuê **một** nhà mặt tiền (HANDOFF 3.1b).
+khác đặt ra vỉa hè bình thường. **Thuê nhiều nhà mặt tiền:** mỗi cửa hàng thuê căn riêng — hợp đồng nhận theo căn nhà cửa hàng
+đang đặt; ☰ 🏠 Thuê nhà & giấy tờ làm việc với cửa hàng đang quản lý; cửa hàng đã ở nhà thuê thì muốn thuê thêm phải chọn cửa
+hàng khác.
 **Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
 khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang` (+ đi về quầy bánh mì tự chuyển cửa hàng, mở lại).
 

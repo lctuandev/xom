@@ -1162,8 +1162,11 @@ export class GameService implements OnModuleDestroy {
     ]);
     // Kho riêng từng cửa hàng: MeView mang kho của cửa hàng đang quản lý.
     const inventory = biz ? await inventoryView(this.prisma, biz.id, room.day) : [];
-    const lease = biz
-      ? await this.prisma.lease.findFirst({ where: { ownerId: playerId, status: "ACTIVE" } })
+    // Hợp đồng của căn nhà cửa hàng đang quản lý đang đặt (mỗi cửa hàng thuê căn riêng).
+    const lease = biz?.lotId
+      ? await this.prisma.lease.findFirst({
+          where: { ownerId: playerId, lotId: biz.lotId, status: "ACTIVE" },
+        })
       : null;
     const totalServed = served._sum.served ?? 0;
     const lv = levelOf(player.xp);

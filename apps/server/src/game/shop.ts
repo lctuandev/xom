@@ -78,8 +78,19 @@ export class ShopService {
     return absMinute(room.day, room.minute);
   }
 
-  private activeLease(ownerId: string) {
-    return this.prisma.lease.findFirst({ where: { ownerId, status: "ACTIVE" } });
+  /**
+   * Hợp đồng thuê của cửa hàng đang quản lý (góp ý đợt 3 — thuê nhiều nhà): mỗi cửa hàng một căn, hợp đồng nhận ra qua căn nhà
+   * cửa hàng đang đặt. Cửa hàng ngoài vỉa hè thì không có hợp đồng (ký mới thì dọn nó vào nhà).
+   */
+  private async activeLease(ownerId: string) {
+    const biz = await this.businesses.of(ownerId);
+    if (!biz?.lotId) return null;
+    return this.leaseAt(ownerId, biz.lotId);
+  }
+
+  /** Hợp đồng đang hiệu lực của mình ở một căn. */
+  private leaseAt(ownerId: string, lotId: string) {
+    return this.prisma.lease.findFirst({ where: { ownerId, lotId, status: "ACTIVE" } });
   }
 
   private async business(playerId: string) {
@@ -96,9 +107,7 @@ export class ShopService {
     const [biz, lease, others] = await Promise.all([
       this.businesses.of(playerId),
       this.activeLease(playerId),
-      this.prisma.lease.findMany({
-        where: { roomId: room.id, status: "ACTIVE", ownerId: { not: playerId } },
-      }),
+      this.prisma.lease.findMany({ where: { roomId: room.id, status: "ACTIVE" } }),
     ]);
     const owners = await this.prisma.player.findMany({
       where: { id: { in: others.map((l) => l.ownerId) } },
@@ -139,12 +148,16 @@ export class ShopService {
       houses: content.data.lots
         .filter((l) => l.kind === "house")
         .map((l) => {
-          const other = others.find((o) => o.lotId === l.id);
+          const other = others.find((o) => o.lotId === l.id && o.id !== lease?.id);
           return {
             lotId: l.id,
             rentPerDay: l.rentPerDay,
             estimate: shopEstimate(content, l.id, productId),
-            leasedBy: other ? (nameOf.get(other.ownerId) ?? "Hàng xóm") : null,
+            leasedBy: other
+              ? other.ownerId === playerId
+                ? "bạn (cửa hàng khác)"
+                : (nameOf.get(other.ownerId) ?? "Hàng xóm")
+              : null,
           };
         }),
     };
@@ -157,7 +170,10 @@ export class ShopService {
       throw new GameError("invalid_payload", "Không phải nhà cho thuê");
     const biz = await this.business(playerId);
     if (await this.activeLease(playerId))
-      throw new GameError("invalid_state", "Đang thuê một căn rồi — trả nhà cũ trước");
+      throw new GameError(
+        "invalid_state",
+        "Cửa hàng này đang ở nhà thuê rồi — muốn thuê thêm căn thì chọn cửa hàng khác (🏬 Các cửa hàng)",
+      );
     const taken = await this.prisma.lease.findFirst({
       where: { roomId: room.id, lotId, status: "ACTIVE" },
     });
@@ -367,8 +383,8 @@ export class ShopService {
 
   /** Mở tiệm trong nhà: phải là nhà mình đang thuê và đủ giấy tờ. */
   async requireReady(room: RoomRuntime, biz: Business, lotId: string) {
-    const lease = await this.activeLease(biz.ownerId);
-    if (!lease || lease.lotId !== lotId)
+    const lease = await this.leaseAt(biz.ownerId, lotId);
+    if (!lease)
       throw new GameError(
         "invalid_state",
         "Ký hợp đồng thuê căn này trước (☰ Menu → 🏠 Thuê nhà & giấy tờ)",
@@ -391,8 +407,8 @@ export class ShopService {
 
   /** Chọn nhà làm chỗ bán: chỉ nhà mình đang thuê. */
   async requireLease(playerId: string, lotId: string) {
-    const lease = await this.activeLease(playerId);
-    if (!lease || lease.lotId !== lotId)
+    const lease = await this.leaseAt(playerId, lotId);
+    if (!lease)
       throw new GameError(
         "invalid_state",
         "Nhà này phải ký hợp đồng thuê trước (☰ Menu → 🏠 Thuê nhà & giấy tờ)",
@@ -404,8 +420,8 @@ export class ShopService {
    * vỉa hè thoải mái (góp ý đợt 3 — trước đây chặn theo người nên đang thuê nhà là không mở thêm cửa hàng ngoài vỉa hè được).
    */
   async requireNoLease(playerId: string, fromLotId: string | null) {
-    const lease = await this.activeLease(playerId);
-    if (lease && lease.lotId === fromLotId)
+    const lease = fromLotId ? await this.leaseAt(playerId, fromLotId) : null;
+    if (lease)
       throw new GameError(
         "invalid_state",
         `Đang thuê ${content.lot(lease.lotId).name} — tiền nhà vẫn tính mỗi ngày. Trả nhà (☰ Menu → 🏠 Thuê nhà & giấy tờ) rồi mới ra vỉa hè bán`,

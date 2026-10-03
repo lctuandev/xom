@@ -54,6 +54,19 @@ describe("Luồng tiệm + nhân viên (e2e)", () => {
     if (!placed.ok) throw new Error(placed.message);
     expect(placed.data.business?.lotId).toBe("dau_hem");
     expect(placed.data.shops.map((s) => s.lotId).sort()).toEqual(["dau_hem", "nha_so_10"]);
+
+    // Thuê nhiều nhà: cửa hàng trà sữa (đang quản lý) thuê thêm căn số 24 — mỗi cửa hàng một hợp đồng riêng.
+    expect((await emit(socket, "debug:shop", { lotId: "nha_so_24" })).ok).toBe(true);
+    const two = await me(socket, false);
+    expect(two.business?.leaseLotId).toBe("nha_so_24");
+    expect(two.shops.map((s) => s.lotId).sort()).toEqual(["nha_so_10", "nha_so_24"]);
+    const prisma = app.get(PrismaService);
+    const leases = await prisma.lease.findMany({
+      where: { ownerId: two.playerId, status: "ACTIVE" },
+    });
+    expect(leases.map((l) => l.lotId).sort()).toEqual(["nha_so_10", "nha_so_24"]);
+    // Cửa hàng đã ở nhà thuê thì không ký thêm căn nữa.
+    expect(await emit(socket, "shop:lease", { lotId: "nha_so_10" })).toMatchObject({ ok: false });
     socket.disconnect();
   });
 
