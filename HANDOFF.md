@@ -157,8 +157,11 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   đang quản lý (đã có `Review.businessId`), thẻ 🏬 Các cửa hàng ghi doanh thu hôm nay + ⭐ từng cửa hàng.
 - [x] **Toast thông báo không che thanh trạng thái** (xong: trên bản đồ toast nằm cột giữa hàng icon neo — `Toasts inline`, vẫn
   nổi trên sheet; trong nhà/tiệm giữ kiểu cũ; Playwright `thong-bao`).
-- [ ] **Lỗi: dọn về xóm khác không được — báo "chưa vào xóm"** (👥 Hàng xóm → 🏘️ Các xóm khác → Dọn về). Tái hiện bằng e2e trước khi
-  sửa.
+- [x] **Lỗi: dọn về xóm khác không được — báo "chưa vào xóm"**. Nguyên nhân (log production 10:09–10:11 "chuyển xóm lỗi …
+  UniqueConstraintViolation"): `rebaseDays` dời ngày bằng −(ngày + lệch) — dọn từ xóm ngày lớn sang xóm ngày nhỏ thì ngày mới ≤ 0
+  ra số dương trùng dòng khác; mà `switchRoom` đã gỡ người chơi khỏi xóm cũ trong bộ nhớ trước khi ghi DB → mọi thao tác sau
+  báo "Chưa vào xóm". Sửa: dời qua vùng âm chắc chắn (−1.000.000 − ngày mới, có cả `BusinessDay`) + ghi DB trước rồi mới gỡ khỏi
+  xóm cũ. e2e `xom.e2e-spec.ts` (đã xác nhận fail với code cũ) + Playwright `don-xom`.
 
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").

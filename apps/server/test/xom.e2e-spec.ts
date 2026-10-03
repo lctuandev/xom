@@ -15,6 +15,7 @@ import type {
 } from "@xom/shared";
 import { billFor } from "@xom/sim";
 import { io, type Socket } from "socket.io-client";
+import { emptyReport } from "../src/game/report.js";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import { changeFor } from "./client.js";
 import { register, startApp } from "./helpers.js";
@@ -157,6 +158,42 @@ describe("Xóm chung (e2e)", () => {
     expect(40 - after.batchDay).toBeGreaterThanOrEqual(0);
     expect(40 - after.batchDay).toBeLessThanOrEqual(1);
     expect(snap.me.inventory.find((i) => i.itemId === "banh_mi_phoi")?.qty).toBeGreaterThan(0);
+    b.socket.disconnect();
+  });
+
+  it("dọn từ xóm ngày lớn sang xóm ngày nhỏ: sổ các ngày đầu không đụng khoá, vẫn ở xóm cũ nếu lỗi", async () => {
+    // Góp ý đợt 4: "dọn về xóm khác báo chưa vào xóm" — dời ngày âm làm trùng khoá DailyReport(playerId, day), mà người chơi đã
+    // bị gỡ khỏi xóm cũ trước khi ghi DB → kẹt.
+    const prisma = app.get(PrismaService);
+    const b = await join(url);
+    const id = b.snap.me.playerId;
+    await emit(b.socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
+    await emit(b.socket, "debug:clock", { minute: 8 * 60, day: 4 });
+    for (const day of [1, 2, 3, 4])
+      await prisma.dailyReport.upsert({
+        where: { playerId_day: { playerId: id, day } },
+        create: { ...emptyReport(), playerId: id, day, revenue: day * 1000 },
+        update: { revenue: day * 1000 },
+      });
+    const room = await prisma.room.create({
+      data: { code: Math.random().toString(16).slice(2, 10).padEnd(8, "0"), day: 2, minute: 400 },
+    });
+    const moved = next(b.socket, "snapshot", (s: Snapshot) => s.clock.day === 2);
+    expect(await emit(b.socket, "xom:join", { code: room.code })).toMatchObject({ ok: true });
+    await moved;
+    const days = await prisma.dailyReport.findMany({
+      where: { playerId: id },
+      orderBy: { day: "asc" },
+    });
+    // Lệch −2: ngày 1..4 → −1..2, doanh thu đi theo ngày.
+    expect(days.map((d) => [d.day, d.revenue])).toEqual([
+      [-1, 1000],
+      [0, 2000],
+      [1, 3000],
+      [2, 4000],
+    ]);
+    // Thao tác tiếp theo chạy được (không kẹt "Chưa vào xóm").
+    expect((await emit(b.socket, "stats:me", {})).ok).toBe(true);
     b.socket.disconnect();
   });
 

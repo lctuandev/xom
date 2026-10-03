@@ -1019,6 +1019,8 @@ chép (lỗi cũ: bấm "Mời bạn" chỉ hiện toast thoáng qua → tưởn
 xóm mới. Bảng 👥 Hàng xóm → **🏘️ Các xóm khác**: mã, cư dân, online, số quầy, ngày → *Dọn về* (xóm kín nhà thì khoá).
 **Luật game:** tối đa 40 cư dân / 30 online một xóm (content `economy`); chuyển xóm giữ tiền, hàng, xe như UC-J1.
 **Chưa:** tên xóm, bảng tin xóm lưu tin nhắn + tin tự động.
+**Sửa lỗi (góp ý đợt 4, 2026-10-03) "Dọn về báo chưa vào xóm":** dời ngày dữ liệu khi sang xóm lệch ngày đụng khoá duy nhất
+(xóm đích ngày nhỏ hơn) và người chơi đã bị gỡ khỏi xóm cũ trước khi ghi DB → kẹt. Nay dời qua vùng âm chắc chắn và ghi DB trước.
 **Kiểm chứng:** e2e server `xom-chung.e2e-spec.ts` (link mời vào thẳng, mã sai bỏ qua, tự xếp xóm, danh sách, dọn về);
 Playwright `xom-chung.spec.ts`, `mua-cua-nhau`, `thue-chup-anh` (người thứ hai vào thẳng xóm qua link).
 

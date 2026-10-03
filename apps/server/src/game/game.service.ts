@@ -133,10 +133,16 @@ const ownerSells = (room: RoomRuntime, playerId: string) =>
 
 /** Dời mọi mốc "ngày" của người chơi theo độ lệch ngày giữa hai xóm (khóa unique → dời qua số âm). */
 async function rebaseDays(tx: Tx, playerId: string, offset: number) {
-  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -("batchDay" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
-  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -"batchDay" WHERE "playerId" = ${playerId}::uuid`;
-  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -("day" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
-  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -"day" WHERE "playerId" = ${playerId}::uuid`;
+  // Cột có khoá duy nhất theo ngày: dời qua vùng âm chắc chắn (−1.000.000 − ngày mới) rồi mới đổi lại, để không đụng dòng chưa
+  // dời trong cùng câu UPDATE. Trước đây dùng −(ngày + lệch): dọn từ xóm ngày lớn sang xóm ngày nhỏ thì ngày mới ≤ 0 → ra số
+  // dương trùng dòng khác → UniqueConstraintViolation (góp ý đợt 4: "dọn về xóm khác báo chưa vào xóm").
+  const SHIFT = 1_000_000;
+  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = ${-SHIFT}::int - ("batchDay" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "InventoryItem" SET "batchDay" = -("batchDay" + ${SHIFT}::int) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = ${-SHIFT}::int - ("day" + ${offset}) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "DailyReport" SET "day" = -("day" + ${SHIFT}::int) WHERE "playerId" = ${playerId}::uuid`;
+  await tx.$executeRaw`UPDATE "BusinessDay" SET "day" = ${-SHIFT}::int - ("day" + ${offset}) WHERE "businessId" IN (SELECT "id" FROM "Business" WHERE "ownerId" = ${playerId}::uuid)`;
+  await tx.$executeRaw`UPDATE "BusinessDay" SET "day" = -("day" + ${SHIFT}::int) WHERE "businessId" IN (SELECT "id" FROM "Business" WHERE "ownerId" = ${playerId}::uuid)`;
   await tx.$executeRaw`UPDATE "Business" SET "rentPaidDay" = "rentPaidDay" + ${offset} WHERE "ownerId" = ${playerId}::uuid AND "rentPaidDay" IS NOT NULL`;
   await tx.$executeRaw`UPDATE "Business" SET "promoDay" = "promoDay" + ${offset} WHERE "ownerId" = ${playerId}::uuid AND "promoDay" IS NOT NULL`;
   await tx.$executeRaw`UPDATE "NpcRelation" SET "lastGreetDay" = "lastGreetDay" + ${offset} WHERE "playerId" = ${playerId}::uuid`;
@@ -495,16 +501,18 @@ export class GameService implements OnModuleDestroy {
         throw new GameError("invalid_state", "Đóng hết các cửa hàng đang mở trước khi chuyển xóm");
       if (from.shifts.has(playerId))
         throw new GameError("invalid_state", "Ra ca trước khi chuyển xóm");
+      // Ghi DB trước; hỏng thì người chơi vẫn ở nguyên xóm cũ (trước đây gỡ khỏi xóm trong bộ nhớ trước → lỗi DB làm người
+      // chơi kẹt "Chưa vào xóm" cho mọi thao tác sau đó).
+      await this.prisma.$transaction(async (tx) => {
+        await tx.player.update({ where: { id: playerId }, data: { roomId: to.id, jobId: null } });
+        if (offset !== 0) await rebaseDays(tx, playerId, offset);
+      });
       const m = from.members.get(playerId);
       clearTimeout(m?.leaveTimer);
       from.attending.delete(playerId);
       from.members.delete(playerId);
       from.dirtyPeers.delete(playerId);
       this.roomOfPlayer.delete(playerId);
-      await this.prisma.$transaction(async (tx) => {
-        await tx.player.update({ where: { id: playerId }, data: { roomId: to.id, jobId: null } });
-        if (offset !== 0) await rebaseDays(tx, playerId, offset);
-      });
       this.emitWorld(from);
       this.emitRoster(from);
     });
