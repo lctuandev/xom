@@ -84,10 +84,8 @@ function StaffBoard() {
             quầy đang đóng thì <b>nhân viên tự mở cửa</b> (trả phí ngày như bạn mở).
           </li>
           <li>
-            Trong giờ ca <b>nhân viên đứng bán</b>: bạn đi đâu cũng được (chợ, làm thuê, xe ôm,
-            thoát game), hoặc ở lại quầy / trong tiệm xem — muốn tự bán thì bấm <b>🙋 Tôi bán</b>,
-            bấm lại để trả quầy cho nhân viên. <b>Đừng đóng quầy</b> giữa ca: đóng rồi thì không ai
-            bán.
+            Trong giờ ca <b>nhân viên đứng bán</b>: bạn đi đâu cũng được (chợ, làm thuê, xe ôm, lo
+            cửa hàng khác, thoát game). <b>Đừng đóng cửa</b> giữa ca: đóng rồi thì không ai bán.
           </li>
           <li>
             Tiền bán vào ví bạn, lương trừ theo giờ; xem kết quả ở <i>Phiếu ca</i> bên dưới.
@@ -96,7 +94,7 @@ function StaffBoard() {
       </details>
       <p className="text-xs font-semibold" data-staff-count={emps.length}>
         Đang thuê {emps.length}/{view.maxStaff} người · tiệm cấp {view.level}
-        {full && view.next && " — nâng cấp tiệm (🏪 Quầy của tôi) để thuê thêm"}
+        {full && view.next && " — nâng cấp tiệm (🏪 Cửa hàng của tôi) để thuê thêm"}
       </p>
       {emp && empShift && (
         <p
@@ -104,8 +102,8 @@ function StaffBoard() {
           data-staff-status={onDuty ? "on" : "off"}
         >
           {onDuty
-            ? `Bây giờ ${formatClock(minute)}: ${onDutyNames.join(", ")} đang trong ca — bạn rời quầy là có người bán thay.`
-            : `Bây giờ ${formatClock(minute)}: ${emps.map((e) => person(e.staffId)?.name).join(", ")} ngoài giờ làm (${empShift.name}) — rời quầy lúc này thì quầy vắng chủ. Đổi sang ca đang diễn ra nếu cần.`}
+            ? `Bây giờ ${formatClock(minute)}: ${onDutyNames.join(", ")} đang trong ca — bạn đi đâu cũng có người bán.`
+            : `Bây giờ ${formatClock(minute)}: ${emps.map((e) => person(e.staffId)?.name).join(", ")} ngoài giờ làm (${empShift.name}) — bạn rời đi lúc này là không ai bán. Đổi sang ca đang diễn ra nếu cần.`}
         </p>
       )}
       {emps.map((e) => (

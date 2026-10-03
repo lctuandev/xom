@@ -6,6 +6,7 @@ import { formatClock, unlockLevel } from "@xom/sim";
 import { useState } from "react";
 import { vnd, vndShort } from "../../format";
 import { send } from "../../net/socket";
+import { shopWords } from "../../shopWords";
 import { useGame } from "../../store";
 import { usePayMethod } from "../../ui/PayPicker";
 import { Section } from "../../ui/Sheet";
@@ -36,7 +37,7 @@ function PromoSection({ biz, money }: { biz: BusinessView; money: number }) {
       : wait > 0
         ? `Mới khai trương — ${wait} ngày nữa mới làm lại được`
         : !biz.open || !atStall
-          ? "Mở quầy và đứng ở quầy rồi mới khai trương được"
+          ? `${shopWords(biz.lotId).open} và đứng ở ${shopWords(biz.lotId).noun} rồi mới khai trương được`
           : cost > money
             ? "Không đủ tiền mặt"
             : null;

@@ -158,7 +158,7 @@ export function NeighborsSheet() {
       </div>
       <p className="mt-1.5 text-xs text-ink/60">
         {busyHere
-          ? "Đang mở quầy hoặc đang trong ca — dọn quầy, ra ca rồi mới chuyển xóm được."
+          ? "Đang mở cửa hàng hoặc đang trong ca — đóng cửa, ra ca rồi mới chuyển xóm được."
           : "Chuyển xóm thì mang theo tiền, hàng tồn và xe hàng; chỗ bán cũ có người dùng thì chọn chỗ khác."}
       </p>
       <XomList busy={busy || !!busyHere} onJoin={join} />

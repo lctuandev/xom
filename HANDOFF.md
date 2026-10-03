@@ -129,8 +129,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [x] **Thuê nhiều nhà mặt tiền cùng lúc**: hợp đồng nhận theo căn nhà cửa hàng đang đặt (`ShopService.activeLease` = hợp đồng
   của cửa hàng đang quản lý, `leaseAt(owner, lot)`); mỗi cửa hàng thuê căn riêng, sheet 🏠 theo cửa hàng đang quản lý, căn của
   cửa hàng khác ghi "bạn (cửa hàng khác)". e2e `shop-flow` (hai nhà, cửa hàng đã ở nhà thuê không ký thêm).
-- [ ] **Đang thuê tiệm (nhà mặt tiền) mà vài chỗ vẫn gọi "quầy", "đẩy xe"** — rà mọi chữ theo `lot.kind` (cart: quầy/xe đẩy;
-  house: tiệm/cửa hàng; stall: sạp).
+- [x] **Đang thuê tiệm (nhà mặt tiền) mà vài chỗ vẫn gọi "quầy", "đẩy xe"** — rà mọi chữ theo `lot.kind` (cart: quầy/xe đẩy;
+  house: tiệm/cửa hàng; stall: sạp). Xong: helper `game/shopWords.ts` (tiêu đề sheet "🏠 Tiệm của tôi", nút Mở/Đóng, "Tới tiệm",
+  vắng chủ, khai trương, chợ, nhân viên…); lỗi server phía chủ dùng chữ chung "đóng cửa / cửa hàng".
 - [ ] **Chạm ô cấp độ (góc trái) → bottom sheet Hồ sơ có avatar + tên nhân vật** giống khung NPC (PlaceFace / chân dung).
 - [ ] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — viết `docs/ART.md` (phong cách, thứ tự
   model, ngân sách polygon/texture cho điện thoại, quy trình `pnpm assets`), hỏi chủ dự án chốt rồi làm dần; gắn với nhánh

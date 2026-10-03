@@ -49,7 +49,7 @@ export class MarketService {
     if (mode === "replace") {
       if (!current) throw new GameError("invalid_state", "Chưa có quầy nào để đổi nghề");
       if (current.status === "OPEN")
-        throw new GameError("invalid_state", "Đóng quầy trước khi đổi nghề");
+        throw new GameError("invalid_state", "Đóng cửa trước khi đổi nghề");
       if (current.equipmentId === equipmentId)
         throw new GameError("invalid_state", `Quầy này đã là ${eq.name}`);
     }

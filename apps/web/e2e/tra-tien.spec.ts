@@ -8,7 +8,7 @@ test("chọn cách trả tiền ở chợ: chuyển khoản / tiền mặt", asy
   // Hàng nhập về kho của quầy (UC-F14) — có xe hàng; đóng quầy để tiền mặt chỉ đổi vì đi chợ.
   await openBanhMiStall(page);
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await closeSheet(page);
   await page.locator('[data-anchor="market"]').tap();
   const market = page.getByRole("dialog", { name: "Chợ đầu mối Bà Năm" });

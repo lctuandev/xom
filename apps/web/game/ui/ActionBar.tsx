@@ -4,6 +4,7 @@ import { content } from "@xom/content";
 import { openDue } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { send, sendWork } from "../net/socket";
+import { shopWords } from "../shopWords";
 import { useGame } from "../store";
 import { sheetForPlace } from "../world";
 
@@ -218,6 +219,7 @@ function AwayChip() {
   const minute = useGame((s) => s.clock?.minute ?? 0);
   const atStall = useGame((s) => s.atStall);
   const setGoal = useGame((s) => s.setGoal);
+  const lotId = useGame((s) => s.me?.business?.lotId);
   if (!open || atStall) return null;
   // Nhân viên trong ca thì quầy vẫn bán (KIENTRUC §2) — không báo gì (góp ý đợt 3: bỏ thông báo "bán dùm"), chỉ nhắc khi vắng
   // chủ mà không ai bán.
@@ -229,7 +231,7 @@ function AwayChip() {
       data-staff-duty={staff ? "off" : undefined}
     >
       <span className="text-xs font-semibold">
-        Quầy vắng chủ — khách không mua được
+        {shopWords(lotId).Noun} vắng chủ — khách không mua được
         {staff && (
           <span className="block text-[11px] font-normal text-cream/80">
             {staff.name} ngoài giờ làm ({staff.shift})
@@ -295,9 +297,11 @@ function OpenStallButton() {
       }}
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
-      🔓 {biz.lotId && content.findLot(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
+      🔓 {shopWords(biz.lotId).open}
       {due?.rent ? ` · thuê chỗ ${Math.round(due.rent / 1000)}k` : ""}
-      {due?.fee ? ` · ${due.rent ? "phí" : "thuế khoán"} ${Math.round(due.fee / 1000)}k` : ""}
+      {due?.fee
+        ? ` · ${due.rent ? "phí" : biz.lotOwned ? "phí + thuế đất" : "thuế khoán"} ${Math.round(due.fee / 1000)}k`
+        : ""}
     </button>
   );
 }

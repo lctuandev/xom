@@ -12,7 +12,7 @@ test("thuê Thu ca tối → chủ đi chợ, Thu bán thay và có phiếu ca",
   await openFeature(page, "staff");
   const board = page.getByRole("region", { name: "Nhân viên" });
   // Chưa thuê ai: hướng dẫn cách dùng mở sẵn (chọn ca, nhập hàng + mở quầy, rời quầy trong giờ ca, đừng đóng quầy).
-  await expect(board.locator("[data-staff-guide]")).toContainText("Đừng đóng quầy");
+  await expect(board.locator("[data-staff-guide]")).toContainText("Đừng đóng cửa");
   await board.getByRole("button", { name: "Ca tối 18–22h" }).tap();
   // Ca chưa tới giờ: báo trước nhân viên mấy giờ mới vào làm.
   await expect(board.locator("[data-shift-later]")).toContainText("18:00");

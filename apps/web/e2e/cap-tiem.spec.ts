@@ -13,9 +13,9 @@ test("nâng cấp tiệm rồi thuê 2 nhân viên cùng lúc", async ({ page })
 
   // Xe đẩy vỉa hè: chưa lên cấp được.
   await openFeature(page, "stall");
-  const stall = page.getByRole("dialog", { name: "🏪 Quầy của tôi" });
+  const stall = page.getByRole("dialog", { name: /của tôi$/ });
   await expect(stall.locator("[data-level]")).toContainText("Xe đẩy vỉa hè không lên cấp");
-  await stall.getByRole("button", { name: "Đóng quầy" }).tap();
+  await stall.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
 
   // Thuê nhà mặt tiền + đủ giấy tờ (lệnh dev; quy trình giấy tờ có kịch bản mo-tiem) rồi nâng cấp.
   const ok = await page.evaluate(async () => {

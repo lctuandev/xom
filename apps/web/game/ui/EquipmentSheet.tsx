@@ -63,7 +63,7 @@ function RepairBox() {
         }}
         className="mt-2 h-11 w-full rounded-xl bg-sun font-semibold disabled:opacity-40"
       >
-        {biz.open ? "Đóng quầy rồi mới đem xe đi sửa" : `🔧 Sửa xe · ${vnd(cost)}`}
+        {biz.open ? "Đóng cửa rồi mới đem đồ nghề đi sửa" : `🔧 Sửa xe · ${vnd(cost)}`}
       </button>
     </section>
   );

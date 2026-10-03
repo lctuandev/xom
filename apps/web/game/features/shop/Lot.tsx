@@ -9,6 +9,7 @@ import { districtLikes } from "../../districts";
 import { vndShort } from "../../format";
 import { send } from "../../net/socket";
 import { getPlayer } from "../../scene/player";
+import { shopWords } from "../../shopWords";
 import { useGame } from "../../store";
 import { usePayMethod } from "../../ui/PayPicker";
 import { type MapLot, XomMap } from "../../ui/XomMap";
@@ -51,7 +52,10 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       onPick={(id) => {
         setFocus(id);
         if (biz.open) {
-          useGame.getState().toast({ kind: "info", text: "Đóng quầy rồi mới đổi chỗ được" });
+          useGame.getState().toast({
+            kind: "info",
+            text: `${shopWords(biz.lotId).close} rồi mới đổi chỗ được`,
+          });
           return;
         }
         setOpen(true);

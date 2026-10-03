@@ -7,6 +7,7 @@ import { useState } from "react";
 import { stars, vnd, vndShort } from "../../format";
 import { send } from "../../net/socket";
 import { makeableCount } from "../../recipes";
+import { shopWords } from "../../shopWords";
 import { useGame } from "../../store";
 import { usePayMethod } from "../../ui/PayPicker";
 import { Section } from "../../ui/Sheet";
@@ -37,20 +38,30 @@ function OpenButton({
     !biz.open && lot && !biz.rentPaidToday ? openDue(content, lot.id, biz.lotOwned).total : 0;
   const broken = wearState(biz.wear, eco.maintenance) === "broken";
   const cantPay = rentDue > money;
+  // Gọi đúng tên theo chỗ: quầy xe đẩy / tiệm trong nhà / sạp trên ô đất (góp ý đợt 3).
+  const w = shopWords(biz.lotId);
+  const dueLabel =
+    w.kind === "house"
+      ? "Thuế khoán hôm nay"
+      : biz.lotOwned
+        ? "Phí + thuế đất hôm nay"
+        : "Thuê chỗ + phí chợ hôm nay";
   const hint = broken
-    ? "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã"
+    ? w.kind === "cart"
+      ? "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã"
+      : "Đồ nghề hư rồi — mang tới vựa xe Ông Sáu sửa đã"
     : working
-      ? "Đang đi làm thuê — nghỉ việc để mở quầy"
+      ? `Đang đi làm thuê — nghỉ việc để ${w.open.toLowerCase()}`
       : !lot
         ? "Chọn chỗ bán trước (📍 Chỗ bán)"
         : stock === 0
           ? "Chưa đủ nguyên liệu cho món nào — ra chợ mua trước"
           : cantPay
-            ? `Không đủ ${vnd(rentDue)} tiền thuê chỗ — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
+            ? `Không đủ ${vnd(rentDue)} — chọn chỗ rẻ hơn hoặc đi làm thuê kiếm thêm`
             : rentDue
-              ? `Thuê chỗ + phí chợ hôm nay: ${vnd(rentDue)} (trả một lần/ngày)`
+              ? `${dueLabel}: ${vnd(rentDue)} (trả một lần/ngày)`
               : null;
-  // Phải đẩy xe tới chỗ bán, đứng sau quầy mới mở được.
+  // Phải tới tận chỗ bán (đẩy xe / tới tiệm / tới sạp) mới mở được.
   if (!biz.open && lot && !atStall) {
     return (
       <div className="mb-4">
@@ -62,9 +73,11 @@ function OpenButton({
           }}
           className="h-12 w-full rounded-2xl bg-sun text-base font-semibold active:scale-[0.98]"
         >
-          🚶 Đẩy xe tới {lot.name}
+          🚶 {w.go} {lot.name.replace(/^⛺ /, "")}
         </button>
-        <p className="mt-2 text-center text-sm text-ink/60">Tới nơi rồi mới mở quầy được.</p>
+        <p className="mt-2 text-center text-sm text-ink/60">
+          Tới nơi rồi mới {w.open.toLowerCase()} được.
+        </p>
       </div>
     );
   }
@@ -82,7 +95,7 @@ function OpenButton({
           biz.open ? "bg-ink/10" : "bg-leaf text-cream"
         }`}
       >
-        {busy ? "…" : biz.open ? "Đóng quầy" : "Mở quầy bán"}
+        {busy ? "…" : biz.open ? w.close : `${w.open} bán`}
       </button>
       {hint && <p className="mt-2 text-center text-sm text-ink/60">{hint}</p>}
     </div>
@@ -134,7 +147,13 @@ function WearBar({ biz }: { biz: BusinessView }) {
 /** 🏪 Quầy của tôi: mở/đóng quầy (đẩy xe tới chỗ trước), độ bền xe, hôm nay bán được bao nhiêu. */
 export function StallSheet() {
   return (
-    <ShopFeature id="stall">
+    <ShopFeature
+      id="stall"
+      title={(biz) => {
+        const w = shopWords(biz.lotId);
+        return `${w.emoji} ${w.Noun} của tôi`;
+      }}
+    >
       {(biz, me) => {
         const product = content.product(biz.productId);
         const equipment = content.equipment(biz.equipmentId);

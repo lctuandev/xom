@@ -492,7 +492,7 @@ export class GameService implements OnModuleDestroy {
     await from.run(async () => {
       // Nhiều cửa hàng: cửa hàng nào đang mở (chủ hay nhân viên bán) cũng phải đóng trước.
       if (await this.businesses.openOf(playerId))
-        throw new GameError("invalid_state", "Đóng hết các quầy đang mở trước khi chuyển xóm");
+        throw new GameError("invalid_state", "Đóng hết các cửa hàng đang mở trước khi chuyển xóm");
       if (from.shifts.has(playerId))
         throw new GameError("invalid_state", "Ra ca trước khi chuyển xóm");
       const m = from.members.get(playerId);

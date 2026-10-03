@@ -57,7 +57,7 @@ test("bản đồ xóm trong Chỗ bán: chạm chỗ của khu mới", async ({
   await openBanhMiStall(page);
   // Đổi chỗ phải đóng quầy trước.
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await openFeature(page, "lot");
   const canvas = page.locator("[data-xom-map]");
   await expect(canvas).toHaveAttribute("data-xom-map", "27x15");
@@ -128,7 +128,7 @@ test("mua đứt ô đất đang thuê rồi bán lại", async ({ page }) => {
   await shot(page, "99-o-dat-cua-minh");
   // Bán đất phải dọn sạp (đóng quầy) trước.
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await openFeature(page, "lot");
   await page
     .locator('[data-land="mine"]')
@@ -147,7 +147,7 @@ test("xây tiệm 1 tầng trên ô đất của mình", async ({ page }) => {
   await grantMoney(page, 8_000_000);
   await openBanhMiStall(page, /Sạp có mái — ô đất A/);
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await openFeature(page, "lot");
   await page.locator('[data-land-buy="khu_dong__sap_mai_a__1_0"]').tap();
   await page.locator('[data-land-build="tiem_1_tang"]').tap();

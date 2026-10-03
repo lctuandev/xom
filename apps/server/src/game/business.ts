@@ -80,7 +80,7 @@ export class BusinessService {
     if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
     // Đang thuê nhà mà dọn ra vỉa hè: tiền nhà vẫn tính mỗi ngày + trả thêm tiền chỗ — chặn, trả nhà trước.
     else await this.shops.requireNoLease(playerId, biz.lotId);
-    if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
+    if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng cửa rồi mới chuyển chỗ");
     const taken = this.occupants(room.id).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
     const lot = content.lot(lotId);
@@ -146,7 +146,7 @@ export class BusinessService {
       throw new GameError("invalid_payload", "Không có sự kiện này");
     const biz = await this.businesses.require(playerId);
     if (biz.status !== "OPEN" || !biz.lotId || !room.attending.has(playerId))
-      throw new GameError("invalid_state", "Mở quầy và đứng ở quầy rồi mới khai trương được");
+      throw new GameError("invalid_state", "Mở cửa và đứng ở cửa hàng rồi mới khai trương được");
     if (room.activeEvents(biz.id).length)
       throw new GameError("invalid_state", "Quầy đang khai trương rồi mà");
     await this.requireLevel(playerId, "event_host");
@@ -218,10 +218,10 @@ export class BusinessService {
     if (biz.status === "OPEN") return;
     if (!biz.lotId) throw new GameError("invalid_state", "Chọn chỗ bán trước đã");
     if (!room.attending.has(playerId))
-      throw new GameError("invalid_state", "Tới tận quầy rồi mới mở hàng được");
+      throw new GameError("invalid_state", "Tới tận cửa hàng rồi mới mở hàng được");
     const player = await this.prisma.player.findUniqueOrThrow({ where: { id: playerId } });
     if (player.jobId || room.shifts.has(playerId))
-      throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở quầy");
+      throw new GameError("invalid_state", "Bạn đang đi làm thuê — nghỉ việc rồi mới mở cửa hàng");
     await this.doOpen(room, playerId, biz);
   }
 
@@ -330,7 +330,7 @@ export class BusinessService {
     requireAt(room, playerId, "vua_xe", "Đẩy xe tới vựa xe Ông Sáu mới sửa được");
     const biz = await this.businesses.require(playerId);
     if (biz.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy rồi mới đem xe đi sửa");
+      throw new GameError("invalid_state", "Đóng cửa rồi mới đem đồ nghề đi sửa");
     const m = content.economy.maintenance;
     const cost = repairCost(content.equipment(biz.equipmentId).price, biz.wear, m);
     if (cost <= 0) throw new GameError("invalid_state", "Xe còn tốt mà, chưa cần sửa đâu con");

@@ -179,7 +179,7 @@ export class ShopService {
     });
     if (taken) throw new GameError("invalid_state", "Căn này có người thuê rồi");
     if (biz.status === "OPEN")
-      throw new GameError("invalid_state", "Đóng quầy rồi mới dọn sang nhà mới");
+      throw new GameError("invalid_state", "Đóng cửa rồi mới dọn sang nhà mới");
     const est = shopEstimate(content, lotId, biz.productId);
     const [cash, bank] = await Promise.all([
       this.ledger.balance(this.prisma, playerWallet(playerId)),

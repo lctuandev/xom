@@ -21,7 +21,7 @@ test("thuê nhà mặt tiền mở tiệm: khách vào tiệm gọi món, làm m
   await openBanhMiStall(page);
   // Giấy tờ mở tiệm (UC-F12) có kịch bản riêng (mo-tiem): ở đây đóng xe đẩy, thuê nhà + đủ giấy tờ bằng lệnh dev.
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   const ok = await page.evaluate(async () => {
     const dbg = (
       window as unknown as {
@@ -31,9 +31,11 @@ test("thuê nhà mặt tiền mở tiệm: khách vào tiệm gọi món, làm m
     return (await dbg?.send("debug:shop", { lotId: "nha_so_10" }))?.ok ?? false;
   });
   expect(ok).toBe(true);
-  await page.getByRole("button", { name: /Đẩy xe tới 🏠 Nhà mặt tiền số 10/ }).tap();
+  await page.getByRole("button", { name: /Tới tiệm 🏠 Nhà mặt tiền số 10/ }).tap();
   // Tới nơi: sheet Làm ăn tự mở — đóng lại, bấm "🔓 Mở tiệm" (chỉ hiện khi đã đứng ở tiệm) rồi chờ tiệm mở thật.
-  await expect(page.getByRole("button", { name: "Mở quầy bán" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("button", { name: /^Mở (quầy|tiệm|sạp) bán$/ })).toBeVisible({
+    timeout: 60_000,
+  });
   await page.getByRole("dialog").getByRole("button", { name: "Đóng" }).first().tap();
   await page.getByRole("button", { name: /🔓 Mở tiệm/ }).tap();
   await expect(page.getByRole("button", { name: /🔓 Mở tiệm/ })).toHaveCount(0);

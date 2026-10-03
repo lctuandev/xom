@@ -6,6 +6,7 @@ import { useState } from "react";
 import { vnd } from "../format";
 import { send } from "../net/socket";
 import { ingredientsOfProduct } from "../recipes";
+import { shopWords } from "../shopWords";
 import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 import { PlaceFace, PlaceGate } from "./PlaceGate";
@@ -32,7 +33,11 @@ export function MarketSheet() {
   const groups: { id: string; label: string; items: string[] }[] = [];
   if (me.business) {
     const p = content.product(me.business.productId);
-    groups.push({ id: "mine", label: `${p.emoji} Quầy của bạn`, items: mine });
+    groups.push({
+      id: "mine",
+      label: `${p.emoji} ${shopWords(me.business.lotId).Noun} của bạn`,
+      items: mine,
+    });
   }
   const seen = new Set(mine);
   for (const p of content.data.products) {

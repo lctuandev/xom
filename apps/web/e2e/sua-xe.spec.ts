@@ -53,8 +53,8 @@ test("tiệm sửa xe: nghe triệu chứng, kiểm tra, sửa sai rồi sửa �
   await page.getByRole("button", { name: "Mở", exact: true }).tap();
   await page.getByRole("button", { name: /Đầu hẻm 12/ }).tap();
   await closeSheet(page);
-  await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
-  await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
+  await walkToObjective(page, /Mở (quầy|tiệm|sạp) · (thuê chỗ|phí|thuế)/);
+  await page.getByRole("button", { name: /Mở (quầy|tiệm|sạp) · (thuê chỗ|phí|thuế)/ }).tap();
   box = await readDialogue(page);
   await box.getByRole("button", { name: "Dạ, con hiểu rồi" }).tap();
 

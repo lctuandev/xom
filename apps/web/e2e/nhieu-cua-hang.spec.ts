@@ -22,7 +22,7 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
 
   // Đóng quầy bánh mì rồi ra vựa xe mở thêm cửa hàng trà sữa.
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await openFeature(page, "equipment");
   const yard = page.getByRole("dialog", { name: "Vựa xe Ông Sáu" });
   await expect(yard).toBeVisible({ timeout: 60_000 });
@@ -59,7 +59,7 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
     .getByRole("button", { name: /Mở quầy/ })
     .first()
     .tap();
-  await expect(page.getByRole("button", { name: "Đóng quầy" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ })).toBeVisible();
 
   // 📦 Kho quầy bánh mì: có thanh chọn cửa hàng + chuyển 1 phần sang quầy trà sữa.
   await openFeature(page, "stock");

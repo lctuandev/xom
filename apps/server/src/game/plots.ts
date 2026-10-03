@@ -198,7 +198,7 @@ export class PlotService {
     const busy = await this.prisma.business.findFirst({
       where: { lotId, ownerId: playerId, status: "OPEN" },
     });
-    if (busy) throw new GameError("invalid_state", "Dọn sạp (đóng quầy) rồi mới bán đất");
+    if (busy) throw new GameError("invalid_state", "Đóng sạp rồi mới bán đất");
     if (owner.buildDone != null)
       throw new GameError("invalid_state", "Đang xây dở — xây xong rồi mới bán được");
     const refund = landRefund(content, owner.price);

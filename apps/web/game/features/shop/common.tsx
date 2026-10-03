@@ -14,15 +14,18 @@ import type { FeatureId } from "../registry";
  */
 export function ShopFeature({
   id,
+  title,
   children,
 }: {
   id: FeatureId;
+  /** Tiêu đề theo cửa hàng đang quản lý (vd. "🏠 Tiệm của tôi"). */
+  title?: (biz: BusinessView) => string;
   children: (biz: BusinessView, me: MeView) => ReactNode;
 }) {
   const me = useGame((s) => s.me);
   const biz = me?.business;
   return (
-    <FeatureSheet id={id}>
+    <FeatureSheet id={id} title={biz && title ? title(biz) : undefined}>
       {me && biz ? (
         <>
           <ShopSwitcher />

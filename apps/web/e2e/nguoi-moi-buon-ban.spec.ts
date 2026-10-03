@@ -49,8 +49,8 @@ test("người mới: bán bánh mì — mua nguyên liệu, làm đúng món, t
   await expect(page.getByText("Đẩy xe tới chỗ bán và mở quầy")).toBeVisible();
 
   // 5. Đẩy xe tới chỗ, mở quầy.
-  await walkToObjective(page, /Mở (quầy|tiệm) · thuê chỗ/);
-  await page.getByRole("button", { name: /Mở (quầy|tiệm) · thuê chỗ/ }).tap();
+  await walkToObjective(page, /Mở (quầy|tiệm|sạp) · (thuê chỗ|phí|thuế)/);
+  await page.getByRole("button", { name: /Mở (quầy|tiệm|sạp) · (thuê chỗ|phí|thuế)/ }).tap();
 
   // 6. Phục vụ 3 khách: nghe dặn → làm từng bước → giao → tính tiền, thối tiền.
   box = await readDialogue(page);

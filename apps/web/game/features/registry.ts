@@ -34,10 +34,10 @@ export const FEATURES = {
     hint: "Mọi cửa hàng của mình, chọn cửa hàng để quản lý",
   },
   stall: {
-    title: "Quầy của tôi",
+    title: "Cửa hàng của tôi",
     icon: "🏪",
     group: "shop",
-    hint: "Mở/đóng quầy, hôm nay bán được bao nhiêu",
+    hint: "Mở/đóng cửa, hôm nay bán được bao nhiêu",
   },
   dishes: { title: "Thực đơn & giá", icon: "🍽️", group: "shop", hint: "Bật/tắt món, chỉnh giá" },
   stock: {

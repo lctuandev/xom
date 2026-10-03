@@ -15,7 +15,7 @@ test("mở tiệm: thuê nhà, hộ kinh doanh, ATTP, biển hiệu rồi khai t
   };
   // Đang bán ở xe đẩy: đóng quầy trước khi dọn sang nhà.
   await openFeature(page, "stall");
-  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await page.getByRole("button", { name: /^Đóng (quầy|tiệm|sạp)$/ }).tap();
   await openFeature(page, "lease");
   const shop = page.getByRole("region", { name: "Mở tiệm" });
   await expect(shop).toHaveAttribute("data-shop-step", "lease");
