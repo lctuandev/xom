@@ -68,6 +68,7 @@ import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { emptyReport } from "./report.js";
 import { ReviewService } from "./reviews.js";
+import { RewardService } from "./rewards.js";
 import { RideService } from "./rides.js";
 import { GameError, type IntentContext, RoomRuntime } from "./room.js";
 import { ShopService } from "./shop.js";
@@ -171,6 +172,7 @@ export class GameService implements OnModuleDestroy {
     readonly market: MarketService,
     readonly broadcast: Broadcast,
     readonly biz: BusinessService,
+    readonly rewards: RewardService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -1118,6 +1120,10 @@ export class GameService implements OnModuleDestroy {
         hasPin: player.atmPin !== null,
         locked: player.atmLockDay !== null && player.atmLockDay >= room.day,
       },
+      rewards: this.rewards.pending(room, player, {
+        sold: report?.served ?? 0,
+        wages: report?.wages ?? 0,
+      }),
       jobId: player.jobId,
       tutorial: player.tutorial,
       attending: room.attending.has(playerId),

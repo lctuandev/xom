@@ -27,6 +27,30 @@ export class RewardService {
     return { ...((raw ?? {}) as Claimed) };
   }
 
+  /**
+   * Đếm thưởng đạt mà chưa nhận (chấm đỏ ở MeView) — tính từ dữ liệu `me()` đã tải sẵn, không truy vấn thêm.
+   */
+  pending(
+    room: RoomRuntime,
+    player: { achievements: unknown; rewardsClaimed: unknown },
+    today: { sold: number; wages: number },
+  ) {
+    const claimed = this.claimedOf(player.rewardsClaimed);
+    const got = (player.achievements ?? {}) as Record<string, number>;
+    const values = { ...today, neighbors: this.online(room) };
+    const quests = content.data.dailyQuests.filter(
+      (q) => values[q.metric] >= q.goal && claimed[questKey(room.day, q.id)] === undefined,
+    ).length;
+    const badges = content.data.achievements.filter(
+      (a) => got[a.id] !== undefined && claimed[achKey(a.id)] === undefined,
+    ).length;
+    return { quests, badges };
+  }
+
+  private online(room: RoomRuntime) {
+    return [...room.members.values()].filter((m) => m.sockets.size > 0).length;
+  }
+
   /** Nhiệm vụ hôm nay: tiến độ từ sổ hôm nay (món bán, tiền công) + số người online cùng xóm. */
   async quests(room: RoomRuntime, playerId: string): Promise<QuestView[]> {
     const [player, report] = await Promise.all([
@@ -34,8 +58,11 @@ export class RewardService {
       this.prisma.dailyReport.findFirst({ where: { playerId, day: room.day } }),
     ]);
     const claimed = this.claimedOf(player.rewardsClaimed);
-    const online = [...room.members.values()].filter((m) => m.sockets.size > 0).length;
-    const values = { sold: report?.served ?? 0, wages: report?.wages ?? 0, neighbors: online };
+    const values = {
+      sold: report?.served ?? 0,
+      wages: report?.wages ?? 0,
+      neighbors: this.online(room),
+    };
     return content.data.dailyQuests.map((q) => {
       const value = Math.min(q.goal, values[q.metric]);
       return {

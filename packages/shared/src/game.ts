@@ -109,6 +109,8 @@ export interface MeView {
   trust: number;
   /** Thẻ ATM: đã tạo PIN chưa, có đang bị máy giữ thẻ không. */
   atm: { hasPin: boolean; locked: boolean };
+  /** 🎁 Số thưởng đạt mà chưa nhận (chấm đỏ trên 🎯 Nhiệm vụ / 🏅 Thành tựu — UC-P4). */
+  rewards?: { quests: number; badges: number };
   /** 🍚 No / 💧 khát (0–100, UC-B11). */
   needs: { food: number; drink: number };
   jobId: string | null;

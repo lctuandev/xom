@@ -36,11 +36,13 @@ describe("Thưởng thành tựu / nhiệm vụ (e2e)", () => {
     const prisma = app.get(PrismaService);
     await prisma.player.update({
       where: { id: me0.playerId },
-      data: { achievements: { mo_hang: 1 } },
+      data: { achievements: { mo_hang: 1, khoi_nghiep: 1 } },
     });
     const got = await emit<MeView>(a.socket, "reward:claim", { kind: "ach", id: "mo_hang" });
     if (!got.ok) throw new Error(got.message);
     expect(got.data.money).toBe(me0.money + ach.reward.money);
+    // Chấm đỏ 🏅: còn "Khởi nghiệp" đạt mà chưa nhận.
+    expect(got.data.rewards).toMatchObject({ badges: 1 });
     const row = await prisma.player.findUniqueOrThrow({ where: { id: me0.playerId } });
     expect(row.xp).toBeGreaterThanOrEqual(ach.reward.xp);
     expect(await emit(a.socket, "reward:claim", { kind: "ach", id: "mo_hang" })).toMatchObject({
@@ -66,9 +68,9 @@ describe("Thưởng thành tựu / nhiệm vụ (e2e)", () => {
       done: true,
       claimed: false,
     });
-    expect((await emit(a.socket, "reward:claim", { kind: "quest", id: "co_ban_choi" })).ok).toBe(
-      true,
-    );
+    const q = await emit<MeView>(a.socket, "reward:claim", { kind: "quest", id: "co_ban_choi" });
+    expect(q.ok).toBe(true);
+    if (q.ok) expect(q.data.rewards?.quests).toBe(0);
     expect((await list()).find((q) => q.id === "co_ban_choi")?.claimed).toBe(true);
     expect((await emit(a.socket, "reward:claim", { kind: "quest", id: "co_ban_choi" })).ok).toBe(
       false,

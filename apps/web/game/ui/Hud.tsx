@@ -4,6 +4,7 @@ import { content } from "@xom/content";
 import { formatClock } from "@xom/sim";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useAlerts } from "../features/alerts";
 import { openFeature } from "../features/open";
 import { usePins } from "../features/pins";
 import { FEATURES, type FeatureId, featureFromLink } from "../features/registry";
@@ -223,6 +224,7 @@ function NewsTicker() {
  */
 function SideRail({ side }: { side: "left" | "right" }) {
   const pins = usePins((s) => s.pins[side]);
+  const alerts = useAlerts();
   return (
     <div className="mt-2 flex flex-col gap-1.5 self-start px-2" data-anchor-rail={side}>
       {pins.map((id) => {
@@ -233,9 +235,10 @@ function SideRail({ side }: { side: "left" | "right" }) {
             key={id}
             type="button"
             aria-label={f.title}
-            title={f.title}
+            title={alerts[id] ? `${f.title} — ${alerts[id]}` : f.title}
             data-anchor={id}
-            className="pointer-events-auto flex size-12 items-center justify-center active:scale-90"
+            data-alert={alerts[id] ? true : undefined}
+            className="pointer-events-auto relative flex size-12 items-center justify-center active:scale-90"
             onClick={() => openFeature(id)}
           >
             {icon ? (
@@ -244,6 +247,9 @@ function SideRail({ side }: { side: "left" | "right" }) {
               <span aria-hidden className="icon-halo text-[2.1rem] leading-none">
                 {f.icon}
               </span>
+            )}
+            {alerts[id] && (
+              <span className="absolute top-0.5 right-0.5 size-3 rounded-full bg-red ring-2 ring-white" />
             )}
           </button>
         );

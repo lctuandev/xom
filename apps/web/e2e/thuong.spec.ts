@@ -31,6 +31,9 @@ test("bán 5 món: nhận thưởng nhiệm vụ hôm nay + thành tựu Mở h�
     }
   }
 
+  // Chấm đỏ trên icon 🎯 (cột neo phải): có thưởng chờ nhận.
+  await expect(page.locator('[data-anchor="quests"]')).toHaveAttribute("data-alert", "true");
+
   // 🎯 Nhiệm vụ → Hôm nay: "Bán 5 món" xong, có nút 🎁 Nhận.
   const quest = content.data.dailyQuests.find((q) => q.id === "ban_5");
   if (!quest) throw new Error("thiếu nhiệm vụ ban_5");
@@ -47,8 +50,9 @@ test("bán 5 món: nhận thưởng nhiệm vụ hôm nay + thành tựu Mở h�
   await expect(page.getByText(/🎁 🥖 Bán 5 món: \+3\.000đ/)).toBeVisible();
   await expect.poll(() => cash(page)).toBe(before + quest.reward.money);
 
-  // Mở lại: server nhớ đã nhận hôm nay.
+  // Mở lại: server nhớ đã nhận hôm nay; nhận hết rồi thì hết chấm đỏ.
   await closeSheet(page);
+  await expect(page.locator('[data-anchor="quests"]')).not.toHaveAttribute("data-alert", "true");
   await openFeature(page, "quests");
   await expect(page.locator('[data-quest="ban_5"]').getByText("✓ Đã nhận")).toBeVisible();
   await closeSheet(page);

@@ -278,8 +278,12 @@ Góp ý chủ dự án (đợt 2): "thành tựu có mà không thưởng gì th
 - Tiền vào 💵 tiền mặt qua sổ cái (lý do `reward`), XP cộng thẳng. Nhiệm vụ tối đa 11k/ngày (≤ 10% một ngày làm thuê rẻ nhất),
   thành tựu tổng 380k một lần — `pnpm balance` cảnh báo nếu vượt. "Có hàng xóm cùng chơi" chỉ thưởng XP (tránh nuôi nick phụ).
 **Kiểm chứng:** e2e server `rewards.e2e-spec.ts` (chưa đạt bị từ chối, nhận một lần, tiền + XP đúng); Playwright
-`thuong.spec.ts` (bán 5 món → nhận thưởng "Bán 5 món" + thành tựu "Mở hàng", tiền mặt tăng đúng, nhận lại không được).
-**Chưa:** chấm đỏ trên 🎯/🏅 khi có thưởng chờ nhận; thưởng *chức năng* (mở khoá) thay cho tiền.
+`thuong.spec.ts` (bán 5 món → chấm đỏ 🎯 → nhận thưởng "Bán 5 món" + thành tựu "Mở hàng", tiền mặt tăng đúng, nhận lại không
+được, hết chấm đỏ).
+**Chấm đỏ:** `MeView.rewards {quests, badges}` = số thưởng đạt mà chưa nhận (server đếm trong `me()`, không truy vấn thêm) →
+chấm đỏ trên icon 🎯/🏅 ở cột neo và trong ☰ Menu (`features/alerts.ts`); nhận hết thì tắt. Thành tựu chỉ được ghi mở cuối ngày /
+khi mở số liệu, nên chấm 🏅 có thể hiện trễ.
+**Chưa:** thưởng *chức năng* (mở khoá) thay cho tiền.
 
 ---
 

@@ -105,7 +105,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   (vật liệu + phụ hồ người chơi), thuê nhà NPC giữ như UC-F12.
 - [ ] **Tách nhỏ chức năng tiếp** (tránh conflict): `game.service.ts` còn ~1.200 dòng (tick, customerTick, me(), awayReport,
   xóm) → tách `CustomerService`, `RoomService` (load/unload/join/switch), `MeViewBuilder`; web `ActionBar.tsx` gom nút ngữ cảnh.
-- [ ] Chấm đỏ trên icon 🏅/🎯 khi có thưởng chưa nhận (`useAlerts` trong `MainMenu.tsx`; cần thêm số thưởng chờ nhận vào `MeView`).
+- [x] Chấm đỏ trên icon 🏅/🎯 khi có thưởng chưa nhận (`MeView.rewards`, `features/alerts.ts`, chấm cả ở cột neo).
 
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").
@@ -150,6 +150,5 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. Viết `docs/BANDO.md` (bản đồ mở / ô đất / xây tiệm / nhà nhiều tầng), hỏi chủ dự án chốt, rồi làm theo bước nhỏ.
-2. Chấm đỏ 🎯/🏅 khi có thưởng chờ nhận (3.1).
-3. Tách `game.service.ts` + gom `ActionBar`.
-4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
+2. Tách `game.service.ts` + gom `ActionBar`.
+3. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).

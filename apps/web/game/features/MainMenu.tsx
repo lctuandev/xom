@@ -1,28 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { makeableCount } from "../recipes";
 import { useGame } from "../store";
 import { Sheet } from "../ui/Sheet";
+import { useAlerts } from "./alerts";
 import { openFeature } from "./open";
 import { usePins } from "./pins";
 import { FEATURES, type FeatureId, GROUPS, MAX_PINS } from "./registry";
-
-/** Chấm đỏ: chức năng có việc cần làm ngay. */
-function useAlerts(): Partial<Record<FeatureId, string>> {
-  const me = useGame((s) => s.me);
-  const biz = me?.business;
-  const out: Partial<Record<FeatureId, string>> = {};
-  if (biz) {
-    const stock = biz.menu
-      .filter((m) => m.on)
-      .reduce((sum, m) => sum + makeableCount(biz.productId, m.variantId, me?.inventory), 0);
-    if (stock === 0) out.stock = "Hết hàng";
-    if (!biz.lotId) out.lot = "Chưa chọn chỗ";
-  } else out.equipment = "Chưa có xe hàng";
-  if (me && (me.needs.food < 30 || me.needs.drink < 30)) out.food = "Đói / khát";
-  return out;
-}
 
 /**
  * ☰ Menu (docs/IA.md §3): lưới icon mọi chức năng, chia nhóm; mỗi icon mở đúng một sheet. Chế độ 📌 Ghim: chạm để
