@@ -23,18 +23,14 @@ test("thuê Thu ca tối → chủ đi chợ, Thu bán thay và có phiếu ca",
   // Bây giờ là buổi sáng: Thu ngoài giờ làm — nói rõ, rời quầy lúc này là quầy vắng chủ.
   await expect(board.locator("[data-staff-status=off]")).toContainText("ngoài giờ làm");
 
-  // Vào ca tối; chủ bỏ quầy đi chợ — Thu đứng bán thay, thanh dưới báo "đang bán thay" chứ không giục về quầy.
+  // Vào ca tối; chủ bỏ quầy đi chợ — Thu đứng bán thay, không giục chủ về quầy, không báo "bán dùm" (góp ý đợt 3).
   await setClock(page, 18 * 60);
   await openFeature(page, "market");
-  await expect(page.locator("[data-staff-duty=on]")).toContainText(
-    "Thu đang bán thay — tới 22:00",
-    {
-      timeout: 30_000,
-    },
-  );
-  await expect(page.getByText(/👩‍🍳 Thu vừa bán \d+ món thay bạn/).first()).toBeVisible({
-    timeout: 60_000,
-  });
+  await page.waitForTimeout(3000);
+  await expect(page.getByText("Quầy vắng chủ — khách không mua được")).toHaveCount(0);
+  await expect(page.locator("[data-staff-duty=on]")).toHaveCount(0);
+  // Chờ Thu bán được ít món rồi xem phiếu ca.
+  await page.waitForTimeout(20_000);
   await openFeature(page, "staff");
   const slips = page.locator("[data-shift-slips]");
   await expect(slips).toContainText(/Thu · 18:\d\d–/);

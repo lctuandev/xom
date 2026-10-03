@@ -350,15 +350,11 @@ export class StaffService {
       }
       if (quit) await tx.employee.deleteMany({ where: { id: { in: employees.map((e) => e.id) } } });
     });
+    // Bán được thì không báo từng đợt (góp ý đợt 3 — nhiều cửa hàng thì ồn); xem ở 📊 Sổ sách / phiếu ca.
     if (quit)
       this.notify?.(biz.ownerId, {
         kind: "warn",
         text: `😤 ${names} nghỉ làm vì không có tiền trả lương`,
-      });
-    else if (mode === "live" && r.served > 0)
-      this.notify?.(biz.ownerId, {
-        kind: "info",
-        text: `👩‍🍳 ${names} vừa bán ${r.served} món thay bạn`,
       });
     return r;
   }

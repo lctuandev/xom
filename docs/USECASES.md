@@ -1152,14 +1152,16 @@ Làm sai / để chờ bỏ về / thối thiếu **2 lần liền** → 💔 gi
 lần người chơi nên bán thay lãi hơn chủ tự bán; lương trả theo nhịp 5 phút **cộng dồn phần lẻ** (trước làm tròn mỗi nhịp → 10k/giờ
 thành 12k/giờ). `pnpm balance` cảnh báo nếu nhân viên lãi hơn chủ tay nhanh tự bán, hoặc thuê nhân viên ở tiệm nào cũng lỗ.
 **Luồng:** Làm ăn → **👩‍🍳 Nhân viên** → chọn ca (sáng 6–11h, trưa 11–14h, chiều 14–18h, tối 18–22h) → **Thuê** (ghi 📖 "Thuê người
-đầu tiên…"). Trong ca, quầy đang mở mà chủ **rời quầy** (đi chợ, đi làm thuê) → nhân viên bán thay từng nhịp (báo *"👩‍🍳 Thu vừa bán
-2 món thay bạn"*, khách không réo chủ). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy
+đầu tiên…"). Trong ca, quầy đang mở mà chủ **rời quầy** (đi chợ, đi làm thuê) → nhân viên bán thay từng nhịp (khách không réo chủ; từ 2026-10-03 không báo từng đợt
+"vừa bán thay bạn" — xem ở 📊 Sổ sách / phiếu ca). Chủ **thoát game** → hết ân hạn, nhân viên bán nốt tới hết ca rồi dọn quầy; vào lại thấy
 *"Trong lúc bạn vắng…"* có dòng **👩‍🍳 Thu bán thay 12 món (1 món sai) · thu … · trả lương …**. Có **phiếu ca** (giờ, bán, sai, thu,
 lương, khách hụt). Đổi người / đổi ca / cho nghỉ bất cứ lúc nào.
-**Có nhân viên thì chủ không bắt buộc đứng bán** (góp ý chơi thử): trong ca, chủ ở quầy / trong tiệm thấy *"👩‍🍳 Khoa đang bán — bạn
-cứ đứng xem"* (trong tiệm nhân viên đứng quầy, chủ đứng bên); bấm **🙋 Tôi bán** để giành bán (khách vào bếp của chủ), bấm *Để
-Khoa bán* để trả quầy. **Tới ca mà quầy đang đóng thì nhân viên tự mở cửa** (còn hàng làm được ít nhất một món, trả phí ngày như
-chủ mở; báo *"🔓 Khoa tới ca, mở cửa giúp bạn"*); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
+**Có nhân viên thì chủ không bắt buộc đứng bán**: trong ca nhân viên đứng bán, chủ đi lo cửa hàng khác. **Góp ý đợt 3
+(2026-10-03):** đã mở được nhiều cửa hàng nên bỏ hết thông báo "làm dùm / bán dùm" — chip *"Khoa đang bán — 🙋 Tôi bán"*, chip
+*"đang bán thay — tới 22:00"* khi chủ đi vắng, toast *"vừa bán N món thay bạn"*, toast *"tới ca, mở cửa giúp bạn"*; hai cột icon
+trái/phải sát lên dưới thanh nhiệm vụ. Vẫn giữ cảnh báo có ích: *"Quầy vắng chủ"* (không ai bán), *"tới ca mà không mở cửa được"*,
+*"nghỉ làm vì không có tiền trả lương"*. **Tới ca mà quầy đang đóng thì nhân viên tự mở cửa** (còn hàng làm được ít nhất một món,
+trả phí ngày như chủ mở); chủ tự đóng giữa ngày thì hôm đó nhân viên không mở lại.
 **Tình huống đời thật:** nhân viên làm sai thì giảm nửa giá cho khách; người lanh tay bán nhiều mà sai nhiều; hết hàng thì nhân
 viên dọn quầy về sớm (chỉ trả lương tới lúc đó, báo 📦 "Nhập thêm hàng nha!"); ví + tài khoản không đủ trả lương → nhân viên nghỉ.
 **Chủ tự do (2026-10-02):** quầy đang mở mà **có nhân viên trong ca** thì chủ đi làm thuê, chạy xe ôm, phụ hồ được (nhân viên bán thay); không có nhân viên trong ca thì phải đóng quầy hoặc thuê người trước (`BusinessRepo.ownerTied`).

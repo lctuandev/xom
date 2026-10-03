@@ -226,7 +226,7 @@ function SideRail({ side }: { side: "left" | "right" }) {
   const pins = usePins((s) => s.pins[side]);
   const alerts = useAlerts();
   return (
-    <div className="mt-2 flex flex-col gap-1.5 self-start px-2" data-anchor-rail={side}>
+    <div className="flex flex-col gap-1 self-start px-2" data-anchor-rail={side}>
       {pins.map((id) => {
         const f = FEATURES[id];
         const icon = ANCHOR_ICON[id];

@@ -16,7 +16,6 @@ import { orderBus, orderResultBus, orderUpdateBus, useGame } from "../store";
 import { BubbleLayer } from "../ui/BubbleLayer";
 import { Toasts } from "../ui/Hud";
 import { Kitchen } from "../ui/Kitchen";
-import { StaffSellChip } from "../ui/StaffSellChip";
 import { Cutaway, OrbitCam } from "./cam";
 import { Model } from "./models";
 
@@ -317,7 +316,6 @@ export default function ShopInterior({ lotId }: { lotId: string }) {
         <p className="text-xs font-semibold text-ink/60">
           {lot.name} · {biz.open ? "đang mở tiệm" : "đang đóng cửa"} · {orders.length} khách chờ
         </p>
-        <StaffSellChip className="mt-2 max-w-none" />
         {!biz.open && <OpenShopButton />}
         <div className="mt-2 grid grid-cols-[2fr_1fr] gap-2">
           <button

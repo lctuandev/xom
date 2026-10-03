@@ -1,12 +1,11 @@
 "use client";
 
 import { content } from "@xom/content";
-import { formatClock, openDue } from "@xom/sim";
+import { openDue } from "@xom/sim";
 import { useEffect, useState } from "react";
 import { send, sendWork } from "../net/socket";
 import { useGame } from "../store";
 import { sheetForPlace } from "../world";
-import { StaffSellChip } from "./StaffSellChip";
 
 /**
  * Hành động theo ngữ cảnh, ngay trên thanh điều hướng (vùng ngón cái):
@@ -29,7 +28,6 @@ export function ActionBar() {
       <ShopButton />
       <KitchenButton />
       <AwayChip />
-      <AtStallStaffChip />
       <RideChip />
       <OpenStallButton />
       <EnterShopButton />
@@ -214,13 +212,6 @@ function RideChip() {
   );
 }
 
-/** Đứng ở quầy mà nhân viên đang trong ca: xem nhân viên bán hoặc giành tự bán. */
-function AtStallStaffChip() {
-  const atStall = useGame((s) => s.atStall);
-  if (!atStall) return null;
-  return <StaffSellChip />;
-}
-
 function AwayChip() {
   const open = useGame((s) => s.me?.business?.open ?? false);
   const staff = useGame((s) => s.me?.business?.staff);
@@ -228,19 +219,10 @@ function AwayChip() {
   const atStall = useGame((s) => s.atStall);
   const setGoal = useGame((s) => s.setGoal);
   if (!open || atStall) return null;
-  // Nhân viên trong ca thì quầy vẫn bán (KIENTRUC §2) — báo rõ, không giục chủ về.
+  // Nhân viên trong ca thì quầy vẫn bán (KIENTRUC §2) — không báo gì (góp ý đợt 3: bỏ thông báo "bán dùm"), chỉ nhắc khi vắng
+  // chủ mà không ai bán.
   const onDuty = !!staff && minute >= staff.from && minute < staff.to;
-  if (staff && onDuty)
-    return (
-      <div
-        className="pointer-events-auto flex w-full max-w-xs items-center gap-2 rounded-2xl bg-leaf/90 py-2 pr-2 pl-3 text-cream shadow-lg"
-        data-staff-duty="on"
-      >
-        <span className="text-xs font-semibold">
-          👩‍🍳 {staff.name} đang bán thay — tới {formatClock(staff.to)}
-        </span>
-      </div>
-    );
+  if (staff && onDuty) return null;
   return (
     <div
       className="pointer-events-auto flex w-full max-w-xs items-center justify-between gap-2 rounded-2xl bg-ink/85 py-2 pr-2 pl-3 text-cream shadow-lg"

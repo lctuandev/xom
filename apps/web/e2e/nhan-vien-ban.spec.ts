@@ -1,8 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 import { openBanhMiStall, register, setClock, shot, waitForMorning } from "./helpers";
 
-// Có nhân viên thì chủ không bắt buộc đứng bán (góp ý chơi thử, UC-M6): đứng ở quầy thấy "Khoa đang bán — bạn cứ đứng xem",
-// bấm "🙋 Tôi bán" để giành bán, bấm lại trả quầy; đóng quầy rồi tới ca nhân viên tự mở cửa giúp.
+// Có nhân viên thì chủ không bắt buộc đứng bán (UC-M6): nhân viên trong ca bán, không còn chip "đang bán thay / 🙋 Tôi bán"
+// (góp ý đợt 3 — nhiều cửa hàng thì thông báo "bán dùm" thành ồn); đóng quầy rồi tới ca nhân viên tự mở cửa lặng lẽ.
 
 const send = (page: Page, event: string, body: unknown) =>
   page.evaluate(
@@ -15,7 +15,7 @@ const send = (page: Page, event: string, body: unknown) =>
     [event, body] as const,
   );
 
-test("có nhân viên: chủ đứng xem hoặc giành bán; nhân viên tới ca tự mở cửa", async ({ page }) => {
+test("có nhân viên: không còn chip bán dùm; nhân viên tới ca tự mở cửa", async ({ page }) => {
   test.setTimeout(300_000);
   await register(page, "Chủ quầy");
   await waitForMorning(page, 9);
@@ -25,15 +25,10 @@ test("có nhân viên: chủ đứng xem hoặc giành bán; nhân viên tới c
     true,
   );
 
-  // Đứng ở quầy, nhân viên trong ca: nhân viên bán, chủ đứng xem.
-  const chip = page.locator("[data-staff-selling]");
-  await expect(chip).toHaveAttribute("data-staff-selling", "staff", { timeout: 15_000 });
-  await expect(chip).toContainText("Khoa đang bán");
+  // Đứng ở quầy, nhân viên trong ca: không có chip "bán dùm" nào trên màn hình.
+  await page.waitForTimeout(1500);
+  await expect(page.locator("[data-staff-selling], [data-staff-duty=on]")).toHaveCount(0);
   await shot(page, "51-nhan-vien-ban-chu-xem");
-  await chip.getByRole("button", { name: "🙋 Tôi bán" }).tap();
-  await expect(chip).toHaveAttribute("data-staff-selling", "owner");
-  await chip.getByRole("button", { name: "Để Khoa bán" }).tap();
-  await expect(chip).toHaveAttribute("data-staff-selling", "staff");
 
   // Chủ đóng quầy → hôm nay thôi; sáng hôm sau tới ca nhân viên tự mở cửa (còn hàng), chủ khỏi chờ ra mở.
   expect((await send(page, "biz:close", {})).ok).toBe(true);
@@ -43,8 +38,20 @@ test("có nhân viên: chủ đứng xem hoặc giành bán; nhân viên tới c
         ?.day ?? 1,
   );
   await setClock(page, 7 * 60, day + 1);
-  await expect(page.getByText(/Khoa tới ca, mở cửa quầy giúp bạn/).first()).toBeVisible({
-    timeout: 30_000,
-  });
-  await expect(chip).toHaveAttribute("data-staff-selling", "staff");
+  // Mở cửa lặng lẽ: quầy đang bán, không có toast "mở cửa giúp".
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            (
+              window as unknown as {
+                xomDebug: { me?: () => { business?: { open: boolean } | null } | null };
+              }
+            ).xomDebug.me?.()?.business?.open ?? false,
+        ),
+      { timeout: 30_000 },
+    )
+    .toBe(true);
+  await expect(page.getByText(/mở cửa quầy giúp bạn/)).toHaveCount(0);
 });

@@ -260,11 +260,8 @@ export class BusinessService {
       if (!availableMenu(biz.productId, menuOf(biz), stock).length) continue;
       const name = content.data.staff.people.find((p) => p.id === e.staffId)?.name ?? "Nhân viên";
       try {
+        // Mở cửa lặng lẽ (góp ý đợt 3: nhiều cửa hàng thì thông báo "làm dùm" thành ồn) — chủ xem ở 🏬 Các cửa hàng.
         await this.doOpen(room, biz.ownerId, biz);
-        this.broadcast.notify(biz.ownerId, {
-          kind: "good",
-          text: `🔓 ${name} tới ca, mở cửa ${content.lot(biz.lotId ?? "").kind === "house" ? "tiệm" : "quầy"} giúp bạn rồi`,
-        });
         this.broadcast.me(biz.ownerId);
       } catch (err) {
         if (!(err instanceof GameError)) throw err;
