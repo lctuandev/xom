@@ -989,6 +989,18 @@ export const economySchema = z.object({
   startingMoney: vnd,
   /** Dựng sạp có mái trên ô đất (trả mỗi lần dọn tới một ô sạp — docs/BANDO.md bước C). */
   stallBuild: vnd.default(300_000),
+  /**
+   * Mua đứt ô đất (docs/BANDO.md bước D): giá = tiền thuê × priceDays; chủ ô không trả tiền thuê, trả thuế đất mỗi ngày mở
+   * sạp; mỗi người tối đa maxPerPlayer ô trong một xóm; bán lại cho xóm được sellBack × giá mua.
+   */
+  land: z
+    .object({
+      priceDays: z.number().int().positive(),
+      taxPerDay: vnd,
+      maxPerPlayer: z.number().int().positive(),
+      sellBack: z.number().min(0).max(1),
+    })
+    .default({ priceDays: 40, taxPerDay: 15_000, maxPerPlayer: 2, sellBack: 0.7 }),
   /** Vốn dự phòng gửi sẵn trong tài khoản 🏦 cho người mới (mua xe xong vẫn còn tiền sống, rút ở ATM). */
   startingBank: z.number().int().nonnegative().default(0),
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */

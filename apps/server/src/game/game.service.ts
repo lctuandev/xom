@@ -67,6 +67,7 @@ import { NeedsService } from "./needs.js";
 import { OrderService } from "./orders.js";
 import { PaymentService } from "./payment.js";
 import { addFriendship, friendship as friendshipOf, ORDER_REACH } from "./place.js";
+import { PlotService } from "./plots.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { emptyReport } from "./report.js";
@@ -176,6 +177,7 @@ export class GameService implements OnModuleDestroy {
     readonly broadcast: Broadcast,
     readonly biz: BusinessService,
     readonly rewards: RewardService,
+    readonly plots: PlotService,
   ) {}
 
   setEmitter(emitter: GameEmitter) {
@@ -392,6 +394,7 @@ export class GameService implements OnModuleDestroy {
     const row = await this.prisma.room.findUniqueOrThrow({ where: { id: roomId } });
     const room = new RoomRuntime(row.id, row.code, row.day, row.minute);
     room.chunks = (row.chunks ?? []) as unknown as OpenedChunk[];
+    await this.plots.load(room);
     this.rooms.set(room.id, room);
     room.timer = setInterval(() => room.runTick(() => this.tick(room)), TICK_MS);
     room.peerTimer = setInterval(() => this.flushPeers(room), PEER_FLUSH_MS);
@@ -1100,6 +1103,7 @@ export class GameService implements OnModuleDestroy {
         lots: this.occupantsCache.get(room.id) ?? (await this.refreshOccupants(room)),
         sites: await this.projects.sites(room.id),
         chunks: room.chunks,
+        plots: room.plots,
       },
       shift: this.work.view(room, playerId),
       roster: this.roster(room),
@@ -1168,6 +1172,7 @@ export class GameService implements OnModuleDestroy {
             level: biz.level,
             selfSell: room.selfSell.has(playerId),
             leaseLotId: lease?.lotId ?? null,
+            lotOwned: this.plots.owns(room, playerId, biz.lotId),
           }
         : null,
       inventory,
@@ -1234,7 +1239,12 @@ export class GameService implements OnModuleDestroy {
   private emitWorld(room: RoomRuntime) {
     void Promise.all([this.refreshOccupants(room), this.projects.sites(room.id)])
       .then(([lots, sites]) =>
-        this.emitter?.toRoom(room.id, "world", { lots, sites, chunks: room.chunks }),
+        this.emitter?.toRoom(room.id, "world", {
+          lots,
+          sites,
+          chunks: room.chunks,
+          plots: room.plots,
+        }),
       )
       .catch((err) => this.logger.warn(`không cập nhật được quầy: ${err}`));
   }

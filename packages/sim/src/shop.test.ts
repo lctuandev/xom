@@ -1,9 +1,12 @@
 import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import {
+  landPrice,
+  landRefund,
   needsFoodCert,
   nextShopStep,
   normalizeShopName,
+  openDue,
   rentLateFee,
   rentOwed,
   rentPromiseOptions,
@@ -121,5 +124,22 @@ describe("đòi tiền nhà (UC-F13)", () => {
       kind: "evict",
       reason: "deposit",
     });
+  });
+});
+
+describe("ô đất mua đứt (docs/BANDO.md bước D)", () => {
+  const lotId = "khu_dong__sap_mai_a__1_0";
+  it("chủ ô không trả tiền thuê, trả phí ngày + thuế đất", () => {
+    const rented = openDue(content, lotId);
+    const owned = openDue(content, lotId, true);
+    expect(rented.rent).toBe(content.lot(lotId).rentPerDay);
+    expect(owned.rent).toBe(0);
+    expect(owned.fee).toBe(content.economy.fees.daily.stall + content.economy.land.taxPerDay);
+    expect(owned.total).toBeLessThan(rented.total);
+  });
+  it("giá = tiền thuê × số ngày; bán lại theo tỉ lệ, làm tròn nghìn", () => {
+    const price = landPrice(content, lotId);
+    expect(price).toBe(content.lot(lotId).rentPerDay * content.economy.land.priceDays);
+    expect(landRefund(content, price)).toBe(Math.round((price * 0.7) / 1000) * 1000);
   });
 });

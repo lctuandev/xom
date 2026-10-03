@@ -15,6 +15,7 @@ import { MarketService } from "./market.js";
 import { NeedsService } from "./needs.js";
 import { OrderService } from "./orders.js";
 import { PaymentService } from "./payment.js";
+import { PlotService } from "./plots.js";
 import { ProjectService } from "./projects.js";
 import { RegularService } from "./regulars.js";
 import { ReviewService } from "./reviews.js";
@@ -41,6 +42,7 @@ import { XomGateway } from "./xom.gateway.js";
     NeedsService,
     PaymentService,
     RewardService,
+    PlotService,
     GameGateway,
     BusinessGateway,
     TradeGateway,

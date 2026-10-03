@@ -59,6 +59,8 @@ export interface BusinessView {
   level?: number;
   /** Số nhân viên đang thuê. */
   staffCount?: number;
+  /** Đang bán ở ô đất mình mua đứt (không trả tiền thuê, trả thuế đất — docs/BANDO.md bước D). */
+  lotOwned?: boolean;
 }
 
 export interface InventoryView {
@@ -139,6 +141,14 @@ export interface MeView {
   };
 }
 
+/** Ô đất đã mua đứt (bước D): ai là chủ, giá mua (bán lại tính theo giá này). */
+export interface PlotView {
+  lotId: string;
+  ownerId: string;
+  ownerName: string;
+  price: number;
+}
+
 export interface LotOccupant {
   lotId: string;
   businessId: string;
@@ -159,6 +169,8 @@ export interface WorldView {
   lots: LotOccupant[];
   /** Khu đã mở ghép vào bản đồ gốc (docs/BANDO.md bước A). */
   chunks?: { chunkId: string; gx: number; gz: number }[];
+  /** Ô đất đã có chủ mua đứt (docs/BANDO.md bước D). */
+  plots?: PlotView[];
   /** 🏗️ Công trường đang thi công (UC-J6). */
   sites?: SiteView[];
 }
@@ -1144,6 +1156,9 @@ export const debugContractSchema = z.object({ templateId: contentId });
 export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId });
 /** ⬆️ Nâng cấp tiệm. */
 export const bizUpgradeSchema = z.object({ pay: payMethodSchema.optional() });
+/** Mua đứt / bán lại ô đất (docs/BANDO.md bước D). */
+export const landBuySchema = z.object({ lotId: contentId, pay: payMethodSchema.optional() });
+export const landSellSchema = z.object({ lotId: contentId });
 /** Cho một người nghỉ (id dòng Employee); bỏ trống = cho nghỉ hết (bản cũ). */
 export const staffFireSchema = z.object({ employeeId: z.string().uuid().optional() });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });

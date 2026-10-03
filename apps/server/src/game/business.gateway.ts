@@ -10,6 +10,8 @@ import {
   bizUpgradeSchema,
   emptySchema,
   hostEventSchema,
+  landBuySchema,
+  landSellSchema,
   menuSchema,
   rentPaySchema,
   rentPromiseSchema,
@@ -41,6 +43,18 @@ export class BusinessGateway {
 
   private handle: IntentRunner["handle"] = (...a) => this.runner.handle(...a);
   private handleWith: IntentRunner["handleWith"] = (...a) => this.runner.handleWith(...a);
+
+  @SubscribeMessage("land:buy")
+  landBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, landBuySchema, body, (ctx, p) =>
+      this.game.plots.buy(ctx, p.lotId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("land:sell")
+  landSell(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, landSellSchema, body, (ctx, p) => this.game.plots.sell(ctx, p.lotId));
+  }
 
   @SubscribeMessage("biz:update")
   updateBusiness(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {

@@ -69,11 +69,23 @@ export function nextShopStep(o: {
 export function openDue(
   content: Content,
   lotId: string,
+  /** Ô đất mình đã mua đứt (docs/BANDO.md bước D): không trả tiền thuê, trả thuế đất. */
+  owned = false,
 ): { rent: number; fee: number; total: number } {
   const lot = content.lot(lotId);
-  const rent = lot.kind === "house" ? 0 : lot.rentPerDay;
-  const fee = content.economy.fees.daily[lot.kind];
+  const rent = lot.kind === "house" || owned ? 0 : lot.rentPerDay;
+  const fee = content.economy.fees.daily[lot.kind] + (owned ? content.economy.land.taxPerDay : 0);
   return { rent, fee, total: rent + fee };
+}
+
+/** Giá mua đứt một ô đất (chỉ ô sạp có mái). */
+export function landPrice(content: Content, lotId: string): number {
+  return content.lot(lotId).rentPerDay * content.economy.land.priceDays;
+}
+
+/** Tiền xóm trả lại khi bán ô (làm tròn nghìn). */
+export function landRefund(content: Content, price: number): number {
+  return Math.round((price * content.economy.land.sellBack) / 1000) * 1000;
 }
 
 // ───────────── Đòi tiền nhà (UC-F13) ─────────────

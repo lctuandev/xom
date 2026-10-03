@@ -85,6 +85,7 @@ model Player {
   reviews        Review[]        @relation("ReviewsReceived")
   stories        StoryEntry[]
   residentVisits ResidentVisit[]
+  plots          Plot[]
 }
 
 /// Một "xóm": có đồng hồ riêng. Đăng ký thì có xóm riêng; vào xóm bạn bằng `code` (UC-J1).
@@ -98,6 +99,7 @@ model Room {
   chunks    Json          @default("[]")
   createdAt DateTime      @default(now())
   players   Player[]
+  plots     Plot[]
   projects  RoomProject[]
 }
 
@@ -520,4 +522,22 @@ model ResidentVisit {
   regularSince Int?
 
   @@unique([ownerId, residentId])
+}
+
+/// Ô đất đã mua đứt trong một xóm (docs/BANDO.md bước D). Chỉ ô sạp có mái; chủ ô không trả tiền thuê, trả thuế đất.
+model Plot {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  roomId    String   @db.Uuid
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  /// Id chỗ bán (content.lot) — ô của khu: "<khu>__<chỗ>__<gx>_<gz>".
+  lotId     String
+  ownerId   String   @db.Uuid
+  owner     Player   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Giá đã trả (bán lại tính theo giá này).
+  price     Int
+  boughtDay Int
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, lotId])
+  @@index([ownerId])
 }

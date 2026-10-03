@@ -81,6 +81,8 @@ export interface ClientToServerEvents {
   /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
   "market:sell": Intent<{ itemId: string }>;
   "biz:update": Intent<{ lotId: string; pay?: PayMethod }>;
+  "land:buy": Intent<{ lotId: string; pay?: PayMethod }>;
+  "land:sell": Intent<{ lotId: string }>;
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;

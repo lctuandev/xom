@@ -1,5 +1,12 @@
 import { content } from "@xom/content";
-import type { DishView, EventView, MovePayload, OrderEvent, WeatherView } from "@xom/shared";
+import type {
+  DishView,
+  EventView,
+  MovePayload,
+  OrderEvent,
+  PlotView,
+  WeatherView,
+} from "@xom/shared";
 import {
   chunksKey,
   composeMap,
@@ -93,6 +100,8 @@ export class RoomRuntime {
 
   /** Khu đã mở (docs/BANDO.md bước A) — lưới đi lại của xóm = bản đồ gốc + các khu này. */
   chunks: OpenedChunk[] = [];
+  /** Ô đất đã có chủ (bước D) — PlotService nạp / cập nhật. */
+  plots: PlotView[] = [];
   private gridCache?: { key: string; grid: Grid };
 
   constructor(

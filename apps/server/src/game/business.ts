@@ -33,6 +33,7 @@ import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { PaymentService } from "./payment.js";
 import { requireAt } from "./place.js";
+import { PlotService } from "./plots.js";
 import { addToReport } from "./report.js";
 import { GameError, type IntentContext, type RoomRuntime } from "./room.js";
 import { ShopService } from "./shop.js";
@@ -57,6 +58,7 @@ export class BusinessService {
     private readonly shops: ShopService,
     private readonly story: StoryService,
     private readonly broadcast: Broadcast,
+    private readonly plots: PlotService,
   ) {}
 
   /** GameService giữ danh sách quầy đang chiếm chỗ trong xóm (để chặn hai người một chỗ). */
@@ -82,7 +84,11 @@ export class BusinessService {
     const taken = this.occupants(room.id).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
     const lot = content.lot(lotId);
-    if (lot.kind !== "stall") {
+    // Ô đất có chủ (bước D): chỉ chủ dùng; chủ dọn về ô của mình thì sạp vẫn còn, không phải dựng lại.
+    const plot = this.plots.ownerOf(room, lotId);
+    if (plot && plot.ownerId !== playerId)
+      throw new GameError("invalid_state", `Ô đất này của ${plot.ownerName}`);
+    if (lot.kind !== "stall" || plot) {
       await this.prisma.business.update({ where: { id: biz.id }, data: { lotId } });
       this.broadcast.world(room);
       return;
@@ -283,7 +289,7 @@ export class BusinessService {
       if (!paid) {
         // Xe đẩy trả tiền chỗ vỉa hè theo ngày khi mở; tiệm trong nhà thì tiền nhà đã tính theo hợp đồng (UC-F12).
         // Phí chợ/vệ sinh (xe đẩy) hoặc thuế khoán (tiệm) mỗi ngày — Luật 2.2.
-        const { rent, fee } = openDue(content, lot.id);
+        const { rent, fee } = openDue(content, lot.id, this.plots.owns(room, playerId, lot.id));
         if (rent > 0)
           await this.payment.payOut(tx, playerId, rent, SYSTEM.landlord, "rent", lot.id);
         // Phí chợ thu tận tay; một phần vào quỹ xóm làm công trình chung (UC-J5), còn lại cho ban quản lý chợ.
