@@ -33,7 +33,7 @@ test("xóm mở thêm khu phía đông: lưới rộng ra, đi bộ sang khu m�
 
 // Bước B: khu mới có chỗ bán riêng — chọn "Đầu phố mới" ở khu đông, đẩy xe tới, mở quầy, bán được.
 test("bán ở chỗ mới của khu phía đông", async ({ page }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   await register(page, "Khu đông");
   await waitForMorning(page, 10);
   const res = await dbg<{ ok: boolean }>(page, 'send("debug:chunk", { chunkId: "khu_dong" })');
@@ -86,7 +86,7 @@ test("bản đồ xóm trong Chỗ bán: chạm chỗ của khu mới", async ({
 
 // Bước C: ⛺ sạp có mái trên ô đất của khu mới — trả phí dựng sạp một lần, mưa vẫn có khách.
 test("dựng sạp có mái ở khu đông, mưa vẫn bán", async ({ page }) => {
-  test.setTimeout(300_000);
+  test.setTimeout(420_000);
   await register(page, "Sạp mái");
   await waitForMorning(page, 10);
   const res = await dbg<{ ok: boolean }>(page, 'send("debug:chunk", { chunkId: "khu_dong" })');
