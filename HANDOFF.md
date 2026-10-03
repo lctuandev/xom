@@ -129,6 +129,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [ ] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — viết `docs/ART.md` (phong cách, thứ tự
   model, ngân sách polygon/texture cho điện thoại, quy trình `pnpm assets`), hỏi chủ dự án chốt rồi làm dần; gắn với nhánh
   `feat/phong-cach-toon`.
+- [ ] **Tự gia hạn đồ thuê khi đến hạn** (tiền nhà mặt tiền, chỗ vỉa hè / ô đất, xe ôm thuê theo ngày…): thêm tuỳ chọn "🔁 Tự gia
+  hạn" — tới hạn thì tự trả từ 💵/🏦 theo cách trả đã chọn; thiếu tiền thì báo, không tự vay. Cài trong sheet 🏠 Thuê nhà & giấy tờ
+  + 📍 Chỗ bán; server trả tiền ở mốc tính tiền hiện có (cuối ngày / lúc mở quầy).
 - [ ] **Đèn đường**: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /
   `Glows` (vầng sáng dưới đất, z-fighting / culling / sắp xếp trong suốt).
 
@@ -177,6 +180,6 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 1. Bản đồ mở (`docs/BANDO.md`, đã chốt): A–D xong; làm **E** (xây tiệm theo mẫu trên ô của mình + lên tầng) rồi **F** (tự mở
    khu khi ≥ 70% ô có chủ).
 2. Góp ý đợt 3 (mục 3.1b) theo thứ tự: thông báo nhân viên + đẩy icon, icon tin nhắn, lỗi nhiều tiệm, chữ quầy/tiệm, avatar Hồ sơ,
-   đèn đường, plan Blender (`docs/ART.md`).
+   tự gia hạn đồ thuê, đèn đường, plan Blender (`docs/ART.md`).
 3. Tách `game.service.ts` + gom `ActionBar`.
 4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
