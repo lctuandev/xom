@@ -82,6 +82,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Cử chỉ (vẫy tay, bắt tay, high-five) có animation | ⏳ | 2 | |
 | Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ✅ | ✅ | 1.11 | Không có "năng lượng" ép giờ chơi |
 | Kỹ năng (tay nhanh, nhớ món, ăn nói) tăng nhờ làm thật + mở khoá theo cấp | ✅ | 1.11 | UC-P1 |
+| Hồ sơ có chân dung + tên + cấp/danh tiếng (khung như NPC), câu nói theo việc hôm nay | ✅ | 1.25 | Playwright `ho-so` |
 | Thành tựu (dữ liệu, có tiến độ) | ✅ | 1.11 | UC-P2 |
 | Thưởng thành tựu + 4 nhiệm vụ hằng ngày (🎁 Nhận, một lần, tiền nhỏ có trần); chấm đỏ 🎯/🏅 khi có thưởng chờ nhận | ✅ | 1.11 | UC-P4 |
 | Bảng xóm: giải tuần 7 hạng mục, thị phần theo món, đang hot; số liệu quầy 7 ngày + so TB xóm | ✅ | 1.11 | UC-P2 |

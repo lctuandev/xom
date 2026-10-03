@@ -14,6 +14,7 @@ import { send } from "../net/socket";
 import { useGame } from "../store";
 import { isSpicy, setSpicy } from "../voice";
 import { Achievements, useMyStats } from "./BoardSheet";
+import { Counterpart } from "./Counterpart";
 import { ClaimButton, RewardTag } from "./Rewards";
 import { StoryTimeline } from "./Story";
 
@@ -143,7 +144,25 @@ export function ProfileSheet() {
   const me = useGame((s) => s.me);
   if (!me) return null;
   return (
-    <FeatureSheet id="profile" title={me.displayName}>
+    <FeatureSheet
+      id="profile"
+      title={me.displayName}
+      // Chân dung + tên như khi đứng trước NPC (góp ý đợt 3): dáng của chính mình là character-male-a (looks.ts).
+      face={
+        <Counterpart
+          model="character-male-a"
+          name={me.displayName}
+          tag={`Cấp ${me.progress.level} · ${FAME_LABEL[me.progress.fame]}`}
+          line={
+            me.today.sold > 0
+              ? `Hôm nay mình bán được ${me.today.sold} món, thu ${vnd(me.today.revenue)}.`
+              : me.today.wages > 0
+                ? `Hôm nay mình đi làm thuê được ${vnd(me.today.wages)}.`
+                : "Một ngày mới ở xóm — làm gì trước đây ta?"
+          }
+        />
+      }
+    >
       <div className="mb-3 rounded-2xl bg-white p-3 shadow-sm">
         <div className="flex items-baseline justify-between">
           <p className="font-extrabold">Cấp {me.progress.level}</p>
