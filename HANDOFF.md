@@ -155,8 +155,10 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   `stats:me` có `shops[]`; 📊 Sổ sách chọn "🏪 Cửa hàng này / 👤 Tất cả"; thẻ 🏬 có 💰 hôm nay + ⭐; 📒 Đánh giá vốn theo cửa
   hàng đang quản lý). Gốc: **Mỗi cửa hàng có doanh thu & đánh giá riêng**: 📊 Sổ sách theo cửa hàng (chọn cửa hàng / tổng), 📒 Đánh giá theo cửa hàng
   đang quản lý (đã có `Review.businessId`), thẻ 🏬 Các cửa hàng ghi doanh thu hôm nay + ⭐ từng cửa hàng.
-- [ ] **Toast thông báo không che thanh trạng thái**: chuyển vùng toast xuống giữa hai cột icon neo (dưới ô cấp + thanh thông tin,
-  giữa cột trái và cột phải), như phác thảo: `cấp – thông tin` / `icon · thông báo · icon`.
+- [x] **Toast thông báo không che thanh trạng thái** (xong: trên bản đồ toast nằm cột giữa hàng icon neo — `Toasts inline`, vẫn
+  nổi trên sheet; trong nhà/tiệm giữ kiểu cũ; Playwright `thong-bao`).
+- [ ] **Lỗi: dọn về xóm khác không được — báo "chưa vào xóm"** (👥 Hàng xóm → 🏘️ Các xóm khác → Dọn về). Tái hiện bằng e2e trước khi
+  sửa.
 
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").

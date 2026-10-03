@@ -56,13 +56,16 @@ export function Hud() {
         </div>
       </header>
 
-      <Toasts />
       <div className="flex flex-1 flex-col">
         <Objective />
         <DeliveryHud />
         {/* Icon neo hai bên bản đồ: người chơi tự ghim trong ☰ Menu (cài đặt nằm trong Menu, không neo riêng). */}
         <div className="flex items-start justify-between">
           <SideRail side="left" />
+          {/* Thông báo nằm giữa hai cột icon (góp ý đợt 4) — không che thanh trạng thái / thông tin trên đầu. */}
+          <div className="relative z-60 min-w-0 flex-1 pt-1">
+            <Toasts inline />
+          </div>
           <SideRail side="right" />
         </div>
         <div className="mt-auto mb-24 flex flex-col items-start gap-2 px-3">
@@ -326,7 +329,7 @@ function JobBadge() {
   );
 }
 
-export function Toasts() {
+export function Toasts({ inline = false }: { inline?: boolean }) {
   const toasts = useGame((s) => s.toasts);
   const dismiss = useGame((s) => s.dismissToast);
   const openSheet = useGame((s) => s.openSheet);
@@ -335,9 +338,12 @@ export function Toasts() {
     // Một khối duy nhất đè tạm lên thanh trạng thái + dải tin (3,5 giây), mới nhất trên cùng — không còn các mẩu rời căn
     // giữa chồng lên dải tin / thanh nhiệm vụ (góp ý chơi thử). Nằm trên mọi sheet/modal để lỗi không bị che.
     <div
-      className="pointer-events-none fixed inset-x-3 top-[max(env(safe-area-inset-top),0.75rem)] z-60 flex flex-col overflow-hidden rounded-2xl bg-cream shadow-lg ring-1 ring-ink/10"
+      className={`pointer-events-none flex flex-col overflow-hidden rounded-2xl bg-cream shadow-lg ring-1 ring-ink/10 ${
+        inline ? "" : "fixed inset-x-3 top-[max(env(safe-area-inset-top),0.75rem)] z-60"
+      }`}
       aria-live="polite"
       data-toasts={toasts.length}
+      data-toasts-inline={inline || undefined}
     >
       {[...toasts].reverse().map((t, i) => (
         <button
@@ -362,7 +368,9 @@ export function Toasts() {
                 : "border-l-sun"
           }`}
         >
-          <span className="line-clamp-2 flex-1">{t.text}</span>
+          <span className={`flex-1 ${inline ? "line-clamp-3 text-[13px]" : "line-clamp-2"}`}>
+            {t.text}
+          </span>
           {t.open && <span className="shrink-0 self-center text-xs text-red">Xem ›</span>}
         </button>
       ))}
