@@ -30,7 +30,8 @@ function houseModel(h: number): string {
 const STREET_TREES: CityModel[] = ["cay-dua", "tree_oak", "cay-chuoi", "tree_fat"];
 const PARK_TREES: CityModel[] = ["bui-tre", "tree_oak", "cay-chuoi", "cay-dua", "tree_default"];
 const FLOWERS: CityModel[] = ["flower_redA", "flower_yellowA", "flower_purpleA"];
-const CARS: CityModel[] = ["sedan", "van", "taxi", "suv", "hatchback-sports"];
+// Xe hơi đậu: mẫu tự dựng nhẹ (~150 tam giác — docs/ART.md bước 2) thay xe Kenney ~2.000 tam giác.
+const CARS: CityModel[] = ["xe-hoi-do", "xe-hoi-xanh", "xe-hoi-trang"];
 
 /** Số giả ngẫu nhiên cố định theo ô (cùng bản đồ → cùng cảnh). */
 function hash(c: number, r: number, salt = 0) {
@@ -101,7 +102,8 @@ function layout() {
               x: x + 1.2,
               z: z + (roadS ? -1.4 : 1.4),
             });
-          if (roadN && c % 4 === 2) put(out, "electricity-pole", { x: x - 1.8, z: z - 1.4 });
+          // Cột điện bê tông kiểu Việt (art/blender/nha_que.py — thay cột Kenney nặng gấp 4).
+          if (roadN && c % 4 === 2) put(out, "cot-dien", { x: x - 1.8, z: z - 1.4 });
         } else if (ch === "a") {
           // Hẻm: chậu cây trước nhà.
           if (h < 0.5) put(out, "pot_large", { x: x + 1.5, z: z + (h - 0.25) * 6 });
@@ -168,9 +170,9 @@ function layout() {
     }
   }
   // Xe đậu ven phố chính.
-  put(out, "sedan", { x: -18, z: 1.6, rot: Math.PI / 2 });
-  put(out, "van", { x: 6, z: -1.6, rot: -Math.PI / 2 });
-  put(out, "taxi", { x: 18, z: -1.6, rot: -Math.PI / 2 });
+  put(out, "xe-hoi-trang", { x: -18, z: 1.6, rot: Math.PI / 2 });
+  put(out, "xe-hoi-xanh", { x: 6, z: -1.6, rot: -Math.PI / 2 });
+  put(out, "xe-hoi-do", { x: 18, z: -1.6, rot: -Math.PI / 2 });
   put(out, "delivery", { x: -4, z: 1.6, rot: Math.PI / 2 });
   put(out, "dumpster", { x: 21, z: TILE + 1.2, rot: Math.PI });
   return { out, buildings, lamps };

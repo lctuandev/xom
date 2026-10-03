@@ -68,7 +68,13 @@
   nướng vào màu đỉnh (Cycles), chi tiết mảnh là mặt phẳng 2 tam giác (`plate`) → 250–620 tam giác/nhà, bundle village 111 KB.
   Đo trong game (Pixel 7 headless): draw call không đổi (118–121); tam giác 90k → ~116k. **Cảnh đã vượt ngân sách 80k từ trước**
   — Playwright `nha-pho` chặn hồi quy ở mức hiện tại; kéo về ngân sách là việc riêng (HANDOFF).
-- Còn: bước 2 (nhà cấp 4, tạp hoá, UBND, trường theo kit), mái chi tiết hơn (camera nhìn từ trên thấy mái nhiều nhất).
+- **Bước 2 (2026-10-03)**: `tiled_gable` (mái ngói chia hàng sáng/tối, mỗi hàng 2 tam giác — camera nhìn từ trên thấy mái
+  nhiều nhất); nhà cấp 4 làm lại (cửa pa-nô, cửa sổ song sắt, bậc thềm, hiên cột) ~146 tam giác; nhà ống 1/2 lầu + tạp hoá dựng
+  bằng kit nhà phố (giữ tên model cũ); UBND, trường mái ngói sọc; **cột điện bê tông** `cot-dien` (98 tam giác, thay Kenney 416)
+  và **xe hơi đậu** `xe-hoi-*` (150 tam giác, thay Kenney ~2.000). AO nướng cho mọi model tĩnh tự dựng (`nha_que.export`).
+  Đo: draw call 93–99, tam giác ~117k → ~103–105k.
+- Còn: nhân vật modular (bước 4), xe máy (bước 5), đồ quầy chi tiết (6), cây làm lại (7); hiệu năng: chia instance theo vùng /
+  LOD để cắt theo khung nhìn (instanced mesh phủ cả bản đồ nên hiện không bị cắt).
 
 ## 8. Đã chốt (2026-10-03)
 1. Phong cách: **A. low-poly chi tiết** (màu phẳng, nhiều hình khối hơn, AO nướng vào màu đỉnh, atlas palette nhỏ).

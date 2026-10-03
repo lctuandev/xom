@@ -35,6 +35,10 @@ PALETTE = {
     "voi_trang": "#fff6e3",
     "ngoi": "#d6503a",  # mái ngói đỏ
     "ngoi_dam": "#8f3324",
+    "ngoi_vua": "#b8442f",  # hàng ngói xen (mái sọc)
+    "be_tong": "#a9a49a",  # cột điện bê tông
+    "su": "#e8e4dc",  # sứ cách điện
+    "day_dien": "#26282b",
     "ton": "#6d8fa8",  # mái tôn xanh
     "tranh": "#c9a45c",  # mái lá/rơm
     "tre": "#a8894c",  # vách tre
@@ -128,6 +132,46 @@ def gable_roof(w, d, z, rise, color, over=0.25, along="x"):
     return assign(o, color)
 
 
+def tiled_gable(w, d, z, rise, over=0.25, rows=6, light="ngoi", dark="ngoi_vua"):
+    """Mái ngói hai mái chạy theo trục x, mỗi mái chia `rows` hàng ngói xen sáng/tối (mỗi hàng 2 tam giác) — nhìn từ trên
+    (camera chính) thấy rõ lớp ngói mà vẫn rẻ (docs/ART.md bước 2). Hai đầu hồi là tam giác tường."""
+    hw, hd = w / 2 + over, d / 2 + over
+    for side in (-1, 1):
+        for k in range(rows):
+            t0, t1 = k / rows, (k + 1) / rows
+            y0, y1 = side * hd * (1 - t0), side * hd * (1 - t1)
+            z0_, z1_ = z + rise * t0, z + rise * t1
+            me = bpy.data.meshes.new("ngoi")
+            bm = bmesh.new()
+            vs = [bm.verts.new(v) for v in [(-hw, y0, z0_), (hw, y0, z0_), (hw, y1, z1_), (-hw, y1, z1_)]]
+            bm.faces.new(vs)
+            bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+            for f in bm.faces:
+                if f.normal.z < 0:
+                    f.normal_flip()
+            bm.to_mesh(me)
+            bm.free()
+            o = bpy.data.objects.new("ngoi", me)
+            bpy.context.collection.objects.link(o)
+            assign(o, light if k % 2 == 0 else dark)
+    # Đầu hồi (tường tam giác) + bờ nóc.
+    for sx in (-1, 1):
+        me = bpy.data.meshes.new("hoi")
+        bm = bmesh.new()
+        x = sx * (w / 2)
+        vs = [bm.verts.new(v) for v in [(x, -d / 2, z), (x, d / 2, z), (x, 0, z + rise * (d / 2) / hd)]]
+        bm.faces.new(vs)
+        for f in bm.faces:
+            if f.normal.x * sx < 0:
+                f.normal_flip()
+        bm.to_mesh(me)
+        bm.free()
+        o = bpy.data.objects.new("hoi", me)
+        bpy.context.collection.objects.link(o)
+        assign(o, "voi_trang")
+    box((w + 2 * over + 0.1, 0.18, 0.12), (0, 0, z + rise + 0.03), "ngoi_dam")
+
+
 def hip_roof(w, d, z, rise, color, over=0.3):
     """Mái tranh bốn mái (nhà tranh): đỉnh là một đường nóc ngắn."""
     hw, hd = w / 2 + over, d / 2 + over
@@ -195,8 +239,55 @@ def bake_vertex_colors(objs):
         o.data.materials.append(shared)
 
 
-def export(name: str):
-    """Gộp mọi object thành một mesh một material (màu ở vertex color), xuất GLB, rồi dọn cảnh."""
+def plate(w, h, loc, color):
+    """Mặt phẳng mỏng quay ra phố (-Y): 2 tam giác thay cho hộp 12 tam giác — song sắt, nan cửa, kệ, khung (chi tiết chỉ
+    nhìn từ phía trước; giữ ngân sách tam giác khi cả dãy phố dùng chung — PLAN §1)."""
+    x, y, z = loc
+    me = bpy.data.meshes.new("plate")
+    bm = bmesh.new()
+    vs = [
+        bm.verts.new(p)
+        for p in [(x - w / 2, y, z - h / 2), (x + w / 2, y, z - h / 2), (x + w / 2, y, z + h / 2), (x - w / 2, y, z + h / 2)]
+    ]
+    bm.faces.new(vs)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    for f in bm.faces:
+        if f.normal.y > 0:
+            f.normal_flip()
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new("plate", me)
+    bpy.context.collection.objects.link(o)
+    return assign(o, color)
+
+
+
+
+def bake_ao(obj, strength=0.6):
+    """Nướng AO (Cycles) vào một lớp màu đỉnh rồi nhân vào màu gốc."""
+    scene = bpy.context.scene
+    scene.render.engine = "CYCLES"
+    scene.cycles.samples = 24
+    scene.cycles.device = "CPU"
+    mesh = obj.data
+    col = mesh.color_attributes["Col"]
+    ao = mesh.color_attributes.new("AO", "FLOAT_COLOR", "CORNER")
+    mesh.color_attributes.active_color = ao
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    scene.render.bake.target = "VERTEX_COLORS"
+    bpy.ops.object.bake(type="AO")
+    for c, a in zip(col.data, ao.data, strict=True):
+        k = 1 - strength * (1 - a.color[0])
+        c.color = (c.color[0] * k, c.color[1] * k, c.color[2] * k, c.color[3])
+    mesh.color_attributes.remove(mesh.color_attributes["AO"])
+    mesh.color_attributes.active_color = mesh.color_attributes["Col"]
+
+
+def export(name: str, ao: bool = True):
+    """Gộp mọi object thành một mesh một material (màu ở vertex color), nướng AO vào màu đỉnh (docs/ART.md), xuất GLB, dọn
+    cảnh."""
     objs = [o for o in bpy.context.scene.objects if o.type == "MESH"]
     bake_vertex_colors(objs)
     bpy.ops.object.select_all(action="DESELECT")
@@ -207,6 +298,8 @@ def export(name: str):
     joined = bpy.context.active_object
     joined.name = name
     bpy.ops.object.shade_flat()
+    if ao:
+        bake_ao(joined)
     OUT.mkdir(parents=True, exist_ok=True)
     bpy.ops.export_scene.gltf(
         filepath=str(OUT / f"{name}.glb"),
@@ -238,20 +331,27 @@ def nha_tranh():
 
 
 def nha_cap4(color="voi_vang", name="nha-cap4"):
-    """Cấp 1: nhà cấp 4 tường vôi, mái ngói đỏ hai mái, hiên trước có cột, bậc thềm."""
+    """Cấp 1: nhà cấp 4 tường vôi, mái ngói đỏ có hàng ngói, hiên trước hai cột, cửa gỗ pa-nô, hai cửa sổ song sắt, bậc
+    thềm, AO nướng (docs/ART.md bước 2 — ~300 tam giác vì cả hàng 50 nhà dân dùng)."""
     w, d, h = 3.2, 2.6, 2.3
     y_wall = -d / 2 + 0.3  # tường lùi vào chừa hiên
     box((w + 0.2, d + 0.5, 0.2), (0, -0.1, 0.1), "nen")
+    box((1.0, 0.35, 0.1), (0, -d / 2 - 0.25, 0.05), "nen")  # bậc thềm
     box((w, d - 0.3, h), (0, 0.15, 0.2 + h / 2), color)
-    front_openings(y_wall, 0.2, w)
-    # Hiên: hai cột tròn + mái ngói kéo ra.
+    # Cửa gỗ hai cánh pa-nô + hai cửa sổ song sắt (mặt phẳng — chỉ nhìn từ trước).
+    plate(0.95, 1.95, (0, y_wall - 0.02, 0.2 + 0.975), "go")
+    plate(0.04, 1.95, (0, y_wall - 0.03, 0.2 + 0.975), "go_sang")
+    for sx in (-1, 1):
+        x = sx * 1.05
+        plate(0.7, 0.75, (x, y_wall - 0.02, 0.2 + 1.35), "kinh")
+        for k in range(5):
+            plate(0.03, 0.75, (x - 0.28 + k * 0.14, y_wall - 0.03, 0.2 + 1.35), "den")
+        plate(0.78, 0.06, (x, y_wall - 0.03, 0.2 + 1.75), "go_sang")
+    # Hiên: hai cột tròn, mái ngói kéo ra che hiên.
     for sx in (-1, 1):
         cyl(0.08, h, (sx * (w / 2 - 0.15), -d / 2 - 0.1, 0.2 + h / 2), "cot", verts=6)
-    gable_roof(w, d + 0.3, 0.2 + h, 1.05, "ngoi", over=0.3, along="x")
-    # Bờ nóc sẫm màu.
-    box((w + 0.7, 0.16, 0.12), (0, 0, 0.2 + h + 1.08), "ngoi_dam")
+    tiled_gable(w, d + 0.3, 0.2 + h, 1.05, over=0.3, rows=6)
     export(name)
-
 
 def nha_ong(floors=1, color="voi_xanh", name="nha-ong-1-lau"):
     """Cấp 2–3: nhà ống mặt tiền hẹp, tầng trệt cửa sắt kéo + mái hiên tôn, lầu có ban công."""
@@ -302,7 +402,7 @@ def truong_lang():
         box((0.6, 0.06, 1.7), (x, -d / 2 + 0.37, 0.2 + 0.85), "go")
     for i in range(5):
         cyl(0.07, h, (-1.75 + i * 0.875, -d / 2 - 0.05, 0.2 + h / 2), "cot", verts=6)
-    gable_roof(w, d + 0.1, 0.2 + h, 0.9, "ngoi", over=0.2, along="x")
+    tiled_gable(w, d + 0.1, 0.2 + h, 0.9, over=0.2, rows=6)
     cyl(0.03, 4.5, (1.6, -d / 2 - 0.6, 2.25), "cot", verts=6)
     box((0.02, 0.6, 0.4), (1.6, -d / 2 - 0.92, 4.2), "co_do")
     export("truong-lang")
@@ -321,7 +421,7 @@ def uy_ban():
         for i in range(3):
             box((0.55, 0.06, 1.1), (-1.0 + i, -d / 2 + 0.57, 0.25 + f * fh + 1.2), "kinh")
     box((1.6, 0.1, 0.4), (0, -d / 2 + 0.0, 0.25 + fh * 2 - 0.2), "co_do")
-    gable_roof(w, d - 0.4, 0.25 + fh * 2, 1.0, "ngoi", over=0.25, along="x")
+    tiled_gable(w, d - 0.4, 0.25 + fh * 2, 1.0, over=0.25, rows=6)
     export("uy-ban")
 
 
@@ -402,6 +502,35 @@ def dong_rom():
     export("dong-rom")
 
 
+def cot_dien():
+    """Cột điện bê tông vuông thon kiểu Việt + xà ngang, sứ cách điện, hộp công tơ, mớ dây chùng (thay cột Kenney 416 tam
+    giác — docs/ART.md bước 2: ~80 tam giác)."""
+    cyl(0.13, 7.5, (0, 0, 3.75), "be_tong", verts=4, r2=0.08)
+    box((1.6, 0.1, 0.1), (0, 0, 6.9), "be_tong")
+    for x in (-0.7, -0.25, 0.25, 0.7):
+        box((0.07, 0.07, 0.14), (x, 0, 7.02), "su")
+    box((0.28, 0.16, 0.36), (0, -0.14, 2.6), "xam")
+    # Mớ dây chùng đi hai phía (mặt phẳng mảnh).
+    for z in (6.75, 6.55, 6.4):
+        plate(0.03, 0.03, (0, -0.05, z), "day_dien")
+        o = plate(2.2, 0.025, (0, 0, z), "day_dien")
+        o.rotation_euler = (0, 0, 1.5708)
+    o = plate(0.04, 2.2, (0.12, -0.1, 3.5), "day_dien")
+    export("cot-dien")
+
+
+def xe_hoi(color="co_do", name="xe-hoi-do"):
+    """Xe hơi đậu ven đường kiểu hộp đơn giản (~150 tam giác, thay xe Kenney ~2.000 tam giác cho xe đậu)."""
+    box((1.7, 3.8, 0.55), (0, 0, 0.55), color)
+    box((1.5, 2.0, 0.55), (0, 0.15, 1.1), color)
+    box((1.52, 1.6, 0.42), (0, 0.15, 1.1), "kinh")
+    plate(1.3, 0.35, (0, -1.91, 0.65), "xam")  # lưới tản nhiệt
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cyl(0.32, 0.22, (sx * 0.82, sy * 1.25, 0.32), "den", verts=8).rotation_euler = (0, 1.5708, 0)
+    export(name)
+
+
 def cay_atm():
     """Cây ATM vỉa hè (UC-I6): bệ đá, thân tủ xanh ngân hàng, băng vàng logo, màn hình lõm, bàn phím nghiêng,
     khe thẻ / khe tiền, mái che nhỏ + đèn LED, camera. Mặt máy quay -Y (= +Z trong three)."""
@@ -436,10 +565,7 @@ if __name__ == "__main__":
     nha_tranh()
     nha_cap4("voi_vang", "nha-cap4")
     nha_cap4("voi_xanh", "nha-cap4-xanh")
-    nha_ong(1, "voi_xanh", "nha-ong-1-lau")
-    nha_ong(2, "voi_vang", "nha-ong-2-lau")
-    tiem_tap_hoa("voi_hong", "tiem-tap-hoa")
-    tiem_tap_hoa("voi_trang", "tiem-tap-hoa-trang")
+    # nha-ong-1/2-lau, tiem-tap-hoa(-trang): dựng bằng kit nhà phố (art/blender/nha_pho.py).
     truong_lang()
     uy_ban()
     cay_dua()
@@ -449,3 +575,6 @@ if __name__ == "__main__":
     lu_nuoc()
     dong_rom()
     cay_atm()
+    cot_dien()
+    for c, n in (("co_do", "xe-hoi-do"), ("atm_xanh", "xe-hoi-xanh"), ("voi_trang", "xe-hoi-trang")):
+        xe_hoi(c, n)

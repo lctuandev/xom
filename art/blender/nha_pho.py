@@ -40,29 +40,7 @@ q.PALETTE.update(
     }
 )
 
-box, cyl, sphere = q.box, q.cyl, q.sphere
-
-
-def plate(w, h, loc, color):
-    """Mặt phẳng mỏng quay ra phố (-Y): 2 tam giác thay cho hộp 12 tam giác — song sắt, nan cửa, kệ, khung (chi tiết chỉ
-    nhìn từ phía trước; giữ ngân sách tam giác khi cả dãy phố dùng chung — PLAN §1)."""
-    x, y, z = loc
-    me = bpy.data.meshes.new("plate")
-    bm = bmesh.new()
-    vs = [
-        bm.verts.new(p)
-        for p in [(x - w / 2, y, z - h / 2), (x + w / 2, y, z - h / 2), (x + w / 2, y, z + h / 2), (x - w / 2, y, z + h / 2)]
-    ]
-    bm.faces.new(vs)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    for f in bm.faces:
-        if f.normal.y > 0:
-            f.normal_flip()
-    bm.to_mesh(me)
-    bm.free()
-    o = bpy.data.objects.new("plate", me)
-    bpy.context.collection.objects.link(o)
-    return q.assign(o, color)
+box, cyl, sphere, plate = q.box, q.cyl, q.sphere, q.plate
 
 
 def beveled_body(w, d, h, z0, color):
@@ -178,9 +156,10 @@ def nha_pho(name, floors=1, wall="son_kem", ground="cuon", roof="ton", sign="bie
     # Tầng trệt.
     door_w, door_h = w - 0.6, 2.4
     {"cuon": roller_shutter, "sat": folding_gate, "quan": open_shop}[ground](y, z0, door_w, door_h)
-    # Bảng hiệu (chữ vẽ lúc chạy ở quầy người chơi; nhà NPC để trống màu) + khung.
-    box((w - 0.1, 0.12, 0.55), (0, y - 0.08, z0 + gh - 0.3), sign)
-    plate(w, 0.06, (0, y - 0.15, z0 + gh - 0.02), "sat")
+    # Bảng hiệu (chữ vẽ lúc chạy ở quầy người chơi; nhà NPC để trống màu) + khung. Nhà ở (sign=None) thì không có.
+    if sign:
+        box((w - 0.1, 0.12, 0.55), (0, y - 0.08, z0 + gh - 0.3), sign)
+        plate(w, 0.06, (0, y - 0.15, z0 + gh - 0.02), "sat")
     # Mái hiên tôn đua ra vỉa hè.
     q.shed_roof(w, 0.95, z0 + gh - 1.0, z0 + gh - 0.8, y - 0.9, "ton")
     # Các lầu.
@@ -203,8 +182,7 @@ def nha_pho(name, floors=1, wall="son_kem", ground="cuon", roof="ton", sign="bie
         box((w + 0.08, d + 0.08, 0.3), (0, 0, top + 0.15), wall)  # tường chắn mái
         q.shed_roof(w, d * 0.9, top + 0.3, top + 0.9, y + 0.05, "ton", over=0.12)
     elif roof == "ngoi":
-        q.gable_roof(w, d, top, 1.0, "ngoi", over=0.25, along="x")
-        box((w + 0.55, 0.16, 0.12), (0, 0, top + 1.03), "ngoi_dam")
+        q.tiled_gable(w, d, top, 1.0, over=0.25, rows=6)
     else:  # sân thượng: lan can xây + bồn nước + chòi cầu thang mái tôn
         for sx in (-1, 1):
             box((0.12, d, 0.7), (sx * (w / 2 - 0.06), 0, top + 0.35), wall)
@@ -216,56 +194,7 @@ def nha_pho(name, floors=1, wall="son_kem", ground="cuon", roof="ton", sign="bie
     # Hông: ống thoát nước + hộp công tơ điện.
     cyl(0.05, total, (-w / 2 + 0.05, y + 0.05, z0 + total / 2), "ong", verts=6)
     box((0.3, 0.12, 0.4), (-w / 2 + 0.35, y - 0.06, z0 + 2.0), "xam")
-    export_ao(name)
-
-
-def bake_ao(obj, strength=0.6):
-    """Nướng AO (Cycles) vào một lớp màu đỉnh rồi nhân vào màu gốc."""
-    scene = bpy.context.scene
-    scene.render.engine = "CYCLES"
-    scene.cycles.samples = 24
-    scene.cycles.device = "CPU"
-    mesh = obj.data
-    col = mesh.color_attributes["Col"]
-    ao = mesh.color_attributes.new("AO", "FLOAT_COLOR", "CORNER")
-    mesh.color_attributes.active_color = ao
-    bpy.ops.object.select_all(action="DESELECT")
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    scene.render.bake.target = "VERTEX_COLORS"
-    bpy.ops.object.bake(type="AO")
-    for c, a in zip(col.data, ao.data, strict=True):
-        k = 1 - strength * (1 - a.color[0])
-        c.color = (c.color[0] * k, c.color[1] * k, c.color[2] * k, c.color[3])
-    mesh.color_attributes.remove(mesh.color_attributes["AO"])
-    mesh.color_attributes.active_color = mesh.color_attributes["Col"]
-
-
-def export_ao(name: str):
-    """Như nha_que.export nhưng nướng AO trước khi xuất."""
-    objs = [o for o in bpy.context.scene.objects if o.type == "MESH"]
-    q.bake_vertex_colors(objs)
-    bpy.ops.object.select_all(action="DESELECT")
-    for o in objs:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objs[0]
-    bpy.ops.object.join()
-    joined = bpy.context.active_object
-    joined.name = name
-    bpy.ops.object.shade_flat()
-    bake_ao(joined)
-    q.OUT.mkdir(parents=True, exist_ok=True)
-    bpy.ops.export_scene.gltf(
-        filepath=str(q.OUT / f"{name}.glb"),
-        export_format="GLB",
-        use_selection=False,
-        export_apply=True,
-        export_yup=True,
-        export_vertex_color="ACTIVE",
-    )
-    tris = sum(len(p.vertices) - 2 for p in joined.data.polygons)
-    print(f"✔ {name}: ~{tris} tam giác")
-    q.reset()
+    q.export(name)
 
 
 if __name__ == "__main__":
@@ -278,3 +207,8 @@ if __name__ == "__main__":
     # Nhà xây trên ô đất của người chơi (content.buildings, docs/BANDO.md bước E).
     nha_pho("tiem-1-tang", floors=0, wall="son_kem", ground="quan", roof="ngoi", sign="bien_vang")
     nha_pho("nha-2-tang", floors=1, wall="son_xanh_la", ground="quan", roof="san", sign="bien_do")
+    # Nhà dân theo cấp (content.housing — nhà ống 1/2 lầu) và tạp hoá xóm quê: cùng kit, giữ tên model cũ.
+    nha_pho("nha-ong-1-lau", floors=1, wall="voi_xanh", ground="sat", roof="ngoi", sign=None, w=3.2)
+    nha_pho("nha-ong-2-lau", floors=2, wall="voi_vang", ground="sat", roof="san", sign=None, w=3.2)
+    nha_pho("tiem-tap-hoa", floors=0, wall="voi_hong", ground="quan", roof="ton", sign="bien_xanh")
+    nha_pho("tiem-tap-hoa-trang", floors=0, wall="voi_trang", ground="quan", roof="ngoi", sign="bien_do")

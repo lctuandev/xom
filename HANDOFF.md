@@ -212,8 +212,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
 2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`).
-   ~~Góp ý đợt 4~~ xong. **Đang làm: đồ hoạ bước 2** (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn, cột điện
-   nhẹ hơn) → rồi **góp ý đợt 5** (mục 3.1d: tách Vựa xe / Cửa hàng / Thuê nhà & giấy tờ).
+   ~~Góp ý đợt 4~~ xong. ~~Đồ hoạ bước 2~~ xong (mái ngói sọc, nhà cấp 4/ống/tạp hoá/UBND/trường, cột điện bê tông, xe đậu nhẹ;
+   tam giác ~105k). **Tiếp: góp ý đợt 5** (mục 3.1d: tách Vựa xe / Cửa hàng / Thuê nhà & giấy tờ).
    **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1. Đã làm: pipeline asset gộp mảnh cùng material của từng model tĩnh
    (`flatten` + `join` trong `packages/assets/scripts/build.mjs` — xe Kenney 5 mảnh → 1) + gộp thân/đầu nhân vật trong Blender
    (`art/blender/gop_nhan_vat.py` → `art/export/characters`, giữ 32 animation) → ~121 → **~94–97 draw call (đạt < 100)**; tam

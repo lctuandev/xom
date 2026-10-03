@@ -20,6 +20,7 @@ test("dãy phố nhà phố Việt, số đo không tăng thêm", async ({ page 
   );
   console.log(`draw calls ${calls}, tris ${tris}`);
   await shot(page, "105-nha-pho");
-  expect(calls).toBeLessThan(130);
-  expect(tris).toBeLessThan(125_000);
+  // Đo 2026-10-03 sau đồ hoạ bước 2: 93–99 draw call, ~103–105k tam giác.
+  expect(calls).toBeLessThan(110);
+  expect(tris).toBeLessThan(115_000);
 });
