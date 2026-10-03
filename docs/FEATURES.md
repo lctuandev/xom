@@ -96,7 +96,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Nhà có số (địa chỉ giao hàng) | ✅ | 1.7 | UC-W5 · biển số nhà, ghim đơn kế tiếp |
 | Không gian riêng khi vào làm (nội thất, camera ngang tầm mắt) | ✅ | 1.7 | UC-W1 · quán cơm Cô Tư, bưu cục Anh Tám |
 | Xóm rộng: đường lớn, ngã tư đèn giao thông, đường nhánh, hẻm, chợ, công viên, trường, văn phòng, bãi xe | ✅ | 1.10 | UC-B6 · bản đồ trong content, tìm đường A* |
-| 🗺️ Bản đồ mở: xóm ghép thêm khu bốn phía (lưới kiểu Township) — bước A: lưới ghép theo xóm, cảnh/giao thông/đi bộ dựng lại; bước B: chỗ bán vỉa hè ở khu mới | 🚧 | 1.25 | UC-B12 · docs/BANDO.md (bước C–F: bản đồ xóm, ô đất, mua, xây, tự mở khu) |
+| 🗺️ Bản đồ mở: xóm ghép thêm khu bốn phía (lưới kiểu Township) — bước A: lưới ghép theo xóm, cảnh/giao thông/đi bộ dựng lại; bước B: chỗ bán vỉa hè ở khu mới; bước C: 🗺️ bản đồ xóm thu nhỏ trong Chỗ bán | 🚧 | 1.25 | UC-B12 · docs/BANDO.md (còn: thuê ô đất, mua, xây, tự mở khu) |
 | Góc nhìn tự do: zoom, xoay, nghiêng, đổi kiểu nhìn | ✅ | 1.10 | UC-B7 · chưa làm mờ nhà che |
 | Ngày/đêm: trời theo giờ, đèn đường, cửa sổ sáng, bảng hiệu sáng | ✅ | 1.10 | UC-B8 · đèn giả, không tốn GPU |
 | Sạp đồ ăn NPC theo giờ (sáng/trưa/chiều/tối) | ✅ | 1.10 | UC-B9 · 8 sạp, mua ăn tại chỗ |

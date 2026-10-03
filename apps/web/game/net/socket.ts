@@ -130,7 +130,12 @@ export function connectGame(onSignedOut: () => void): () => void {
       walk: (x: number, z: number) => useGame.getState().setGoal({ kind: "point", x, z }),
       clock: () => useGame.getState().clock,
       // Bản đồ mở (docs/BANDO.md): kích thước lưới hiện tại + vị trí nhân vật.
-      map: () => ({ cols: grid.cols, rows: grid.rows }),
+      map: () => ({
+        cols: grid.cols,
+        rows: grid.rows,
+        origin: grid.map.origin,
+        tile: grid.map.tile,
+      }),
       pos: () => ({ x: getPlayer().position.x, z: getPlayer().position.z }),
     };
 

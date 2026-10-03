@@ -237,10 +237,14 @@ tới gọi "ơi có ai bán không", hàng xóm nhắn "khách đứng chờ k�
 gốc giữ nguyên. Server giữ `Room.chunks`, `room.grid` (xe ôm tính quãng đường trên lưới ghép).
 **Bước B — chỗ bán ở khu mới:** mỗi mẫu khu có 2–3 chỗ vỉa hè rẻ hơn phố gốc (25–35k/ngày, khách thưa hơn ×0,7–0,85), hiện
 trong 📍 Chỗ bán khi khu đã mở; chọn, đẩy xe tới, mở quầy, bán như chỗ cũ. Chưa mở khu thì server từ chối ("Không có chỗ này").
+**Bước C (một phần) — 🗺️ bản đồ xóm:** đầu sheet 📍 Chỗ bán là bản đồ thu nhỏ của cả xóm (lưới ghép, vẽ một canvas): chỗ của
+mình đỏ, còn trống xanh lá, có người xám, nhà mặt tiền xanh dương, chấm vàng là mình đang đứng. Chạm một chấm → dòng chỗ đó được
+tô viền vàng và cuộn tới (quầy đang mở thì nhắc "Đóng quầy rồi mới đổi chỗ được").
 **Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông, chỗ bán của
 khu đứng trên ô đi được ở cả bốn phía); e2e `chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy; chọn chỗ của khu chỉ khi đã
-mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới").
-**Còn lại:** bước C–F trong docs/BANDO.md (sheet 🗺️ Bản đồ xóm, thuê ô đất trống, mua đứt + thuế đất, xây tiệm, tự mở khu).
+mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới";
+bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới thì dòng đó được tô).
+**Còn lại:** thuê ô đất trống (bước C), mua đứt + thuế đất (D), xây tiệm (E), tự mở khu (F) — docs/BANDO.md.
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.
