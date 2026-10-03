@@ -26,7 +26,8 @@
   `xomDebug.send("debug:chunk", { chunkId: "khu_dong" })`. Đo FPS: xem BANDO §8. **Bước B xong**: chỗ bán của khu là dữ liệu
   trong mẫu (`chunks[].lots`), id `<khu>__<chỗ>__<gx>_<gz>` để `content.lot()`/`findLot()` tự giải; `content.lotsIn(chunks)`.
   **Bước C xong**: 🗺️ bản đồ thu nhỏ `ui/XomMap.tsx` trong sheet Chỗ bán; ⛺ sạp có mái (`kind: "stall"`, mưa vẫn bán, dựng
-  300k). **Tiếp: bước D** (chủ dự án đã chọn): bảng `Plot` + mua đứt ô + thuế đất + trần số ô.
+  300k). **Bước D xong**: bảng `Plot` + `PlotService` (`game/plots.ts`), `room.plots`, `land:buy`/`land:sell`, `openDue(…, owned)`.
+  **Tiếp: bước E** (xây tiệm theo mẫu công trình trên ô của mình + lên tầng = cấp tiệm) rồi F (tự mở khu ≥ 70% ô có chủ).
 
 ### 0.2 Dọn dẹp chờ chủ dự án
 - Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch

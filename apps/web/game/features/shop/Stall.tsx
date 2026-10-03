@@ -33,7 +33,8 @@ function OpenButton({
   const lot = biz.lotId ? content.lot(biz.lotId) : null;
   const eco = content.economy;
   // Tiền chỗ (xe đẩy) + phí chợ/thuế trả một lần mỗi ngày (Luật 2.2); tiệm thì tiền nhà theo hợp đồng.
-  const rentDue = !biz.open && lot && !biz.rentPaidToday ? openDue(content, lot.id).total : 0;
+  const rentDue =
+    !biz.open && lot && !biz.rentPaidToday ? openDue(content, lot.id, biz.lotOwned).total : 0;
   const broken = wearState(biz.wear, eco.maintenance) === "broken";
   const cantPay = rentDue > money;
   const hint = broken

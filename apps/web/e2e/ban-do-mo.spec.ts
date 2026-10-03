@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { content } from "@xom/content";
+import { landPrice } from "@xom/sim";
 import {
   closeSheet,
   grantMoney,
@@ -104,4 +105,33 @@ test("dựng sạp có mái ở khu đông, mưa vẫn bán", async ({ page }) =
     timeout: 90_000,
   });
   await serveCustomer(page);
+});
+
+// Bước D: 🏷️ mua đứt ô sạp mình đang thuê (đứng tại ô), ô hiện "của bạn", bán lại cho xóm.
+test("mua đứt ô đất đang thuê rồi bán lại", async ({ page }) => {
+  test.setTimeout(420_000);
+  await register(page, "Chủ đất");
+  await waitForMorning(page, 10);
+  const res = await dbg<{ ok: boolean }>(page, 'send("debug:chunk", { chunkId: "khu_dong" })');
+  expect(res.ok).toBe(true);
+  await grantMoney(page, 5_000_000);
+  await openBanhMiStall(page, /Sạp có mái — ô đất B/);
+  await openFeature(page, "lot");
+  const lotId = "khu_dong__sap_mai_b__1_0";
+  const money = Number(await page.locator("[data-money]").getAttribute("data-money"));
+  await page.locator(`[data-land-buy="${lotId}"]`).tap();
+  await expect(page.locator('[data-land="mine"]')).toBeVisible();
+  await expect
+    .poll(async () => Number(await page.locator("[data-money]").getAttribute("data-money")))
+    .toBe(money - landPrice(content, lotId));
+  await shot(page, "99-o-dat-cua-minh");
+  // Bán đất phải dọn sạp (đóng quầy) trước.
+  await openFeature(page, "stall");
+  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await openFeature(page, "lot");
+  await page
+    .locator('[data-land="mine"]')
+    .getByRole("button", { name: /Bán lại/ })
+    .tap();
+  await expect(page.locator('[data-land="mine"]')).toHaveCount(0);
 });

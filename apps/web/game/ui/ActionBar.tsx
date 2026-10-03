@@ -301,7 +301,7 @@ function OpenStallButton() {
   const biz = useGame((s) => s.me?.business);
   const [busy, setBusy] = useState(false);
   if (!atStall || !biz || biz.open) return null;
-  const due = biz.lotId && !biz.rentPaidToday ? openDue(content, biz.lotId) : null;
+  const due = biz.lotId && !biz.rentPaidToday ? openDue(content, biz.lotId, biz.lotOwned) : null;
   return (
     <button
       type="button"

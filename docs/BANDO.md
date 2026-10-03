@@ -76,7 +76,7 @@ model Plot {
 | A ✅ | `content.chunks` + ghép lưới động theo xóm (`Room.chunks` JSON — gọn hơn bảng riêng) gửi trong `WorldView`; client dựng cảnh / A* / giao thông từ lưới ghép | Xong 2026-10-03 (UC-B12); mở khu bằng `debug:chunk` |
 | B ✅ | Chỗ bán vỉa hè của khu là dữ liệu trong mẫu khu (`chunks[].lots`, ô + lệch); id "<khu>__<chỗ>__<gx>_<gz>" để `content.lot()` tự giải vị trí (mẫu cùng phía cùng kích thước) — không phải đổi ~50 chỗ gọi; `content.lotsIn(chunks)` cho danh sách theo xóm, server chỉ cho chọn chỗ thuộc khu đã mở | Xong 2026-10-03. Bảng `Plot` (sở hữu, công trình) để sang bước D khi có mua đứt |
 | C ✅ | 🗺️ Bản đồ xóm thu nhỏ (canvas, `ui/XomMap.tsx`) đầu sheet 📍 Chỗ bán, chạm chấm để chọn; ⛺ sạp có mái trên ô đất (`kind: "stall"`): mưa vẫn bán (hệ số trong nhà), khách chịu giá ×1,1, thuê 70–80k/ngày + phí quản lý 10k + dựng sạp 300k mỗi lần dọn tới (chốt 2026-10-03) | Xong 2026-10-03 |
-| D | Mua đứt ô + thuế đất + trần số ô; `pnpm balance` thêm chiến lược "mua ô" | Money sink lớn |
+| D ✅ | Mua đứt ô sạp (bảng `Plot`, `PlotService`): đứng tại ô, giá = 40 ngày thuê (~2,8–3,2tr), chủ không trả thuê chỉ trả thuế đất 15k/ngày mở sạp (vào phí — một phần về quỹ xóm), trần 2 ô/người/xóm, người khác không dùng ô của mình, bán lại cho xóm 70% (phải đóng quầy); `pnpm balance` kiểm hoàn vốn 20–120 ngày (đang ~50) | Xong 2026-10-03. Vỉa hè là chỗ chung, nhà mặt tiền vẫn thuê chủ nhà NPC |
 | E | `content.buildings` + xây tiệm (vật liệu, ngày, phụ hồ), công trường 3D; lên tầng = cấp tiệm | Gộp UC-M9 |
 | F | Tự mở khu mới khi ≥ 70% ô có chủ; bảng tin xóm | Hiệu năng: chỉ dựng khu trong tầm camera |
 

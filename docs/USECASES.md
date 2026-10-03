@@ -244,12 +244,20 @@ tô viền vàng và cuộn tới (quầy đang mở thì nhắc "Đóng quầy 
 2026-10-03): mưa vẫn bán như trong nhà (`weatherDemand` dùng hệ số trong nhà cho `stall`), khách chịu giá ×1,1, thuê ô 70–80k/ngày
 + phí quản lý 10k/ngày, **dựng sạp 300k** (`economy.stallBuild`, sổ cái lý do `stall_build`, ghi vào phí trong sổ) mỗi lần dọn
 tới ô sạp. `pnpm balance`: sạp ~300k/ngày (bánh mì tay vừa) — dưới chỗ đông của phố gốc, trên xe đẩy ở khu mới (~185–235k).
+**Bước D — 🏷️ mua đứt ô đất:** dưới mỗi ô sạp trong 📍 Chỗ bán có dòng "Mua đứt · giá" (chưa đứng tại ô thì tự đi tới rồi mở lại
+bảng). Luật: chỉ ô sạp có mái (vỉa hè là chỗ chung); phải đứng tại ô; giá = tiền thuê × 40 ngày; chủ ô không trả tiền thuê, mở sạp
+trả phí 10k + **thuế đất 15k**/ngày (một phần về quỹ xóm như phí chợ); dọn về ô của mình không phải dựng lại sạp; người khác không
+dọn tới được ("Ô đất này của …"), không mua chen khi có người đang thuê; tối đa 2 ô/người/xóm; **bán lại cho xóm 70%** giá mua
+(phải đóng quầy trước, quầy ra khỏi ô). Bản đồ: ô đất của mình màu tím. Hoàn vốn ~50 ngày (`pnpm balance` cảnh báo nếu ngoài
+20–120 ngày).
 **Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông, chỗ bán của
 khu đứng trên ô đi được ở cả bốn phía); e2e `chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy; chọn chỗ của khu chỉ khi đã
 mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới";
 bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới thì dòng đó được tô; dựng sạp có mái, mưa vẫn có khách); e2e
-`chunks.e2e-spec.ts` (dựng sạp trừ đúng 300k); unit `weather.test.ts` (sạp mưa = trong nhà).
-**Còn lại:** mua đứt + thuế đất (D), xây tiệm (E), tự mở khu (F) — docs/BANDO.md.
+`chunks.e2e-spec.ts` (dựng sạp trừ đúng 300k; mua đứt: vỉa hè/đứng xa bị từ chối, chủ dọn về không trả phí dựng, `lotOwned`, hàng
+xóm không dùng được, bán lại +70%); unit `weather.test.ts` (sạp mưa = trong nhà), `shop.test.ts` (openDue chủ ô, giá, tiền bán lại);
+Playwright `ban-do-mo` (mua đứt ô đang thuê, tiền trừ đúng giá, bán lại).
+**Còn lại:** xây tiệm + lên tầng (E), tự mở khu khi ≥ 70% ô có chủ (F) — docs/BANDO.md.
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.

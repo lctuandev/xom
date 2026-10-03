@@ -8,7 +8,7 @@ import { useMapKey } from "../scene/Street";
 // 🗺️ Bản đồ xóm thu nhỏ (docs/BANDO.md bước C): lưới hiện tại của xóm (cả các khu đã mở) vẽ bằng một canvas 2D — đường,
 // vỉa hè, nhà, công viên, chợ, đất trống — kèm các chỗ bán tô màu theo trạng thái. Chạm vào một chỗ để chọn.
 
-export type MapLotState = "mine" | "free" | "taken" | "house";
+export type MapLotState = "mine" | "owned" | "free" | "taken" | "house";
 
 export interface MapLot {
   id: string;
@@ -38,6 +38,7 @@ const TILE_COLOR: Record<string, string> = {
 
 const LOT_COLOR: Record<MapLotState, string> = {
   mine: "#d23c2f",
+  owned: "#8a5a9c",
   free: "#2f7d4f",
   taken: "#7d7a74",
   house: "#3b6fb6",
@@ -129,6 +130,7 @@ export function XomMap({
       />
       <figcaption className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-ink/60">
         <Dot color={LOT_COLOR.mine} label="Chỗ của mình" />
+        <Dot color={LOT_COLOR.owned} label="Ô đất của mình" />
         <Dot color={LOT_COLOR.free} label="Còn trống" />
         <Dot color={LOT_COLOR.taken} label="Có người" />
         <Dot color={LOT_COLOR.house} label="Nhà mặt tiền" />

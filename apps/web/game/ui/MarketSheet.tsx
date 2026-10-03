@@ -48,7 +48,9 @@ export function MarketSheet() {
   // Tiền thuê chỗ còn phải trả hôm nay: nhắc chừa lại để không kẹt vốn.
   const biz = me.business;
   const reserve =
-    biz?.lotId && !biz.open && !biz.rentPaidToday ? openDue(content, biz.lotId).total : 0;
+    biz?.lotId && !biz.open && !biz.rentPaidToday
+      ? openDue(content, biz.lotId, biz.lotOwned).total
+      : 0;
   const eco = content.economy;
   const friend = (me.friendship.cho_dau_moi ?? 0) >= eco.friendDiscountAt;
 

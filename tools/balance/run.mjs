@@ -369,5 +369,18 @@ if (questMoney > Math.min(...wages) * 0.1)
   );
 if (achMoney > Math.max(...vua))
   warnings.push(`tổng thưởng thành tựu (${k(achMoney)}) hơn một ngày lãi tốt nhất`);
+// Mua đứt ô đất (docs/BANDO.md bước D): mục tiêu dài hạn — hoàn vốn bằng tiền thuê tiết kiệm được phải từ 20 tới 120 ngày.
+const land = content.economy.land;
+for (const lot of allLots.filter((l) => l.kind === "stall")) {
+  const price = lot.rentPerDay * land.priceDays;
+  const saved = lot.rentPerDay - land.taxPerDay;
+  const payback = Math.ceil(price / Math.max(1, saved));
+  console.log(
+    `🏷️ Mua ${lot.id}: ${k(price)} · tiết kiệm ${k(saved)}/ngày · hoàn vốn ~${payback} ngày`,
+  );
+  if (payback < 20) warnings.push(`mua ô ${lot.id} hoàn vốn quá nhanh (${payback} ngày)`);
+  if (payback > 120)
+    warnings.push(`mua ô ${lot.id} hoàn vốn quá lâu (${payback} ngày) — không ai mua`);
+}
 console.log(warnings.length ? `\n⚠ ${warnings.join("\n⚠ ")}` : "\n✔ Không có cảnh báo cân bằng");
 console.log(`\nChi tiết: tools/balance/out/strategies.csv (${rows.length} chiến lược)`);

@@ -1,11 +1,14 @@
 "use client";
 
+import type { Lot } from "@xom/content";
 import { content } from "@xom/content";
-import type { BusinessView } from "@xom/shared";
+import type { BusinessView, PlotView } from "@xom/shared";
+import { landPrice, landRefund } from "@xom/sim";
 import { useMemo, useState } from "react";
 import { districtLikes } from "../../districts";
 import { vndShort } from "../../format";
 import { send } from "../../net/socket";
+import { getPlayer } from "../../scene/player";
 import { useGame } from "../../store";
 import { usePayMethod } from "../../ui/PayPicker";
 import { type MapLot, XomMap } from "../../ui/XomMap";
@@ -14,6 +17,7 @@ import { ShopFeature } from "./common";
 
 function LotPicker({ biz }: { biz: BusinessView }) {
   const world = useGame((s) => s.world);
+  const me = useGame((s) => s.me);
   const [open, setOpen] = useState(biz.lotId === null);
   const [focus, setFocus] = useState<string | null>(null);
   const current = biz.lotId ? content.lot(biz.lotId) : null;
@@ -28,13 +32,17 @@ function LotPicker({ biz }: { biz: BusinessView }) {
         state:
           l.id === biz.lotId
             ? "mine"
-            : l.kind === "house"
-              ? "house"
-              : world.lots.some((o) => o.lotId === l.id && o.businessId !== biz.id)
+            : world.plots?.some((p) => p.lotId === l.id && p.ownerId === me?.playerId)
+              ? "owned"
+              : world.plots?.some((p) => p.lotId === l.id)
                 ? "taken"
-                : "free",
+                : l.kind === "house"
+                  ? "house"
+                  : world.lots.some((o) => o.lotId === l.id && o.businessId !== biz.id)
+                    ? "taken"
+                    : "free",
       })),
-    [lots, world.lots, biz.lotId, biz.id],
+    [lots, world.lots, world.plots, me?.playerId, biz.lotId, biz.id],
   );
   const map = (
     <XomMap
@@ -78,6 +86,13 @@ function LotPicker({ biz }: { biz: BusinessView }) {
             Đổi chỗ
           </button>
         </div>
+        {current.kind === "stall" && (
+          <LandRow
+            lot={current}
+            plot={world.plots?.find((p) => p.lotId === current.id)}
+            myId={me?.playerId}
+          />
+        )}
       </>
     );
   }
@@ -87,7 +102,10 @@ function LotPicker({ biz }: { biz: BusinessView }) {
       {map}
       <ul className="flex flex-col gap-2">
         {lots.map((lot) => {
-          const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
+          const plot = world.plots?.find((p) => p.lotId === lot.id);
+          const taken =
+            world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id) ??
+            (plot && plot.ownerId !== me?.playerId ? { ownerName: plot.ownerName } : undefined);
           const selected = biz.lotId === lot.id;
           // Đang thuê nhà: không dọn ra vỉa hè (tiền nhà vẫn chạy) — trả nhà ở 🏠 Thuê nhà & giấy tờ trước.
           const leased = !!biz.leaseLotId && lot.kind !== "house";
@@ -141,6 +159,7 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                   </span>
                 </span>
               </button>
+              {lot.kind === "stall" && <LandRow lot={lot} plot={plot} myId={me?.playerId} />}
             </li>
           );
         })}
@@ -155,6 +174,67 @@ function LotPicker({ biz }: { biz: BusinessView }) {
         )}
       </ul>
     </>
+  );
+}
+
+/**
+ * 🏷️ Ô đất (docs/BANDO.md bước D): mua đứt ô sạp có mái — phải tới tận ô; của mình thì bán lại được cho xóm.
+ */
+function LandRow({ lot, plot, myId }: { lot: Lot; plot?: PlotView; myId?: string }) {
+  const [busy, setBusy] = useState(false);
+  const land = content.economy.land;
+  const price = landPrice(content, lot.id);
+  if (plot && plot.ownerId !== myId)
+    return <p className="px-3 pt-1 text-xs text-ink/60">🏷️ Ô đất của {plot.ownerName}</p>;
+  if (plot)
+    return (
+      <div className="flex items-center justify-between gap-2 px-3 pt-1 text-xs" data-land="mine">
+        <span className="text-leaf font-semibold">
+          🏷️ Ô đất của bạn · không trả thuê, thuế {vndShort(land.taxPerDay)}/ngày mở sạp
+        </span>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await send("land:sell", { lotId: lot.id });
+            setBusy(false);
+          }}
+          className="h-8 shrink-0 rounded-lg bg-ink/5 px-2 font-semibold disabled:opacity-40"
+        >
+          Bán lại · {vndShort(landRefund(content, plot.price))}
+        </button>
+      </div>
+    );
+  return (
+    <div className="flex items-center justify-between gap-2 px-3 pt-1 text-xs">
+      <span className="text-ink/60">
+        Mua đứt thì khỏi trả {vndShort(lot.rentPerDay)}/ngày (tối đa {land.maxPerPlayer} ô)
+      </span>
+      <button
+        type="button"
+        disabled={busy}
+        data-land-buy={lot.id}
+        onClick={async () => {
+          const p = getPlayer().position;
+          if (Math.hypot(p.x - lot.position.x, p.z - lot.position.z) > 5) {
+            // Phải tới tận ô xem đất (server kiểm) — đi tới rồi mở lại bảng này.
+            useGame.getState().setGoal({ kind: "point", ...lot.position, open: "lot" });
+            useGame.getState().openSheet(null);
+            useGame
+              .getState()
+              .toast({ kind: "info", text: "🚶 Tới ô đất rồi bấm Mua đứt lần nữa" });
+            return;
+          }
+          setBusy(true);
+          await send("land:buy", { lotId: lot.id, pay: usePayMethod.getState().method });
+          setBusy(false);
+        }}
+        className="h-8 shrink-0 rounded-lg bg-sun px-2 font-semibold disabled:opacity-40"
+      >
+        🏷️ Mua đứt · {vndShort(price)}
+      </button>
+    </div>
   );
 }
 

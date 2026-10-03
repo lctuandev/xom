@@ -226,7 +226,7 @@ function OpenShopButton() {
   const biz = useGame((s) => s.me?.business);
   const [busy, setBusy] = useState(false);
   if (!biz?.lotId) return null;
-  const due = biz.rentPaidToday ? 0 : openDue(content, biz.lotId).total;
+  const due = biz.rentPaidToday ? 0 : openDue(content, biz.lotId, biz.lotOwned).total;
   return (
     <button
       type="button"
