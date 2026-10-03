@@ -42,7 +42,7 @@ function LotPicker({ biz }: { biz: BusinessView }) {
 
   return (
     <ul className="flex flex-col gap-2">
-      {content.data.lots.map((lot) => {
+      {content.lotsIn(world.chunks).map((lot) => {
         const taken = world.lots.find((o) => o.lotId === lot.id && o.businessId !== biz.id);
         const selected = biz.lotId === lot.id;
         // Đang thuê nhà: không dọn ra vỉa hè (tiền nhà vẫn chạy) — trả nhà ở 🏠 Thuê nhà & giấy tờ trước.

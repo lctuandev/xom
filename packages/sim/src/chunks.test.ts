@@ -61,4 +61,20 @@ describe("bản đồ mở: ghép khu (docs/BANDO.md §3)", () => {
     expect(path.length).toBeGreaterThan(0);
     expect(path.at(-1)?.x).toBeCloseTo(far.x, 0);
   });
+
+  it("chỗ bán của khu (bước B): id tự giải ra vị trí đứng được trên lưới ghép, đủ bốn phía", () => {
+    const opened: OpenedChunk[] = [];
+    for (const id of ["khu_dong", "khu_dong", "khu_tay", "khu_bac", "khu_nam", "khu_nam"])
+      opened.push(nextChunkSlot(chunk(id), opened));
+    const g = new Grid(composeMap(base, tpl, opened));
+    const lots = content.lotsIn(opened);
+    const extra = lots.length - content.data.lots.length;
+    expect(extra).toBe(opened.reduce((n, o) => n + chunk(o.chunkId).lots.length, 0));
+    for (const l of lots) expect(g.canStand(l.position), l.id).toBe(true);
+    // Hai khu đông khác chỗ: cùng mẫu, cách nhau đúng một bề rộng khu.
+    const a = content.lot("khu_dong__dau_pho__1_0").position;
+    const b = content.lot("khu_dong__dau_pho__2_0").position;
+    expect(b.x - a.x).toBe((chunk("khu_dong").rows[0]?.length ?? 0) * base.tile);
+    expect(content.lot("khu_tay__dau_pho__m1_0").position.x).toBeLessThan(base.origin.x);
+  });
 });

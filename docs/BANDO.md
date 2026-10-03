@@ -74,7 +74,7 @@ model Plot {
 | Bước | Nội dung | Ghi chú |
 |---|---|---|
 | A ✅ | `content.chunks` + ghép lưới động theo xóm (`Room.chunks` JSON — gọn hơn bảng riêng) gửi trong `WorldView`; client dựng cảnh / A* / giao thông từ lưới ghép | Xong 2026-10-03 (UC-B12); mở khu bằng `debug:chunk` |
-| B | Bảng `Plot` + migration từ `lotId`; server đọc chỗ bán từ Plot | Đổi ~50 chỗ dùng `content.lot()` → qua một `PlotRepo` |
+| B ✅ | Chỗ bán vỉa hè của khu là dữ liệu trong mẫu khu (`chunks[].lots`, ô + lệch); id "<khu>__<chỗ>__<gx>_<gz>" để `content.lot()` tự giải vị trí (mẫu cùng phía cùng kích thước) — không phải đổi ~50 chỗ gọi; `content.lotsIn(chunks)` cho danh sách theo xóm, server chỉ cho chọn chỗ thuộc khu đã mở | Xong 2026-10-03. Bảng `Plot` (sở hữu, công trình) để sang bước D khi có mua đứt |
 | C | Sheet 🗺️ Bản đồ xóm (lưới từ trên, gộp Chỗ bán + Thuê nhà); thuê ô đất trống dựng sạp có mái | Mobile-first, Pixel 7 |
 | D | Mua đứt ô + thuế đất + trần số ô; `pnpm balance` thêm chiến lược "mua ô" | Money sink lớn |
 | E | `content.buildings` + xây tiệm (vật liệu, ngày, phụ hồ), công trường 3D; lên tầng = cấp tiệm | Gộp UC-M9 |

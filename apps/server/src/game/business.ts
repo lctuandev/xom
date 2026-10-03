@@ -71,7 +71,9 @@ export class BusinessService {
   async updateLot({ room, playerId }: IntentContext, lotId: string) {
     const biz = await this.businesses.require(playerId);
     if (lotId === biz.lotId) return;
-    if (!content.lotById.has(lotId)) throw new GameError("invalid_payload", "Không có chỗ này");
+    // Chỗ gốc hoặc chỗ của khu xóm mình đã mở (docs/BANDO.md bước B).
+    if (!content.lotsIn(room.chunks).some((l) => l.id === lotId))
+      throw new GameError("invalid_payload", "Không có chỗ này");
     // Nhà mặt tiền: phải ký hợp đồng thuê trước (UC-F12) — mở bằng vốn, không khoá theo cấp.
     if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
     // Đang thuê nhà mà dọn ra vỉa hè: tiền nhà vẫn tính mỗi ngày + trả thêm tiền chỗ — chặn, trả nhà trước.

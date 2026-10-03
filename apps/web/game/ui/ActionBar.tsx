@@ -313,7 +313,7 @@ function OpenStallButton() {
       }}
       className="pointer-events-auto h-11 w-full max-w-xs rounded-2xl bg-leaf px-4 text-sm font-semibold text-cream shadow-lg active:scale-[0.97]"
     >
-      🔓 {biz.lotId && content.lotById.get(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
+      🔓 {biz.lotId && content.findLot(biz.lotId)?.kind === "house" ? "Mở tiệm" : "Mở quầy"}
       {due?.rent ? ` · thuê chỗ ${Math.round(due.rent / 1000)}k` : ""}
       {due?.fee ? ` · ${due.rent ? "phí" : "thuế khoán"} ${Math.round(due.fee / 1000)}k` : ""}
     </button>
@@ -325,7 +325,7 @@ function EnterShopButton() {
   const atStall = useGame((s) => s.atStall);
   const lotId = useGame((s) => s.me?.business?.lotId);
   const setInside = useGame((s) => s.setInside);
-  if (!atStall || !lotId || content.lotById.get(lotId)?.kind !== "house") return null;
+  if (!atStall || !lotId || content.findLot(lotId)?.kind !== "house") return null;
   return (
     <button
       type="button"

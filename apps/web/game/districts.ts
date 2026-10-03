@@ -27,7 +27,7 @@ export function xomFame(lots: LotOccupant[]): DistrictFame[] {
   return districtFame(
     content,
     lots
-      .filter((l) => l.open && content.lotById.has(l.lotId))
+      .filter((l) => l.open && !!content.findLot(l.lotId))
       .map((l) => ({
         trafficId: content.lot(l.lotId).traffic,
         category: content.product(l.productId).category,

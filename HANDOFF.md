@@ -23,8 +23,9 @@
 - 🗺️ Bản đồ mở (docs/BANDO.md) **đã chốt** + **bước A xong** (UC-B12): `content.chunks` 4 mẫu khu, `sim/chunks.ts` `composeMap`,
   `Room.chunks` (migration `20261003110000_room_chunks`), `room.grid` (xe ôm), `WorldView.chunks`, web `nav.grid`/`MAP_BOUNDS` là
   live binding + `setMapChunks` (gọi trong store), `useStreetLayout`/`useMapKey` cho Street/NightLights/Traffic. Mở khu thử:
-  `xomDebug.send("debug:chunk", { chunkId: "khu_dong" })`. Đo FPS: xem BANDO §8. **Tiếp: bước B** (bảng `Plot`, `PlotRepo` thay
-  ~50 chỗ `content.lot()`).
+  `xomDebug.send("debug:chunk", { chunkId: "khu_dong" })`. Đo FPS: xem BANDO §8. **Bước B xong**: chỗ bán của khu là dữ liệu
+  trong mẫu (`chunks[].lots`), id `<khu>__<chỗ>__<gx>_<gz>` để `content.lot()`/`findLot()` tự giải; `content.lotsIn(chunks)`.
+  **Tiếp: bước C** (sheet 🗺️ Bản đồ xóm + thuê ô đất trống).
 
 ### 0.2 Dọn dẹp chờ chủ dự án
 - Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch

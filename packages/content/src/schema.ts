@@ -569,6 +569,18 @@ export const chunkSchema = z.object({
   name: z.string(),
   side: z.enum(["east", "west", "north", "south"]),
   rows: z.array(z.string().regex(/^[=|+csaBTKHPMSLN.]+$/)).min(1),
+  /**
+   * Chỗ bán vỉa hè của khu (docs/BANDO.md bước B): như `lots` nhưng vị trí là ô trong mẫu (cột, hàng) + lệch trong ô (mét).
+   * Id thật trong xóm: "<khu>__<chỗ>__<gx>_<gz>" (content.lot() tự giải).
+   */
+  lots: z
+    .array(
+      lotSchema.omit({ position: true, kind: true }).extend({
+        cell: z.object({ c: z.number().int().min(0), r: z.number().int().min(0) }),
+        offset: z.object({ x: z.number(), z: z.number() }).default({ x: 0, z: 0 }),
+      }),
+    )
+    .default([]),
 });
 export type Chunk = z.infer<typeof chunkSchema>;
 

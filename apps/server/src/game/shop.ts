@@ -152,7 +152,7 @@ export class ShopService {
 
   /** 1. Ký hợp đồng thuê nhà: đặt cọc + kiểm vốn dự phòng; dọn đồ nghề vào nhà. */
   async lease(room: RoomRuntime, playerId: string, lotId: string) {
-    const lot = content.lotById.get(lotId);
+    const lot = content.findLot(lotId);
     if (!lot || lot.kind !== "house")
       throw new GameError("invalid_payload", "Không phải nhà cho thuê");
     const biz = await this.business(playerId);

@@ -26,7 +26,7 @@ export function anchorOf(key: string, myId: string | undefined, localOnly = fals
   if (place) return place.position;
   // Khách réo ở quầy vắng chủ (UC-B11): khung thoại hiện ngay trước quầy.
   if (key.startsWith("lot:")) {
-    const lot = content.lotById.get(key.slice(4));
+    const lot = content.findLot(key.slice(4));
     if (lot) return { x: lot.position.x, z: lot.position.z - 1.2 };
   }
   if (content.speakerById.has(key)) return speakerWalker(key).position;

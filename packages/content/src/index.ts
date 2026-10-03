@@ -3,6 +3,7 @@ import {
   type Calendar,
   type ContentData,
   contentSchema,
+  type Lot,
   MAP_WALKABLE,
   type Recipe,
   type WeatherId,
@@ -185,6 +186,18 @@ export function loadContent(raw: unknown): Content {
             : [...(m.rows.at(-1) ?? "")].map((ch, c) => [ch, k.rows[0]?.[c]]);
     if (pairs.some(([a, b]) => road(a) !== road(b)))
       errors.push(`khu ${k.id}: đường ở mép không nối với đường của bản đồ gốc`);
+    // Cùng phía thì cùng kích thước — vị trí khu tính được chỉ từ (gx, gz), id chỗ bán không phụ thuộc khu khác.
+    const same = parsed.chunks.find((o) => o.side === k.side);
+    if (same && (same.rows.length !== k.rows.length || same.rows[0]?.length !== w))
+      errors.push(`khu ${k.id}: khác kích thước khu ${same.id} cùng phía`);
+    if (k.id.includes("__")) errors.push(`khu ${k.id}: id không được có "__"`);
+    for (const l of k.lots) {
+      if (l.id.includes("__")) errors.push(`khu ${k.id}: chỗ ${l.id} không được có "__"`);
+      if (!MAP_WALKABLE.includes(k.rows[l.cell.r]?.[l.cell.c] ?? "?"))
+        errors.push(`khu ${k.id}: chỗ ${l.id} không đứng trên ô đi được`);
+      if (!parsed.trafficProfiles.some((t) => t.id === l.traffic))
+        errors.push(`khu ${k.id}: chỗ ${l.id} không có khu khách ${l.traffic}`);
+    }
   }
   if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
     errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
@@ -308,8 +321,65 @@ export class Content {
   equipment(id: string) {
     return must(this.equipmentById.get(id), "equipment", id);
   }
-  lot(id: string) {
-    return must(this.lotById.get(id), "lot", id);
+  lot(id: string): Lot {
+    return must(this.findLot(id), "lot", id);
+  }
+  /** Chỗ bán theo id (cả chỗ của khu đã mở), không có thì undefined. */
+  findLot(id: string): Lot | undefined {
+    return this.lotById.get(id) ?? this.chunkLot(id);
+  }
+
+  /** Id chỗ bán của một khu đã mở (docs/BANDO.md bước B): "<khu>__<chỗ>__<gx>_<gz>", số âm viết "m1". */
+  static chunkLotId(chunkId: string, lotId: string, gx: number, gz: number) {
+    const n = (v: number) => (v < 0 ? `m${-v}` : String(v));
+    return `${chunkId}__${lotId}__${n(gx)}_${n(gz)}`;
+  }
+
+  private readonly chunkLots = new Map<string, Lot | null>();
+  /** Giải id chỗ bán của khu: vị trí = gốc khu (tính từ gx, gz — mẫu cùng phía cùng kích thước) + ô trong mẫu. */
+  private chunkLot(id: string): Lot | undefined {
+    if (!id.includes("__")) return undefined;
+    const hit = this.chunkLots.get(id);
+    if (hit !== undefined) return hit ?? undefined;
+    const [chunkId, lotId, at] = id.split("__");
+    const [gx, gz] = (at ?? "")
+      .split("_")
+      .map((v) => (v.startsWith("m") ? -Number(v.slice(1)) : Number(v)));
+    const chunk = this.data.chunks.find((c) => c.id === chunkId);
+    const def = chunk?.lots.find((l) => l.id === lotId);
+    let lot: Lot | null = null;
+    if (chunk && def && Number.isInteger(gx) && Number.isInteger(gz)) {
+      const m = this.data.map;
+      const cols = m.rows[0]?.length ?? 0;
+      const w = chunk.rows[0]?.length ?? 0;
+      const h = chunk.rows.length;
+      const k = Math.abs(chunk.side === "east" || chunk.side === "west" ? (gx ?? 0) : (gz ?? 0));
+      const c0 = chunk.side === "east" ? cols + (k - 1) * w : chunk.side === "west" ? -k * w : 0;
+      const r0 =
+        chunk.side === "south" ? m.rows.length + (k - 1) * h : chunk.side === "north" ? -k * h : 0;
+      const { cell, offset, ...rest } = def;
+      lot = {
+        ...rest,
+        id,
+        kind: "cart",
+        position: {
+          x: m.origin.x + (c0 + cell.c) * m.tile + offset.x,
+          z: m.origin.z + (r0 + cell.r) * m.tile + offset.z,
+        },
+      };
+    }
+    this.chunkLots.set(id, lot);
+    return lot ?? undefined;
+  }
+
+  /** Mọi chỗ bán của một xóm: chỗ gốc + chỗ của các khu đã mở. */
+  lotsIn(chunks: readonly { chunkId: string; gx: number; gz: number }[] | undefined): Lot[] {
+    const extra = (chunks ?? []).flatMap((o) =>
+      (this.data.chunks.find((c) => c.id === o.chunkId)?.lots ?? []).map((l) =>
+        this.lot(Content.chunkLotId(o.chunkId, l.id, o.gx, o.gz)),
+      ),
+    );
+    return [...this.data.lots, ...extra];
   }
   /** Chủ nhà của một nhà mặt tiền (UC-F13). */
   landlordOf(lotId: string) {
