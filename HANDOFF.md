@@ -163,6 +163,11 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   báo "Chưa vào xóm". Sửa: dời qua vùng âm chắc chắn (−1.000.000 − ngày mới, có cả `BusinessDay`) + ghi DB trước rồi mới gỡ khỏi
   xóm cũ. e2e `xom.e2e-spec.ts` (đã xác nhận fail với code cũ) + Playwright `don-xom`.
 
+### 3.1d Góp ý đợt 5 của chủ dự án (2026-10-03) — làm sau đồ hoạ bước 2
+- [ ] **Cửa hàng ↔ 🛒 Vựa xe Ông Sáu ↔ 🏠 Thuê nhà & giấy tờ đang chồng chéo, khó hiểu cách dùng** — cấu trúc lại hoặc tách hẳn:
+  rà toàn bộ luồng mở cửa hàng (mua đồ nghề = mở cửa hàng ở vựa xe, đổi nghề, sửa xe; thuê nhà mặt tiền + giấy tờ; chỗ bán vỉa
+  hè / ô đất / mua đất / xây tiệm), viết đề xuất luồng mới (mỗi nơi một việc rõ ràng) cho chủ dự án chốt rồi làm.
+
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").
 - 🏪 Nhiều cửa hàng phần còn lại: thuê **nhiều nhà mặt tiền** (hiện mỗi người một), **doanh thu theo từng cửa hàng** trong Sổ sách,
@@ -207,7 +212,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
 2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`).
-   **Góp ý đợt 4 (mục 3.1c) làm tiếp theo**, rồi đồ hoạ bước 2 (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn).
+   ~~Góp ý đợt 4~~ xong. **Đang làm: đồ hoạ bước 2** (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn, cột điện
+   nhẹ hơn) → rồi **góp ý đợt 5** (mục 3.1d: tách Vựa xe / Cửa hàng / Thuê nhà & giấy tờ).
    **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1. Đã làm: pipeline asset gộp mảnh cùng material của từng model tĩnh
    (`flatten` + `join` trong `packages/assets/scripts/build.mjs` — xe Kenney 5 mảnh → 1) + gộp thân/đầu nhân vật trong Blender
    (`art/blender/gop_nhan_vat.py` → `art/export/characters`, giữ 32 animation) → ~121 → **~94–97 draw call (đạt < 100)**; tam
