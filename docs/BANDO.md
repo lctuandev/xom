@@ -88,5 +88,8 @@ model Plot {
 
 ## 8. Rủi ro / lưu ý
 - Hiệu năng điện thoại (PLAN §1): lưới lớn dần → instancing + chỉ dựng khu gần camera; trace bằng `chrome-devtools` CPU ×4.
+  Đo bước A (2026-10-03, chrome-devtools, Iris Xe, viewport 412×915 DPR 2,625, không throttle): gốc 27×15 ô 29,2 fps → mở đủ 4
+  khu (55×25 ô) 27 fps (−7%). CPU ×4 trên máy này rớt còn ~1,5 fps ngay cả với bản đồ gốc (trình duyệt MCP + Playwright chạy
+  song song) — chưa dùng làm mốc được; cần đo trên điện thoại thật trước bước F.
 - Giao thông + NPC đi bộ hiện đọc lưới tĩnh — bước A phải cho chúng đọc lưới ghép.
 - Chuyển xóm khi có ô đất/tiệm: chủ vẫn giữ ô ở xóm cũ (tiệm đóng, thuế đất vẫn tính) — cần luật rõ ở bước D.

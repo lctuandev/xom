@@ -20,6 +20,12 @@
   hiện nguyên liệu quầy đang chọn (nút "🧺 Xem hàng khác"), vựa xe "Mở cửa hàng: chọn mặt hàng", mở thêm cửa hàng xong mở luôn
   📍 Chỗ bán. Playwright `quay-viec`; helper `buyIngredients` tự bấm "Xem hàng khác" khi cần.
 
+- 🗺️ Bản đồ mở (docs/BANDO.md) **đã chốt** + **bước A xong** (UC-B12): `content.chunks` 4 mẫu khu, `sim/chunks.ts` `composeMap`,
+  `Room.chunks` (migration `20261003110000_room_chunks`), `room.grid` (xe ôm), `WorldView.chunks`, web `nav.grid`/`MAP_BOUNDS` là
+  live binding + `setMapChunks` (gọi trong store), `useStreetLayout`/`useMapKey` cho Street/NightLights/Traffic. Mở khu thử:
+  `xomDebug.send("debug:chunk", { chunkId: "khu_dong" })`. Đo FPS: xem BANDO §8. **Tiếp: bước B** (bảng `Plot`, `PlotRepo` thay
+  ~50 chỗ `content.lot()`).
+
 ### 0.2 Dọn dẹp chờ chủ dự án
 - Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch
   — gỡ bằng `git worktree remove ../GameOnline-A ../GameOnline-B` (Claude bị chặn lệnh này, để chủ dự án tự chạy).
@@ -28,7 +34,8 @@
 ### 0.3 Lưu ý môi trường
 - Máy khởi động lại thì `docker compose up -d` (Postgres + Redis dev) trước khi `pnpm dev`.
 - Tắt dev: `ss -ltnp | grep -E ':500[01] '` lấy pid rồi `kill` (đừng `pkill -f` — khớp luôn shell của mình).
-- Đang chạy Playwright thì đừng sửa file web/server (HMR / Nest restart làm hỏng bài đang chạy).
+- Đang chạy Playwright thì đừng sửa file web/server (HMR / Nest restart làm hỏng bài đang chạy), cũng đừng đo hiệu năng bằng
+  chrome-devtools cùng lúc (`giao-thong` đếm xe theo khung hình — tranh GPU là fail).
 
 ## 1. Bắt đầu / kiểm tra ở máy local
 
@@ -150,6 +157,6 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. Bản đồ mở: `docs/BANDO.md` **đã chốt** (lưới ô kiểu Township, thuê + mua đứt, mẫu công trình, mở khu khi ≥ 70% ô có chủ) —
-   làm từng bước A→F (§6).
+   bước A xong; làm tiếp B→F (§6).
 2. Tách `game.service.ts` + gom `ActionBar`.
 3. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
