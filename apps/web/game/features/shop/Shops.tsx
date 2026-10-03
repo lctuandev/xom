@@ -1,5 +1,6 @@
 "use client";
 
+import { vndShort } from "../../format";
 import { send } from "../../net/socket";
 import { useGame } from "../../store";
 import { FeatureSheet, GoTo } from "../FeatureSheet";
@@ -46,6 +47,11 @@ export function ShopsSheet() {
                 <p className="mt-1 text-xs text-ink/60">
                   {s.staffOnDuty ? "👩‍🍳 Nhân viên đang trong ca" : "Không có nhân viên trong ca"}
                   {s.active && " · đang quản lý"}
+                </p>
+                {/* Doanh thu + uy tín riêng từng cửa hàng (góp ý đợt 4). */}
+                <p className="mt-1 flex gap-3 text-xs font-semibold" data-shop-stats={s.id}>
+                  <span>💰 Hôm nay {vndShort(s.todayRevenue ?? 0)}</span>
+                  {s.reputation !== undefined && <span>⭐ {(s.reputation * 5).toFixed(1)}</span>}
                 </p>
                 {!s.active && (
                   <button

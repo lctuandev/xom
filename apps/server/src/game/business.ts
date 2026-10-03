@@ -107,7 +107,7 @@ export class BusinessService {
         pay,
       );
       await tx.business.update({ where: { id: biz.id }, data: { lotId } });
-      await addToReport(tx, playerId, room.day, { fees: cost });
+      await addToReport(tx, playerId, room.day, { fees: cost }, biz.id);
     });
     this.broadcast.paidBy(playerId, src, cost);
     this.broadcast.notify(playerId, {
@@ -160,7 +160,7 @@ export class BusinessService {
     await this.prisma.$transaction(async (tx) => {
       src = await this.payment.payOut(tx, playerId, cost, SYSTEM.market, "event", def.id, pay);
       await tx.business.update({ where: { id: biz.id }, data: { promoDay: room.day } });
-      await addToReport(tx, playerId, room.day, { fees: cost });
+      await addToReport(tx, playerId, room.day, { fees: cost }, biz.id);
       await tx.gameEvent.create({
         data: {
           playerId: playerId,
@@ -303,7 +303,7 @@ export class BusinessService {
           if (fee - toFund > 0)
             await this.payment.payOut(tx, playerId, fee - toFund, SYSTEM.landlord, "fee", lot.id);
         }
-        await addToReport(tx, playerId, room.day, { rent, fees: fee });
+        await addToReport(tx, playerId, room.day, { rent, fees: fee }, biz.id);
       }
       await tx.business.update({
         where: { id: biz.id },
@@ -338,7 +338,7 @@ export class BusinessService {
     await this.prisma.$transaction(async (tx) => {
       src = await this.payment.payOut(tx, playerId, cost, SYSTEM.supplier, "repair", biz.id, pay);
       await tx.business.update({ where: { id: biz.id }, data: { wear: 0 } });
-      await addToReport(tx, playerId, room.day, { fees: cost });
+      await addToReport(tx, playerId, room.day, { fees: cost }, biz.id);
     });
     this.broadcast.paidBy(playerId, src, cost);
     void this.broadcast.log(playerId, "repair", { cost, wear: biz.wear });
@@ -365,7 +365,7 @@ export class BusinessService {
         try {
           await this.prisma.$transaction(async (tx) => {
             await this.ledger.transfer(tx, from, SYSTEM.landlord, perHour, "utilities", b.id);
-            await addToReport(tx, b.ownerId, room.day, { utilities: perHour });
+            await addToReport(tx, b.ownerId, room.day, { utilities: perHour }, b.id);
           });
           paid = true;
           break;
@@ -519,7 +519,7 @@ export class BusinessService {
         pay,
       );
       await tx.business.update({ where: { id: biz.id }, data: { level: next.level } });
-      await addToReport(tx, playerId, room.day, { fees: next.upgradeCost });
+      await addToReport(tx, playerId, room.day, { fees: next.upgradeCost }, biz.id);
       await tx.gameEvent.create({
         data: {
           playerId,

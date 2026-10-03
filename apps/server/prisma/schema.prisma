@@ -217,6 +217,7 @@ model Business {
   adMul       Float           @default(1)
   /// Đánh giá riêng của cửa hàng này (góp ý đợt 2: mỗi tiệm / quầy một sổ đánh giá).
   reviews     Review[]
+  days        BusinessDay[]
 
   @@index([ownerId])
 }
@@ -547,4 +548,23 @@ model Plot {
 
   @@unique([roomId, lotId])
   @@index([ownerId])
+}
+
+/// Sổ ngày theo cửa hàng (góp ý đợt 4: mỗi cửa hàng doanh thu riêng) — cộng song song với DailyReport của chủ.
+model BusinessDay {
+  businessId String   @db.Uuid
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  day        Int
+  revenue    Int      @default(0)
+  tips       Int      @default(0)
+  stockCost  Int      @default(0)
+  rent       Int      @default(0)
+  fees       Int      @default(0)
+  staffWages Int      @default(0)
+  utilities  Int      @default(0)
+  served     Int      @default(0)
+  lost       Int      @default(0)
+  wrong      Int      @default(0)
+
+  @@id([businessId, day])
 }

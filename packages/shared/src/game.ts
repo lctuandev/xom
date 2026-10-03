@@ -98,6 +98,10 @@ export interface ShopSummary {
   open: boolean;
   staffOnDuty: boolean;
   active: boolean;
+  /** Doanh thu hôm nay của riêng cửa hàng này (góp ý đợt 4). */
+  todayRevenue?: number;
+  /** Uy tín 0–1 của cửa hàng này. */
+  reputation?: number;
 }
 
 export interface MeView {
@@ -487,6 +491,8 @@ export interface MyStatsView {
   }[];
   avg: { stalls: number; revenue: number; served: number; rating: number } | null;
   achievements: AchievementView[];
+  /** Sổ 7 ngày theo từng cửa hàng (góp ý đợt 4) — cùng dạng `days` (không có tiền công làm thuê). */
+  shops?: { businessId: string; days: MyStatsView["days"] }[];
 }
 
 /** Công trình chung đang bàn/làm (UC-J5). */

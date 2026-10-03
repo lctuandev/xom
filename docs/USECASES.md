@@ -660,6 +660,11 @@ chưa bán được ở đâu. Mỗi cửa hàng thuê được một nhà mặt
 chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không mở / bán được. Giờ đứng ở quầy của cửa hàng khác thì tự chọn cửa hàng đó
 (toast "🏬 Đang ở … — quản lý cửa hàng này"), mở quầy, bán; quầy cũ có nhân viên trong ca vẫn bán tiếp.
 
+**Sổ theo cửa hàng (góp ý đợt 4, 2026-10-03):** mỗi khoản thu/chi gắn cửa hàng (bán món, nhân viên bán, khách hụt, nhập
+hàng, tiền chỗ/phí lúc mở cửa, điện nước, sửa xe, nâng cấp, khai trương, tiền nhà, giấy tờ) cộng thêm vào sổ ngày của cửa hàng
+đó (`BusinessDay`). 📊 Sổ sách mặc định xem **cửa hàng đang quản lý**, bấm "👤 Tất cả" để xem gộp (kể cả tiền công làm thuê);
+🏬 Các cửa hàng mỗi thẻ ghi 💰 doanh thu hôm nay + ⭐ uy tín riêng. Kiểm chứng: e2e `shops` (nhập hàng hai cửa hàng → mỗi sổ
+một khoản, tổng = cộng), Playwright `bang-xom`, `nhieu-cua-hang`.
 **Sửa lỗi (góp ý đợt 3, 2026-10-03) "đang thuê tiệm thì không mở thêm cửa hàng được":** luật "đang thuê nhà thì trả nhà rồi mới
 ra vỉa hè" trước áp cho *người chơi* → mọi cửa hàng khác bị khoá vỉa hè. Giờ chỉ áp cho *cửa hàng đang ở nhà thuê*; cửa hàng
 khác đặt ra vỉa hè bình thường. **Thuê nhiều nhà mặt tiền:** mỗi cửa hàng thuê căn riêng — hợp đồng nhận theo căn nhà cửa hàng

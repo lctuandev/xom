@@ -46,17 +46,49 @@ export function BooksSheet() {
   const stats = useMyStats();
   const today = useGame((s) => s.clock?.day ?? 0);
   const [range, setRange] = useState<"today" | "week">("today");
+  // Sổ theo cửa hàng đang quản lý (góp ý đợt 4) hoặc gộp tất cả (kể cả tiền công làm thuê).
+  const [scope, setScope] = useState<"shop" | "all">("shop");
   return (
     <ShopFeature id="books">
-      {() => {
+      {(biz) => {
         if (!stats) return <p className="text-sm text-ink/50">Đang lật sổ…</p>;
-        const days = range === "today" ? stats.days.filter((d) => d.day === today) : stats.days;
+        const shopDays =
+          stats.shops?.find((s) => s.businessId === biz.id)?.days ??
+          stats.days.map((d) => ({
+            ...d,
+            revenue: 0,
+            tips: 0,
+            profit: 0,
+            served: 0,
+            costs: { stock: 0, rent: 0, staff: 0, utilities: 0, fees: 0 },
+          }));
+        const source = scope === "shop" ? shopDays : stats.days;
+        const days = range === "today" ? source.filter((d) => d.day === today) : source;
         const t = total(days);
         const n = Math.max(1, days.length);
         const biggest = [...COSTS].sort((a, b) => t.costs[b.key] - t.costs[a.key])[0];
         const gross = t.revenue + t.tips - t.costs.stock;
         return (
           <>
+            <fieldset aria-label="Sổ của" className="mb-2 flex gap-1.5 border-0 p-0">
+              {(
+                [
+                  ["shop", "🏪 Cửa hàng này"],
+                  ["all", "👤 Tất cả"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={scope === id}
+                  data-books-scope={id}
+                  onClick={() => setScope(id)}
+                  className="h-9 flex-1 rounded-full bg-white text-sm font-semibold shadow-sm aria-pressed:bg-leaf aria-pressed:text-cream"
+                >
+                  {label}
+                </button>
+              ))}
+            </fieldset>
             <fieldset aria-label="Khoảng thời gian" className="mb-3 flex gap-1.5 border-0 p-0">
               {(
                 [

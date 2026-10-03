@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { MeView, NotifyEvent } from "@xom/shared";
+import type { MeView, MyStatsView, NotifyEvent } from "@xom/shared";
 import { emit, join, next } from "./client.js";
 import { startApp } from "./helpers.js";
 
@@ -97,6 +97,31 @@ describe("Nhiều cửa hàng (e2e)", () => {
     expect(atB.attending).toBe(true);
     const selA = await ok(emit(socket, "biz:select", { businessId: aId }));
     expect(selA.attending).toBe(false);
+    socket.disconnect();
+  });
+
+  it("sổ theo cửa hàng (góp ý đợt 4): nhập hàng cho cửa hàng nào thì ghi vào sổ cửa hàng đó", async () => {
+    const { socket } = await join(url);
+    await emit(socket, "debug:clock", { minute: 8 * 60 });
+    await emit(socket, "debug:grant", { money: 3_000_000 });
+    const a = await ok(emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" }));
+    const aId = a.shops[0]?.id ?? "";
+    await ok(emit(socket, "market:buy", { itemId: "pate", packs: 1 }));
+    const b = await ok(emit(socket, "equipment:buy", { equipmentId: "xe_tra_sua" }));
+    const bId = b.shops.find((s) => s.id !== aId)?.id ?? "";
+    await ok(emit(socket, "market:buy", { itemId: "da", packs: 2 }));
+    const r = await emit<MyStatsView>(socket, "stats:me", {});
+    if (!r.ok) throw new Error(r.message);
+    const today = (id: string) => r.data.shops?.find((s) => s.businessId === id)?.days.at(-1);
+    const pate = content.ingredient("pate");
+    expect(today(aId)?.costs.stock).toBeGreaterThan(0);
+    expect(today(bId)?.costs.stock).toBeGreaterThan(0);
+    expect(today(aId)?.costs.stock).not.toBe(today(bId)?.costs.stock);
+    // Tổng của người chơi = cộng các cửa hàng.
+    expect(r.data.days.at(-1)?.costs.stock).toBe(
+      (today(aId)?.costs.stock ?? 0) + (today(bId)?.costs.stock ?? 0),
+    );
+    expect(pate.packSize).toBeGreaterThan(0);
     socket.disconnect();
   });
 });

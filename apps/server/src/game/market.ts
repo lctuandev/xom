@@ -168,7 +168,7 @@ export class MarketService {
         pay,
       );
       await addItems(tx, shop, itemId, room.day, ing.packSize * packs);
-      await addToReport(tx, playerId, room.day, { stockCost: total });
+      await addToReport(tx, playerId, room.day, { stockCost: total }, shop.id);
       await addFriendship(tx, playerId, MARKET_KEEPER, 1);
     });
     this.broadcast.paidBy(playerId, src, total);

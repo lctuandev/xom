@@ -36,6 +36,9 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
   await openFeature(page, "shops");
   const list = page.getByRole("dialog", { name: "🏬 Các cửa hàng" });
   await expect(list.locator("[data-shop-card]")).toHaveCount(2);
+  // Mỗi cửa hàng có doanh thu hôm nay + ⭐ riêng (góp ý đợt 4).
+  await expect(list.locator("[data-shop-stats]")).toHaveCount(2);
+  await expect(list.locator("[data-shop-stats]").first()).toContainText("Hôm nay");
   await shot(page, "140-cac-cua-hang");
   await closeSheet(page);
 

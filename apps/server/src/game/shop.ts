@@ -15,7 +15,13 @@ import {
   shopNameError,
   trustAfter,
 } from "@xom/sim";
-import { bankWallet, LedgerService, playerWallet, SYSTEM } from "../economy/ledger.service.js";
+import {
+  bankWallet,
+  LedgerService,
+  playerWallet,
+  SYSTEM,
+  type Tx,
+} from "../economy/ledger.service.js";
 import type { Business, Lease } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { BusinessRepo } from "./business-repo.js";
@@ -86,6 +92,15 @@ export class ShopService {
     const biz = await this.businesses.of(ownerId);
     if (!biz?.lotId) return null;
     return this.leaseAt(ownerId, biz.lotId);
+  }
+
+  /** Cửa hàng đang đặt ở căn của hợp đồng (ghi sổ theo cửa hàng — góp ý đợt 4). */
+  private async bizAt(tx: Tx, lease: Lease) {
+    const b = await tx.business.findFirst({
+      where: { ownerId: lease.ownerId, lotId: lease.lotId },
+      select: { id: true },
+    });
+    return b?.id ?? null;
   }
 
   /** Hợp đồng đang hiệu lực của mình ở một căn. */
@@ -249,7 +264,7 @@ export class ShopService {
           "rent_from_deposit",
           lease.id,
         );
-        await addToReport(tx, playerId, room.day, { rent: due });
+        await addToReport(tx, playerId, room.day, { rent: due }, await this.bizAt(tx, lease));
       });
     }
     await this.end(room, lease, "ENDED");
@@ -288,7 +303,7 @@ export class ShopService {
         where: { id: biz.id },
         data: { shopName: name, licenseAt: this.now(room) + lic.minutes },
       });
-      await addToReport(tx, playerId, room.day, { fees: lic.fee });
+      await addToReport(tx, playerId, room.day, { fees: lic.fee }, biz.id);
       await tx.gameEvent.create({ data: { playerId, type: "shop_register", payload: { name } } });
     });
     await this.story.note(playerId, "first_license", room.day, { name });
@@ -313,7 +328,7 @@ export class ShopService {
         "Không đủ tiền tập huấn",
       );
       await tx.business.update({ where: { id: biz.id }, data: { trained: true } });
-      await addToReport(tx, playerId, room.day, { fees: fee });
+      await addToReport(tx, playerId, room.day, { fees: fee }, biz.id);
     });
     return this.view(room, playerId);
   }
@@ -375,7 +390,7 @@ export class ShopService {
         "Không đủ tiền làm biển hiệu",
       );
       await tx.business.update({ where: { id: biz.id }, data: { signed: true } });
-      await addToReport(tx, playerId, room.day, { fees: fee });
+      await addToReport(tx, playerId, room.day, { fees: fee }, biz.id);
     });
     this.onWorld?.(room);
     return this.view(room, playerId);
@@ -545,7 +560,13 @@ export class ShopService {
         where: { id: lease.id },
         data: { paidDay: room.day, promiseDay: null, lateFee: 0 },
       });
-      await addToReport(tx, playerId, room.day, { rent: owed, fees: fee });
+      await addToReport(
+        tx,
+        playerId,
+        room.day,
+        { rent: owed, fees: fee },
+        await this.bizAt(tx, lease),
+      );
       await tx.gameEvent.create({
         data: { playerId, type: "rent_pay", payload: { owed, fee, via: src } },
       });
@@ -668,7 +689,13 @@ export class ShopService {
         where: { id: lease.ownerId },
         data: { trust: trustAfter(content, player.trust, "rent_late") },
       });
-      await addToReport(tx, lease.ownerId, room.day, { rent: v.owed, fees: v.fee });
+      await addToReport(
+        tx,
+        lease.ownerId,
+        room.day,
+        { rent: v.owed, fees: v.fee },
+        await this.bizAt(tx, lease),
+      );
       await tx.gameEvent.create({
         data: {
           playerId: lease.ownerId,

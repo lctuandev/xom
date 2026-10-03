@@ -154,8 +154,32 @@ export class StatsService {
       });
     }
     const achievements = await this.checkAchievements(playerId, room.day);
+    // Sổ theo từng cửa hàng (góp ý đợt 4): cùng khung 7 ngày, từ BusinessDay.
+    const from = Math.max(1, room.day - WINDOW + 1);
+    const rows = await this.prisma.businessDay.findMany({
+      where: { business: { ownerId: playerId }, day: { gte: from, lte: room.day } },
+    });
+    const bizIds = [...new Set(rows.map((r) => r.businessId))];
+    const shops = bizIds.map((businessId) => ({
+      businessId,
+      days: Array.from({ length: room.day - from + 1 }, (_, i) => {
+        const d = from + i;
+        const r = rows.find((x) => x.businessId === businessId && x.day === d);
+        const stat = r ? { ...r, wages: 0 } : null;
+        return {
+          day: d,
+          revenue: r?.revenue ?? 0,
+          tips: r?.tips ?? 0,
+          profit: stat ? profitOf(stat) : 0,
+          served: r?.served ?? 0,
+          wages: 0,
+          costs: stat ? costsOf(stat) : { stock: 0, rent: 0, staff: 0, utilities: 0, fees: 0 },
+        };
+      }),
+    }));
     return {
       days,
+      shops,
       avg: me?.productId ? xomAverage(cs, me.productId, room.day, WINDOW) : null,
       achievements,
     };

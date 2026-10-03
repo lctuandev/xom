@@ -288,14 +288,20 @@ export class StaffService {
       }
       const total = r.served + r.wrong;
       const satisfaction = total ? (r.served + r.wrong * 0.4) / total : 0;
-      await addToReport(tx, biz.ownerId, room.day, {
-        revenue: r.revenue,
-        served: r.served,
-        wrong: r.wrong,
-        lost: r.lost,
-        staffWages: quit ? 0 : wages,
-        ...(total ? { satisfaction: { value: satisfaction, weight: total } } : {}),
-      });
+      await addToReport(
+        tx,
+        biz.ownerId,
+        room.day,
+        {
+          revenue: r.revenue,
+          served: r.served,
+          wrong: r.wrong,
+          lost: r.lost,
+          staffWages: quit ? 0 : wages,
+          ...(total ? { satisfaction: { value: satisfaction, weight: total } } : {}),
+        },
+        biz.id,
+      );
       await tx.business.update({
         where: { id: biz.id },
         data: {

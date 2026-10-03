@@ -479,13 +479,19 @@ export class OrderService {
           where: { id: playerId },
           data: { xp: { increment: discount ? XP.serveDiscount : XP.serve }, skills },
         });
-        await addToReport(tx, playerId, room.day, {
-          revenue: received,
-          tips: tip,
-          served: 1,
-          wrong: discount ? 1 : 0,
-          satisfaction: { value: satisfaction, weight: 1 },
-        });
+        await addToReport(
+          tx,
+          playerId,
+          room.day,
+          {
+            revenue: received,
+            tips: tip,
+            served: 1,
+            wrong: discount ? 1 : 0,
+            satisfaction: { value: satisfaction, weight: 1 },
+          },
+          e.businessId,
+        );
       });
     } catch (err) {
       if (!(err instanceof InsufficientFundsError)) throw err;
@@ -603,11 +609,17 @@ export class OrderService {
         try {
           await this.prisma.$transaction(async (tx) => {
             await this.collect(tx, e, e.price);
-            await addToReport(tx, e.ownerId, room.day, {
-              revenue: e.price,
-              served: 1,
-              satisfaction: { value: 0.6, weight: 1 },
-            });
+            await addToReport(
+              tx,
+              e.ownerId,
+              room.day,
+              {
+                revenue: e.price,
+                served: 1,
+                satisfaction: { value: 0.6, weight: 1 },
+              },
+              e.businessId,
+            );
           });
         } catch (err) {
           if (!(err instanceof InsufficientFundsError)) throw err;
@@ -695,10 +707,16 @@ export class OrderService {
         );
         await tx.business.update({ where: { id: biz.id }, data: { reputation: rep } });
       }
-      await addToReport(tx, ownerId, room.day, {
-        lost,
-        satisfaction: { value: 0, weight: lost * LOST_WEIGHT },
-      });
+      await addToReport(
+        tx,
+        ownerId,
+        room.day,
+        {
+          lost,
+          satisfaction: { value: 0, weight: lost * LOST_WEIGHT },
+        },
+        businessId,
+      );
     });
   }
 }

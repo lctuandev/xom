@@ -24,6 +24,11 @@ test("bán món đầu tiên: thành tựu, biểu đồ 7 ngày, bảng xóm", 
   await expect(books).toContainText("💰 Bán hàng");
   await expect(books.locator("[data-cost=stock]")).not.toContainText("—");
   await expect(books.locator("[data-profit]")).toBeVisible();
+  // Sổ theo cửa hàng đang quản lý (mặc định) hoặc tất cả (góp ý đợt 4).
+  await expect(sheet.locator('[data-books-scope="shop"]')).toHaveAttribute("aria-pressed", "true");
+  await sheet.locator('[data-books-scope="all"]').tap();
+  await expect(books.locator("[data-profit]")).toBeVisible();
+  await sheet.locator('[data-books-scope="shop"]').tap();
   await shot(page, "89-so-sach");
   const week = sheet.locator("[data-week]");
   await week.scrollIntoViewIfNeeded();

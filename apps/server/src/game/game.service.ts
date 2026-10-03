@@ -1162,6 +1162,13 @@ export class GameService implements OnModuleDestroy {
     ]);
     // Kho riêng từng cửa hàng: MeView mang kho của cửa hàng đang quản lý.
     const inventory = biz ? await inventoryView(this.prisma, biz.id, room.day) : [];
+    // Doanh thu hôm nay theo cửa hàng (góp ý đợt 4).
+    const shopDays = shops.length
+      ? await this.prisma.businessDay.findMany({
+          where: { businessId: { in: shops.map((b) => b.id) }, day: room.day },
+          select: { businessId: true, revenue: true, tips: true },
+        })
+      : [];
     // Hợp đồng của căn nhà cửa hàng đang quản lý đang đặt (mỗi cửa hàng thuê căn riêng).
     const lease = biz?.lotId
       ? await this.prisma.lease.findFirst({
@@ -1223,6 +1230,11 @@ export class GameService implements OnModuleDestroy {
         open: b.status === "OPEN",
         staffOnDuty: onDutyTeam(content, b.employees, room.minute).length > 0,
         active: b.id === biz?.id,
+        todayRevenue: (() => {
+          const d = shopDays.find((x) => x.businessId === b.id);
+          return d ? d.revenue + d.tips : 0;
+        })(),
+        reputation: b.reputation,
       })),
       friendship: Object.fromEntries(relations.map((r) => [r.npcId, r.friendship])),
       progress: {

@@ -151,7 +151,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   xóm, 🍚/💧 → Ăn uống như cũ; Hồ sơ bỏ nút Ví; Playwright `thanh-trang-thai`). (tiền, ⭐ uy tín, 🍚 no/💧 khát, giờ/ngày/thời tiết…) đều mở bottom sheet tương ứng
   (tiền → 👛 Ví, ⭐ → 📒 Đánh giá cửa hàng, giờ/thời tiết → 📅 Hôm nay…) — hiện chỉ chip no/khát mở được. Khi đó sheet Hồ sơ (chạm ô
   cấp độ) bỏ mục Ví.
-- [ ] **Mỗi cửa hàng có doanh thu & đánh giá riêng**: 📊 Sổ sách theo cửa hàng (chọn cửa hàng / tổng), 📒 Đánh giá theo cửa hàng
+- [x] **Mỗi cửa hàng có doanh thu & đánh giá riêng** (xong: bảng `BusinessDay` ghi song song qua `addToReport(…, businessId)`;
+  `stats:me` có `shops[]`; 📊 Sổ sách chọn "🏪 Cửa hàng này / 👤 Tất cả"; thẻ 🏬 có 💰 hôm nay + ⭐; 📒 Đánh giá vốn theo cửa
+  hàng đang quản lý). Gốc: **Mỗi cửa hàng có doanh thu & đánh giá riêng**: 📊 Sổ sách theo cửa hàng (chọn cửa hàng / tổng), 📒 Đánh giá theo cửa hàng
   đang quản lý (đã có `Review.businessId`), thẻ 🏬 Các cửa hàng ghi doanh thu hôm nay + ⭐ từng cửa hàng.
 - [ ] **Toast thông báo không che thanh trạng thái**: chuyển vùng toast xuống giữa hai cột icon neo (dưới ô cấp + thanh thông tin,
   giữa cột trái và cột phải), như phác thảo: `cấp – thông tin` / `icon · thông báo · icon`.

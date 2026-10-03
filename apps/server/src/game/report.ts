@@ -40,8 +40,17 @@ export function emptyReport() {
   };
 }
 
-/** Cộng dồn số liệu trong ngày vào DailyReport (tạo mới nếu chưa có). */
-export async function addToReport(tx: Tx, playerId: string, day: number, add: ReportAdd) {
+/**
+ * Cộng dồn số liệu trong ngày vào DailyReport (tạo mới nếu chưa có). Có `businessId` thì cộng cả vào sổ ngày của cửa hàng đó
+ * (BusinessDay — góp ý đợt 4: mỗi cửa hàng doanh thu riêng).
+ */
+export async function addToReport(
+  tx: Tx,
+  playerId: string,
+  day: number,
+  add: ReportAdd,
+  businessId?: string | null,
+) {
   const current = await tx.dailyReport.findUnique({ where: { playerId_day: { playerId, day } } });
   let satisfaction = current?.satisfaction ?? 0;
   if (add.satisfaction && add.satisfaction.weight > 0) {
@@ -80,5 +89,12 @@ export async function addToReport(tx: Tx, playerId: string, day: number, add: Re
       wrong: { increment: inc.wrong },
       satisfaction,
     },
+  });
+  if (!businessId) return;
+  const { wages: _wages, ...biz } = inc;
+  await tx.businessDay.upsert({
+    where: { businessId_day: { businessId, day } },
+    create: { businessId, day, ...biz },
+    update: Object.fromEntries(Object.entries(biz).map(([k, v]) => [k, { increment: v }])),
   });
 }
