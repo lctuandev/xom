@@ -399,10 +399,13 @@ export class ShopService {
       );
   }
 
-  /** Dọn quầy ra vỉa hè: phải trả nhà trước (tránh vừa tiền nhà vừa tiền chỗ). */
-  async requireNoLease(playerId: string) {
+  /**
+   * Dọn tiệm đang ở nhà thuê ra vỉa hè: phải trả nhà trước (tránh vừa tiền nhà vừa tiền chỗ). Cửa hàng khác của mình thì đặt ra
+   * vỉa hè thoải mái (góp ý đợt 3 — trước đây chặn theo người nên đang thuê nhà là không mở thêm cửa hàng ngoài vỉa hè được).
+   */
+  async requireNoLease(playerId: string, fromLotId: string | null) {
     const lease = await this.activeLease(playerId);
-    if (lease)
+    if (lease && lease.lotId === fromLotId)
       throw new GameError(
         "invalid_state",
         `Đang thuê ${content.lot(lease.lotId).name} — tiền nhà vẫn tính mỗi ngày. Trả nhà (☰ Menu → 🏠 Thuê nhà & giấy tờ) rồi mới ra vỉa hè bán`,

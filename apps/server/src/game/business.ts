@@ -79,7 +79,7 @@ export class BusinessService {
     // Nhà mặt tiền: phải ký hợp đồng thuê trước (UC-F12) — mở bằng vốn, không khoá theo cấp.
     if (content.lot(lotId).kind === "house") await this.shops.requireLease(playerId, lotId);
     // Đang thuê nhà mà dọn ra vỉa hè: tiền nhà vẫn tính mỗi ngày + trả thêm tiền chỗ — chặn, trả nhà trước.
-    else await this.shops.requireNoLease(playerId);
+    else await this.shops.requireNoLease(playerId, biz.lotId);
     if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
     const taken = this.occupants(room.id).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);

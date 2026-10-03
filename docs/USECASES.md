@@ -655,6 +655,9 @@ chưa bán được ở đâu. Hiện mỗi người thuê **một** nhà mặt 
 chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không mở / bán được. Giờ đứng ở quầy của cửa hàng khác thì tự chọn cửa hàng đó
 (toast "🏬 Đang ở … — quản lý cửa hàng này"), mở quầy, bán; quầy cũ có nhân viên trong ca vẫn bán tiếp.
 
+**Sửa lỗi (góp ý đợt 3, 2026-10-03) "đang thuê tiệm thì không mở thêm cửa hàng được":** luật "đang thuê nhà thì trả nhà rồi mới
+ra vỉa hè" trước áp cho *người chơi* → mọi cửa hàng khác bị khoá vỉa hè. Giờ chỉ áp cho *cửa hàng đang ở nhà thuê*; cửa hàng
+khác đặt ra vỉa hè bình thường. Còn: mỗi người vẫn chỉ thuê **một** nhà mặt tiền (HANDOFF 3.1b).
 **Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
 khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang` (+ đi về quầy bánh mì tự chuyển cửa hàng, mở lại).
 

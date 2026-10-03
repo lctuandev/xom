@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { content } from "@xom/content";
-import type { MeView, NotifyEvent, OrderEvent } from "@xom/shared";
+import type { MeView, OrderEvent } from "@xom/shared";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import { BANH_MI_THIT, type Client, emit, next, openBanhMiStall } from "./client.js";
 import { startApp } from "./helpers.js";
@@ -42,6 +42,18 @@ describe("Luồng tiệm + nhân viên (e2e)", () => {
     const out = await emit(socket, "biz:update", { lotId: "dau_hem" });
     expect(out.ok).toBe(false);
     if (!out.ok) expect(out.message).toContain("Trả nhà");
+
+    // Góp ý đợt 3 — lỗi "không mở nhiều tiệm được": đang thuê nhà cho tiệm này vẫn mở thêm được cửa hàng thứ hai ngoài vỉa hè.
+    await emit(socket, "debug:grant", { money: 3_000_000 });
+    const second = await emit<MeView>(socket, "equipment:buy", {
+      equipmentId: "xe_tra_sua",
+      mode: "new",
+    });
+    if (!second.ok) throw new Error(second.message);
+    const placed = await emit<MeView>(socket, "biz:update", { lotId: "dau_hem" });
+    if (!placed.ok) throw new Error(placed.message);
+    expect(placed.data.business?.lotId).toBe("dau_hem");
+    expect(placed.data.shops.map((s) => s.lotId).sort()).toEqual(["dau_hem", "nha_so_10"]);
     socket.disconnect();
   });
 
@@ -61,7 +73,8 @@ describe("Luồng tiệm + nhân viên (e2e)", () => {
     // Chủ tự đóng thì hôm nay nhân viên không mở lại; sáng hôm sau tới ca mới mở.
     await wait(300);
     expect((await prisma.business.findFirstOrThrow({ where: { ownerId } })).status).toBe("CLOSED");
-    const opened = next(socket, "notify", (n: NotifyEvent) => n.text.includes("mở cửa quầy giúp"));
+    // Mở cửa lặng lẽ (góp ý đợt 3: không còn toast "mở cửa giúp") — chờ MeView báo quầy đã mở.
+    const opened = next(socket, "me", (m: MeView) => m.business?.open === true);
     const room = await prisma.room.findFirstOrThrow({
       where: { players: { some: { id: ownerId } } },
     });
@@ -78,8 +91,15 @@ describe("Luồng tiệm + nhân viên (e2e)", () => {
       if (o.ownerId === ownerId && !o.buyerId) mine += 1;
     };
     socket.on("order", count);
-    const sold = next(socket, "notify", (n: NotifyEvent) => n.text.startsWith("👩‍🍳 Khoa vừa bán"));
-    await sold;
+    // Không còn toast "vừa bán thay bạn" — chờ sổ hôm nay có món bán.
+    for (let i = 0; i < 100; i++) {
+      const r = await prisma.dailyReport.findFirst({
+        where: { playerId: ownerId },
+        orderBy: { day: "desc" },
+      });
+      if ((r?.served ?? 0) > 0) break;
+      await wait(200);
+    }
     expect(mine).toBe(0);
 
     // Giành tự bán: khách lại vào bếp của chủ, nhân viên thôi bán.

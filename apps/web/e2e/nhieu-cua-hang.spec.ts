@@ -77,3 +77,38 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
     timeout: 30_000,
   });
 });
+
+// Góp ý đợt 3 — lỗi "không mở nhiều tiệm được": đang thuê nhà mặt tiền cho tiệm bánh mì thì vẫn mở thêm xe trà sữa và đặt
+// ra vỉa hè được (trước đây chỗ vỉa hè bị khoá "đang thuê nhà" cho mọi cửa hàng).
+test("đang thuê tiệm trong nhà vẫn mở thêm cửa hàng ngoài vỉa hè", async ({ page }) => {
+  test.setTimeout(300_000);
+  await register(page, "Hai tiệm");
+  await openBanhMiStall(page);
+  await grantMoney(page, 3_000_000);
+  const send = (event: string, body: unknown) =>
+    page.evaluate(
+      async ([e, p]) =>
+        (
+          window as unknown as {
+            xomDebug: { send: (e: string, p: unknown) => Promise<{ ok: boolean }> };
+          }
+        ).xomDebug.send(e as string, p),
+      [event, body] as const,
+    );
+  expect((await send("biz:close", {})).ok).toBe(true);
+  // Tiệm bánh mì dọn vào nhà mặt tiền số 10 (thuê + giấy tờ xong — lệnh thử nghiệm).
+  expect((await send("debug:shop", { lotId: "nha_so_10" })).ok).toBe(true);
+  expect((await send("equipment:buy", { equipmentId: "xe_tra_sua", mode: "new" })).ok).toBe(true);
+
+  // Cửa hàng trà sữa (đang quản lý) chọn chỗ vỉa hè trong 📍 Chỗ bán.
+  await openFeature(page, "lot");
+  const lot = page.locator('[data-lot="dau_hem"] button').first();
+  await expect(lot).toBeEnabled();
+  await lot.tap();
+  await openFeature(page, "shops");
+  const list = page.getByRole("dialog", { name: "🏬 Các cửa hàng" });
+  await expect(list.locator("[data-shop-card]")).toHaveCount(2);
+  await expect(list).toContainText("Đầu hẻm 12");
+  await expect(list).toContainText("Nhà mặt tiền số 10");
+  await shot(page, "141-tiem-nha-va-xe-via-he");
+});

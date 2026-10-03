@@ -108,7 +108,8 @@ function LotPicker({ biz }: { biz: BusinessView }) {
             (plot && plot.ownerId !== me?.playerId ? { ownerName: plot.ownerName } : undefined);
           const selected = biz.lotId === lot.id;
           // Đang thuê nhà: không dọn ra vỉa hè (tiền nhà vẫn chạy) — trả nhà ở 🏠 Thuê nhà & giấy tờ trước.
-          const leased = !!biz.leaseLotId && lot.kind !== "house";
+          // Chỉ chặn khi chính cửa hàng này đang ở nhà thuê (cửa hàng khác ra vỉa hè thoải mái).
+          const leased = !!biz.leaseLotId && biz.lotId === biz.leaseLotId && lot.kind !== "house";
           // Nhà mặt tiền: phải ký hợp đồng thuê ở 🏠 Thuê nhà & giấy tờ (UC-F12) — server kiểm.
           return (
             <li key={lot.id} data-lot={lot.id}>
