@@ -9,6 +9,8 @@ import { Document, getBounds, NodeIO, TextureInfo } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import {
   dedup,
+  flatten,
+  join as joinPrimitives,
   mergeDocuments,
   meshopt,
   prune,
@@ -31,8 +33,11 @@ const io = new NodeIO()
   .registerExtensions(ALL_EXTENSIONS)
   .registerDependencies({ "meshopt.encoder": MeshoptEncoder });
 
-async function loadModel(src, name, scale, center = false) {
+async function loadModel(src, name, scale, center = false, merge = false) {
   const doc = await io.read(join(root, src.dir, `${name}.glb`));
+  // Model tĩnh: gộp các mảnh cùng material của RIÊNG model này thành một (xe Kenney = thân + 4 bánh → 1) — mỗi mảnh là một
+  // draw call cho mỗi loại model (docs/PLAN.md §1: < 100 draw call). Làm trước khi bọc node tên nên không lẫn model khác.
+  if (merge) await doc.transform(flatten(), joinPrimitives({ keepNamed: false }));
   const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
   // Bộ nội thất Kenney có gốc toạ độ ở góc: đưa về giữa đáy để đặt vào cảnh cho dễ.
   const offset = [0, 0, 0];
@@ -106,7 +111,7 @@ for (const [bundleName, bundle] of Object.entries(config.bundles)) {
   const names = [];
   for (const src of bundle.sources) {
     for (const name of src.models) {
-      const doc = await loadModel(src, name, src.scale, src.center);
+      const doc = await loadModel(src, name, src.scale, src.center, true);
       const map = mergeDocuments(target, doc);
       for (const scene of doc.getRoot().listScenes()) {
         const merged = map.get(scene);

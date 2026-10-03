@@ -191,8 +191,11 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
 2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`);
    tiếp bước 2 (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn).
-   **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1 — đo 2026-10-03: ~120 draw call (< 100), ~116k tam giác (< 80k).
-   Hướng: LOD xa cho nhà, gộp nhân vật NPC/khách, chỉ dựng khu gần camera; đo trên điện thoại thật. Playwright `nha-pho` chặn
-   hồi quy ở mức hiện tại.
+   **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1. Đã làm: pipeline asset gộp mảnh cùng material của từng model tĩnh
+   (`flatten` + `join` trong `packages/assets/scripts/build.mjs` — xe Kenney 5 mảnh → 1) → ~121 → ~105 draw call; tam giác ~117k
+   (< 80k chưa đạt). Công cụ: bản dev gõ `xomSceneStats()` trong console → tam giác/instance theo từng model. Nặng nhất: nhân vật
+   (mỗi người 2 mesh có xương thân + đầu — `join` không gộp được skinned → cần gộp trong Blender), nhà phố (~30k), xe (~24k), cột
+   điện Kenney (7,5k). Hướng tiếp: gộp thân+đầu nhân vật, LOD / bớt xe đậu, cột điện tự dựng nhẹ hơn; đo trên điện thoại thật.
+   Playwright `nha-pho` chặn hồi quy (< 130 draw call, < 125k tam giác).
 3. Tách `game.service.ts` + gom `ActionBar`.
 4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).

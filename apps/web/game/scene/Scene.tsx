@@ -4,7 +4,7 @@ import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { content } from "@xom/content";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { type Group, MathUtils, type Mesh } from "three";
+import { type Group, type InstancedMesh, MathUtils, type Mesh } from "three";
 import type { CharacterModel } from "../assets";
 import { MAP_BOUNDS, randomSpotNear, walkTo } from "../nav";
 import { useGame } from "../store";
@@ -282,6 +282,33 @@ function TargetMarker({ walker }: { walker: Walker }) {
 /** Đo FPS, draw call, triangles; đẩy lên store 2 lần/giây để HUD hiển thị. */
 function PerfProbe() {
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  // Bản dev: phân rã tam giác / draw call theo từng mesh (tìm chỗ nặng khi vượt ngân sách PLAN §1).
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+    const w = window as unknown as { xomSceneStats?: () => unknown };
+    w.xomSceneStats = () => {
+      const rows = new Map<string, { meshes: number; instances: number; tris: number }>();
+      scene.traverseVisible((o) => {
+        const m = o as Mesh;
+        if (!m.isMesh || !m.geometry) return;
+        const g = m.geometry;
+        const tris = (g.index ? g.index.count : (g.attributes.position?.count ?? 0)) / 3;
+        const n = (m as unknown as InstancedMesh).isInstancedMesh
+          ? (m as unknown as InstancedMesh).count
+          : 1;
+        const key = m.name || m.parent?.name || g.name || m.type;
+        const r = rows.get(key) ?? { meshes: 0, instances: 0, tris: 0 };
+        r.meshes += 1;
+        r.instances += n;
+        r.tris += tris * n;
+        rows.set(key, r);
+      });
+      return [...rows.entries()]
+        .map(([name, r]) => ({ name, ...r, tris: Math.round(r.tris) }))
+        .sort((a, b) => b.tris - a.tris);
+    };
+  }, [scene]);
   const setPerf = useGame((s) => s.setPerf);
   const acc = useRef({ frames: 0, time: 0 });
   useFrame((_, dt) => {

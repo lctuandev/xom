@@ -99,13 +99,13 @@ export function Instances({ model, at }: { model: CityModel; at: Placement[] }) 
     <>
       {parts.map((part, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: danh sách part cố định theo model
-        <InstancedPart key={i} part={part} at={at} />
+        <InstancedPart key={i} part={part} at={at} name={model} />
       ))}
     </>
   );
 }
 
-function InstancedPart({ part, at }: { part: Part; at: Placement[] }) {
+function InstancedPart({ part, at, name }: { part: Part; at: Placement[]; name: string }) {
   const ref = useRef<InstancedMesh>(null);
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -121,7 +121,7 @@ function InstancedPart({ part, at }: { part: Part; at: Placement[] }) {
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
   }, [at, part]);
-  return <instancedMesh ref={ref} args={[part.geometry, part.material, at.length]} />;
+  return <instancedMesh ref={ref} name={name} args={[part.geometry, part.material, at.length]} />;
 }
 
 useGLTF.preload(CITY_URL);
