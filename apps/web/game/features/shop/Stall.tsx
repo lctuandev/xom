@@ -11,6 +11,8 @@ import { useGame } from "../../store";
 import { usePayMethod } from "../../ui/PayPicker";
 import { Section } from "../../ui/Sheet";
 import { GoToRow } from "../FeatureSheet";
+import { openFeature } from "../open";
+import type { FeatureId } from "../registry";
 import { ShopFeature, Stat } from "./common";
 
 function OpenButton({
@@ -160,6 +162,7 @@ export function StallSheet() {
               </span>
             </div>
             <OpenButton biz={biz} stock={stock} working={me.jobId !== null} money={me.money} />
+            <StallTasks biz={biz} stock={stock} />
             <WearBar biz={biz} />
             <Section title="Hôm nay">
               <div className="grid grid-cols-3 gap-2 text-center">
@@ -170,11 +173,66 @@ export function StallSheet() {
               </div>
             </Section>
             <UpgradeBox biz={biz} />
-            <GoToRow to={["dishes", "stock", "lot", "staff", "promo", "recipes"]} />
+            <GoToRow to={["stock", "promo", "recipes"]} />
           </>
         );
       }}
     </ShopFeature>
+  );
+}
+
+/**
+ * Việc của quầy này (góp ý đợt 2 — "quầy theo mặt hàng"): 4 thẻ to thay dãy nút cuối sheet, mỗi thẻ ghi luôn tình trạng
+ * của quầy đang chọn — nhập hàng (chợ mở sẵn nguyên liệu món của quầy), thực đơn & giá, nhân viên, chỗ bán.
+ */
+function StallTasks({ biz, stock }: { biz: BusinessView; stock: number }) {
+  const product = content.product(biz.productId);
+  const on = biz.menu.filter((m) => m.on).length;
+  const maxStaff = shopLevel(content, biz.level ?? 1).maxStaff;
+  const staff = biz.staffCount ?? (biz.staff ? 1 : 0);
+  const lot = biz.lotId ? content.lot(biz.lotId).name : null;
+  const cards: { id: FeatureId; icon: string; title: string; note: string; warn?: boolean }[] = [
+    {
+      id: "market",
+      icon: "🧺",
+      title: "Nhập hàng",
+      note: stock > 0 ? `Còn làm được ${stock} phần` : `Hết nguyên liệu ${product.name}`,
+      warn: stock === 0,
+    },
+    {
+      id: "dishes",
+      icon: "🍽️",
+      title: "Thực đơn & giá",
+      note: `${on}/${biz.menu.length} món đang bán`,
+      warn: on === 0,
+    },
+    {
+      id: "staff",
+      icon: "👩‍🍳",
+      title: "Nhân viên",
+      note: maxStaff > 0 ? `${staff}/${maxStaff} người` : "Chủ tự bán",
+    },
+    { id: "lot", icon: "📍", title: "Chỗ bán", note: lot ?? "Chưa chọn chỗ", warn: !lot },
+  ];
+  return (
+    <nav aria-label="Việc của quầy" className="mb-3 grid grid-cols-2 gap-2">
+      {cards.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          data-stall-task={c.id}
+          onClick={() => openFeature(c.id, { from: "sheet" })}
+          className="flex min-h-20 flex-col items-start justify-between rounded-2xl bg-white p-3 text-left shadow-sm active:scale-[0.98]"
+        >
+          <span className="text-sm font-extrabold">
+            <span aria-hidden>{c.icon}</span> {c.title}
+          </span>
+          <span className={`text-xs ${c.warn ? "font-semibold text-red" : "text-ink/60"}`}>
+            {c.note}
+          </span>
+        </button>
+      ))}
+    </nav>
   );
 }
 

@@ -612,6 +612,20 @@ chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không m�
 **Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
 khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang` (+ đi về quầy bánh mì tự chuyển cửa hàng, mở lại).
 
+### UC-F15 · Quầy theo mặt hàng: sheet Quầy gọn thành thẻ việc 🚧 (bước 1)
+> Góp ý đợt 2 (2026-10-02): "bấm vào quầy nào thì chỉ còn đúng việc của quầy đó — nhập hàng, thuê nhân viên, giá; gom bớt
+> dãy nút".
+
+**Luồng:** 🏪 Quầy của tôi → dưới nút Mở/Đóng quầy là **4 thẻ to** của quầy đang chọn, mỗi thẻ ghi tình trạng:
+🧺 **Nhập hàng** ("Còn làm được N phần" / đỏ "Hết nguyên liệu …") → tự đi ra chợ, chợ mở sẵn tab nguyên liệu món của quầy ·
+🍽️ **Thực đơn & giá** ("x/y món đang bán") · 👩‍🍳 **Nhân viên** ("n/tối đa người") · 📍 **Chỗ bán** (tên chỗ / đỏ "Chưa chọn
+chỗ"). Thẻ mở sheet có ‹ Quay lại về Quầy. Kho hàng, Khai trương, Công thức còn ở hàng nút nhỏ cuối sheet.
+Vựa xe Ông Sáu ghi rõ "🏪 Mở cửa hàng: chọn mặt hàng bán", mỗi thẻ đồ nghề có nhãn mặt hàng.
+**Luật game:** chỉ là giao diện — mọi việc vẫn qua chức năng sẵn có (server kiểm như cũ).
+**Kiểm chứng:** Playwright `quay-viec` (4 thẻ có tình trạng, Thực đơn + Quay lại, Nhập hàng ra chợ đúng tab).
+**Còn lại (bước 2):** chọn thể loại → đồ nghề → chỗ trong một luồng "🏪 Mở cửa hàng"; chợ chỉ hiện nguyên liệu quầy (ẩn tab nghề
+khác sau nút "Xem hàng khác").
+
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.
 **Luật:** phụ tùng không hỏng theo ngày nhưng vốn lớn (ruột xe 55k/cái). Biển hiệu "SỬA XE {tên}". Khách đông buổi sáng/chiều tan tầm.

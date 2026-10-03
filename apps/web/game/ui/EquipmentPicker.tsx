@@ -26,6 +26,10 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
   return (
     <ul className="flex flex-col gap-3">
       <li>
+        <p className="font-extrabold">🏪 Mở cửa hàng: chọn mặt hàng bán</p>
+        <p className="mb-2 text-xs text-ink/60">
+          Mỗi mặt hàng một bộ đồ nghề · mua xong ra chợ nhập hàng, chọn chỗ bán rồi mở quầy.
+        </p>
         <PayPicker />
       </li>
       {content.data.equipment.map((eq) => {
@@ -39,6 +43,9 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
                 {product.emoji}
               </span>
               <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-red" data-category={product.id}>
+                  {product.name}
+                </p>
                 <p className="text-lg font-extrabold">{eq.name}</p>
                 <p className="text-sm text-ink/70">
                   {product.recipe.variants.map((v) => v.name).join(", ")}
