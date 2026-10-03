@@ -1,46 +1,34 @@
 # XÓM — Bản hand-off (đọc đầu tiên khi mở phiên mới)
 
-> Cập nhật: 2026-10-03 · Làm ở máy local (repo `/home/lctuan/Documents/GameOnline`), `main` = `05ca6e6` (đã push).
+> Cập nhật: 2026-10-03 (chiều) · Làm ở máy local (repo `/home/lctuan/Documents/GameOnline`), làm thẳng trên `main` (chủ dự án
+> cho phép), làm tới đâu commit + push tới đó.
 > Đọc kèm: `CLAUDE.md` (quy tắc bắt buộc), `docs/FEATURES.md` (bảng trạng thái), `docs/USECASES.md` (use case), `docs/IA.md`
 > (tổ chức chức năng), `docs/DESIGN.md`, `docs/KIENTRUC.md`, `docs/NGHE.md`, `docs/THEGIOI.md`, `docs/ADMIN.md`.
-> Quy trình git đã chốt: **không commit thẳng `main`** — mỗi việc một nhánh, push nhánh, test xanh + deploy :5555 rồi
-> `git merge --no-ff <nhánh>` vào `main` và push (máy không có `gh`/token nên không tạo trang PR).
 
 ---
 
-## 0. TRẠNG THÁI NGAY LÚC BÀN GIAO (việc đang dở)
+## 0. TRẠNG THÁI NGAY LÚC BÀN GIAO
 
-### 0.1 Các nhánh chưa merge vào `main` (merge theo đúng thứ tự)
-| # | Nhánh | Ở đâu | Nội dung | Trạng thái |
-|---|-------|-------|----------|-----------|
-| 1 | `fix/xom-moi-ban-menu` (`2ff82f3`) | đã push; thư mục chính `GameOnline` đang checkout nhánh này | Xóm chung + sửa mời bạn, nút Menu không nền, ghim trái/phải, bỏ neo ⚙️, nút ‹ Quay lại, Chú Bảy không bắt chuyện lại | lint/typecheck/unit xanh; e2e server xanh (84/84 lúc chạy cả bộ); Playwright 9 spec liên quan xanh (Pixel 7); **đã deploy :5555**; **lượt Playwright toàn bộ (Pixel 7) đang chạy** → log `/tmp/claude-1000/xom-logs/pw-all.log` (lúc bàn giao: 14 bài ✓, chưa có ✘). Xong thì `git merge --no-ff fix/xom-moi-ban-menu` vào `main`. |
-| 2 | `feat/danh-gia-tung-tiem` (`37359bf`, `dc2fa92` + commit phần thưởng/HANDOFF này) | **worktree `/home/lctuan/Documents/GameOnline-B`**, tách từ nhánh 1 | (a) Đánh giá riêng từng cửa hàng, (b) nhiều cửa hàng chạy cùng lúc, (c) thưởng thành tựu + nhiệm vụ hằng ngày | e2e server `reviews` 2/2, `rewards` 1/1, `stats` xanh; 2 migration mới **đã áp vào DB dev**; **chưa chạy Playwright**, chưa deploy, phần thưởng còn thiếu docs/Playwright (xem 0.2). |
+### 0.1 Đã xong trong phiên 2026-10-03
+- Nhánh `fix/xom-moi-ban-menu` (#6) và `feat/danh-gia-tung-tiem` (#5) **đã merge vào `main`** (chủ dự án merge trên GitHub).
+  Đã kiểm lại trên `main`: e2e server 85/85; Playwright Pixel 7 `khi-vang`, `menu-chinh`, `mua-cua-nhau`, `nhieu-cua-hang`,
+  `xom-chung` xanh.
+- 🎁 Thưởng hoàn tất: UC-P4 + dòng FEATURES, Playwright `thuong` (bán 5 món → nhận thưởng nhiệm vụ + thành tựu "Mở hàng"),
+  `pnpm balance` có mục kiểm trần thưởng (nhiệm vụ ≤ 10% một ngày làm thuê; tổng thành tựu ≤ 1 ngày lãi) → tiền nhiệm vụ giảm
+  còn 3k/5k/3k (11k/ngày). Đã deploy :5555.
+- 🏪 Quầy theo mặt hàng (UC-F15): sheet Quầy có 4 thẻ việc kèm tình trạng (`StallTasks` trong `features/shop/Stall.tsx`), chợ chỉ
+  hiện nguyên liệu quầy đang chọn (nút "🧺 Xem hàng khác"), vựa xe "Mở cửa hàng: chọn mặt hàng", mở thêm cửa hàng xong mở luôn
+  📍 Chỗ bán. Playwright `quay-viec`; helper `buyIngredients` tự bấm "Xem hàng khác" khi cần.
 
-Worktree cũ `/home/lctuan/Documents/GameOnline-A` (nhánh `feat/nut-ngu-canh`, tách ở `c182eb3`): định gom `ActionBar` về một nút
-ngữ cảnh — **chưa viết code**, có thể xoá worktree. Nhánh art `feat/phong-cach-toon` (toon + viền đen kiểu Happy Citizens) đang tạm dừng.
+### 0.2 Dọn dẹp chờ chủ dự án
+- Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch
+  — gỡ bằng `git worktree remove ../GameOnline-A ../GameOnline-B` (Claude bị chặn lệnh này, để chủ dự án tự chạy).
+- `.playwright-mcp/` (log MCP) chưa vào `.gitignore`; `.mcp.json` có thay đổi riêng của chủ dự án (thêm blender) — chưa commit.
 
-### 0.2 Làm tiếp ngay (theo thứ tự)
-1. Xem `/tmp/claude-1000/xom-logs/pw-all.log`: hết ✘ (hoặc sửa xong) → merge nhánh 1 vào `main`, push.
-2. Ở worktree B, hoàn tất phần thưởng (code đã commit cùng HANDOFF này): file mới `apps/server/src/game/rewards.ts`,
-   `apps/server/test/rewards.e2e-spec.ts`, `apps/web/game/ui/Rewards.tsx`, migration `20261003100000_rewards_claimed`; sửa content
-   `rewardSchema`/`dailyQuests`/`achievements[].reward`, shared `QuestView`/`RewardView`/`rewardClaimSchema`/`quest:list`/
-   `reward:claim`, `stats.ts`, `xom.gateway.ts`, `game.module.ts`, `BoardSheet.tsx` (Achievements), `HubSheets.tsx` (DailyQuests).
-   **Còn thiếu:** dòng FEATURES.md + use case **UC-P4** trong USECASES.md (test đã ghi tên UC-P4), Playwright cho nút 🎁 Nhận
-   (gợi ý: spec mới `thuong` — bán 5 món rồi nhận thưởng nhiệm vụ "Bán 5 món" + thành tựu "Mở hàng"), chạy `pnpm balance` (4.1).
-3. Ở B: `pnpm lint && pnpm typecheck && pnpm test && pnpm --filter @xom/server test:e2e`; rồi chạy dev bằng code của B (tắt dev ở
-   thư mục chính, `GAME_TICK_MS=250 pnpm dev` trong B — hoặc merge B vào nhánh chính rồi chạy) và Playwright `nhieu-cua-hang` (đã
-   thêm bước: đi về quầy bánh mì → tự chuyển cửa hàng → mở lại quầy), `mua-cua-nhau` (đánh giá theo cửa hàng), `khi-vang`,
-   `menu-chinh`.
-4. Push B, `pnpm deploy:local`, merge `--no-ff` vào `main` sau nhánh 1. Xoá worktree A/B khi xong (`git worktree remove`).
-
-### 0.3 Lưu ý môi trường lúc bàn giao
-- Dev đang chạy nền ở thư mục chính (`GAME_TICK_MS=250 pnpm dev`, log `/tmp/claude-1000/xom-logs/dev.log`) với code nhánh 1.
-- DB dev dùng chung cho mọi worktree: đã có cột `Review.businessId` + `Player.rewardsClaimed` (migration của B). Code nhánh 1
-  vẫn chạy được với DB này (cột mới cho phép null / có mặc định).
-- Production :5555 đang chạy bản nhánh 1 (chưa có 2 migration của B — `pnpm deploy:local` sẽ tự áp).
+### 0.3 Lưu ý môi trường
+- Máy khởi động lại thì `docker compose up -d` (Postgres + Redis dev) trước khi `pnpm dev`.
 - Tắt dev: `ss -ltnp | grep -E ':500[01] '` lấy pid rồi `kill` (đừng `pkill -f` — khớp luôn shell của mình).
-
----
+- Đang chạy Playwright thì đừng sửa file web/server (HMR / Nest restart làm hỏng bài đang chạy).
 
 ## 1. Bắt đầu / kiểm tra ở máy local
 
@@ -106,12 +94,9 @@ riêng từng tiệm + chuyển kho 30 phút game (UC-F14); cấp tiệm 1–3 +
 Tham khảo luồng game đã tìm: Township (đất chia ô, ô sau đắt hơn, mở khoá theo cấp/dân số), Bit City (mua ô đất rồi chọn loại
 công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *chức năng* — mở khoá — giữ chân tốt hơn danh hiệu suông).
 - [x] Mời bạn không hoạt động · [x] tăng giới hạn xóm + xóm chung · [x] Menu không nền + bỏ ⚙️ + ghim trái/phải ·
-  [x] Chú Bảy · [x] nút Quay lại · [x] đánh giá từng cửa hàng · [x] nhiều cửa hàng cùng lúc · [~] thưởng (code xong, xem 0.2).
-- [ ] **Quầy theo mặt hàng (tái cấu trúc sheet Quầy):** khi mở cửa hàng chọn luôn **thể loại hàng** (bánh mì, trà sữa…); bấm vào
-  quầy nào thì sheet chỉ còn đúng việc của quầy đó: **nhập hàng của quầy** (đi chợ chỉ hiện nguyên liệu món đó), **thuê nhân
-  viên**, **giá / thực đơn**, mở/đóng. Gom bớt dãy nút cuối sheet Quầy (`features/shop/Stall.tsx` + `GoToRow`) thành 3–4 thẻ to.
-  Hiện "mua đồ nghề = mở cửa hàng" ở Vựa xe Ông Sáu — luồng mới: "🏪 Mở cửa hàng" → chọn thể loại → chọn đồ nghề hợp thể loại →
-  chọn chỗ.
+  [x] Chú Bảy · [x] nút Quay lại · [x] đánh giá từng cửa hàng · [x] nhiều cửa hàng cùng lúc · [x] thưởng (UC-P4) ·
+  [x] quầy theo mặt hàng (UC-F15, bản đầu).
+- [x] **Quầy theo mặt hàng** (UC-F15, bản đầu) — còn: một mặt hàng nhiều đồ nghề (xe đẩy / tủ lớn), gợi ý chỗ theo khu hợp món.
 - [ ] **Bản đồ mở / xóm lớn dần (việc lớn — viết plan `docs/BANDO.md` trước, hỏi chủ dự án chốt):** ban đầu xóm chỉ có nhà NPC +
   **ô đất trống / nhà cho thuê**; người chơi đi làm thuê tới khi đủ tiền sắm sạp nhỏ, rồi **chọn ô đất để thuê hoặc tự xây** tiệm;
   mỗi người mở tiệm thì xóm mở rộng thêm ô (như Township); nâng cấp tiệm lên **nhà nhiều tầng** (gắn cấp tiệm 1–3 hiện có và
@@ -137,8 +122,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 ## 4. Issues / lưu ý đang biết
 
 ### 4.1 Cần xem
-- **Thưởng là tiền vào ví** — CLAUDE.md: "tiền chỉ vào ví khi người chơi *làm*". Thưởng chỉ có khi làm thật (bán, làm thuê) và
-  nhỏ/một lần, nhưng **chưa chạy `pnpm balance`** và chưa thêm vào công cụ cân bằng. Nhiệm vụ "Có hàng xóm cùng chơi" chỉ thưởng XP.
+- **Thưởng là tiền vào ví** — CLAUDE.md: "tiền chỉ vào ví khi người chơi *làm*". Thưởng chỉ có khi làm thật (bán, làm thuê),
+  nhỏ/một lần; `pnpm balance` kiểm trần (11k/ngày nhiệm vụ, 380k tổng thành tựu). "Có hàng xóm cùng chơi" chỉ thưởng XP.
 - Xóm chung: người chơi mới tự vào xóm đông → **tranh chỗ bán** (lô cố định) nhiều hơn; 40 cư dân/xóm là ước lượng, cần theo dõi
   bằng `pnpm analytics`. Người cũ vẫn ở xóm riêng cũ (muốn sang thì "Dọn về" trong 👥 Hàng xóm).
 - Chuyển xóm khi đang có tiệm nhà mặt tiền: chưa kiểm hợp đồng thuê nhà ở xóm cũ (lô nhà cùng id ở xóm mới) — rà khi làm bản đồ mở.
@@ -164,8 +149,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - Lượt Playwright toàn bộ chỉ Pixel 7 mất ~1,5 giờ (chạy nền, `workers: 1`).
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
-1. Hoàn tất mục 0.2 (merge nhánh 1; docs + Playwright + balance cho phần thưởng; test + deploy + merge nhánh 2).
-2. Quầy theo mặt hàng (3.1) — sửa luồng mở cửa hàng + gọn sheet Quầy.
-3. Viết `docs/BANDO.md` (bản đồ mở / ô đất / xây tiệm / nhà nhiều tầng), hỏi chủ dự án chốt, rồi làm theo bước nhỏ.
-4. Tách `game.service.ts` + gom `ActionBar`.
-5. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
+1. Viết `docs/BANDO.md` (bản đồ mở / ô đất / xây tiệm / nhà nhiều tầng), hỏi chủ dự án chốt, rồi làm theo bước nhỏ.
+2. Chấm đỏ 🎯/🏅 khi có thưởng chờ nhận (3.1).
+3. Tách `game.service.ts` + gom `ActionBar`.
+4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).

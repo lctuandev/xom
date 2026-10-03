@@ -612,7 +612,7 @@ chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không m�
 **Kiểm chứng:** e2e `shops.e2e-spec.ts` (mở thêm, kho riêng, chọn, chuyển kho có thời gian, không chuyển/chọn cửa hàng người
 khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `nhieu-cua-hang` (+ đi về quầy bánh mì tự chuyển cửa hàng, mở lại).
 
-### UC-F15 · Quầy theo mặt hàng: sheet Quầy gọn thành thẻ việc 🚧 (bước 1)
+### UC-F15 · Quầy theo mặt hàng: sheet Quầy gọn thành thẻ việc, chợ chỉ hàng của quầy ✅ (bản đầu)
 > Góp ý đợt 2 (2026-10-02): "bấm vào quầy nào thì chỉ còn đúng việc của quầy đó — nhập hàng, thuê nhân viên, giá; gom bớt
 > dãy nút".
 
@@ -620,11 +620,14 @@ khác, đổi nghề giữ kho; đứng quầy theo cửa hàng) · Playwright `
 🧺 **Nhập hàng** ("Còn làm được N phần" / đỏ "Hết nguyên liệu …") → tự đi ra chợ, chợ mở sẵn tab nguyên liệu món của quầy ·
 🍽️ **Thực đơn & giá** ("x/y món đang bán") · 👩‍🍳 **Nhân viên** ("n/tối đa người") · 📍 **Chỗ bán** (tên chỗ / đỏ "Chưa chọn
 chỗ"). Thẻ mở sheet có ‹ Quay lại về Quầy. Kho hàng, Khai trương, Công thức còn ở hàng nút nhỏ cuối sheet.
-Vựa xe Ông Sáu ghi rõ "🏪 Mở cửa hàng: chọn mặt hàng bán", mỗi thẻ đồ nghề có nhãn mặt hàng.
+**Chợ** chỉ hiện nguyên liệu của quầy đang chọn ("📦 Nguyên liệu cho quầy 🥖 Bánh mì"); hàng nghề khác gom sau nút **🧺 Xem hàng
+khác** (chưa có quầy thì hiện hết theo tab nghề).
+**Mở cửa hàng:** vựa xe Ông Sáu ghi "🏪 Mở cửa hàng: chọn mặt hàng bán", mỗi thẻ đồ nghề có nhãn mặt hàng → **🏪 Mở thêm cửa
+hàng** xong thì mở luôn **📍 Chỗ bán** cho cửa hàng mới (mặt hàng → đồ nghề → chỗ). Cửa hàng đầu tiên vẫn theo lời Chú Bảy.
 **Luật game:** chỉ là giao diện — mọi việc vẫn qua chức năng sẵn có (server kiểm như cũ).
-**Kiểm chứng:** Playwright `quay-viec` (4 thẻ có tình trạng, Thực đơn + Quay lại, Nhập hàng ra chợ đúng tab).
-**Còn lại (bước 2):** chọn thể loại → đồ nghề → chỗ trong một luồng "🏪 Mở cửa hàng"; chợ chỉ hiện nguyên liệu quầy (ẩn tab nghề
-khác sau nút "Xem hàng khác").
+**Kiểm chứng:** Playwright `quay-viec` (4 thẻ có tình trạng, Thực đơn + Quay lại, Nhập hàng ra chợ chỉ hàng của quầy, Xem hàng
+khác), `nhieu-cua-hang` (mở thêm cửa hàng → sheet Chỗ bán).
+**Chưa:** một mặt hàng có nhiều đồ nghề (xe đẩy / tủ lớn) để chọn; chỗ bán gợi ý theo khu hợp mặt hàng.
 
 ### UC-G1 · Mở tiệm sửa xe ✅ (bản đầu)
 **Luồng:** vựa xe Ông Sáu bán *Xe đồ nghề sửa xe* (900k) → mua **phụ tùng** ở chợ (tab 🔧 Sửa xe: miếng vá, ruột xe, bugi, má phanh, bóng đèn) → thuê chỗ, mở tiệm như xe đẩy.

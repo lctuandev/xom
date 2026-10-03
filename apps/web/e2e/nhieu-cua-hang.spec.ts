@@ -29,6 +29,8 @@ test("mở thêm cửa hàng, chọn cửa hàng để quản lý, chuyển kho 
   const tea = yard.getByRole("listitem").filter({ hasText: content.equipment("xe_tra_sua").name });
   await tea.getByRole("button", { name: /Mở thêm cửa hàng/ }).tap();
   await expect(yard).toHaveCount(0);
+  // Mở thêm cửa hàng xong thì chọn chỗ bán luôn (UC-F15).
+  await expect(page.getByRole("dialog", { name: /Chỗ bán/ })).toBeVisible();
 
   // 🏬 Các cửa hàng: 2 cửa hàng, trà sữa đang quản lý.
   await openFeature(page, "shops");

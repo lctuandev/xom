@@ -8,7 +8,11 @@ import { useGame } from "../store";
 import { PayPicker, usePayCheck, usePayMethod } from "./PayPicker";
 
 /** Chọn nghề = chọn thiết bị: mở thêm cửa hàng, hoặc đổi nghề quầy đang chọn (thiết bị cũ bán lại nửa giá). */
-export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
+export function EquipmentPicker({
+  onDone,
+}: {
+  onDone?: (mode: "first" | "new" | "replace") => void;
+}) {
   const me = useGame((s) => s.me);
   const [busy, setBusy] = useState<string | null>(null);
   const current = me?.business?.equipmentId;
@@ -20,7 +24,7 @@ export function EquipmentPicker({ onDone }: { onDone?: () => void }) {
     setBusy(equipmentId);
     const res = await send("equipment:buy", { equipmentId, pay, mode });
     setBusy(null);
-    if (res.ok) onDone?.();
+    if (res.ok) onDone?.(mode === "new" && hasShop ? "new" : mode === "new" ? "first" : "replace");
   };
 
   return (

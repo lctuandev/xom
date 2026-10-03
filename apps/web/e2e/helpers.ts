@@ -55,6 +55,9 @@ export async function walkToObjective(page: Page, arrivedButton: RegExp) {
 export async function buyIngredients(page: Page, ids: string[]) {
   for (const id of ids) {
     const row = page.locator(`[data-item="${id}"]`);
+    // Chợ chỉ hiện hàng của quầy mình (UC-F15) — hàng nghề khác nằm sau "Xem hàng khác".
+    const more = page.getByRole("button", { name: /Xem hàng khác/ });
+    if (!(await row.isVisible()) && (await more.isVisible())) await more.tap();
     // Chợ chia tab theo nghề: chưa thấy hàng thì lật lần lượt từng tab.
     const tabs = page.getByRole("tablist", { name: "Quầy hàng ở chợ" }).getByRole("tab");
     for (let i = 0; i < (await tabs.count()) && !(await row.isVisible()); i++)

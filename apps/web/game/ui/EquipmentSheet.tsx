@@ -20,7 +20,13 @@ export function EquipmentSheet() {
       <PlaceGate placeId="vua_xe" open="equipment">
         <RepairBox />
         <EquipmentPicker
-          onDone={() => {
+          onDone={(mode) => {
+            // Mở thêm cửa hàng (UC-F15): mặt hàng → đồ nghề → chọn chỗ bán luôn cho cửa hàng mới.
+            if (mode === "new") {
+              close("lot");
+              toast({ kind: "good", text: "🏪 Cửa hàng mới! Chọn chỗ bán rồi ra chợ nhập hàng." });
+              return;
+            }
             // Về bản đồ để thấy bước tiếp theo (dòng nhiệm vụ / lời dặn của Chú Bảy).
             close(null);
             toast({ kind: "good", text: "Có xe rồi! Giờ ra chợ nhập hàng nào." });

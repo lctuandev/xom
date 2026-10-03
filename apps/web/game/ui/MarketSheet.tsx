@@ -23,6 +23,8 @@ export function MarketSheet() {
   const clock = useGame((s) => s.clock);
   const close = useGame((s) => s.openSheet);
   const [tab, setTab] = useState<string>("mine");
+  // Quầy theo mặt hàng (UC-F15): có quầy thì chỉ hiện nguyên liệu món của quầy; nghề khác gom sau "Xem hàng khác".
+  const [all, setAll] = useState(false);
   if (!me || !clock) return null;
 
   const mine = me.business ? ingredientsOfProduct(me.business.productId) : [];
@@ -41,7 +43,8 @@ export function MarketSheet() {
   const rest = content.data.ingredients.map((i) => i.id).filter((id) => !seen.has(id));
   if (rest.length) groups.push({ id: "khac", label: "🧺 Khác", items: rest });
   const leftovers = me.inventory.filter((i) => i.qty > 0).length;
-  const current = groups.some((g) => g.id === tab) ? tab : groups[0]?.id;
+  const shown = all || !me.business ? groups : groups.filter((g) => g.id === "mine");
+  const current = shown.some((g) => g.id === tab) ? tab : shown[0]?.id;
   // Tiền thuê chỗ còn phải trả hôm nay: nhắc chừa lại để không kẹt vốn.
   const biz = me.business;
   const reserve =
@@ -72,6 +75,12 @@ export function MarketSheet() {
             hàng ở 🏬 Các cửa hàng
           </p>
         )}
+        {me.shops.length <= 1 && biz && !all && (
+          <p className="mb-2 text-sm font-extrabold" data-market-for={biz.id}>
+            📦 Nguyên liệu cho quầy {content.product(biz.productId).emoji}{" "}
+            {content.product(biz.productId).name}
+          </p>
+        )}
         {!me.business && (
           <p
             className="mb-2 rounded-xl bg-red/10 px-3 py-2 text-xs font-semibold"
@@ -81,12 +90,14 @@ export function MarketSheet() {
           </p>
         )}
         <PayPicker />
-        <Tabs
-          label="Quầy hàng ở chợ"
-          value={current ?? "sell"}
-          onChange={setTab}
-          tabs={groups.map((g) => ({ id: g.id, label: g.label }))}
-        />
+        {shown.length > 1 && (
+          <Tabs
+            label="Quầy hàng ở chợ"
+            value={current ?? "sell"}
+            onChange={setTab}
+            tabs={shown.map((g) => ({ id: g.id, label: g.label }))}
+          />
+        )}
         {current === "sell" ? null : (
           <ul className="flex flex-col gap-2" data-group={current}>
             {groups
@@ -95,6 +106,15 @@ export function MarketSheet() {
                 <Row key={id} ing={content.ingredient(id)} reserve={reserve} friend={friend} />
               ))}
           </ul>
+        )}
+        {shown.length < groups.length && (
+          <button
+            type="button"
+            onClick={() => setAll(true)}
+            className="mt-3 h-11 w-full rounded-xl bg-white text-sm font-semibold shadow-sm"
+          >
+            🧺 Xem hàng khác (nghề khác) ›
+          </button>
         )}
         {leftovers > 0 && (
           <button
