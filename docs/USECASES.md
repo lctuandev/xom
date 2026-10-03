@@ -260,6 +260,27 @@ server tính từ DailyReport + sổ đánh giá + kỹ năng; thành tựu ki�
 **Để sau (đã lọc từ đề xuất):** team/công ty, chuỗi cung ứng, followers/content, mùa giải + huy hiệu mùa, đấu giá mặt bằng,
 thi trang trí "quán đẹp tuần", xếp hạng quận/thành phố. **Không làm:** streak điểm danh (trái Luật 17).
 
+### UC-P4 · Thưởng thành tựu + nhiệm vụ hằng ngày ✅ (bản đầu)
+**Hệ thống:** 📈 Tiến trình · 💰 Kinh tế · **Luật:** 4.2 (mở khoá bằng làm thật), 5 (money sink — thưởng nhỏ, có trần),
+15 (dữ liệu), 17 (giữ chân lành mạnh — không điểm danh, không streak, quên nhận không mất gì ngoài thưởng hôm đó).
+**Đời thật:** bán được mối đầu thì cô chú trong xóm lì xì lấy hên; ngày bán đắt thì tự thưởng ly cà phê.
+Góp ý chủ dự án (đợt 2): "thành tựu có mà không thưởng gì thì trông vô dụng".
+**Luồng:**
+- ☰ Menu → 🎯 *Nhiệm vụ* → mục **Hôm nay**: 4 nhiệm vụ (🥖 Bán 5 món, 🔥 Bán 20 món, 💼 Làm thuê kiếm 50.000đ, 👥 Có hàng
+  xóm cùng chơi) có tiến độ `x/y` và 🎁 phần thưởng; xong thì dòng xanh ✅ + nút **🎁 Nhận** → toast "🎁 …: +3.000đ, +15 kinh
+  nghiệm", nút thành "✓ Đã nhận". Sang ngày mới thì làm lại từ đầu.
+- ☰ Menu → 🏅 *Thành tựu*: mỗi thẻ có 🎁 phần thưởng; thẻ đạt mà chưa nhận xếp lên đầu, có nút **🎁 Nhận** (nhận một lần).
+**Luật game (content.dailyQuests, content.achievements[].reward; server `game/rewards.ts`):**
+- Server kiểm đạt thật: nhiệm vụ đếm từ sổ hôm nay (`DailyReport.served`, `.wages`) + số người online cùng xóm; thành tựu phải
+  đã mở (`Player.achievements`). Chưa đạt → `invalid_state`.
+- Nhận một lần: khoá `ach:<id>` / `q:<ngày>:<id>` trong `Player.rewardsClaimed`, đọc lại trong giao dịch (bấm hai lần vẫn một
+  lần); dấu nhiệm vụ cũ hơn 7 ngày tự dọn.
+- Tiền vào 💵 tiền mặt qua sổ cái (lý do `reward`), XP cộng thẳng. Nhiệm vụ tối đa 11k/ngày (≤ 10% một ngày làm thuê rẻ nhất),
+  thành tựu tổng 380k một lần — `pnpm balance` cảnh báo nếu vượt. "Có hàng xóm cùng chơi" chỉ thưởng XP (tránh nuôi nick phụ).
+**Kiểm chứng:** e2e server `rewards.e2e-spec.ts` (chưa đạt bị từ chối, nhận một lần, tiền + XP đúng); Playwright
+`thuong.spec.ts` (bán 5 món → nhận thưởng "Bán 5 món" + thành tựu "Mở hàng", tiền mặt tăng đúng, nhận lại không được).
+**Chưa:** chấm đỏ trên 🎯/🏅 khi có thưởng chờ nhận; thưởng *chức năng* (mở khoá) thay cho tiền.
+
 ---
 
 ## C. Kịch bản người mới (Chú Bảy)

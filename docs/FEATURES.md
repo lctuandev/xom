@@ -83,6 +83,7 @@ Theo nguyên tắc *"5 hệ thống ưu tiên tuyệt đối"* — (1) multiplay
 | Chỉ số: tiền ✅, uy tín quầy ✅, cấp độ / kinh nghiệm ✅, danh tiếng ✅, kỹ năng ✅ | ✅ | 1.11 | Không có "năng lượng" ép giờ chơi |
 | Kỹ năng (tay nhanh, nhớ món, ăn nói) tăng nhờ làm thật + mở khoá theo cấp | ✅ | 1.11 | UC-P1 |
 | Thành tựu (dữ liệu, có tiến độ) | ✅ | 1.11 | UC-P2 |
+| Thưởng thành tựu + 4 nhiệm vụ hằng ngày (🎁 Nhận, một lần, tiền nhỏ có trần) | ✅ | 1.11 | UC-P4 |
 | Bảng xóm: giải tuần 7 hạng mục, thị phần theo món, đang hot; số liệu quầy 7 ngày + so TB xóm | ✅ | 1.11 | UC-P2 |
 | Bảng xóm dạng modal + bục vinh danh top 1-2-3 (khung vàng/bạc/đồng, vương miện, viền sáng) | ✅ | 1.11 | UC-P2, Luật 12.5 |
 

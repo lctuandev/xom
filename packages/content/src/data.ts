@@ -2637,7 +2637,7 @@ export const data: ContentInput = {
       hint: "Mở quầy, làm đúng món, tính tiền",
       metric: "sold",
       goal: 5,
-      reward: { xp: 15, money: 5_000 },
+      reward: { xp: 15, money: 3_000 },
     },
     {
       id: "ban_20",
@@ -2645,7 +2645,7 @@ export const data: ContentInput = {
       text: "Bán 20 món",
       metric: "sold",
       goal: 20,
-      reward: { xp: 40, money: 10_000 },
+      reward: { xp: 40, money: 5_000 },
     },
     {
       id: "lam_thue_50k",
@@ -2654,7 +2654,7 @@ export const data: ContentInput = {
       hint: "☰ Menu → 💼 Làm thuê",
       metric: "wages",
       goal: 50_000,
-      reward: { xp: 15, money: 5_000 },
+      reward: { xp: 15, money: 3_000 },
     },
     {
       id: "co_ban_choi",

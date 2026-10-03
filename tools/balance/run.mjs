@@ -350,5 +350,18 @@ const vua = content.data.equipment.map((e) =>
 );
 if (Math.max(...vua) > Math.min(...vua) * 2.5)
   warnings.push("Chênh lệch giữa các nghề > 2,5 lần — người chơi sẽ dồn vào một nghề");
+// Thưởng (UC-P4): chỉ có khi làm thật, nhiệm vụ mỗi ngày một lần, thành tựu một lần — phải là "tiền boa" nhỏ,
+// không thành nguồn thu: tối đa 10% một ngày làm thuê rẻ nhất; tổng thành tựu ≤ 1 ngày lãi xe đẩy tay vừa tốt nhất.
+const questMoney = content.data.dailyQuests.reduce((n, q) => n + q.reward.money, 0);
+const achMoney = content.data.achievements.reduce((n, a) => n + a.reward.money, 0);
+console.log(
+  `\n🎁 Thưởng: nhiệm vụ hằng ngày tối đa ${k(questMoney)}/ngày · thành tựu tổng ${k(achMoney)} (một lần)`,
+);
+if (questMoney > Math.min(...wages) * 0.1)
+  warnings.push(
+    `nhiệm vụ hằng ngày thưởng quá nhiều (${k(questMoney)}/ngày, > 10% làm thuê ${k(Math.min(...wages))})`,
+  );
+if (achMoney > Math.max(...vua))
+  warnings.push(`tổng thưởng thành tựu (${k(achMoney)}) hơn một ngày lãi tốt nhất`);
 console.log(warnings.length ? `\n⚠ ${warnings.join("\n⚠ ")}` : "\n✔ Không có cảnh báo cân bằng");
 console.log(`\nChi tiết: tools/balance/out/strategies.csv (${rows.length} chiến lược)`);
