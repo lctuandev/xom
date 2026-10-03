@@ -1,9 +1,9 @@
-# Làm lại đồ hoạ: cảnh vật, nhà, nhân vật chi tiết & chân thật hơn (kế hoạch, CHỜ CHỐT)
+# Làm lại đồ hoạ: cảnh vật, nhà, nhân vật chi tiết & chân thật hơn (kế hoạch, ĐÃ CHỐT 2026-10-03)
 
 > Góp ý đợt 3 của chủ dự án (2026-10-03): "thiết kế lại các cảnh vật, ngôi nhà, nhân vật… (tất cả) cho chi tiết hơn trong Blender
 > sao cho các vật thể trông chân thật hơn nữa (hiện tại còn quá đơn sơ)".
 > Đọc kèm: `docs/art/STYLE.md` (style bible v0), `docs/PLAN.md` §1 (ngân sách hiệu năng), `packages/assets/bundles.json`.
-> Trạng thái: **bản nháp** — các mục ❓ ở §7 cần chốt trước khi làm.
+> Trạng thái: **đã chốt** (§7): hướng A low-poly chi tiết, nhà & phố trước, tự dựng bằng script Blender.
 
 ## 1. Hiện trạng
 - Phần lớn cảnh là **Kenney** (city kit roads / commercial, car kit, mini characters) scale ×4 / ×1,6 / ×2,5 — khối hộp, màu
@@ -61,3 +61,8 @@
 1. Hướng phong cách: **A** (đề xuất) / B / C.
 2. Làm theo thứ tự §5 (nhà trước, nhân vật sau) hay ưu tiên nhân vật trước?
 3. Có dùng thêm asset trả phí/CC0 bên ngoài (Synty, Kenney mới…) hay tự dựng hết bằng script Blender?
+
+## 8. Đã chốt (2026-10-03)
+1. Phong cách: **A. low-poly chi tiết** (màu phẳng, nhiều hình khối hơn, AO nướng vào màu đỉnh, atlas palette nhỏ).
+2. Thứ tự: **nhà & phố trước** (kit nhà ống Việt → nhà cấp 4/tạp hoá/UBND/trường → đường, vỉa hè, cột điện) rồi mới nhân vật.
+3. Nguồn: **tự dựng bằng script Blender** (`art/blender/*.py`, chạy `blender -b -P`), không mua asset ngoài.

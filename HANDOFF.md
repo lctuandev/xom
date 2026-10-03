@@ -133,8 +133,8 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   house: tiệm/cửa hàng; stall: sạp). Xong: helper `game/shopWords.ts` (tiêu đề sheet "🏠 Tiệm của tôi", nút Mở/Đóng, "Tới tiệm",
   vắng chủ, khai trương, chợ, nhân viên…); lỗi server phía chủ dùng chữ chung "đóng cửa / cửa hàng".
 - [x] **Chạm ô cấp độ (góc trái) → bottom sheet Hồ sơ có avatar + tên nhân vật** giống khung NPC (PlaceFace / chân dung).
-- [~] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — `docs/ART.md` đã viết (bản nháp, chờ
-  chủ dự án chốt §7: hướng phong cách, thứ tự, có dùng asset ngoài không). Gốc: viết `docs/ART.md` (phong cách, thứ tự
+- [x] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — `docs/ART.md` **đã chốt** (low-poly chi
+  tiết + AO màu đỉnh, nhà & phố trước, tự dựng bằng script Blender). Làm theo ART §5 bước 1: kit nhà ống Việt. Gốc: viết `docs/ART.md` (phong cách, thứ tự
   model, ngân sách polygon/texture cho điện thoại, quy trình `pnpm assets`), hỏi chủ dự án chốt rồi làm dần; gắn với nhánh
   `feat/phong-cach-toon`.
 - [x] **Tự gia hạn đồ thuê khi đến hạn** — làm cho tiền nhà mặt tiền (`Lease.autoPay`, `rent:auto`, công tắc trong bảng tiền nhà;
@@ -189,6 +189,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
-2. ~~Góp ý đợt 3~~ xong (2026-10-03) trừ plan đồ hoạ: `docs/ART.md` chờ chốt §7 rồi làm theo §5 (kit nhà ống Việt trước).
+2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ: làm theo `docs/ART.md` §5 — bước 1 kit nhà ống Việt (thay `building-*` Kenney ở phố
+   chính + nhà xây trên ô đất), đo chrome-devtools trước/sau.
 3. Tách `game.service.ts` + gom `ActionBar`.
 4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
