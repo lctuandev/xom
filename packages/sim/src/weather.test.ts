@@ -46,6 +46,10 @@ describe("thời tiết (UC-B4, DESIGN §8)", () => {
     const storm = content.weatherKind("storm");
     expect(weatherDemand(rain, "cart", "breakfast")).toBeLessThan(1);
     expect(weatherDemand(rain, "house", "breakfast")).toBeGreaterThan(1);
+    // Sạp có mái (docs/BANDO.md bước C): mưa vẫn bán như trong nhà.
+    expect(weatherDemand(rain, "stall", "breakfast")).toBe(
+      weatherDemand(rain, "house", "breakfast"),
+    );
     expect(weatherDemand(storm, "cart", "drink")).toBeLessThan(
       weatherDemand(rain, "cart", "drink"),
     );

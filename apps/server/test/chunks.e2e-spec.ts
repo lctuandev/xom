@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import { content } from "@xom/content";
 import type { MeView } from "@xom/shared";
 import { connect, emit, next } from "./client.js";
 import { register, startApp, uniqueName } from "./helpers.js";
@@ -55,5 +56,20 @@ describe("Bản đồ mở: ghép khu (e2e)", () => {
     expect((await emit(nb.socket, "biz:update", { lotId })).ok).toBe(false);
     a.socket.disconnect();
     nb.socket.disconnect();
+  });
+
+  it("sạp có mái (bước C): dọn tới ô đất trả phí dựng sạp qua sổ cái", async () => {
+    const { body } = await register(url, uniqueName(), { solo: true });
+    const a = await connect(url, body.accessToken);
+    const bought = await emit<MeView>(a.socket, "equipment:buy", { equipmentId: "xe_banh_mi" });
+    if (!bought.ok) throw new Error(bought.message);
+    expect((await emit(a.socket, "debug:chunk", { chunkId: "khu_dong" })).ok).toBe(true);
+    const lotId = "khu_dong__sap_mai_a__1_0";
+    expect(content.lot(lotId).kind).toBe("stall");
+    const moved = await emit<MeView>(a.socket, "biz:update", { lotId, pay: "cash" });
+    if (!moved.ok) throw new Error(moved.message);
+    expect(moved.data.money).toBe(bought.data.money - content.economy.stallBuild);
+    expect(moved.data.business?.lotId).toBe(lotId);
+    a.socket.disconnect();
   });
 });

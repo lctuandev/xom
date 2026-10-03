@@ -1,10 +1,13 @@
 import { expect, type Page, test } from "@playwright/test";
 import { content } from "@xom/content";
 import {
+  closeSheet,
+  grantMoney,
   openBanhMiStall,
   openFeature,
   register,
   serveCustomer,
+  setWeather,
   shot,
   waitForMorning,
 } from "./helpers";
@@ -79,4 +82,26 @@ test("bản đồ xóm trong Chỗ bán: chạm chỗ của khu mới", async ({
   await expect(row).toHaveAttribute("data-focus", "true");
   await expect(row).toBeInViewport();
   await expect(row).toContainText("Đầu phố mới");
+});
+
+// Bước C: ⛺ sạp có mái trên ô đất của khu mới — trả phí dựng sạp một lần, mưa vẫn có khách.
+test("dựng sạp có mái ở khu đông, mưa vẫn bán", async ({ page }) => {
+  test.setTimeout(300_000);
+  await register(page, "Sạp mái");
+  await waitForMorning(page, 10);
+  const res = await dbg<{ ok: boolean }>(page, 'send("debug:chunk", { chunkId: "khu_dong" })');
+  expect(res.ok).toBe(true);
+  // Đủ tiền mặt dựng sạp (người mới chỉ có ít tiền mặt, phần lớn trong 🏦).
+  await grantMoney(page, 600_000);
+  await openBanhMiStall(page, /Sạp có mái — ô đất A/);
+  await shot(page, "99-sap-co-mai");
+  await openFeature(page, "stall");
+  await expect(page.locator('[data-stall-task="lot"]')).toContainText("Sạp có mái");
+  await closeSheet(page);
+  // Trời mưa: sạp có mái vẫn có khách ghé.
+  await setWeather(page, "rain");
+  await expect(page.getByRole("button", { name: /Làm món cho khách/ })).toBeVisible({
+    timeout: 90_000,
+  });
+  await serveCustomer(page);
 });

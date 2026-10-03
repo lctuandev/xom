@@ -68,7 +68,7 @@ export class BusinessService {
     return this.occupantsOf(roomId);
   }
 
-  async updateLot({ room, playerId }: IntentContext, lotId: string) {
+  async updateLot({ room, playerId }: IntentContext, lotId: string, pay?: PayMethod) {
     const biz = await this.businesses.require(playerId);
     if (lotId === biz.lotId) return;
     // Chỗ gốc hoặc chỗ của khu xóm mình đã mở (docs/BANDO.md bước B).
@@ -81,7 +81,33 @@ export class BusinessService {
     if (biz.status === "OPEN") throw new GameError("invalid_state", "Đóng quầy rồi mới chuyển chỗ");
     const taken = this.occupants(room.id).find((o) => o.lotId === lotId);
     if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
-    await this.prisma.business.update({ where: { id: biz.id }, data: { lotId } });
+    const lot = content.lot(lotId);
+    if (lot.kind !== "stall") {
+      await this.prisma.business.update({ where: { id: biz.id }, data: { lotId } });
+      this.broadcast.world(room);
+      return;
+    }
+    // Sạp có mái (docs/BANDO.md bước C): dọn tới ô đất thì trả tiền dựng sạp (vật liệu + công) — money sink.
+    const cost = content.economy.stallBuild;
+    let src: PaySource = "cash";
+    await this.prisma.$transaction(async (tx) => {
+      src = await this.payment.payOut(
+        tx,
+        playerId,
+        cost,
+        SYSTEM.supplier,
+        "stall_build",
+        biz.id,
+        pay,
+      );
+      await tx.business.update({ where: { id: biz.id }, data: { lotId } });
+      await addToReport(tx, playerId, room.day, { fees: cost });
+    });
+    this.broadcast.paidBy(playerId, src, cost);
+    this.broadcast.notify(playerId, {
+      kind: "good",
+      text: `⛺ Dựng sạp xong ở ${lot.name.replace(/^⛺ /, "")} — mưa vẫn bán được`,
+    });
     this.broadcast.world(room);
   }
 

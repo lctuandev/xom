@@ -75,7 +75,7 @@ model Plot {
 |---|---|---|
 | A ✅ | `content.chunks` + ghép lưới động theo xóm (`Room.chunks` JSON — gọn hơn bảng riêng) gửi trong `WorldView`; client dựng cảnh / A* / giao thông từ lưới ghép | Xong 2026-10-03 (UC-B12); mở khu bằng `debug:chunk` |
 | B ✅ | Chỗ bán vỉa hè của khu là dữ liệu trong mẫu khu (`chunks[].lots`, ô + lệch); id "<khu>__<chỗ>__<gx>_<gz>" để `content.lot()` tự giải vị trí (mẫu cùng phía cùng kích thước) — không phải đổi ~50 chỗ gọi; `content.lotsIn(chunks)` cho danh sách theo xóm, server chỉ cho chọn chỗ thuộc khu đã mở | Xong 2026-10-03. Bảng `Plot` (sở hữu, công trình) để sang bước D khi có mua đứt |
-| C 🚧 | 🗺️ Bản đồ xóm thu nhỏ (canvas, `ui/XomMap.tsx`) đặt đầu sheet 📍 Chỗ bán — chạm chấm để chọn chỗ ✅; còn: thuê ô đất trống dựng sạp có mái | Mobile-first, Pixel 7 |
+| C ✅ | 🗺️ Bản đồ xóm thu nhỏ (canvas, `ui/XomMap.tsx`) đầu sheet 📍 Chỗ bán, chạm chấm để chọn; ⛺ sạp có mái trên ô đất (`kind: "stall"`): mưa vẫn bán (hệ số trong nhà), khách chịu giá ×1,1, thuê 70–80k/ngày + phí quản lý 10k + dựng sạp 300k mỗi lần dọn tới (chốt 2026-10-03) | Xong 2026-10-03 |
 | D | Mua đứt ô + thuế đất + trần số ô; `pnpm balance` thêm chiến lược "mua ô" | Money sink lớn |
 | E | `content.buildings` + xây tiệm (vật liệu, ngày, phụ hồ), công trường 3D; lên tầng = cấp tiệm | Gộp UC-M9 |
 | F | Tự mở khu mới khi ≥ 70% ô có chủ; bảng tin xóm | Hiệu năng: chỉ dựng khu trong tầm camera |

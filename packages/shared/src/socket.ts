@@ -80,7 +80,7 @@ export interface ClientToServerEvents {
   "market:buy": Intent<{ itemId: string; packs: number; pay?: PayMethod }>;
   /** Thanh lý hàng tồn cho chợ Bà Năm (đổi nghề, dư hàng). */
   "market:sell": Intent<{ itemId: string }>;
-  "biz:update": Intent<{ lotId: string }>;
+  "biz:update": Intent<{ lotId: string; pay?: PayMethod }>;
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;
   "biz:open": Intent<Record<string, never>>;
   "biz:close": Intent<Record<string, never>>;

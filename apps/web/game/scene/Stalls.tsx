@@ -91,9 +91,26 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
       </group>
     );
   }
+  // Sạp có mái trên ô đất (docs/BANDO.md bước C): mái hiên phía sau quầy + ghế nhựa cho khách ngồi.
+  const back = lot.facing === 0 ? -1 : 1;
   return (
     <group>
       <Instances model={model} at={at} />
+      {lot.kind === "stall" && (
+        <>
+          <Instances
+            model="detail-awning-wide"
+            at={[{ x: lot.position.x, z: lot.position.z + back * 0.9, rot: lot.facing }]}
+          />
+          <Instances
+            model="ghe-nhua-do"
+            at={[
+              { x: lot.position.x - 1.4, z: lot.position.z + back * 0.2, rot: 0.4 },
+              { x: lot.position.x + 1.4, z: lot.position.z + back * 0.2, rot: -0.3 },
+            ]}
+          />
+        </>
+      )}
       {/* Biển hộp đèn quay về phía camera (+X), cao hơn dù/mái của quầy. */}
       <Sign
         text={text}

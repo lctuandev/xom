@@ -963,7 +963,11 @@ export const marketBuySchema = z.object({
 export const repairSchema = z.object({ pay: payMethodSchema });
 /** Thanh lý hết một loại hàng tồn cho chợ. */
 export const marketSellSchema = z.object({ itemId: contentId });
-export const updateBusinessSchema = z.object({ lotId: contentId });
+export const updateBusinessSchema = z.object({
+  lotId: contentId,
+  /** Trả phí dựng sạp (ô sạp có mái) bằng gì. */
+  pay: payMethodSchema.optional(),
+});
 export const menuSchema = z
   .object({
     variantId: contentId,

@@ -25,8 +25,8 @@
   live binding + `setMapChunks` (gọi trong store), `useStreetLayout`/`useMapKey` cho Street/NightLights/Traffic. Mở khu thử:
   `xomDebug.send("debug:chunk", { chunkId: "khu_dong" })`. Đo FPS: xem BANDO §8. **Bước B xong**: chỗ bán của khu là dữ liệu
   trong mẫu (`chunks[].lots`), id `<khu>__<chỗ>__<gx>_<gz>` để `content.lot()`/`findLot()` tự giải; `content.lotsIn(chunks)`.
-  **Bước C một phần**: 🗺️ bản đồ thu nhỏ `ui/XomMap.tsx` trong sheet Chỗ bán. **Tiếp:** thuê ô đất trống (C) — cần chốt luật
-  "sạp có mái" khác xe đẩy thế nào (đề xuất: mưa vẫn bán, chỗ ngồi → khách chịu giá cao hơn, tiền thuê cao hơn).
+  **Bước C xong**: 🗺️ bản đồ thu nhỏ `ui/XomMap.tsx` trong sheet Chỗ bán; ⛺ sạp có mái (`kind: "stall"`, mưa vẫn bán, dựng
+  300k). **Tiếp: bước D** (chủ dự án đã chọn): bảng `Plot` + mua đứt ô + thuế đất + trần số ô.
 
 ### 0.2 Dọn dẹp chờ chủ dự án
 - Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch

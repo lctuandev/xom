@@ -361,7 +361,6 @@ export class Content {
       lot = {
         ...rest,
         id,
-        kind: "cart",
         position: {
           x: m.origin.x + (c0 + cell.c) * m.tile + offset.x,
           z: m.origin.z + (r0 + cell.r) * m.tile + offset.z,

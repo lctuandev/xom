@@ -185,9 +185,15 @@ function runStaff(equipment, lot, person, level = 1) {
   };
 }
 
+// Chỗ bán của mọi mẫu khu (bản đồ mở, docs/BANDO.md) — mỗi mẫu mở một lần ở phía của nó.
+const STEP = { east: [1, 0], west: [-1, 0], north: [0, -1], south: [0, 1] };
+const allLots = content.lotsIn(
+  content.data.chunks.map((c) => ({ chunkId: c.id, gx: STEP[c.side][0], gz: STEP[c.side][1] })),
+);
+
 const rows = [];
 for (const equipment of content.data.equipment)
-  for (const lot of content.data.lots)
+  for (const lot of allLots)
     for (const mult of PRICE_MULT)
       for (const serveSec of Object.values(SPEEDS))
         rows.push(runStrategy(equipment, lot, mult, serveSec));

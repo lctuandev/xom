@@ -7,6 +7,7 @@ import { districtLikes } from "../../districts";
 import { vndShort } from "../../format";
 import { send } from "../../net/socket";
 import { useGame } from "../../store";
+import { usePayMethod } from "../../ui/PayPicker";
 import { type MapLot, XomMap } from "../../ui/XomMap";
 import { GoToRow } from "../FeatureSheet";
 import { ShopFeature } from "./common";
@@ -99,7 +100,10 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                 aria-pressed={selected}
                 data-focus={focus === lot.id || undefined}
                 onClick={async () => {
-                  const res = await send("biz:update", { lotId: lot.id });
+                  const res = await send("biz:update", {
+                    lotId: lot.id,
+                    pay: usePayMethod.getState().method,
+                  });
                   if (res.ok) setOpen(false);
                 }}
                 className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white p-3 text-left shadow-sm data-focus:ring-2 data-focus:ring-sun aria-pressed:ring-2 aria-pressed:ring-red disabled:opacity-40"
@@ -121,13 +125,19 @@ function LotPicker({ biz }: { biz: BusinessView }) {
                         ? "🏠 Đang thuê nhà — trả nhà ở 🏠 Thuê nhà & giấy tờ rồi mới ra vỉa hè"
                         : taken
                           ? `${taken.ownerName} đang dùng`
-                          : lot.hint}
+                          : lot.kind === "stall" && !selected
+                            ? `${lot.hint} · ⛺ dựng sạp ${vndShort(content.economy.stallBuild)} (một lần)`
+                            : lot.hint}
                   </span>
                 </span>
                 <span className="shrink-0 text-right font-semibold tabular-nums">
                   {vndShort(lot.rentPerDay)}
                   <span className="block text-[10px] font-normal text-ink/50">
-                    {lot.kind === "house" ? "tiền nhà/ngày" : "tiền chỗ/ngày"}
+                    {lot.kind === "house"
+                      ? "tiền nhà/ngày"
+                      : lot.kind === "stall"
+                        ? "tiền ô đất/ngày"
+                        : "tiền chỗ/ngày"}
                   </span>
                 </span>
               </button>

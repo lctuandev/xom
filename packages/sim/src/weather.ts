@@ -98,10 +98,11 @@ export function upcomingWeather(
  */
 export function weatherDemand(
   kind: WeatherKind,
-  place: "cart" | "house",
+  place: "cart" | "house" | "stall",
   category: string,
 ): number {
-  return (place === "house" ? kind.indoor : kind.outdoor) * (kind.category[category] ?? 1);
+  // Nhà mặt tiền và sạp có mái: mưa vẫn bán (hệ số trong nhà); xe đẩy vỉa hè thì theo ngoài trời.
+  return (place === "cart" ? kind.outdoor : kind.indoor) * (kind.category[category] ?? 1);
 }
 
 /** Phụ phí bão/mưa cho một đơn giao (làm tròn 500đ). */

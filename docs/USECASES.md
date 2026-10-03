@@ -240,11 +240,16 @@ trong 📍 Chỗ bán khi khu đã mở; chọn, đẩy xe tới, mở quầy, b
 **Bước C (một phần) — 🗺️ bản đồ xóm:** đầu sheet 📍 Chỗ bán là bản đồ thu nhỏ của cả xóm (lưới ghép, vẽ một canvas): chỗ của
 mình đỏ, còn trống xanh lá, có người xám, nhà mặt tiền xanh dương, chấm vàng là mình đang đứng. Chạm một chấm → dòng chỗ đó được
 tô viền vàng và cuộn tới (quầy đang mở thì nhắc "Đóng quầy rồi mới đổi chỗ được").
+**Bước C — ⛺ sạp có mái trên ô đất:** khu đông/tây có 2 ô đất trống cho thuê dựng sạp (mái hiên + ghế nhựa). Luật (chốt
+2026-10-03): mưa vẫn bán như trong nhà (`weatherDemand` dùng hệ số trong nhà cho `stall`), khách chịu giá ×1,1, thuê ô 70–80k/ngày
++ phí quản lý 10k/ngày, **dựng sạp 300k** (`economy.stallBuild`, sổ cái lý do `stall_build`, ghi vào phí trong sổ) mỗi lần dọn
+tới ô sạp. `pnpm balance`: sạp ~300k/ngày (bánh mì tay vừa) — dưới chỗ đông của phố gốc, trên xe đẩy ở khu mới (~185–235k).
 **Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông, chỗ bán của
 khu đứng trên ô đi được ở cả bốn phía); e2e `chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy; chọn chỗ của khu chỉ khi đã
 mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới";
-bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới thì dòng đó được tô).
-**Còn lại:** thuê ô đất trống (bước C), mua đứt + thuế đất (D), xây tiệm (E), tự mở khu (F) — docs/BANDO.md.
+bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới thì dòng đó được tô; dựng sạp có mái, mưa vẫn có khách); e2e
+`chunks.e2e-spec.ts` (dựng sạp trừ đúng 300k); unit `weather.test.ts` (sạp mưa = trong nhà).
+**Còn lại:** mua đứt + thuế đất (D), xây tiệm (E), tự mở khu (F) — docs/BANDO.md.
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.

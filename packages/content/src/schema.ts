@@ -208,8 +208,11 @@ export const lotSchema = z.object({
   position: z.object({ x: z.number(), z: z.number() }),
   /** Hướng quầy quay ra (radian quanh trục Y). */
   facing: z.number(),
-  /** cart = xe đẩy trên vỉa hè; house = nhà mặt tiền có không gian tiệm bên trong (UC-W6). */
-  kind: z.enum(["cart", "house"]).default("cart"),
+  /**
+   * cart = xe đẩy trên vỉa hè; house = nhà mặt tiền có không gian tiệm bên trong (UC-W6); stall = sạp có mái dựng trên ô đất
+   * trống của khu mới (docs/BANDO.md bước C): mưa vẫn bán như trong nhà, phải trả phí dựng sạp (`economy.stallBuild`).
+   */
+  kind: z.enum(["cart", "house", "stall"]).default("cart"),
   /**
    * Khách ở chỗ này chịu giá cao hơn giá tham khảo bấy nhiêu lần — ngồi tiệm có mái, có ghế, có biển hiệu thì trả đắt hơn mua
    * ở xe đẩy. Giá "hợp lý" ở chỗ này = refPrice × priceTolerance.
@@ -576,6 +579,7 @@ export const chunkSchema = z.object({
   lots: z
     .array(
       lotSchema.omit({ position: true, kind: true }).extend({
+        kind: z.enum(["cart", "stall"]).default("cart"),
         cell: z.object({ c: z.number().int().min(0), r: z.number().int().min(0) }),
         offset: z.object({ x: z.number(), z: z.number() }).default({ x: 0, z: 0 }),
       }),
@@ -983,6 +987,8 @@ export const needsSchema = z.object({
 
 export const economySchema = z.object({
   startingMoney: vnd,
+  /** Dựng sạp có mái trên ô đất (trả mỗi lần dọn tới một ô sạp — docs/BANDO.md bước C). */
+  stallBuild: vnd.default(300_000),
   /** Vốn dự phòng gửi sẵn trong tài khoản 🏦 cho người mới (mua xe xong vẫn còn tiền sống, rút ở ATM). */
   startingBank: z.number().int().nonnegative().default(0),
   /** Phút trong ngày (game) khi ngày bắt đầu / kết thúc; ban đêm được bỏ qua. */
@@ -1032,6 +1038,8 @@ export const economySchema = z.object({
     daily: z.object({
       cart: z.number().int().nonnegative(),
       house: z.number().int().nonnegative(),
+      /** Sạp có mái trên ô đất (bản đồ mở): phí quản lý / vệ sinh khu đất. */
+      stall: z.number().int().nonnegative().default(10_000),
     }),
     utilitiesPerHour: z.number().int().nonnegative(),
   }),

@@ -45,7 +45,7 @@ export class BusinessGateway {
   @SubscribeMessage("biz:update")
   updateBusiness(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, updateBusinessSchema, body, (ctx, p) =>
-      this.game.biz.updateLot(ctx, p.lotId),
+      this.game.biz.updateLot(ctx, p.lotId, p.pay),
     );
   }
 

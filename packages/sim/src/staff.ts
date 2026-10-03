@@ -213,7 +213,7 @@ export function shopLevel(content: Content, level: number): ShopLevel {
 export function nextShopLevel(
   content: Content,
   level: number,
-  lotKind: "cart" | "house" | null,
+  lotKind: "cart" | "house" | "stall" | null,
 ): ShopLevel | null {
   const next = content.data.shopLevels.find((l) => l.level === level + 1);
   if (!next) return null;
