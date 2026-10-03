@@ -53,6 +53,11 @@
       "env": {
         "DATABASE_URI": "${DATABASE_URL:-postgresql://xom:xom@localhost:5432/xom}"
       }
+    },
+    "blender": {
+      "type": "stdio",
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "mcp-for-blender"]
     }
   }
 }

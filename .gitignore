@@ -11,3 +11,4 @@ art/vendor/
 deploy/.env
 tools/balance/out/
 apps/web/e2e/.results/
+.playwright-mcp/
