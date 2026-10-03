@@ -189,7 +189,10 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
-2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ: làm theo `docs/ART.md` §5 — bước 1 kit nhà ống Việt (thay `building-*` Kenney ở phố
-   chính + nhà xây trên ô đất), đo chrome-devtools trước/sau.
+2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`);
+   tiếp bước 2 (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn).
+   **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1 — đo 2026-10-03: ~120 draw call (< 100), ~116k tam giác (< 80k).
+   Hướng: LOD xa cho nhà, gộp nhân vật NPC/khách, chỉ dựng khu gần camera; đo trên điện thoại thật. Playwright `nha-pho` chặn
+   hồi quy ở mức hiện tại.
 3. Tách `game.service.ts` + gom `ActionBar`.
 4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).

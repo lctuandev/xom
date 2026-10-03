@@ -132,15 +132,6 @@
       "soda-can"
     ]
   },
-  "characters": {
-    "type": "single",
-    "files": {
-      "character-male-a": "/assets/models/characters/character-male-a.glb",
-      "character-male-c": "/assets/models/characters/character-male-c.glb",
-      "character-female-a": "/assets/models/characters/character-female-a.glb",
-      "character-female-d": "/assets/models/characters/character-female-d.glb"
-    }
-  },
   "village": {
     "type": "bundle",
     "url": "/assets/models/village.glb",
@@ -160,7 +151,22 @@
       "hang-rao-tre",
       "lu-nuoc",
       "dong-rom",
-      "cay-atm"
+      "cay-atm",
+      "nha-pho-a",
+      "nha-pho-b",
+      "nha-pho-c",
+      "nha-pho-d",
+      "tiem-1-tang",
+      "nha-2-tang"
     ]
+  },
+  "characters": {
+    "type": "single",
+    "files": {
+      "character-male-a": "/assets/models/characters/character-male-a.glb",
+      "character-male-c": "/assets/models/characters/character-male-c.glb",
+      "character-female-a": "/assets/models/characters/character-female-a.glb",
+      "character-female-d": "/assets/models/characters/character-female-d.glb"
+    }
   }
 }

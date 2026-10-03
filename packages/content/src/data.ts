@@ -2721,7 +2721,7 @@ export const data: ContentInput = {
       level: 2,
       cost: 2_000_000,
       buildDays: 2,
-      model: "building-a",
+      model: "tiem-1-tang",
     },
     {
       id: "nha_2_tang",
@@ -2732,7 +2732,7 @@ export const data: ContentInput = {
       cost: 4_500_000,
       buildDays: 3,
       requires: "tiem_1_tang",
-      model: "building-c",
+      model: "nha-2-tang",
     },
   ],
 
@@ -3241,7 +3241,8 @@ export const data: ContentInput = {
       { id: "ong1", name: "Nhà ống 1 lầu", models: ["nha-ong-1-lau"], start: 0.15 },
       { id: "ong2", name: "Nhà ống 2 lầu", models: ["nha-ong-2-lau"], start: 0 },
     ],
-    shops: ["tiem-tap-hoa", "tiem-tap-hoa-trang", "nha-cap4", "nha-ong-1-lau"],
+    // Dãy phố: kit nhà phố Việt chi tiết (art/blender/nha_pho.py — docs/ART.md bước 1) xen tạp hoá cũ.
+    shops: ["nha-pho-a", "nha-pho-b", "nha-pho-c", "nha-pho-d", "tiem-tap-hoa"],
     office: "uy-ban",
     school: "truong-lang",
   },

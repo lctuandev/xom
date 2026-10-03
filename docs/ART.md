@@ -62,6 +62,14 @@
 2. Làm theo thứ tự §5 (nhà trước, nhân vật sau) hay ưu tiên nhân vật trước?
 3. Có dùng thêm asset trả phí/CC0 bên ngoài (Synty, Kenney mới…) hay tự dựng hết bằng script Blender?
 
+## 7b. Tiến độ
+- **Bước 1 (2026-10-03) — kit nhà phố Việt** `art/blender/nha_pho.py`: 6 mẫu (`nha-pho-a…d` cho dãy phố chính qua
+  `content.housing.shops`; `tiem-1-tang`, `nha-2-tang` cho nhà xây trên ô đất — thay `building-a/c` Kenney). Tường vát cạnh, AO
+  nướng vào màu đỉnh (Cycles), chi tiết mảnh là mặt phẳng 2 tam giác (`plate`) → 250–620 tam giác/nhà, bundle village 111 KB.
+  Đo trong game (Pixel 7 headless): draw call không đổi (118–121); tam giác 90k → ~116k. **Cảnh đã vượt ngân sách 80k từ trước**
+  — Playwright `nha-pho` chặn hồi quy ở mức hiện tại; kéo về ngân sách là việc riêng (HANDOFF).
+- Còn: bước 2 (nhà cấp 4, tạp hoá, UBND, trường theo kit), mái chi tiết hơn (camera nhìn từ trên thấy mái nhiều nhất).
+
 ## 8. Đã chốt (2026-10-03)
 1. Phong cách: **A. low-poly chi tiết** (màu phẳng, nhiều hình khối hơn, AO nướng vào màu đỉnh, atlas palette nhỏ).
 2. Thứ tự: **nhà & phố trước** (kit nhà ống Việt → nhà cấp 4/tạp hoá/UBND/trường → đường, vỉa hè, cột điện) rồi mới nhân vật.

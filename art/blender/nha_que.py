@@ -214,7 +214,7 @@ def export(name: str):
         use_selection=False,
         export_apply=True,
         export_yup=True,
-        export_colors=True,
+        export_vertex_color="ACTIVE",
     )
     tris = sum(len(p.vertices) - 2 for p in joined.data.polygons)
     print(f"✔ {name}: ~{tris} tam giác")
