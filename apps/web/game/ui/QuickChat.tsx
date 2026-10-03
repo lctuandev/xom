@@ -39,7 +39,11 @@ export function QuickChat() {
   };
 
   return (
-    <div className="pointer-events-auto fixed right-2 bottom-[calc(var(--nav-h)+4.5rem)] z-20 flex flex-col items-end gap-2">
+    // Nút 💬 ngang hàng ☰ Menu, bên phải (góp ý đợt 3): cùng tâm với nút Menu (pb-safe + mb-1 + nửa nút 3,5rem).
+    <div
+      className="pointer-events-auto fixed right-3 bottom-[calc(max(env(safe-area-inset-bottom),0.5rem)+0.5rem)] z-20 flex flex-col items-end gap-2"
+      data-quick-chat
+    >
       {open && (
         <section
           aria-label="Chat xóm"

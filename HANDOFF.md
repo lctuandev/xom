@@ -122,7 +122,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 ### 3.1b Góp ý đợt 3 của chủ dự án (2026-10-03) — làm sau bước E, F của bản đồ mở
 - [x] **Bỏ thông báo "làm dùm / bán dùm" của nhân viên** (giờ đã mở được nhiều cửa hàng, chủ không cần giành bán) → cột icon
   trái/phải đẩy lên cao hơn (chỗ trống của thông báo đó).
-- [ ] **Icon 💬 tin nhắn** tụt xuống ngang hàng nút ☰ Menu, nằm bên phải.
+- [x] **Icon 💬 tin nhắn** tụt xuống ngang hàng nút ☰ Menu, nằm bên phải.
 - [ ] **Lỗi: không mở nhiều tiệm cùng lúc được** — rà lại luồng mở cửa hàng thứ hai (tới quầy → tự chọn cửa hàng → mở), tái hiện
   bằng Playwright trước khi sửa.
 - [ ] **Đang thuê tiệm (nhà mặt tiền) mà vài chỗ vẫn gọi "quầy", "đẩy xe"** — rà mọi chữ theo `lot.kind` (cart: quầy/xe đẩy;
