@@ -148,4 +148,22 @@ describe("Đòi tiền nhà (e2e)", () => {
     expect(story.some((s) => s.text.includes("dẹp tiệm"))).toBe(true);
     socket.disconnect();
   });
+
+  it("🔁 tự trả tiền nhà khi tới hạn (góp ý đợt 3): sang ngày mới tự trừ, chủ nhà không phải đòi; tắt thì thôi", async () => {
+    const { socket, id, lease, day, prisma } = await tenant();
+    const on = await ok(emit<RentView>(socket, "rent:auto", { on: true, pay: "cash" }));
+    expect(on.autoPay).toBe("cash");
+    const paid = next(socket, "notify", (n: NotifyEvent) =>
+      n.text.startsWith("🔁 Tự trả tiền nhà"),
+    );
+    await emit(socket, "debug:clock", { minute: 8 * 60, day: day + 1 });
+    await paid;
+    const fresh = await prisma.lease.findUniqueOrThrow({ where: { id: lease.id } });
+    expect(fresh.paidDay).toBe(day + 1);
+    const report = await prisma.dailyReport.findFirst({ where: { playerId: id, day: day + 1 } });
+    expect(report?.rent).toBe(rent);
+    const off = await ok(emit<RentView>(socket, "rent:auto", { on: false }));
+    expect(off.autoPay).toBeNull();
+    socket.disconnect();
+  });
 });

@@ -747,6 +747,8 @@ export interface RentView {
   depositLeft: number;
   remindMinute: number;
   dueMinute: number;
+  /** 🔁 Tự trả tiền nhà khi tới hạn: cách trả, null = tắt. */
+  autoPay: PayMethod | null;
 }
 
 /** Chủ nhà tới (UC-F13): modal chân dung + bong bóng thoại. */
@@ -1128,6 +1130,8 @@ export const debugClockSchema = z.object({
 export const shopLeaseSchema = z.object({ lotId: contentId });
 export const shopRegisterSchema = z.object({ name: z.string().min(1).max(60) });
 export const rentPaySchema = z.object({ pay: payMethodSchema.optional() });
+/** 🔁 Bật/tắt tự trả tiền nhà khi tới hạn (`pay` = cách trả). */
+export const rentAutoSchema = z.object({ on: z.boolean(), pay: payMethodSchema.optional() });
 export const rentPromiseSchema = z.object({ day: z.number().int().min(1).max(100_000) });
 export const rideRentSchema = z.object({ pay: payMethodSchema.optional() });
 export const rideOfferSchema = z.object({ ratio: z.number().min(0.5).max(3) });

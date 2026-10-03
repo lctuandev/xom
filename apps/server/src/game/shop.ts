@@ -491,6 +491,7 @@ export class ShopService {
       depositLeft: await this.ledger.balance(this.prisma, depositWallet(lease.id)),
       remindMinute: r.remindMinute,
       dueMinute: r.dueMinute,
+      autoPay: (lease.autoPay as PayMethod | null) ?? null,
     };
   }
 
@@ -503,6 +504,26 @@ export class ShopService {
   /** 💵 Trả hết tiền nhà đang nợ (cộng phí trễ đã chốt nếu có hẹn). Trả trước trong ngày cũng được. */
   async rentPay(room: RoomRuntime, playerId: string, method: PayMethod = "auto") {
     const lease = await this.myLease(playerId);
+    const { owed, fee } = await this.payRent(room, lease, method);
+    const fresh = await this.prisma.lease.findUniqueOrThrow({ where: { id: lease.id } });
+    const view = await this.rentView(room, fresh);
+    this.say(playerId, fresh, "paid", view, { owed, fee });
+    return view;
+  }
+
+  /** 🔁 Bật/tắt tự trả tiền nhà khi tới hạn cho căn của cửa hàng đang quản lý. */
+  async rentAuto(room: RoomRuntime, playerId: string, on: boolean, method: PayMethod = "auto") {
+    const lease = await this.myLease(playerId);
+    const fresh = await this.prisma.lease.update({
+      where: { id: lease.id },
+      data: { autoPay: on ? method : null },
+    });
+    return this.rentView(room, fresh);
+  }
+
+  /** Trả hết tiền nhà đang nợ của một hợp đồng (chủ bấm trả, hoặc tự trả khi tới hạn). */
+  private async payRent(room: RoomRuntime, lease: Lease, method: PayMethod) {
+    const playerId = lease.ownerId;
     const owed = rentOwed({
       day: room.day,
       paidDay: lease.paidDay,
@@ -529,10 +550,7 @@ export class ShopService {
         data: { playerId, type: "rent_pay", payload: { owed, fee, via: src } },
       });
     });
-    const fresh = await this.prisma.lease.findUniqueOrThrow({ where: { id: lease.id } });
-    const view = await this.rentView(room, fresh);
-    this.say(playerId, fresh, "paid", view, { owed, fee });
-    return view;
+    return { owed, fee };
   }
 
   /** 🗓️ Xin hẹn trả tới ngày `day` (hẹn theo ngày, cả ngày đó trả lúc nào cũng được); phí trễ chốt ngay lúc hẹn. */
@@ -574,6 +592,28 @@ export class ShopService {
       const rentPerDay = content.lot(lease.lotId).rentPerDay;
       const owed = rentOwed({ day: room.day, paidDay: lease.paidDay, rentPerDay }).amount;
       if (owed <= 0) continue;
+      // 🔁 Tự trả khi tới hạn (góp ý đợt 3): trả ngay từ ví theo cách đã chọn; thiếu tiền thì báo một lần trong ngày rồi để
+      // chủ nhà đòi như thường — không tự vay.
+      if (lease.autoPay) {
+        try {
+          const paid = await this.payRent(room, lease, lease.autoPay as PayMethod);
+          this.notify?.(lease.ownerId, {
+            kind: "info",
+            text: `🔁 Tự trả tiền nhà ${content.lot(lease.lotId).name.replace(/^🏠 /, "")}: ${vnd(paid.owed + paid.fee)}`,
+          });
+          continue;
+        } catch (err) {
+          if (!(err instanceof GameError)) throw err;
+          const key = `autorent:${lease.id}:${room.day}`;
+          if (!this.told.has(key)) {
+            this.told.add(key);
+            this.notify?.(lease.ownerId, {
+              kind: "warn",
+              text: `🔁 Không tự trả được tiền nhà (${err.message}) — nạp thêm tiền hoặc trả tay trước giờ hạn`,
+            });
+          }
+        }
+      }
       const state: RentState = {
         day: room.day,
         minute: room.minute,

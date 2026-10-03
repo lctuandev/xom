@@ -127,6 +127,28 @@ export function RentPanel({
         ngày hẹn cũng được, qua ngày đó là thất hẹn. Trễ {rent.maxStrikes} lần hoặc cọc không đủ trừ
         thì chủ nhà dẹp tiệm.
       </details>
+      {actions && (
+        // 🔁 Tự trả khi tới hạn (góp ý đợt 3): đầu mỗi ngày tự trả theo cách trả đang chọn; thiếu tiền thì báo, không tự vay.
+        <label className="flex items-center justify-between gap-2 rounded-xl bg-white/70 px-3 py-2 text-xs">
+          <span>
+            <b>🔁 Tự trả tiền nhà khi tới hạn</b>
+            <span className="block text-[11px] text-ink/60">
+              {rent.autoPay
+                ? `Đang bật · trả bằng ${rent.autoPay === "bank" ? "🏦 chuyển khoản" : rent.autoPay === "cash" ? "💵 tiền mặt" : "💵 rồi 🏦"}`
+                : "Đầu mỗi ngày tự trả, khỏi chờ chủ nhà nhắc"}
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            aria-label="Tự trả tiền nhà khi tới hạn"
+            data-rent-auto={rent.autoPay ?? "off"}
+            checked={!!rent.autoPay}
+            disabled={busy}
+            onChange={(e) => void run(send("rent:auto", { on: e.target.checked, pay: method }))}
+            className="size-5 shrink-0 accent-leaf"
+          />
+        </label>
+      )}
       {actions && rent.owed > 0 && (
         <>
           <PayPicker />

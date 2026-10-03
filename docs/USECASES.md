@@ -631,6 +631,9 @@ nặng; người thuê "lặn" → chủ nhà giữ cọc, cho người khác th
 - Số liệu ở `content.shopSetup.rent` (giờ nhắc, hạn, số ngày hẹn, % phí trễ, số lần trễ, tin cậy, chủ nhà + câu thoại); công thức
   thuần ở `packages/sim` (`rentOwed`, `rentLateFee`, `rentPromiseOptions`, `rentShouldRemind`, `rentVerdict`).
 
+**🔁 Tự trả khi tới hạn (góp ý đợt 3, 2026-10-03):** trong bảng tiền nhà (modal chủ nhà và ☰ 🏠 Thuê nhà & giấy tờ) có công tắc
+"Tự trả tiền nhà khi tới hạn" (lưu cách trả đang chọn 💵/🏦). Đầu mỗi ngày có nợ thì server tự trả (sổ cái `rent`, báo "🔁 Tự trả
+tiền nhà …"); thiếu tiền thì báo một lần trong ngày rồi chủ nhà đòi như thường — không tự vay, không tự hẹn.
 **Kiểm chứng:** sim `shop.test.ts` (nợ, phí, hẹn theo ngày, offline, trễ/dẹp) · e2e `rent.e2e-spec.ts` (nhắc → trả; trả nhà khi
 nợ trừ cọc; hẹn → cả ngày hẹn không bị đòi → thất hẹn trừ cọc + tin cậy; để sau mãi → trễ 3 lần dẹp tiệm, cả xóm biết, 📖) ·
 Playwright `doi-tien-nha` (modal chân dung → hẹn ngày → trả ở 🏪 Mở tiệm).

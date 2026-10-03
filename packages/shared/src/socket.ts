@@ -123,6 +123,7 @@ export interface ClientToServerEvents {
   "shop:sign": Intent<Record<string, never>, ShopSetupView>;
   /** 🏠 Trả hết tiền nhà đang nợ (+ phí trễ nếu đã hẹn). */
   "rent:pay": Intent<{ pay?: PayMethod }, RentView>;
+  "rent:auto": Intent<{ on: boolean; pay?: PayMethod }, RentView>;
   /** 🗓️ Xin hẹn trả tới ngày `day`. */
   "rent:promise": Intent<{ day: number }, RentView>;
   /** Dev/test: thuê nhà + đủ giấy tờ ngay. */

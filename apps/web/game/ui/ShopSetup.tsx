@@ -76,8 +76,9 @@ export function ShopSetup() {
               Tiền nhà tính <b>từ ngày sau ngày ký</b>, mỗi ngày <b>dù mở hay đóng</b>. Chiều{" "}
               {formatClock(content.data.shopSetup.rent.remindMinute)} chủ nhà tới đòi — trả ngay,
               hoặc hẹn ngày (có phí trễ). Mở tiệm <b>không trả tiền chỗ</b> nữa, chỉ thuế khoán{" "}
-              {vndShort(content.economy.fees.daily.house)}/ngày có mở. Đang thuê nhà thì không ra
-              vỉa hè bán được — muốn ra thì trả nhà (còn nợ tiền nhà thì trừ vào cọc).
+              {vndShort(content.economy.fees.daily.house)}/ngày có mở. Tiệm này muốn dọn ra vỉa hè
+              thì trả nhà trước (còn nợ tiền nhà thì trừ vào cọc); cửa hàng khác của bạn vẫn bán vỉa
+              hè hoặc thuê căn khác được.
             </p>
             {v.rent && (
               <div className="mt-1.5">

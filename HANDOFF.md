@@ -136,7 +136,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - [ ] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — viết `docs/ART.md` (phong cách, thứ tự
   model, ngân sách polygon/texture cho điện thoại, quy trình `pnpm assets`), hỏi chủ dự án chốt rồi làm dần; gắn với nhánh
   `feat/phong-cach-toon`.
-- [ ] **Tự gia hạn đồ thuê khi đến hạn** (tiền nhà mặt tiền, chỗ vỉa hè / ô đất, xe ôm thuê theo ngày…): thêm tuỳ chọn "🔁 Tự gia
+- [x] **Tự gia hạn đồ thuê khi đến hạn** — làm cho tiền nhà mặt tiền (`Lease.autoPay`, `rent:auto`, công tắc trong bảng tiền nhà;
+  `rentTick` tự trả đầu ngày, thiếu tiền báo một lần rồi chủ nhà đòi như thường). Chỗ vỉa hè / ô đất vốn trả khi mở cửa nên không
+  cần; xe ôm thuê theo ngày chưa làm (cân nhắc nếu người chơi thấy phiền). (tiền nhà mặt tiền, chỗ vỉa hè / ô đất, xe ôm thuê theo ngày…): thêm tuỳ chọn "🔁 Tự gia
   hạn" — tới hạn thì tự trả từ 💵/🏦 theo cách trả đã chọn; thiếu tiền thì báo, không tự vay. Cài trong sheet 🏠 Thuê nhà & giấy tờ
   + 📍 Chỗ bán; server trả tiền ở mốc tính tiền hiện có (cuối ngày / lúc mở quầy).
 - [ ] **Đèn đường**: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /

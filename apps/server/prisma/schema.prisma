@@ -247,6 +247,8 @@ model Lease {
   lateFee    Int         @default(0)
   /// Số lần trễ hạn (đủ evictAfterStrikes thì dẹp tiệm).
   strikes    Int         @default(0)
+  /// 🔁 Tự trả tiền nhà khi tới hạn (góp ý đợt 3): cách trả "auto" | "cash" | "bank"; null = tắt.
+  autoPay    String?
   createdAt  DateTime    @default(now())
 
   @@index([roomId, lotId, status])

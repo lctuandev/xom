@@ -75,3 +75,24 @@ test("chủ nhà tới đòi tiền nhà: hẹn ngày trả, rồi trả ngay tr
   await thanks.getByRole("button", { name: "Đóng" }).last().tap();
   await expect(shop.locator("[data-rent-owed]")).toHaveAttribute("data-rent-owed", "0");
 });
+
+// 🔁 Tự trả tiền nhà khi tới hạn (góp ý đợt 3): bật trong 🏠 Thuê nhà & giấy tờ, ghi cách trả đang chọn.
+test("bật tự trả tiền nhà khi tới hạn", async ({ page }) => {
+  test.setTimeout(180_000);
+  await register(page, "Tự trả");
+  await grantMoney(page, 1_000_000);
+  const box = await readDialogue(page);
+  await box.getByRole("button", { name: "Con muốn buôn bán" }).tap();
+  await walkToObjective(page, /Xem xe đẩy · Ông Sáu/);
+  expect(await debug(page, "equipment:buy", { equipmentId: "xe_banh_mi" })).toBe(true);
+  expect(await debug(page, "debug:shop", { lotId: "nha_so_10" })).toBe(true);
+  await openFeature(page, "lease");
+  const toggle = page.getByRole("checkbox", { name: "Tự trả tiền nhà khi tới hạn" });
+  await toggle.scrollIntoViewIfNeeded();
+  await expect(toggle).toHaveAttribute("data-rent-auto", "off");
+  await toggle.tap();
+  await expect(toggle).not.toHaveAttribute("data-rent-auto", "off");
+  await shot(page, "103-tu-tra-tien-nha");
+  await toggle.tap();
+  await expect(toggle).toHaveAttribute("data-rent-auto", "off");
+});

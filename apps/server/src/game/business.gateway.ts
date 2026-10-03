@@ -14,6 +14,7 @@ import {
   landBuySchema,
   landSellSchema,
   menuSchema,
+  rentAutoSchema,
   rentPaySchema,
   rentPromiseSchema,
   repairSchema,
@@ -129,6 +130,13 @@ export class BusinessGateway {
       await this.game.pushMe(ctx.room, ctx.playerId);
       return r;
     });
+  }
+
+  @SubscribeMessage("rent:auto")
+  rentAuto(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handleWith(c, rentAutoSchema, body, (ctx, p) =>
+      this.game.shops.rentAuto(ctx.room, ctx.playerId, p.on, p.pay),
+    );
   }
 
   @SubscribeMessage("rent:promise")
