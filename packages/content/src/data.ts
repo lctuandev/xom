@@ -2710,6 +2710,32 @@ export const data: ContentInput = {
 
   // Cấp tiệm (docs/IA.md bước E): nâng cấp → đông khách hơn + thuê thêm người. Xe đẩy chỉ cấp 1, cấp 2–3 cần nhà mặt tiền.
   // pnpm balance: ×1,3/×1,6 làm trà sữa tiệm lớn 3 NV lãi 1,36tr/ngày (8,5 lần làm thuê) → ×1,25/×1,45 (~1,18tr, trần tiệm lớn 8 lần).
+  // Xây trên ô đất mua đứt (docs/BANDO.md bước E): tiệm 1 tầng → nhà 2 tầng; xong thì ô lên cấp tiệm tương ứng.
+  // Đắt hơn nâng cấp nhà thuê (1,5tr / 3,5tr) vì đất là của mình, không còn tiền nhà mỗi ngày.
+  buildings: [
+    {
+      id: "tiem_1_tang",
+      name: "Tiệm 1 tầng",
+      emoji: "🏬",
+      description: "Xây tường gạch, mái tôn, cửa cuốn — khách vào ngồi trong, thuê thêm người phụ.",
+      level: 2,
+      cost: 2_000_000,
+      buildDays: 2,
+      model: "building-a",
+    },
+    {
+      id: "nha_2_tang",
+      name: "Nhà 2 tầng",
+      emoji: "🏢",
+      description: "Đổ thêm một tầng: dưới bán, trên ở — tiệm khang trang, đông khách hẳn.",
+      level: 3,
+      cost: 4_500_000,
+      buildDays: 3,
+      requires: "tiem_1_tang",
+      model: "building-c",
+    },
+  ],
+
   shopLevels: [
     { level: 1, name: "Quầy nhỏ", emoji: "🏪", trafficMul: 1, maxStaff: 1, upgradeCost: 0 },
     {

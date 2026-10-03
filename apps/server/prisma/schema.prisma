@@ -536,6 +536,11 @@ model Plot {
   /// Giá đã trả (bán lại tính theo giá này).
   price     Int
   boughtDay Int
+  /// Công trình đang xây / đã xây (content.buildings — bước E); cấp tiệm của ô = level.
+  building  String?
+  /// Ngày game xây xong (đang xây); null = không xây.
+  buildDone Int?
+  level     Int      @default(1)
   createdAt DateTime @default(now())
 
   @@unique([roomId, lotId])

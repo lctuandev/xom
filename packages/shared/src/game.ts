@@ -147,6 +147,12 @@ export interface PlotView {
   ownerId: string;
   ownerName: string;
   price: number;
+  /** Công trình đang xây / đã xây (content.buildings — bước E). */
+  building: string | null;
+  /** Ngày xây xong (đang xây); null = không xây. */
+  buildDone: number | null;
+  /** Cấp tiệm của ô (1 = sạp trống). */
+  level: number;
 }
 
 export interface LotOccupant {
@@ -1159,6 +1165,11 @@ export const bizUpgradeSchema = z.object({ pay: payMethodSchema.optional() });
 /** Mua đứt / bán lại ô đất (docs/BANDO.md bước D). */
 export const landBuySchema = z.object({ lotId: contentId, pay: payMethodSchema.optional() });
 export const landSellSchema = z.object({ lotId: contentId });
+export const landBuildSchema = z.object({
+  lotId: contentId,
+  buildingId: contentId,
+  pay: payMethodSchema.optional(),
+});
 /** Cho một người nghỉ (id dòng Employee); bỏ trống = cho nghỉ hết (bản cũ). */
 export const staffFireSchema = z.object({ employeeId: z.string().uuid().optional() });
 export const debugRegularsSchema = z.object({ visits: z.number().int().min(0).max(100) });

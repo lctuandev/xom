@@ -209,6 +209,20 @@ export function shopLevel(content: Content, level: number): ShopLevel {
   return levels.find((l) => l.level === level) ?? (levels[0] as ShopLevel);
 }
 
+/**
+ * Cấp tiệm có hiệu lực ở chỗ đang bán (docs/BANDO.md bước E): nhà mặt tiền theo cấp đã nâng của cửa hàng; sạp trên ô đất của
+ * mình theo công trình đã xây xong trên ô; xe đẩy vỉa hè luôn cấp 1 (nâng cấp nhà thuê rồi dọn ra vỉa hè không giữ cấp).
+ */
+export function effectiveShopLevel(
+  lotKind: "cart" | "house" | "stall" | null,
+  bizLevel: number,
+  plotLevel?: number | null,
+): number {
+  if (lotKind === "house") return bizLevel;
+  if (lotKind === "stall") return plotLevel ?? 1;
+  return 1;
+}
+
 /** Cấp kế tiếp nâng được (null = đã cao nhất, hoặc xe đẩy vỉa hè không lên cấp nhà mặt tiền). */
 export function nextShopLevel(
   content: Content,

@@ -698,6 +698,7 @@ export class GameService implements OnModuleDestroy {
       room.day = day;
       room.planWeather();
       this.emitter?.toRoom(room.id, "events", room.events);
+      await this.plots.finishBuilds(room);
     }
     this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
   }
@@ -942,7 +943,7 @@ export class GameService implements OnModuleDestroy {
           this.gigs.adOf(room, b) *
           wearDemand(b.wear, eco.maintenance) *
           // Cấp tiệm: tiệm to hơn, đông khách hơn (docs/IA.md bước E).
-          shopLevel(content, b.level).trafficMul *
+          shopLevel(content, this.plots.levelIn(room, b)).trafficMul *
           projectDemand(content, built, b.lotId ?? "") *
           // Sự kiện cả xóm theo nhóm hàng (chợ đêm thứ Bảy: ăn vặt, đồ uống, phụ kiện đông hẳn).
           eventCategoryDemand(content, xomEvents, content.product(b.productId).category) *
@@ -1081,6 +1082,8 @@ export class GameService implements OnModuleDestroy {
     room.day += 1;
     room.minute = content.economy.dayStartMinute;
     room.planWeather();
+    // Công trình trên ô đất tới ngày thì xong (docs/BANDO.md bước E).
+    await this.plots.finishBuilds(room);
     await this.persistClock(room);
     this.emitWorld(room);
     this.emitter?.toRoom(room.id, "events", room.events);
@@ -1169,7 +1172,7 @@ export class GameService implements OnModuleDestroy {
               ownerSells(room, playerId),
             ),
             staffCount: biz.employees.length,
-            level: biz.level,
+            level: this.plots.levelIn(room, biz),
             selfSell: room.selfSell.has(playerId),
             leaseLotId: lease?.lotId ?? null,
             lotOwned: this.plots.owns(room, playerId, biz.lotId),

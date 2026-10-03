@@ -281,6 +281,12 @@ export class BusinessService {
     if (!biz.lotId) throw new GameError("invalid_state", "Chọn chỗ bán trước đã");
     const lot = content.lot(biz.lotId);
     if (lot.kind === "house") await this.shops.requireReady(room, biz, lot.id);
+    const site = this.plots.building(room, lot.id);
+    if (site)
+      throw new GameError(
+        "invalid_state",
+        `Đang xây tiệm trên ô này — xong ngày ${site.buildDone}`,
+      );
     const eco = content.economy;
     if (wearState(biz.wear, eco.maintenance) === "broken")
       throw new GameError("invalid_state", "Xe hư rồi — đẩy tới vựa xe Ông Sáu sửa đã");
@@ -498,7 +504,9 @@ export class BusinessService {
         "invalid_state",
         lotKind === "house"
           ? "Tiệm đã ở cấp cao nhất rồi"
-          : "Xe đẩy vỉa hè không nâng cấp được — thuê nhà mặt tiền trước (🏠 Thuê nhà & giấy tờ)",
+          : lotKind === "stall"
+            ? "Sạp trên ô đất: mua đứt ô rồi xây tiệm (📍 Chỗ bán) để lên cấp"
+            : "Xe đẩy vỉa hè không nâng cấp được — thuê nhà mặt tiền trước (🏠 Thuê nhà & giấy tờ)",
       );
     if (biz.status === "OPEN")
       throw new GameError("invalid_state", "Đóng cửa rồi mới sửa sang tiệm");

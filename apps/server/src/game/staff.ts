@@ -18,6 +18,7 @@ import { BusinessRepo } from "./business-repo.js";
 import { consume, stockMap } from "./inventory.js";
 import { menuOf } from "./menu.js";
 import { PaymentService } from "./payment.js";
+import { PlotService } from "./plots.js";
 import { addToReport } from "./report.js";
 import { GameError, type RoomRuntime } from "./room.js";
 import { StoryService } from "./story.js";
@@ -42,6 +43,7 @@ export class StaffService {
     private readonly ledger: LedgerService,
     private readonly story: StoryService,
     private readonly payment: PaymentService,
+    private readonly plots: PlotService,
   ) {}
 
   setNotifier(fn: (playerId: string, n: NotifyEvent) => void) {
@@ -58,7 +60,7 @@ export class StaffService {
         take: 8,
       }),
     ]);
-    const level = biz?.level ?? 1;
+    const level = biz ? await this.plots.levelFor(biz) : 1;
     const lotKind = biz?.lotId ? content.lot(biz.lotId).kind : null;
     const next = nextShopLevel(content, level, lotKind);
     return {
@@ -119,11 +121,12 @@ export class StaffService {
         "invalid_state",
         `${person.name} đang làm ở cửa hàng khác của bạn — cho nghỉ bên đó trước`,
       );
-    const max = shopLevel(content, biz.level).maxStaff;
+    const level = await this.plots.levelFor(biz);
+    const max = shopLevel(content, level).maxStaff;
     if (biz.employees.length >= max)
       throw new GameError(
         "invalid_state",
-        `Cửa hàng cấp ${biz.level} chỉ thuê được ${max} người — nâng cấp tiệm để thuê thêm`,
+        `Cửa hàng cấp ${level} chỉ thuê được ${max} người — nâng cấp tiệm để thuê thêm`,
       );
     await this.prisma.employee.create({
       data: { businessId: biz.id, staffId, shiftId, hiredDay: room.day },
@@ -229,7 +232,7 @@ export class StaffService {
       toMinute: to,
       demandCarry: biz.demandCarry,
       // Cấp tiệm: tiệm to hơn, đông khách hơn (docs/IA.md bước E).
-      boost: shopLevel(content, biz.level).trafficMul,
+      boost: shopLevel(content, await this.plots.levelFor(biz)).trafficMul,
       capacity: mode === "live" ? this.capacity.get(biz.id) : undefined,
       seed: biz.id,
     });

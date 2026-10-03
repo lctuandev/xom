@@ -2,6 +2,7 @@ import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
 import { baseSpec } from "./recipe.js";
 import {
+  effectiveShopLevel,
   nextShopLevel,
   onDutyTeam,
   shiftAt,
@@ -160,5 +161,15 @@ describe("nhiều nhân viên + cấp tiệm (docs/IA.md bước E)", () => {
     expect(shopLevel(content, 3).maxStaff).toBeGreaterThan(shopLevel(content, 1).maxStaff);
     expect(nextShopLevel(content, content.data.shopLevels.length, "house")).toBeNull();
     expect(onDutyTeam(content, [{ shiftId: "sang" }, { shiftId: "toi" }], 7 * 60)).toHaveLength(1);
+  });
+});
+
+describe("cấp tiệm có hiệu lực theo chỗ bán (docs/BANDO.md bước E)", () => {
+  it("nhà mặt tiền theo cấp cửa hàng, sạp theo công trình trên ô, xe đẩy luôn cấp 1", () => {
+    expect(effectiveShopLevel("house", 3)).toBe(3);
+    expect(effectiveShopLevel("stall", 3, 2)).toBe(2);
+    expect(effectiveShopLevel("stall", 1)).toBe(1);
+    expect(effectiveShopLevel("cart", 3)).toBe(1);
+    expect(effectiveShopLevel(null, 2)).toBe(1);
   });
 });

@@ -199,6 +199,12 @@ export function loadContent(raw: unknown): Content {
         errors.push(`khu ${k.id}: chỗ ${l.id} không có khu khách ${l.traffic}`);
     }
   }
+  for (const b of parsed.buildings) {
+    if (!parsed.shopLevels.some((l) => l.level === b.level))
+      errors.push(`công trình ${b.id}: không có cấp tiệm ${b.level}`);
+    if (b.requires && !parsed.buildings.some((x) => x.id === b.requires))
+      errors.push(`công trình ${b.id}: không có công trình ${b.requires} để xây trước`);
+  }
   if (parsed.restaurant.layout.tables.length !== parsed.restaurant.tables)
     errors.push("quán cơm: số bàn trong sơ đồ khác số bàn");
   for (const j of parsed.jobs) {
@@ -369,6 +375,14 @@ export class Content {
     }
     this.chunkLots.set(id, lot);
     return lot ?? undefined;
+  }
+
+  building(id: string) {
+    return must(
+      this.data.buildings.find((b) => b.id === id),
+      "building",
+      id,
+    );
   }
 
   /** Mọi chỗ bán của một xóm: chỗ gốc + chỗ của các khu đã mở. */

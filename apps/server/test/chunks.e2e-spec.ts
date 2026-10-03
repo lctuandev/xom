@@ -120,4 +120,65 @@ describe("Bản đồ mở: ghép khu (e2e)", () => {
     a.socket.disconnect();
     nb.socket.disconnect();
   });
+
+  it("xây tiệm trên ô của mình (bước E): theo thứ tự, đang xây không mở được, xong thì lên cấp; bán lại tính cả tiền xây", async () => {
+    const { body } = await register(url, uniqueName(), { solo: true });
+    const a = await connect(url, body.accessToken);
+    expect((await emit(a.socket, "equipment:buy", { equipmentId: "xe_banh_mi" })).ok).toBe(true);
+    expect((await emit(a.socket, "debug:chunk", { chunkId: "khu_dong" })).ok).toBe(true);
+    expect((await emit(a.socket, "debug:grant", { money: 10_000_000 })).ok).toBe(true);
+    const lotId = "khu_dong__sap_mai_a__1_0";
+    const lot = content.lot(lotId);
+    a.socket.emit("move", {
+      x: lot.position.x,
+      z: lot.position.z,
+      yaw: 0,
+      moving: false,
+      inside: null,
+    });
+    await new Promise((r) => setTimeout(r, 200));
+    expect((await emit(a.socket, "land:buy", { lotId, pay: "cash" })).ok).toBe(true);
+    const moved = await emit<MeView>(a.socket, "biz:update", { lotId });
+    if (!moved.ok) throw new Error(moved.message);
+    expect(moved.data.business?.level).toBe(1);
+
+    // Nhà 2 tầng phải xây tiệm 1 tầng trước.
+    expect(
+      await emit(a.socket, "land:build", { lotId, buildingId: "nha_2_tang", pay: "cash" }),
+    ).toMatchObject({ ok: false, message: /Tiệm 1 tầng/ });
+    const tiem = content.building("tiem_1_tang");
+    const built = await emit<MeView>(a.socket, "land:build", {
+      lotId,
+      buildingId: "tiem_1_tang",
+      pay: "cash",
+    });
+    if (!built.ok) throw new Error(built.message);
+    expect(built.data.money).toBe(moved.data.money - tiem.cost);
+    // Đang xây: không mở sạp.
+    expect(await emit(a.socket, "biz:open", {})).toMatchObject({ ok: false, message: /Đang xây/ });
+
+    // Sang ngày xong: ô lên cấp 2, cửa hàng trên ô cấp 2.
+    const day = a.snap.clock.day + tiem.buildDays;
+    const world = next(
+      a.socket,
+      "world",
+      (w) => w.plots?.some((p) => p.lotId === lotId && p.level === 2) ?? false,
+    );
+    expect((await emit(a.socket, "debug:clock", { minute: 8 * 60, day })).ok).toBe(true);
+    await world;
+    const after = await emit<MeView>(a.socket, "biz:menu", {
+      variantId: content.product("banh_mi").recipe.variants[0]?.id ?? "",
+      on: true,
+    });
+    if (!after.ok) throw new Error(after.message);
+    expect(after.data.business?.level).toBe(2);
+
+    // Bán lại: 70% của (giá đất + tiền xây).
+    const sold = await emit<MeView>(a.socket, "land:sell", { lotId });
+    if (!sold.ok) throw new Error(sold.message);
+    expect(sold.data.money).toBe(
+      after.data.money + landRefund(content, landPrice(content, lotId) + tiem.cost),
+    );
+    a.socket.disconnect();
+  });
 });

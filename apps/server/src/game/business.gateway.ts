@@ -10,6 +10,7 @@ import {
   bizUpgradeSchema,
   emptySchema,
   hostEventSchema,
+  landBuildSchema,
   landBuySchema,
   landSellSchema,
   menuSchema,
@@ -48,6 +49,13 @@ export class BusinessGateway {
   landBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, landBuySchema, body, (ctx, p) =>
       this.game.plots.buy(ctx, p.lotId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("land:build")
+  landBuild(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, landBuildSchema, body, (ctx, p) =>
+      this.game.plots.build(ctx, p.lotId, p.buildingId, p.pay),
     );
   }
 

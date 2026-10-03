@@ -588,6 +588,24 @@ export const chunkSchema = z.object({
 });
 export type Chunk = z.infer<typeof chunkSchema>;
 
+/**
+ * Mẫu công trình xây trên ô đất của mình (docs/BANDO.md bước E): xây theo thứ tự (`requires`), trả tiền vật liệu + công một
+ * lần, chờ `buildDays` ngày; xong thì ô đất lên cấp tiệm `level` (content.shopLevels: khách ×, số nhân viên).
+ */
+export const buildingSchema = z.object({
+  id,
+  name: z.string(),
+  emoji: z.string(),
+  description: z.string(),
+  level: z.number().int().min(2),
+  cost: vnd,
+  buildDays: z.number().int().min(1),
+  requires: id.optional(),
+  /** Model nhà dựng trên ô đất (city bundle). */
+  model: z.string(),
+});
+export type Building = z.infer<typeof buildingSchema>;
+
 /** Sạp đồ ăn NPC bày theo giờ (docs/USECASES.md UC-B9): người chơi mua ăn tại chỗ. */
 export const vendorSchema = z.object({
   id,
@@ -1241,6 +1259,7 @@ export const contentSchema = z.object({
   jobs: z.array(jobSchema),
   map: mapSchema,
   chunks: z.array(chunkSchema).default([]),
+  buildings: z.array(buildingSchema).default([]),
   vendors: z.array(vendorSchema).default([]),
   restaurant: restaurantSchema,
   delivery: deliverySchema,
