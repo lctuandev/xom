@@ -30,6 +30,7 @@ import {
   needsAt,
   needsFrom,
   nextChunkSlot,
+  nextChunkToOpen,
   type OpenedChunk,
   onDutyTeam,
   overrideWeather,
@@ -39,6 +40,7 @@ import {
   type SkillPoints,
   seededRandom,
   shopLevel,
+  shouldGrow,
   spoilage,
   wearDemand,
   weatherDemand,
@@ -699,6 +701,7 @@ export class GameService implements OnModuleDestroy {
       room.planWeather();
       this.emitter?.toRoom(room.id, "events", room.events);
       await this.plots.finishBuilds(room);
+      await this.growXom(room);
     }
     this.emitter?.toRoom(room.id, "clock", this.clockOf(room));
   }
@@ -762,12 +765,40 @@ export class GameService implements OnModuleDestroy {
       throw new GameError("invalid_state", "Không có lệnh này");
     const tpl = content.data.chunks.find((c) => c.id === chunkId);
     if (!tpl) throw new GameError("invalid_payload", "Không có khu này");
+    await this.openChunk(room, tpl);
+  }
+
+  private async openChunk(room: RoomRuntime, tpl: (typeof content.data.chunks)[number]) {
     room.chunks = [...room.chunks, nextChunkSlot(tpl, room.chunks)];
     await this.prisma.room.update({
       where: { id: room.id },
       data: { chunks: room.chunks as unknown as Prisma.InputJsonValue },
     });
     this.emitWorld(room);
+  }
+
+  /**
+   * Xóm lớn dần (docs/BANDO.md bước F): sang ngày mới, chỗ bán của xóm (cả khu đã mở) có người đặt cửa hàng hoặc đã mua
+   * ≥ `economy.xomGrow.at` thì mở thêm một khu (xoay vòng bốn phía, có trần) và báo cả xóm.
+   */
+  async growXom(room: RoomRuntime) {
+    const lots = content.lotsIn(room.chunks).map((l) => l.id);
+    const used = await this.prisma.business.findMany({
+      where: { lotId: { in: lots }, owner: { roomId: room.id } },
+      select: { lotId: true },
+    });
+    const taken = new Set([...used.map((b) => b.lotId ?? ""), ...room.plots.map((p) => p.lotId)]);
+    taken.delete("");
+    if (!shouldGrow(taken.size, lots.length, room.chunks.length, content.economy.xomGrow)) return;
+    const tpl = nextChunkToOpen(content.data.chunks, room.chunks);
+    if (!tpl) return;
+    await this.openChunk(room, tpl);
+    for (const playerId of room.members.keys())
+      this.broadcast.notify(playerId, {
+        kind: "good",
+        text: `🏗️ Xóm đông quá — mở thêm ${tpl.name}: chỗ bán mới, ô đất cho thuê & mua`,
+      });
+    this.logger.log(`xóm ${room.id} mở ${tpl.id} (${taken.size}/${lots.length} chỗ có người)`);
   }
 
   /** Ví người chơi đổi ngoài intent của chính họ (mua của hàng xóm): gửi lại số dư. */
@@ -1082,8 +1113,9 @@ export class GameService implements OnModuleDestroy {
     room.day += 1;
     room.minute = content.economy.dayStartMinute;
     room.planWeather();
-    // Công trình trên ô đất tới ngày thì xong (docs/BANDO.md bước E).
+    // Công trình trên ô đất tới ngày thì xong (docs/BANDO.md bước E); xóm đông thì mở khu mới (bước F).
     await this.plots.finishBuilds(room);
+    await this.growXom(room);
     await this.persistClock(room);
     this.emitWorld(room);
     this.emitter?.toRoom(room.id, "events", room.events);

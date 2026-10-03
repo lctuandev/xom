@@ -181,4 +181,41 @@ describe("Bản đồ mở: ghép khu (e2e)", () => {
     );
     a.socket.disconnect();
   });
+
+  it("xóm lớn dần (bước F): ≥ 70% chỗ có người thì sang ngày tự mở khu kế tiếp", async () => {
+    const carts = content.data.lots.filter((l) => l.kind === "cart").map((l) => l.id);
+    const total = content.data.lots.length;
+    const need = Math.ceil(total * content.economy.xomGrow.at);
+    const first = await register(url, uniqueName(), { solo: true });
+    const a = await connect(url, first.body.accessToken);
+    const sockets = [a.socket];
+    const take = async (socket: typeof a.socket, lotId: string) => {
+      expect((await emit(socket, "equipment:buy", { equipmentId: "xe_banh_mi" })).ok).toBe(true);
+      const r = await emit(socket, "biz:update", { lotId });
+      if (!r.ok) throw new Error(r.message);
+    };
+    await take(a.socket, carts[0] ?? "");
+    for (let i = 1; i < need - 1; i++) {
+      const p = await register(url, uniqueName(), { xom: a.snap.roster.code });
+      const c = await connect(url, p.body.accessToken);
+      sockets.push(c.socket);
+      await take(c.socket, carts[i] ?? "");
+    }
+    // Chưa đủ 70%: sang ngày không mở.
+    expect(
+      (await emit(a.socket, "debug:clock", { minute: 8 * 60, day: a.snap.clock.day + 1 })).ok,
+    ).toBe(true);
+    const p = await register(url, uniqueName(), { xom: a.snap.roster.code });
+    const c = await connect(url, p.body.accessToken);
+    sockets.push(c.socket);
+    expect(c.snap.world.chunks ?? []).toEqual([]);
+    await take(c.socket, carts[need - 1] ?? "");
+    // Đủ 70%: sang ngày mở khu đông.
+    const world = next(a.socket, "world", (w) => (w.chunks?.length ?? 0) === 1);
+    expect(
+      (await emit(a.socket, "debug:clock", { minute: 8 * 60, day: a.snap.clock.day + 2 })).ok,
+    ).toBe(true);
+    expect((await world).chunks).toEqual([{ chunkId: "khu_dong", gx: 1, gz: 0 }]);
+    for (const s of sockets) s.disconnect();
+  });
 });

@@ -28,7 +28,8 @@
   **Bước C xong**: 🗺️ bản đồ thu nhỏ `ui/XomMap.tsx` trong sheet Chỗ bán; ⛺ sạp có mái (`kind: "stall"`, mưa vẫn bán, dựng
   300k). **Bước D xong**: bảng `Plot` + `PlotService` (`game/plots.ts`), `room.plots`, `land:buy`/`land:sell`, `openDue(…, owned)`.
   **Bước E xong**: `content.buildings`, `land:build`, `PlotService.finishBuilds` (sang ngày), `levelIn/levelFor` +
-  `effectiveShopLevel` (xe đẩy luôn cấp 1). **Tiếp: bước F** (tự mở khu khi ≥ 70% ô có chủ).
+  `effectiveShopLevel` (xe đẩy luôn cấp 1). **Bước F xong**: `GameService.growXom` lúc sang ngày (`economy.xomGrow` 70%, tối đa
+  8 khu). Bản đồ mở A–F xong; còn: phụ hồ cho tiệm riêng, chỉ dựng khu gần camera, model nhà (plan Blender).
 
 ### 0.2 Dọn dẹp chờ chủ dự án
 - Worktree cũ `/home/lctuan/Documents/GameOnline-A` (`feat/nut-ngu-canh`, chưa có code) và `GameOnline-B` (trùng `main`) đều sạch
@@ -178,7 +179,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - Lượt Playwright toàn bộ chỉ Pixel 7 mất ~1,5 giờ (chạy nền, `workers: 1`).
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
-1. Bản đồ mở (`docs/BANDO.md`, đã chốt): A–E xong; làm **F** (tự mở khu khi ≥ 70% ô có chủ).
+1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
 2. Góp ý đợt 3 (mục 3.1b) theo thứ tự: thông báo nhân viên + đẩy icon, icon tin nhắn, lỗi nhiều tiệm, chữ quầy/tiệm, avatar Hồ sơ,
    tự gia hạn đồ thuê, đèn đường, plan Blender (`docs/ART.md`).
 3. Tách `game.service.ts` + gom `ActionBar`.

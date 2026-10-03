@@ -78,7 +78,7 @@ model Plot {
 | C ✅ | 🗺️ Bản đồ xóm thu nhỏ (canvas, `ui/XomMap.tsx`) đầu sheet 📍 Chỗ bán, chạm chấm để chọn; ⛺ sạp có mái trên ô đất (`kind: "stall"`): mưa vẫn bán (hệ số trong nhà), khách chịu giá ×1,1, thuê 70–80k/ngày + phí quản lý 10k + dựng sạp 300k mỗi lần dọn tới (chốt 2026-10-03) | Xong 2026-10-03 |
 | D ✅ | Mua đứt ô sạp (bảng `Plot`, `PlotService`): đứng tại ô, giá = 40 ngày thuê (~2,8–3,2tr), chủ không trả thuê chỉ trả thuế đất 15k/ngày mở sạp (vào phí — một phần về quỹ xóm), trần 2 ô/người/xóm, người khác không dùng ô của mình, bán lại cho xóm 70% (phải đóng quầy); `pnpm balance` kiểm hoàn vốn 20–120 ngày (đang ~50) | Xong 2026-10-03. Vỉa hè là chỗ chung, nhà mặt tiền vẫn thuê chủ nhà NPC |
 | E ✅ | `content.buildings` (🏬 tiệm 1 tầng 2tr/2 ngày → cấp 2; 🏢 nhà 2 tầng 4,5tr/3 ngày → cấp 3, xây theo thứ tự) trên ô đất của mình: trả một lần, cọc công trường trong cảnh, đang xây không mở sạp, xong lúc sang ngày; cấp hiệu lực theo chỗ bán (`effectiveShopLevel`: nhà thuê theo cấp cửa hàng, sạp theo công trình, xe đẩy cấp 1); bán lại tính cả tiền xây | Xong 2026-10-03. Chưa: phụ hồ người chơi góp sức xây tiệm riêng; model nhà đúng chất Việt (plan Blender) |
-| F | Tự mở khu mới khi ≥ 70% ô có chủ; bảng tin xóm | Hiệu năng: chỉ dựng khu trong tầm camera |
+| F ✅ | Sang ngày mới: chỗ bán của xóm (cả khu đã mở) có cửa hàng đặt hoặc đã mua ≥ 70% → mở khu kế tiếp (xoay vòng đông → tây → bắc → nam, `economy.xomGrow`, tối đa 8 khu), báo cả xóm | Xong 2026-10-03. Chưa: chỉ dựng khu trong tầm camera (đo trên điện thoại thật trước); tin trên bảng tin xóm (backlog) |
 
 ## 7. Đã chốt (2026-10-03)
 1. Hình dạng: **lưới ô kiểu Township** — xóm ghép thêm khu bốn phía.

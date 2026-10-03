@@ -1,6 +1,12 @@
 import { content } from "@xom/content";
 import { describe, expect, it } from "vitest";
-import { composeMap, nextChunkSlot, type OpenedChunk } from "./chunks.js";
+import {
+  composeMap,
+  nextChunkSlot,
+  nextChunkToOpen,
+  type OpenedChunk,
+  shouldGrow,
+} from "./chunks.js";
 import { Grid } from "./grid.js";
 
 const base = content.data.map;
@@ -76,5 +82,22 @@ describe("bản đồ mở: ghép khu (docs/BANDO.md §3)", () => {
     const b = content.lot("khu_dong__dau_pho__2_0").position;
     expect(b.x - a.x).toBe((chunk("khu_dong").rows[0]?.length ?? 0) * base.tile);
     expect(content.lot("khu_tay__dau_pho__m1_0").position.x).toBeLessThan(base.origin.x);
+  });
+
+  it("xóm lớn dần (bước F): ≥ 70% chỗ có người thì mở khu kế tiếp, xoay vòng bốn phía, có trần", () => {
+    const rule = { at: 0.7, maxChunks: 8 };
+    expect(shouldGrow(6, 10, 0, rule)).toBe(false);
+    expect(shouldGrow(7, 10, 0, rule)).toBe(true);
+    expect(shouldGrow(10, 10, 8, rule)).toBe(false);
+    const opened: OpenedChunk[] = [];
+    const order: string[] = [];
+    for (let i = 0; i < 5; i++) {
+      const t = nextChunkToOpen(tpl, opened);
+      if (!t) throw new Error("hết mẫu");
+      order.push(t.id);
+      opened.push(nextChunkSlot(t, opened));
+    }
+    expect(order).toEqual(["khu_dong", "khu_tay", "khu_bac", "khu_nam", "khu_dong"]);
+    expect(opened.at(-1)).toMatchObject({ gx: 2, gz: 0 });
   });
 });

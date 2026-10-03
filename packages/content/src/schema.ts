@@ -1008,6 +1008,13 @@ export const economySchema = z.object({
   /** Dựng sạp có mái trên ô đất (trả mỗi lần dọn tới một ô sạp — docs/BANDO.md bước C). */
   stallBuild: vnd.default(300_000),
   /**
+   * Xóm lớn dần (docs/BANDO.md bước F): sang ngày mới, nếu tỉ lệ chỗ bán đã có người (đang đặt cửa hàng hoặc đã mua) ≥ `at` thì
+   * mở thêm một khu; tối đa `maxChunks` khu (giữ hiệu năng điện thoại).
+   */
+  xomGrow: z
+    .object({ at: z.number().min(0.1).max(1), maxChunks: z.number().int().min(0) })
+    .default({ at: 0.7, maxChunks: 8 }),
+  /**
    * Mua đứt ô đất (docs/BANDO.md bước D): giá = tiền thuê × priceDays; chủ ô không trả tiền thuê, trả thuế đất mỗi ngày mở
    * sạp; mỗi người tối đa maxPerPlayer ô trong một xóm; bán lại cho xóm được sellBack × giá mua.
    */

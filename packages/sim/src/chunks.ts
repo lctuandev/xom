@@ -107,3 +107,21 @@ export function composeMap(
     rows: cells.map((line) => line.join("")),
   };
 }
+
+/** Mẫu khu mở tiếp theo khi xóm lớn dần (bước F): xoay vòng theo thứ tự mẫu trong content (đông → tây → bắc → nam → …). */
+export function nextChunkToOpen<T extends ChunkDef>(
+  templates: readonly T[],
+  opened: readonly OpenedChunk[],
+): T | undefined {
+  return templates.length ? templates[opened.length % templates.length] : undefined;
+}
+
+/** Xóm đủ đông để mở khu mới chưa: số chỗ có người / tổng số chỗ ≥ ngưỡng, chưa quá số khu tối đa. */
+export function shouldGrow(
+  taken: number,
+  total: number,
+  opened: number,
+  rule: { at: number; maxChunks: number },
+): boolean {
+  return total > 0 && opened < rule.maxChunks && taken / total >= rule.at;
+}

@@ -227,7 +227,7 @@ tới gọi "ơi có ai bán không", hàng xóm nhắn "khách đứng chờ k�
 **Chưa:** NPC hàng xóm nhắn hộ, uống nước ở nhà, món tự nấu.
 
 
-### UC-B12 · Bản đồ mở: xóm ghép thêm khu bốn phía 🚧 (bước A + B — docs/BANDO.md)
+### UC-B12 · Bản đồ mở: xóm ghép thêm khu bốn phía ✅ (bản đầu, bước A–F — docs/BANDO.md)
 **Hệ thống:** 🏘️ Thế giới · **Luật:** 4 (tiến trình thấy được — xóm lớn dần), 15 (dữ liệu), 12.3 (hiệu năng điện thoại).
 **Đời thật:** xóm đông lên thì người ta san đất, mở đường mới; phố mới lúc đầu vắng, đất rẻ.
 **Luồng (bước A):** xóm mở thêm khu → mọi người trong xóm nhận lưới mới ngay (`world.chunks`), cảnh phố, đèn đêm, giao thông,
@@ -255,6 +255,9 @@ tầng · 3 ngày · 4,5tr). Trả một lần (sổ cái lý do `build`, cộng
 tiệm trên ô này — xong ngày N"); sang ngày xong thì nhà dựng lên, ô lên cấp tiệm 2 / 3 (khách ×1,25 / ×1,45, thuê 2 / 3 người).
 Cấp có hiệu lực theo chỗ bán: nhà thuê theo cấp đã nâng của cửa hàng, sạp theo công trình trên ô, **xe đẩy vỉa hè luôn cấp 1**
 (trước đây nâng cấp nhà thuê rồi dọn ra vỉa hè vẫn giữ cấp — đã bịt).
+**Bước F — xóm tự lớn:** mỗi lần sang ngày, server đếm chỗ bán của xóm (cả khu đã mở) đang có cửa hàng đặt hoặc đã có chủ mua;
+≥ 70% thì mở khu kế tiếp (đông → tây → bắc → nam → đông thứ hai…, tối đa 8 khu) và báo cả xóm "🏗️ Xóm đông quá — mở thêm Khu
+phía đông…". Mọi người nhận lưới mới ngay (như bước A).
 **Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông, chỗ bán của
 khu đứng trên ô đi được ở cả bốn phía); e2e `chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy; chọn chỗ của khu chỉ khi đã
 mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới";
@@ -263,7 +266,8 @@ bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới t
 xóm không dùng được, bán lại +70%); unit `weather.test.ts` (sạp mưa = trong nhà), `shop.test.ts` (openDue chủ ô, giá, tiền bán lại);
 Playwright `ban-do-mo` (mua đứt ô đang thuê, tiền trừ đúng giá, bán lại; xây tiệm 1 tầng, nhảy ngày, lên cấp 2); e2e xây theo
 thứ tự, đang xây không mở được, xong lên cấp, bán lại tính cả tiền xây; unit `staff.test.ts` (`effectiveShopLevel`).
-**Còn lại:** tự mở khu khi ≥ 70% ô có chủ (F); phụ hồ góp sức xây tiệm riêng — docs/BANDO.md.
+e2e bước F: 6/10 chỗ có người thì không mở, 7/10 thì sang ngày mở khu đông; unit `shouldGrow` / `nextChunkToOpen`.
+**Chưa:** phụ hồ góp sức xây tiệm riêng; chỉ dựng khu trong tầm camera; tin mở khu trên bảng tin xóm; model nhà đúng chất Việt.
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.
