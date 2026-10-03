@@ -149,6 +149,7 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - Lượt Playwright toàn bộ chỉ Pixel 7 mất ~1,5 giờ (chạy nền, `workers: 1`).
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
-1. `docs/BANDO.md` đã viết (bản nháp) — chờ chủ dự án chốt 4 câu ở §6, rồi làm từng bước A→F.
+1. Bản đồ mở: `docs/BANDO.md` **đã chốt** (lưới ô kiểu Township, thuê + mua đứt, mẫu công trình, mở khu khi ≥ 70% ô có chủ) —
+   làm từng bước A→F (§6).
 2. Tách `game.service.ts` + gom `ActionBar`.
 3. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
