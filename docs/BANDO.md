@@ -35,13 +35,9 @@
 
 ## 4. Mô hình dữ liệu (đề xuất)
 ```prisma
-model XomChunk {                      // khu đã mở của một xóm
-  roomId   String @db.Uuid
-  chunkId  String                     // id mẫu khu trong content.chunks
-  gx       Int                        // toạ độ khu (0,0 = khu gốc)
-  gz       Int
-  openedDay Int
-  @@id([roomId, gx, gz])
+model Room {
+  // …
+  chunks Json @default("[]")          // khu đã mở: [{ chunkId, gx, gz }] (bước A — đã làm)
 }
 model Plot {
   id        String  @id @default(uuid()) @db.Uuid
@@ -77,7 +73,7 @@ model Plot {
 ## 6. Bước làm (mỗi bước một commit, test xanh + deploy)
 | Bước | Nội dung | Ghi chú |
 |---|---|---|
-| A | `content.chunks` (khu gốc = lưới + lots hiện nay) + ghép lưới động theo xóm (`XomChunk`) gửi trong `WorldView`; client dựng cảnh / A* / giao thông từ lưới ghép | Chưa đổi gameplay; thêm 1 mẫu khu thử bằng lệnh debug |
+| A ✅ | `content.chunks` + ghép lưới động theo xóm (`Room.chunks` JSON — gọn hơn bảng riêng) gửi trong `WorldView`; client dựng cảnh / A* / giao thông từ lưới ghép | Xong 2026-10-03 (UC-B12); mở khu bằng `debug:chunk` |
 | B | Bảng `Plot` + migration từ `lotId`; server đọc chỗ bán từ Plot | Đổi ~50 chỗ dùng `content.lot()` → qua một `PlotRepo` |
 | C | Sheet 🗺️ Bản đồ xóm (lưới từ trên, gộp Chỗ bán + Thuê nhà); thuê ô đất trống dựng sạp có mái | Mobile-first, Pixel 7 |
 | D | Mua đứt ô + thuế đất + trần số ô; `pnpm balance` thêm chiến lược "mua ô" | Money sink lớn |

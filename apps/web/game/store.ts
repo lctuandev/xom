@@ -22,6 +22,7 @@ import type {
 import { create } from "zustand";
 import { sfx, voice } from "./audio";
 import type { FeatureId } from "./features/registry";
+import { setMapChunks } from "./nav";
 
 /** Đoán tâm trạng của câu nói để chọn giọng (bực thì gắt, vui thì cao). */
 function moodOf(text: string, tone?: Bubble["tone"]): "calm" | "happy" | "angry" {
@@ -290,7 +291,8 @@ export const useGame = create<GameState>((set, get) => ({
   setAway: (away) => set({ away }),
   setRoster: (roster) => set({ roster }),
   setInvite: (invite) => set({ invite }),
-  applySnapshot: (s) =>
+  applySnapshot: (s) => {
+    setMapChunks(s.world.chunks);
     set({
       roster: s.roster,
       me: s.me,
@@ -306,7 +308,8 @@ export const useGame = create<GameState>((set, get) => ({
         s.orders.find((o) => o.buyerId === s.me.playerId),
         s.world,
       ),
-    }),
+    });
+  },
   setMe: (me) =>
     set((s) => {
       // Lên cấp (DESIGN §4): chúc mừng ngay khi KN qua ngưỡng.
@@ -325,7 +328,10 @@ export const useGame = create<GameState>((set, get) => ({
       return { me };
     }),
   setClock: (clock) => set({ clock }),
-  setWorld: (world) => set({ world }),
+  setWorld: (world) => {
+    setMapChunks(world.chunks);
+    set({ world });
+  },
   setReport: (report) => set({ report }),
   setStatus: (status) => set({ status }),
   openSheet: (sheet) => set({ sheet, sheetBack: [] }),

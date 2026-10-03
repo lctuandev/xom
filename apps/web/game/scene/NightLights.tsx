@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useGame } from "../store";
 import { useModelBox, useModelBoxes } from "./CityKit";
 import { type GlowPoint, Glows } from "./DayNight";
-import { buildingPlacements, lampPlacements } from "./Street";
+import { useStreetLayout } from "./Street";
 
 // Đèn ban đêm của phố (docs/USECASES.md UC-B8): đèn đường có vầng sáng dưới đất, cửa sổ nhà sáng đèn,
 // bóng đèn treo ở quầy đang mở và ở các địa điểm có người đứng quầy.
@@ -16,11 +16,14 @@ function rotate(x: number, z: number, rot: number) {
   return { x: x * c + z * s, z: -x * s + z * c };
 }
 
-const MODELS = [...new Set(buildingPlacements.map((b) => b.model))];
-
 export function NightLights() {
+  const { buildings: buildingPlacements, lamps: lampPlacements } = useStreetLayout();
+  const models = useMemo(
+    () => [...new Set(buildingPlacements.map((b) => b.model))],
+    [buildingPlacements],
+  );
   const lampBox = useModelBox("light-square");
-  const boxes = useModelBoxes(MODELS);
+  const boxes = useModelBoxes(models);
   const lots = useGame((s) => s.world.lots);
 
   const lamps = useMemo<GlowPoint[]>(() => {
@@ -32,7 +35,7 @@ export function NightLights() {
       const o = rotate(off.x, off.z, p.rot ?? 0);
       return { x: p.x + o.x, y: lampBox.max.y - 0.2, z: p.z + o.z, pool: 3.2 };
     });
-  }, [lampBox]);
+  }, [lampBox, lampPlacements]);
 
   const windows = useMemo<GlowPoint[]>(() => {
     const out: GlowPoint[] = [];
@@ -57,7 +60,7 @@ export function NightLights() {
       }
     });
     return out;
-  }, [boxes]);
+  }, [boxes, buildingPlacements]);
 
   const stalls = useMemo<GlowPoint[]>(
     () => [

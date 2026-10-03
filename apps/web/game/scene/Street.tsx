@@ -1,8 +1,10 @@
 "use client";
 
 import { content } from "@xom/content";
+import { chunksKey } from "@xom/sim";
 import type { CityModel } from "../assets";
 import { grid } from "../nav";
+import { useGame } from "../store";
 import { Instances, type Placement } from "./CityKit";
 
 // Xóm vẽ từ bản đồ trong content (docs/USECASES.md UC-B6): mỗi ô 4 m. Đường tự xoay theo hướng,
@@ -174,9 +176,18 @@ function layout() {
   return { out, buildings, lamps };
 }
 
-const LAYOUT = layout();
-export const buildingPlacements = LAYOUT.buildings;
-export const lampPlacements = LAYOUT.lamps;
+/** Khoá lưới hiện tại (đổi khi xóm mở thêm khu) — dùng làm phụ thuộc cho useMemo. */
+export function useMapKey() {
+  return useGame((s) => chunksKey(s.world.chunks));
+}
+
+let cached: { key: string; value: ReturnType<typeof layout> } | null = null;
+/** Bố cục phố (nhà, đèn, đường…) dựng từ lưới hiện tại, dùng chung giữa Street và NightLights. */
+export function useStreetLayout() {
+  const key = useMapKey();
+  if (cached?.key !== key) cached = { key, value: layout() };
+  return cached.value;
+}
 
 /** Vùng cỏ (công viên + ven xóm) nằm dưới các ô. */
 function Ground() {
@@ -197,10 +208,11 @@ function Ground() {
 }
 
 export function Street() {
+  const { out } = useStreetLayout();
   return (
     <group>
       <Ground />
-      {[...LAYOUT.out].map(([model, at]) => (
+      {[...out].map(([model, at]) => (
         <Instances key={model} model={model} at={at} />
       ))}
     </group>

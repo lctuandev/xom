@@ -7,6 +7,8 @@ import {
 } from "@xom/shared";
 import { io, type Socket } from "socket.io-client";
 import { refreshAccessToken, useAuth } from "../auth/store";
+import { grid } from "../nav";
+import { getPlayer } from "../scene/player";
 import { orderBus, orderResultBus, orderUpdateBus, purchaseOf, useGame } from "../store";
 import { voiceText } from "../voice";
 import { applyPeers, seedPeers, startPresence } from "./presence";
@@ -127,6 +129,9 @@ export function connectGame(onSignedOut: () => void): () => void {
       send,
       walk: (x: number, z: number) => useGame.getState().setGoal({ kind: "point", x, z }),
       clock: () => useGame.getState().clock,
+      // Bản đồ mở (docs/BANDO.md): kích thước lưới hiện tại + vị trí nhân vật.
+      map: () => ({ cols: grid.cols, rows: grid.rows }),
+      pos: () => ({ x: getPlayer().position.x, z: getPlayer().position.z }),
     };
 
   return () => {

@@ -5,7 +5,9 @@ import { content } from "@xom/content";
 import { congestion, seededRandom } from "@xom/sim";
 import { useEffect, useMemo, useRef } from "react";
 import { Color, type InstancedMesh, Matrix4, Quaternion, Vector3 } from "three";
+import { grid } from "../nav";
 import { useGame } from "../store";
+import { useMapKey } from "./Street";
 
 /** Tối đa xe trên đường (PLAN §1: ≤ 60, mỗi phần xe một draw call). */
 const MAX = 60;
@@ -36,7 +38,7 @@ const BUS_COLOR = "#2f8f5b";
 
 /** Làn xe từ bản đồ ô: đường ngang "=" (mỗi hàng 2 làn ngược chiều), đường dọc "|" (mỗi cột 2 làn). */
 function lanesFromMap(): Lane[] {
-  const m = content.data.map;
+  const m = grid.map;
   const lanes: Lane[] = [];
   const rand = seededRandom("lanes");
   const cols = m.rows[0]?.length ?? 0;
@@ -87,7 +89,9 @@ export function Traffic() {
     wet.current = content.weatherKind(sky).rain > 0.3;
   }, [minute, sky]);
 
-  const lanes = useMemo(lanesFromMap, []);
+  const mapKey = useMapKey();
+  // biome-ignore lint/correctness/useExhaustiveDependencies: lưới đổi khi xóm mở thêm khu
+  const lanes = useMemo(lanesFromMap, [mapKey]);
   const vehicles = useMemo<Vehicle[]>(() => {
     const rand = seededRandom("traffic");
     const perLane = Math.floor(MAX / Math.max(1, lanes.length));

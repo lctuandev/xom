@@ -226,6 +226,18 @@ tới gọi "ơi có ai bán không", hàng xóm nhắn "khách đứng chờ k�
 (chip đói → mở quán ăn → ăn xôi → chip biến mất).
 **Chưa:** NPC hàng xóm nhắn hộ, uống nước ở nhà, món tự nấu.
 
+
+### UC-B12 · Bản đồ mở: xóm ghép thêm khu bốn phía 🚧 (bước A — docs/BANDO.md)
+**Hệ thống:** 🏘️ Thế giới · **Luật:** 4 (tiến trình thấy được — xóm lớn dần), 15 (dữ liệu), 12.3 (hiệu năng điện thoại).
+**Đời thật:** xóm đông lên thì người ta san đất, mở đường mới; phố mới lúc đầu vắng, đất rẻ.
+**Luồng (bước A):** xóm mở thêm khu → mọi người trong xóm nhận lưới mới ngay (`world.chunks`), cảnh phố, đèn đêm, giao thông,
+đường đi bộ dựng lại; vào lại game vẫn thấy khu đã mở. Hiện mở bằng lệnh thử nghiệm `debug:chunk` — bước F tự mở khi ≥ 70% ô có chủ.
+**Luật game:** mẫu khu là dữ liệu (`content.chunks`: đông/tây cao bằng bản đồ gốc, bắc/nam rộng bằng; đường ở mép phải nối với
+đường gốc — kiểm khi nạp content). `sim/chunks.ts` `composeMap` ghép lưới (góc chéo là đất trống), toạ độ thế giới của bản đồ
+gốc giữ nguyên. Server giữ `Room.chunks`, `room.grid` (xe ôm tính quãng đường trên lưới ghép).
+**Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông); e2e
+`chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông).
+**Còn lại:** bước B–F trong docs/BANDO.md (ô đất `Plot`, sheet 🗺️ Bản đồ xóm, mua đứt + thuế đất, xây tiệm, tự mở khu).
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.
