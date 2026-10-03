@@ -650,7 +650,7 @@ cho: …".
 **Luật game:** kho thuộc cửa hàng — nhập chợ vào cửa hàng đang quản lý, làm món / nhân viên bán / làm hàng việc xóm trừ kho
 cửa hàng đó; chưa có quầy thì không nhập hàng. Chủ **tự đứng bán một cửa hàng một lúc** (`room.attending`: chủ → cửa hàng),
 cửa hàng khác bán được khi có nhân viên trong ca; khách réo / nhân viên bán thay tính theo từng cửa hàng. Đang chở thì hàng
-chưa bán được ở đâu. Hiện mỗi người thuê **một** nhà mặt tiền (các cửa hàng khác ở vỉa hè).
+chưa bán được ở đâu. Mỗi cửa hàng thuê được một nhà mặt tiền riêng (từ 2026-10-03 — trước đây mỗi người một căn).
 **Đi tới quầy nào thì quản lý quầy đó** (2026-10-03, sửa lỗi "nhiều cửa hàng không chạy cùng lúc được"): trước đây chỉ quầy đang
 chọn mới nhận ra chủ đứng quầy → tới quầy thứ hai không mở / bán được. Giờ đứng ở quầy của cửa hàng khác thì tự chọn cửa hàng đó
 (toast "🏬 Đang ở … — quản lý cửa hàng này"), mở quầy, bán; quầy cũ có nhân viên trong ca vẫn bán tiếp.
