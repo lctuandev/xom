@@ -206,7 +206,7 @@
   },
   "singles": {
     "characters": {
-      "dir": "art/vendor/kenney/kenney_mini-characters/Models/GLB format",
+      "dir": "art/export/characters",
       "scale": 2.5,
       "models": ["character-male-a", "character-male-c", "character-female-a", "character-female-d"]
     }

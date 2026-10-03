@@ -146,6 +146,15 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   polygon offset trong `Glows`, Playwright `den-duong` chụp đêm). Gốc: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /
   `Glows` (vầng sáng dưới đất, z-fighting / culling / sắp xếp trong suốt).
 
+### 3.1c Góp ý đợt 4 của chủ dự án (2026-10-03) — làm ngay sau phần hiệu năng đang dở, trước đồ hoạ bước 2
+- [ ] **Chạm từng mục trên thanh trạng thái** (tiền, ⭐ uy tín, 🍚 no/💧 khát, giờ/ngày/thời tiết…) đều mở bottom sheet tương ứng
+  (tiền → 👛 Ví, ⭐ → 📒 Đánh giá cửa hàng, giờ/thời tiết → 📅 Hôm nay…) — hiện chỉ chip no/khát mở được. Khi đó sheet Hồ sơ (chạm ô
+  cấp độ) bỏ mục Ví.
+- [ ] **Mỗi cửa hàng có doanh thu & đánh giá riêng**: 📊 Sổ sách theo cửa hàng (chọn cửa hàng / tổng), 📒 Đánh giá theo cửa hàng
+  đang quản lý (đã có `Review.businessId`), thẻ 🏬 Các cửa hàng ghi doanh thu hôm nay + ⭐ từng cửa hàng.
+- [ ] **Toast thông báo không che thanh trạng thái**: chuyển vùng toast xuống giữa hai cột icon neo (dưới ô cấp + thanh thông tin,
+  giữa cột trái và cột phải), như phác thảo: `cấp – thông tin` / `icon · thông báo · icon`.
+
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").
 - 🏪 Nhiều cửa hàng phần còn lại: thuê **nhiều nhà mặt tiền** (hiện mỗi người một), **doanh thu theo từng cửa hàng** trong Sổ sách,
@@ -189,13 +198,14 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
 1. ~~Bản đồ mở A–F~~ (xong 2026-10-03).
-2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`);
-   tiếp bước 2 (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn).
+2. ~~Góp ý đợt 3~~ xong (2026-10-03). Đồ hoạ (`docs/ART.md`): **bước 1 kit nhà phố Việt xong** (`art/blender/nha_pho.py`).
+   **Góp ý đợt 4 (mục 3.1c) làm tiếp theo**, rồi đồ hoạ bước 2 (nhà cấp 4 / tạp hoá / UBND / trường theo kit, mái chi tiết hơn).
    **Hiệu năng (cần làm):** cảnh đã vượt ngân sách PLAN §1. Đã làm: pipeline asset gộp mảnh cùng material của từng model tĩnh
-   (`flatten` + `join` trong `packages/assets/scripts/build.mjs` — xe Kenney 5 mảnh → 1) → ~121 → ~105 draw call; tam giác ~117k
-   (< 80k chưa đạt). Công cụ: bản dev gõ `xomSceneStats()` trong console → tam giác/instance theo từng model. Nặng nhất: nhân vật
-   (mỗi người 2 mesh có xương thân + đầu — `join` không gộp được skinned → cần gộp trong Blender), nhà phố (~30k), xe (~24k), cột
-   điện Kenney (7,5k). Hướng tiếp: gộp thân+đầu nhân vật, LOD / bớt xe đậu, cột điện tự dựng nhẹ hơn; đo trên điện thoại thật.
+   (`flatten` + `join` trong `packages/assets/scripts/build.mjs` — xe Kenney 5 mảnh → 1) + gộp thân/đầu nhân vật trong Blender
+   (`art/blender/gop_nhan_vat.py` → `art/export/characters`, giữ 32 animation) → ~121 → **~94–97 draw call (đạt < 100)**; tam
+   giác ~117k (< 80k chưa đạt). Công cụ: bản dev gõ `xomSceneStats()` trong console → tam giác/instance theo từng model. Nặng nhất:
+   nhà phố (~30k), xe (~24k), nhân vật (~18k), cột điện Kenney (7,5k). Hướng tiếp: LOD / bớt xe đậu, cột điện tự dựng nhẹ hơn;
+   đo trên điện thoại thật.
    Playwright `nha-pho` chặn hồi quy (< 130 draw call, < 125k tam giác).
 3. Tách `game.service.ts` + gom `ActionBar`.
 4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
