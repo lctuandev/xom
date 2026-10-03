@@ -8,6 +8,7 @@ import {
   openFeature,
   register,
   serveCustomer,
+  setClock,
   setWeather,
   shot,
   waitForMorning,
@@ -134,4 +135,31 @@ test("mua đứt ô đất đang thuê rồi bán lại", async ({ page }) => {
     .getByRole("button", { name: /Bán lại/ })
     .tap();
   await expect(page.locator('[data-land="mine"]')).toHaveCount(0);
+});
+
+// Bước E: 🏗️ xây tiệm 1 tầng trên ô đất của mình — đang xây không mở sạp; sang ngày xong thì nhà hiện ra, lên cấp 2.
+test("xây tiệm 1 tầng trên ô đất của mình", async ({ page }) => {
+  test.setTimeout(420_000);
+  await register(page, "Xây tiệm");
+  await waitForMorning(page, 10);
+  const res = await dbg<{ ok: boolean }>(page, 'send("debug:chunk", { chunkId: "khu_dong" })');
+  expect(res.ok).toBe(true);
+  await grantMoney(page, 8_000_000);
+  await openBanhMiStall(page, /Sạp có mái — ô đất A/);
+  await openFeature(page, "stall");
+  await page.getByRole("button", { name: "Đóng quầy" }).tap();
+  await openFeature(page, "lot");
+  await page.locator('[data-land-buy="khu_dong__sap_mai_a__1_0"]').tap();
+  await page.locator('[data-land-build="tiem_1_tang"]').tap();
+  await expect(page.locator("[data-land-site]")).toBeVisible();
+  await shot(page, "99-dang-xay");
+  // Sang ngày xây xong.
+  const day = await dbg<number>(page, "clock().day");
+  await setClock(page, 8 * 60, day + content.building("tiem_1_tang").buildDays);
+  await expect(page.locator('[data-land="mine"]')).toContainText("Tiệm 1 tầng (cấp 2)");
+  await closeSheet(page);
+  await openFeature(page, "stall");
+  await expect(page.locator('[aria-label="Nâng cấp tiệm"]')).toHaveAttribute("data-level", "2");
+  await closeSheet(page);
+  await shot(page, "99-tiem-1-tang");
 });

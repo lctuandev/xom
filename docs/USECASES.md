@@ -250,14 +250,20 @@ trả phí 10k + **thuế đất 15k**/ngày (một phần về quỹ xóm như 
 dọn tới được ("Ô đất này của …"), không mua chen khi có người đang thuê; tối đa 2 ô/người/xóm; **bán lại cho xóm 70%** giá mua
 (phải đóng quầy trước, quầy ra khỏi ô). Bản đồ: ô đất của mình màu tím. Hoàn vốn ~50 ngày (`pnpm balance` cảnh báo nếu ngoài
 20–120 ngày).
+**Bước E — 🏗️ xây tiệm trên ô đất của mình:** dòng ô đất của mình có nút "🏗️ Xây 🏬 Tiệm 1 tầng · 2 ngày · 2tr" (rồi 🏢 Nhà 2
+tầng · 3 ngày · 4,5tr). Trả một lần (sổ cái lý do `build`, cộng vào giá ô); đang xây thì cọc công trường, không mở sạp ("Đang xây
+tiệm trên ô này — xong ngày N"); sang ngày xong thì nhà dựng lên, ô lên cấp tiệm 2 / 3 (khách ×1,25 / ×1,45, thuê 2 / 3 người).
+Cấp có hiệu lực theo chỗ bán: nhà thuê theo cấp đã nâng của cửa hàng, sạp theo công trình trên ô, **xe đẩy vỉa hè luôn cấp 1**
+(trước đây nâng cấp nhà thuê rồi dọn ra vỉa hè vẫn giữ cấp — đã bịt).
 **Kiểm chứng:** unit `chunks.test.ts` (nối tiếp theo phía, kích thước, toạ độ cũ giữ nguyên, đi bộ sang khu đông, chỗ bán của
 khu đứng trên ô đi được ở cả bốn phía); e2e `chunks.e2e-spec.ts` (mở khu, lưu DB, người vào sau thấy; chọn chỗ của khu chỉ khi đã
 mở, người khác không chiếm được); Playwright `ban-do-mo` (lưới rộng ra, đi bộ sang khu đông; mở quầy bánh mì ở "Đầu phố mới";
 bản đồ trong Chỗ bán rộng ra khi mở khu, chạm chấm chỗ mới thì dòng đó được tô; dựng sạp có mái, mưa vẫn có khách); e2e
 `chunks.e2e-spec.ts` (dựng sạp trừ đúng 300k; mua đứt: vỉa hè/đứng xa bị từ chối, chủ dọn về không trả phí dựng, `lotOwned`, hàng
 xóm không dùng được, bán lại +70%); unit `weather.test.ts` (sạp mưa = trong nhà), `shop.test.ts` (openDue chủ ô, giá, tiền bán lại);
-Playwright `ban-do-mo` (mua đứt ô đang thuê, tiền trừ đúng giá, bán lại).
-**Còn lại:** xây tiệm + lên tầng (E), tự mở khu khi ≥ 70% ô có chủ (F) — docs/BANDO.md.
+Playwright `ban-do-mo` (mua đứt ô đang thuê, tiền trừ đúng giá, bán lại; xây tiệm 1 tầng, nhảy ngày, lên cấp 2); e2e xây theo
+thứ tự, đang xây không mở được, xong lên cấp, bán lại tính cả tiền xây; unit `staff.test.ts` (`effectiveShopLevel`).
+**Còn lại:** tự mở khu khi ≥ 70% ô có chủ (F); phụ hồ góp sức xây tiệm riêng — docs/BANDO.md.
 ### UC-P1 · Kỹ năng + mở khoá theo cấp ✅ (bản đầu)
 **Hệ thống:** 📈 Tiến trình · **Luật:** 4.1 (mỗi phiên thấy thanh tiến độ nhích), 4.2 (mở khoá bằng làm thật), 15 (dữ liệu).
 **Đời thật:** bán lâu thì tay quen, làm nhanh hơn; nhớ khách hay dặn gì; ăn nói khéo thì khách dễ chịu, chờ được lâu hơn.

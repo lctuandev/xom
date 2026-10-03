@@ -186,26 +186,67 @@ function LandRow({ lot, plot, myId }: { lot: Lot; plot?: PlotView; myId?: string
   const price = landPrice(content, lot.id);
   if (plot && plot.ownerId !== myId)
     return <p className="px-3 pt-1 text-xs text-ink/60">🏷️ Ô đất của {plot.ownerName}</p>;
-  if (plot)
+  if (plot) {
+    // 🏗️ Xây tiệm (bước E): mẫu kế tiếp theo thứ tự; đang xây thì ghi ngày xong.
+    const built = plot.building ? content.building(plot.building) : null;
+    const nextBuild = content.data.buildings.find(
+      (b) => b.level > plot.level && (b.requires ?? null) === (plot.building ?? null),
+    );
     return (
-      <div className="flex items-center justify-between gap-2 px-3 pt-1 text-xs" data-land="mine">
-        <span className="text-leaf font-semibold">
-          🏷️ Ô đất của bạn · không trả thuê, thuế {vndShort(land.taxPerDay)}/ngày mở sạp
-        </span>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            await send("land:sell", { lotId: lot.id });
-            setBusy(false);
-          }}
-          className="h-8 shrink-0 rounded-lg bg-ink/5 px-2 font-semibold disabled:opacity-40"
-        >
-          Bán lại · {vndShort(landRefund(content, plot.price))}
-        </button>
+      <div className="flex flex-col gap-1 px-3 pt-1 text-xs" data-land="mine">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-semibold text-leaf">
+            🏷️ Ô đất của bạn
+            {built &&
+              plot.buildDone == null &&
+              ` · ${built.emoji} ${built.name} (cấp ${plot.level})`}{" "}
+            · không trả thuê, thuế {vndShort(land.taxPerDay)}/ngày mở sạp
+          </span>
+          <button
+            type="button"
+            disabled={busy || plot.buildDone != null}
+            onClick={async () => {
+              setBusy(true);
+              await send("land:sell", { lotId: lot.id });
+              setBusy(false);
+            }}
+            className="h-8 shrink-0 rounded-lg bg-ink/5 px-2 font-semibold disabled:opacity-40"
+          >
+            Bán lại · {vndShort(landRefund(content, plot.price))}
+          </button>
+        </div>
+        {plot.buildDone != null && built ? (
+          <p className="font-semibold text-sun" data-land-site={plot.buildDone}>
+            🏗️ Đang xây {built.emoji} {built.name} — xong ngày {plot.buildDone}
+          </p>
+        ) : nextBuild ? (
+          <button
+            type="button"
+            disabled={busy}
+            data-land-build={nextBuild.id}
+            onClick={async () => {
+              setBusy(true);
+              await send("land:build", {
+                lotId: lot.id,
+                buildingId: nextBuild.id,
+                pay: usePayMethod.getState().method,
+              });
+              setBusy(false);
+            }}
+            className="flex min-h-10 items-center justify-between gap-2 rounded-lg bg-sun/30 px-2 py-1 text-left font-semibold disabled:opacity-40"
+          >
+            <span>
+              🏗️ Xây {nextBuild.emoji} {nextBuild.name} · {nextBuild.buildDays} ngày
+              <span className="block text-[11px] font-normal text-ink/60">
+                {nextBuild.description} Lên cấp {nextBuild.level}.
+              </span>
+            </span>
+            <span className="shrink-0 tabular-nums">{vndShort(nextBuild.cost)}</span>
+          </button>
+        ) : null}
       </div>
     );
+  }
   return (
     <div className="flex items-center justify-between gap-2 px-3 pt-1 text-xs">
       <span className="text-ink/60">

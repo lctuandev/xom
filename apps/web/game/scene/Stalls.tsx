@@ -1,7 +1,7 @@
 "use client";
 
 import { content } from "@xom/content";
-import type { LotOccupant } from "@xom/shared";
+import type { LotOccupant, PlotView } from "@xom/shared";
 import { useMemo } from "react";
 import type { CityModel } from "../assets";
 import { useGame } from "../store";
@@ -13,13 +13,44 @@ const CLOSED_SIGN = "#8a8f96";
 /** Quầy hàng của người chơi tại các lô đang thuê, kèm biển hiệu "BÁNH MÌ <TÊN>". */
 export function Stalls() {
   const lots = useGame((s) => s.world.lots);
+  const plots = useGame((s) => s.world.plots);
   return (
     <>
       {lots.map((o) => (
         <Stall key={o.businessId} occupant={o} />
       ))}
+      {plots?.map((p) => (
+        <PlotBuilding key={p.lotId} plot={p} />
+      ))}
     </>
   );
+}
+
+/**
+ * 🏗️ Công trình trên ô đất đã mua (docs/BANDO.md bước E): xây xong thì dựng nhà trên ô đất phía sau sạp (mặt tiền ra phố),
+ * đang xây thì rào cọc công trường. Hiện cả khi chủ đang bán chỗ khác.
+ */
+function PlotBuilding({ plot }: { plot: PlotView }) {
+  const lot = content.findLot(plot.lotId);
+  if (!lot || !plot.building) return null;
+  // Ô đất nằm sau chỗ đứng bán một ô (sạp quay mặt ra phố).
+  const back = lot.facing === 0 ? -1 : 1;
+  const x = lot.position.x;
+  const z = lot.position.z + back * 3.6;
+  if (plot.buildDone != null)
+    return (
+      <Instances
+        model="construction-cone"
+        at={[
+          { x: x - 1.5, z: z - 1.5 },
+          { x: x + 1.5, z: z - 1.5 },
+          { x: x - 1.5, z: z + 1.5 },
+          { x: x + 1.5, z: z + 1.5 },
+        ]}
+      />
+    );
+  const model = content.building(plot.building).model as CityModel;
+  return <Instances model={model} at={[{ x, z, rot: lot.facing }]} />;
 }
 
 /** Chùm bong bóng khi quầy đang khai trương (vài mesh nhỏ, chỉ hiện trong lúc khai trương). */
@@ -50,6 +81,7 @@ function Balloons({ x, z }: { x: number; z: number }) {
 
 function Stall({ occupant }: { occupant: LotOccupant }) {
   const lot = content.lot(occupant.lotId);
+  const plots = useGame((s) => s.world.plots);
   const minute = useGame((s) => s.clock?.minute ?? 0);
   const promo = useGame((s) =>
     s.events.some((e) => e.businessId === occupant.businessId && minute >= e.from && minute < e.to),
@@ -91,12 +123,13 @@ function Stall({ occupant }: { occupant: LotOccupant }) {
       </group>
     );
   }
-  // Sạp có mái trên ô đất (docs/BANDO.md bước C): mái hiên phía sau quầy + ghế nhựa cho khách ngồi.
+  // Sạp có mái trên ô đất (docs/BANDO.md bước C): mái hiên phía sau quầy + ghế nhựa cho khách ngồi; đã xây tiệm thì nhà thay mái.
+  const built = plots?.some((p) => p.lotId === lot.id && p.building && p.buildDone == null);
   const back = lot.facing === 0 ? -1 : 1;
   return (
     <group>
       <Instances model={model} at={at} />
-      {lot.kind === "stall" && (
+      {lot.kind === "stall" && !built && (
         <>
           <Instances
             model="detail-awning-wide"

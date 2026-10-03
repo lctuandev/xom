@@ -279,7 +279,9 @@ function UpgradeBox({ biz }: { biz: BusinessView }) {
         <p className="mt-1 text-xs text-ink/60">
           {lotKind === "house"
             ? "Tiệm đã ở cấp cao nhất."
-            : "Xe đẩy vỉa hè không lên cấp — thuê nhà mặt tiền (🏠 Thuê nhà & giấy tờ) để mở rộng."}
+            : lotKind === "stall"
+              ? "Sạp trên ô đất: mua đứt ô rồi 🏗️ xây tiệm ở 📍 Chỗ bán để lên cấp."
+              : "Xe đẩy vỉa hè không lên cấp — thuê nhà mặt tiền (🏠 Thuê nhà & giấy tờ) để mở rộng."}
         </p>
       )}
     </section>
