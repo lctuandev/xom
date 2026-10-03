@@ -12,6 +12,7 @@ import {
   openDue,
   type PaySource,
   repairCost,
+  shopEstimate,
   takeFifo,
   unlockLevel,
   wearState,
@@ -29,6 +30,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { Broadcast } from "./broadcast.js";
 import { BusinessRepo } from "./business-repo.js";
 import { addItems, consume, stockMap } from "./inventory.js";
+import { MarketService } from "./market.js";
 import { availableMenu, menuOf, patchMenu } from "./menu.js";
 import { OrderService } from "./orders.js";
 import { PaymentService } from "./payment.js";
@@ -59,7 +61,48 @@ export class BusinessService {
     private readonly story: StoryService,
     private readonly broadcast: Broadcast,
     private readonly plots: PlotService,
+    private readonly market: MarketService,
   ) {}
+
+  /**
+   * ＋ Mở cửa hàng mới (docs/CUAHANG.md — đề xuất A): một bước chọn bán gì (đồ nghề) + chỗ (xe đẩy vỉa hè / ⛺ sạp ô đất / 🏠 tiệm
+   * nhà mặt tiền) rồi trả tiền, làm ngay trong sheet. Kiểm chỗ còn trống + đủ tiền tổng TRƯỚC khi trừ tiền để không bỏ dở giữa
+   * chừng (có đồ nghề mà không có chỗ). Tiệm thì ký luôn hợp đồng thuê (cọc), giấy tờ làm sau ở trang cửa hàng.
+   */
+  async openShop(ctx: IntentContext, equipmentId: string, lotId: string, pay?: PayMethod) {
+    const { room, playerId } = ctx;
+    const eq = content.equipmentById.get(equipmentId);
+    if (!eq) throw new GameError("invalid_payload", "Không có đồ nghề này");
+    const lot = content.lotsIn(room.chunks).find((l) => l.id === lotId);
+    if (!lot) throw new GameError("invalid_payload", "Không có chỗ này");
+    const taken = this.occupants(room.id).find((o) => o.lotId === lotId);
+    if (taken) throw new GameError("invalid_state", `Chỗ này ${taken.ownerName} đang dùng`);
+    const plot = this.plots.ownerOf(room, lotId);
+    if (plot && plot.ownerId !== playerId)
+      throw new GameError("invalid_state", `Ô đất này của ${plot.ownerName}`);
+    let need = eq.price;
+    if (lot.kind === "stall" && !plot) need += content.economy.stallBuild;
+    if (lot.kind === "house") {
+      const leased = await this.prisma.lease.findFirst({
+        where: { roomId: room.id, lotId, status: "ACTIVE" },
+      });
+      if (leased) throw new GameError("invalid_state", "Căn này có người thuê rồi");
+      const est = shopEstimate(content, lotId, eq.products[0] ?? "");
+      need += est.deposit + est.reserve;
+    }
+    const [cash, bank] = await Promise.all([
+      this.ledger.balance(this.prisma, playerWallet(playerId)),
+      this.ledger.balance(this.prisma, bankWallet(playerId)),
+    ]);
+    if (cash + bank < need)
+      throw new GameError(
+        "insufficient_funds",
+        `Mở cửa hàng này cần ${need.toLocaleString("vi-VN")}đ (cả 💵 lẫn 🏦) — đang có ${(cash + bank).toLocaleString("vi-VN")}đ`,
+      );
+    await this.market.buyEquipment(ctx, equipmentId, pay, "new", { anywhere: true });
+    if (lot.kind === "house") await this.shops.lease(room, playerId, lotId);
+    else await this.updateLot(ctx, lotId, pay);
+  }
 
   /** GameService giữ danh sách quầy đang chiếm chỗ trong xóm (để chặn hai người một chỗ). */
   bindOccupants(fn: (roomId: string) => WorldView["lots"]) {

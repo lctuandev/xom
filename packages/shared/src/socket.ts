@@ -82,6 +82,7 @@ export interface ClientToServerEvents {
   "market:sell": Intent<{ itemId: string }>;
   "biz:update": Intent<{ lotId: string; pay?: PayMethod }>;
   "land:buy": Intent<{ lotId: string; pay?: PayMethod }>;
+  "shop:new": Intent<{ equipmentId: string; lotId: string; pay?: PayMethod }>;
   "land:sell": Intent<{ lotId: string }>;
   "land:build": Intent<{ lotId: string; buildingId: string; pay?: PayMethod }>;
   "biz:menu": Intent<{ variantId: string; on?: boolean; price?: number }>;

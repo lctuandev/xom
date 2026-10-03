@@ -24,6 +24,7 @@ import {
   SOCKET_OPTIONS,
   selfSellSchema,
   shopLeaseSchema,
+  shopNewSchema,
   shopOrderSchema,
   shopRegisterSchema,
   staffFireSchema,
@@ -50,6 +51,13 @@ export class BusinessGateway {
   landBuy(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
     return this.handle(c, landBuySchema, body, (ctx, p) =>
       this.game.plots.buy(ctx, p.lotId, p.pay),
+    );
+  }
+
+  @SubscribeMessage("shop:new")
+  shopNew(@ConnectedSocket() c: GameSocket, @MessageBody() body: unknown) {
+    return this.handle(c, shopNewSchema, body, (ctx, p) =>
+      this.game.biz.openShop(ctx, p.equipmentId, p.lotId, p.pay),
     );
   }
 

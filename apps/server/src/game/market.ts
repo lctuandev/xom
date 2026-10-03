@@ -40,10 +40,12 @@ export class MarketService {
     equipmentId: string,
     pay?: PayMethod,
     mode: "new" | "replace" = "new",
+    /** Mở cửa hàng mới từ 🏬 (docs/CUAHANG.md — làm ngay trong sheet, không phải đứng ở vựa xe). */
+    opts: { anywhere?: boolean } = {},
   ) {
     const eq = content.equipmentById.get(equipmentId);
     if (!eq) throw new GameError("invalid_payload", "Không có thiết bị này");
-    requireAt(room, playerId, "vua_xe", "Tới vựa xe Ông Sáu mới mua xe được");
+    if (!opts.anywhere) requireAt(room, playerId, "vua_xe", "Tới vựa xe Ông Sáu mới mua xe được");
     const shops = await this.businesses.list(playerId);
     const current = mode === "replace" ? await this.businesses.of(playerId) : null;
     if (mode === "replace") {

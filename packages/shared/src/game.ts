@@ -1174,6 +1174,12 @@ export const staffHireSchema = z.object({ staffId: contentId, shiftId: contentId
 export const bizUpgradeSchema = z.object({ pay: payMethodSchema.optional() });
 /** Mua đứt / bán lại ô đất (docs/BANDO.md bước D). */
 export const landBuySchema = z.object({ lotId: contentId, pay: payMethodSchema.optional() });
+/** ＋ Mở cửa hàng mới (docs/CUAHANG.md): đồ nghề + chỗ (vỉa hè / ô đất / nhà mặt tiền). */
+export const shopNewSchema = z.object({
+  equipmentId: contentId,
+  lotId: contentId,
+  pay: payMethodSchema.optional(),
+});
 export const landSellSchema = z.object({ lotId: contentId });
 export const landBuildSchema = z.object({
   lotId: contentId,
