@@ -117,6 +117,21 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
   xóm) → tách `CustomerService`, `RoomService` (load/unload/join/switch), `MeViewBuilder`; web `ActionBar.tsx` gom nút ngữ cảnh.
 - [x] Chấm đỏ trên icon 🏅/🎯 khi có thưởng chưa nhận (`MeView.rewards`, `features/alerts.ts`, chấm cả ở cột neo).
 
+### 3.1b Góp ý đợt 3 của chủ dự án (2026-10-03) — làm sau bước E, F của bản đồ mở
+- [ ] **Bỏ thông báo "làm dùm / bán dùm" của nhân viên** (giờ đã mở được nhiều cửa hàng, chủ không cần giành bán) → cột icon
+  trái/phải đẩy lên cao hơn (chỗ trống của thông báo đó).
+- [ ] **Icon 💬 tin nhắn** tụt xuống ngang hàng nút ☰ Menu, nằm bên phải.
+- [ ] **Lỗi: không mở nhiều tiệm cùng lúc được** — rà lại luồng mở cửa hàng thứ hai (tới quầy → tự chọn cửa hàng → mở), tái hiện
+  bằng Playwright trước khi sửa.
+- [ ] **Đang thuê tiệm (nhà mặt tiền) mà vài chỗ vẫn gọi "quầy", "đẩy xe"** — rà mọi chữ theo `lot.kind` (cart: quầy/xe đẩy;
+  house: tiệm/cửa hàng; stall: sạp).
+- [ ] **Chạm ô cấp độ (góc trái) → bottom sheet Hồ sơ có avatar + tên nhân vật** giống khung NPC (PlaceFace / chân dung).
+- [ ] **Plan làm lại cảnh vật, nhà, nhân vật… chi tiết + chân thật hơn trong Blender** — viết `docs/ART.md` (phong cách, thứ tự
+  model, ngân sách polygon/texture cho điện thoại, quy trình `pnpm assets`), hỏi chủ dự án chốt rồi làm dần; gắn với nhánh
+  `feat/phong-cach-toon`.
+- [ ] **Đèn đường**: ánh sáng chỉ rọi mặt đường, vỉa hè không sáng; xoay góc nhìn thì đèn chớp nháy liên tục — rà `NightLights` /
+  `Glows` (vầng sáng dưới đất, z-fighting / culling / sắp xếp trong suốt).
+
 ### 3.2 Backlog từ trước (vẫn còn)
 - 🏘️ Xóm chung phần còn lại: **tên xóm**, **bảng tin xóm** (tin nhắn lưu + tin tự động "Lan vừa mở quầy trà sữa").
 - 🏪 Nhiều cửa hàng phần còn lại: thuê **nhiều nhà mặt tiền** (hiện mỗi người một), **doanh thu theo từng cửa hàng** trong Sổ sách,
@@ -159,7 +174,9 @@ công trình, xây xong dân số tăng), thiết kế thành tựu (thưởng *
 - Lượt Playwright toàn bộ chỉ Pixel 7 mất ~1,5 giờ (chạy nền, `workers: 1`).
 
 ## 5. Thứ tự gợi ý cho phiên tiếp theo
-1. Bản đồ mở: `docs/BANDO.md` **đã chốt** (lưới ô kiểu Township, thuê + mua đứt, mẫu công trình, mở khu khi ≥ 70% ô có chủ) —
-   bước A xong; làm tiếp B→F (§6).
-2. Tách `game.service.ts` + gom `ActionBar`.
-3. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
+1. Bản đồ mở (`docs/BANDO.md`, đã chốt): A–D xong; làm **E** (xây tiệm theo mẫu trên ô của mình + lên tầng) rồi **F** (tự mở
+   khu khi ≥ 70% ô có chủ).
+2. Góp ý đợt 3 (mục 3.1b) theo thứ tự: thông báo nhân viên + đẩy icon, icon tin nhắn, lỗi nhiều tiệm, chữ quầy/tiệm, avatar Hồ sơ,
+   đèn đường, plan Blender (`docs/ART.md`).
+3. Tách `game.service.ts` + gom `ActionBar`.
+4. Backlog 3.2 (bảng tin xóm, nội thất theo nghề, khách ra vào, admin, phong cách toon).
